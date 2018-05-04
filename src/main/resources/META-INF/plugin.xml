@@ -1,0 +1,282 @@
+<?xml version="1.0" ?>
+<!DOCTYPE plugin PUBLIC "-//JPF//Java Plug-in Manifest 1.0" "http://jpf.sourceforge.net/plugin_1_0.dtd">
+<plugin id="bwfdm.replaydh.core" version="0.0.1"
+	class="bwfdm.replaydh.core.RDHCorePlugin">
+	
+	<doc>
+		<doc-text>
+			Core of the entire RePlay-DH Client and first plug-in
+			to be activated upon startup.
+		</doc-text>
+	</doc>
+	
+	<runtime>
+		<library id="source" path="." type="code">
+			<export prefix="*" />
+		</library>
+	</runtime>
+	
+	<!-- Extension-Points -->
+			
+	<extension-point id="Localizable" extension-multiplicity="none">
+		<doc>
+			<doc-text>
+				Abstract root extension definition for localizable extensions
+				that offer localized identifier and description.
+			</doc-text>
+		</doc>
+		<parameter-def id="icon" multiplicity="none-or-one">
+			<doc>
+				<doc-text>
+					Key used to obtain an icon from the central icon registry
+					(For external plugins the client manages individual icon
+					registries and will automatically look up the one associated
+					with a given plugin).
+				</doc-text>
+			</doc>
+		</parameter-def>
+		<parameter-def id="name" multiplicity="none-or-one">
+			<doc>
+				<doc-text>
+					Key used to obtain a locale dependent name string.
+				</doc-text>
+			</doc>
+		</parameter-def>
+		<parameter-def id="description" multiplicity="none-or-one">
+			<doc>
+				<doc-text>
+					Key used to obtain a locale dependent description text.
+				</doc-text>
+			</doc>
+		</parameter-def>
+	</extension-point>
+			
+	<extension-point id="Exportable" parent-point-id="Localizable" 
+			parent-plugin-id="bwfdm.replaydh.core"  extension-multiplicity="none">
+		<doc>
+			<doc-text>
+				Abstract base extension point for modules that support exporting
+				parts of a workflow as metdata or resources.
+			</doc-text>
+		</doc>
+		<parameter-def id="type" multiplicity="one" type="fixed"
+				custom-data="metadata|object">
+			<doc>
+				<doc-text>
+					Defines what kind of information the exporter can actually
+					export. This restricts the context in which the user will
+					be offered to choose this exporter.
+				</doc-text>
+			</doc>
+		</parameter-def>
+		<parameter-def id="workflowScope" multiplicity="one-or-more" type="fixed"
+				custom-data="workflow|step|path|part|all">
+			<doc>
+				<doc-text>
+					Hint for the client on what scopes the exporter supports on
+					the level of workflow process-metadata. Will be used to 
+					adjust the user interface that lets the user choose an 
+					exporter based on the currently selected parts of a workflow graph.
+				</doc-text>
+			</doc>
+		</parameter-def>
+		<parameter-def id="objectScope" multiplicity="any" type="fixed"
+				custom-data="input|output|person|tool|workspace|all">
+			<doc>
+				<doc-text>
+					Hint for the client on what types of objects within the
+					workflow the exporter is actually able to export.
+				</doc-text>
+			</doc>
+		</parameter-def>
+	</extension-point>
+			
+	<extension-point id="WorkflowExporter" parent-point-id="Exportable" 
+			parent-plugin-id="bwfdm.replaydh.core">
+		<doc>
+			<doc-text>
+				Allows for registration of (external) exporter implementations
+				to export actual process metadata for a workflow.
+			</doc-text>
+		</doc>
+		<parameter-def id="class">
+			<doc>
+				<doc-text>
+					Exporter class itself, needs to implement bwfdm.replaydh.workflow.export.WorkflowExporter interface!
+				</doc-text>
+			</doc>
+		</parameter-def>
+		<parameter-def id="mode" multiplicity="none-or-one" type="fixed"
+				custom-data="file|folder" default-value="file">
+			<doc>
+				<doc-text>
+					Hint for the client on what kinds of output the exporter
+					supports.
+				</doc-text>
+			</doc>
+		</parameter-def>
+		<parameter-def id="format" multiplicity="any" type="any">
+			<doc>
+				<doc-text>
+					Opportunity for an extension to define its own format info
+					that will be used to customize UI components such as a
+					file chooser dialog.
+					
+					If an extension wishes to use this facility, then is must 
+					define the following sub-parameters:
+					
+					description -  a human readable description, usually provided
+					as a resource key for lookup.
+					extension - the actual file name ending, including the last dot.
+				</doc-text>
+			</doc>
+		</parameter-def>
+	</extension-point>
+			
+	<extension-point id="ResourcePublisher" parent-point-id="Exportable" 
+			parent-plugin-id="bwfdm.replaydh.core">
+		<doc>
+			<doc-text>
+				Allows for registration of publisher implementations
+				to export resource content from a workflow into 
+				the public domain.
+			</doc-text>
+		</doc>
+		<parameter-def id="class">
+			<doc>
+				<doc-text>
+					Exporter class itself, needs to implement bwfdm.replaydh.workflow.export.ResourcePublisher interface!
+				</doc-text>
+			</doc>
+		</parameter-def>
+	</extension-point>	
+	
+	<!-- Standard Extensions -->
+	
+	<!-- EXPORTERS -->
+	
+	<extension id="RawMetadataExporter" plugin-id="bwfdm.replaydh.core" point-id="WorkflowExporter">
+		<doc>
+			<doc-text>
+				Exports process metadata in the native RePlay-DH JSON-format.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.rawMetadataExporter.name" />
+		<parameter id="description" value="replaydh.plugins.rawMetadataExporter.description" />
+		<parameter id="class" value="bwfdm.replaydh.workflow.export.raw.RawMetadataExporter" />
+		<parameter id="icon" value="replay-icon-32.png" />
+		
+		<parameter id="type" value="metadata" />
+		<parameter id="workflowScope" value="all" />
+		<parameter id="objectScope" value="all" />
+		
+		<parameter id="format">
+			<parameter id="extension" value=".json" />
+			<parameter id="description" value="replaydh.plugins.rawMetadataExporter.formats.json" />
+		</parameter>
+	</extension>
+	
+	<extension id="PROVOExporter" plugin-id="bwfdm.replaydh.core" point-id="WorkflowExporter">
+		<doc>
+			<doc-text>
+				Exporter to convert workflow metadata into provenance information
+				following the PROV-O ontology.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.PROVOExporter.name" />
+		<parameter id="description" value="replaydh.plugins.PROVOExporter.description" />
+		<parameter id="class" value="bwfdm.replaydh.workflow.export.owl.PROVOExporter" />
+		
+		<parameter id="type" value="metadata" />
+		<parameter id="workflowScope" value="all" />
+		<parameter id="objectScope" value="output" />
+		
+		<parameter id="format">
+			<parameter id="extension" value=".ttl" />
+			<parameter id="description" value="replaydh.plugins.OWLExporter.turtle" />
+		</parameter>
+		<parameter id="format">
+			<parameter id="extension" value=".xml" />
+			<parameter id="description" value="replaydh.plugins.OWLExporter.rdfxml" />
+		</parameter>
+	</extension>
+	
+	<extension id="PPLANExporter" plugin-id="bwfdm.replaydh.core" point-id="WorkflowExporter">
+		<doc>
+			<doc-text>
+				Exporter to convert workflow metadata into plan information
+				following the PPLAN ontology.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.PPLANExporter.name" />
+		<parameter id="description" value="replaydh.plugins.PPLANExporter.description" />
+		<parameter id="class" value="bwfdm.replaydh.workflow.export.owl.PPLANExporter" />
+		
+		<parameter id="type" value="metadata" />
+		<parameter id="workflowScope" value="all" />
+		
+		<parameter id="format">
+			<parameter id="extension" value=".ttl" />
+			<parameter id="description" value="replaydh.plugins.OWLExporter.turtle" />
+		</parameter>
+		<parameter id="format">
+			<parameter id="extension" value=".xml" />
+			<parameter id="description" value="replaydh.plugins.OWLExporter.rdfxml" />
+		</parameter>
+	</extension>
+	
+	<extension id="DSpacePublisher" plugin-id="bwfdm.replaydh.core" point-id="ResourcePublisher">
+		<doc>
+			<doc-text>
+				Exporter to publish data from a workflow into a DSPACE repository.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.DSpacePublisher.name" />
+		<parameter id="description" value="replaydh.plugins.DSpacePublisher.description" />
+		<parameter id="class" value="bwfdm.replaydh.workflow.export.dspace.DSpacePublisher" />
+		<!-- <parameter id="icon" value="dspace-logo.png" /> -->
+		
+		<parameter id="type" value="object" />
+		<parameter id="workflowScope" value="all" />
+		<parameter id="objectScope" value="all" />
+	</extension>
+	
+	<extension id="GitArchiveExporter" plugin-id="bwfdm.replaydh.core" point-id="WorkflowExporter">
+		<doc>
+			<doc-text>
+				Exporter to archive states of the local git
+				other locations on the local or network file system.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.gitArchiveExporter.name" />
+		<parameter id="description" value="replaydh.plugins.gitArchiveExporter.description" />
+		<parameter id="class" value="bwfdm.replaydh.git.GitArchiveExporter" />
+		<parameter id="icon" value="fldr_obj.gif" />
+		
+		<parameter id="type" value="object" />
+		<parameter id="workflowScope" value="step" />
+		<parameter id="objectScope" value="workspace" />
+		
+		<parameter id="format">
+			<parameter id="extension" value=".zip" />
+			<parameter id="description" value="replaydh.plugins.gitArchiveExporter.formats.zip" />
+		</parameter>
+		<parameter id="format">
+			<parameter id="extension" value=".tar" />
+			<parameter id="description" value="replaydh.plugins.gitArchiveExporter.formats.tar" />
+		</parameter>
+		<parameter id="format">
+			<parameter id="extension" value=".tar.gz" />
+			<parameter id="description" value="replaydh.plugins.gitArchiveExporter.formats.tar_gz" />
+		</parameter>
+		<parameter id="format">
+			<parameter id="extension" value=".tar.bz2" />
+			<parameter id="description" value="replaydh.plugins.gitArchiveExporter.formats.tar_bz2" />
+		</parameter>
+		<parameter id="format">
+			<parameter id="extension" value=".tar.xz" />
+			<parameter id="description" value="replaydh.plugins.gitArchiveExporter.formats.tar_xz" />
+		</parameter>
+	</extension>
+	
+</plugin>

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema
+		xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+		targetNamespace="https://www.ub.uni-stuttgart.de/replay/Metadata"
+		xmlns:mtd="https://www.ub.uni-stuttgart.de/replay/Metadata"
+		xmlns:cmn="https://www.ub.uni-stuttgart.de/replay/CommonTypes"  
+		attributeFormDefault="unqualified"
+		elementFormDefault="qualified">
+	
+	<xsd:import schemaLocation="https://www.ub.uni-stuttgart.de/replay/CommonTypes CommonTypes.xsd" 
+		namespace="https://www.ub.uni-stuttgart.de/replay/CommonTypes" />
+		
+	<xsd:element name="metadataSchema">
+		<xsd:complexType>
+			<xsd:annotation>
+				<xsd:documentation>Encapsulates an entire metadata schema</xsd:documentation>
+			</xsd:annotation>
+			<xsd:sequence>
+				<xsd:element name="nameRestriction" type="mtd:valueRestrictionType" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>Defines systematic restrictions for all names in this schema</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="valueRestriction" type="mtd:valueRestrictionType" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>Defines systematic restrictions for all values in this schema</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="entries">
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="entry" type="mtd:entryType" maxOccurs="unbounded">
+								<xsd:annotation>
+									<xsd:documentation>All the actual entry definitions for this schema</xsd:documentation>
+								</xsd:annotation>
+							</xsd:element>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+			<xsd:attribute name="id" type="cmn:simpleIdentifierAttr" use="required">
+				<xsd:annotation>
+					<xsd:documentation>The globally unique identifier for this schema. Note that the internal identifier for the default schema "replay-dh.workflow.schema.default" is reserved!</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="description" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation>Optional human readable description of the schema</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="localize" type="xsd:boolean" use="optional">
+				<xsd:annotation>
+					<xsd:documentation>If set to "true" all name and/or description fields will be treated as localization keys.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="useDefaultLocalizationSuffixes" type="xsd:boolean" use="optional">
+				<xsd:annotation>
+					<xsd:documentation>If set to "true", all localization keys will be suffixed with their respective default suffixes. Those are ".name" for the name key and ".description" for the description property.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="localizationRoot" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation>Optional localization prefix to simplify definition of loca keys in the schema. If this attribute is present, all loca keys defined in sub-elements will be prefixed by the value. Ignored if the "localize" attribute is set to "false".</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="namesLimited" type="xsd:boolean">
+				<xsd:annotation>
+					<xsd:documentation>Flag to indicate that only the names defined via entries in this schema are legal</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+		</xsd:complexType>		
+	</xsd:element>
+	
+	<xsd:complexType name="entryType">
+		<xsd:annotation>
+			<xsd:documentation>Basic entry definition with support for localization</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="cmn:simpleLabelType">
+				<xsd:sequence>
+					<xsd:element name="valueRestriction" minOccurs="0" type="mtd:valueRestrictionType">
+						<xsd:annotation>
+							<xsd:documentation>Systematic restrictions for values assignable to this entry</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="values" minOccurs="0" maxOccurs="1">
+						<xsd:annotation>
+							<xsd:documentation>List of legal values for this label</xsd:documentation>
+						</xsd:annotation>
+						<xsd:complexType>
+							<xsd:sequence maxOccurs="unbounded" minOccurs="1">
+								<xsd:element name="value" type="cmn:simpleLabelType">
+									<xsd:annotation>
+										<xsd:documentation>Sub-label for legal use with the hosting main-label</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+							</xsd:sequence>
+						</xsd:complexType>
+					</xsd:element>
+				</xsd:sequence>
+				<xsd:attribute name="multiplicity" type="cmn:multiplicityAttr">
+					<xsd:annotation>
+						<xsd:documentation>Multiplicity of this entry, defaults to "any"</xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+				<xsd:attribute name="valuesLimited" type="xsd:boolean" use="optional">
+					<xsd:annotation>
+						<xsd:documentation>Flag to indicate that for this entry only the listed values are legal</xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+				<xsd:attribute name="required" type="xsd:boolean" use="optional">
+					<xsd:annotation>
+						<xsd:documentation>Flag to indicate that this entry is mandatory in the surrounding schema</xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+	
+	<xsd:complexType name="valueRestrictionType">
+		<xsd:annotation>
+			<xsd:documentation>Models a formalized restriction of string values for an entry</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="pattern" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>Regex pattern to further restrict the content</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="min" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Minimal length of the string value in characters</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="max" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Maximal length of the string value in characters</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+</xsd:schema>

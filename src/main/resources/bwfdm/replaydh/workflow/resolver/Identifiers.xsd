@@ -1,0 +1,72 @@
+<schema xmlns="http://www.w3.org/2001/XMLSchema" 
+		xmlns:xs="http://www.w3.org/2001/XMLSchema"
+		targetNamespace="https://www.ub.uni-stuttgart.de/replay/Identifiers" 
+		xmlns:rdh="https://www.ub.uni-stuttgart.de/replay/Identifiers" 
+		attributeFormDefault="unqualified"
+		elementFormDefault="qualified">
+		
+	<xs:element name="cache">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="identifiable" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="identifier" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="id">
+											<xs:annotation>
+												<xs:documentation>The actual identifier string</xs:documentation>
+											</xs:annotation>
+											<xs:simpleType>
+												<xs:restriction base="xs:string" />
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="context" minOccurs="0">
+											<xs:annotation>
+												<xs:documentation>Context used for disambiguation</xs:documentation>
+											</xs:annotation>
+											<xs:simpleType>
+												<xs:restriction base="xs:string" />
+											</xs:simpleType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="type" type="xs:string">
+										<xs:annotation>
+											<xs:documentation>The custom type of the wrapped identifier</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:attribute name="schemaId" type="xs:string">
+										<xs:annotation>
+											<xs:documentation>Id of the schema this identifier originated from</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:attribute name="type" type="rdh:identifiableTypeAttribute">
+							<xs:annotation>
+								<xs:documentation>The basic type of the wrapped identifiable</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="systemId" type="xs:string">
+							<xs:annotation>
+								<xs:documentation>Internal id of the wrapped identifiable</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="date">
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:simpleType name="identifiableTypeAttribute">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="person" />
+			<xs:enumeration value="resource" />
+			<xs:enumeration value="tool" />
+		</xs:restriction>
+	</xs:simpleType>
+</schema>

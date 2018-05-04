@@ -1,0 +1,66 @@
+<?xml version="1.0" ?>
+<!DOCTYPE actions SYSTEM "action-list.dtd">
+<actions>
+
+	<!--
+		MAIN PANEL
+	-->
+	
+	<!-- Add Step -->
+	<action id="replaydh.ui.core.mainPanel.addStep"
+		name="${id}.name" desc="${id}.description" licon="record-step.png" />
+	
+	<!-- Update Status -->
+	<action id="replaydh.ui.core.mainPanel.updateStatus"
+		name="${id}.name" desc="${id}.description" icon="refresh.gif" licon="update-icon.png" />
+	
+	<!-- Cancel Update -->
+	<action id="replaydh.ui.core.mainPanel.cancelUpdate"
+		name="${id}.name" desc="${id}.description" icon="stop.gif" licon="stop-icon.png" />
+	
+	<!-- Toggle Tracker Active -->
+	<action id="replaydh.ui.core.mainPanel.toggleTrackerActive" type="toggle"
+		name="${id}.name" desc="${id}.description" icon="media_playback_start.png" 
+		licon="stopwatch-start-icon.png" sicon="media_playback_stop.png" slicon="stopwatch-finish-icon.png" />
+	
+	<!-- Toggle Details -->
+	<action id="replaydh.ui.core.mainPanel.toggleDetails"
+		name="${id}.name" desc="${id}.description" />
+	
+	<!-- Change Workspace -->
+	<action id="replaydh.ui.core.mainPanel.changeWorkspace"
+		name="${id}.name" desc="${id}.description" licon="Documents-icon.png" />
+	
+	<!-- Import Workflow Schema -->
+	<action id="replaydh.ui.core.mainPanel.importWorkflowSchema"
+		name="${id}.name" desc="${id}.description" />
+	
+	<!-- Open Workspace Folder -->
+	<action id="replaydh.ui.core.mainPanel.openWorkspaceFolder"
+		name="${id}.name" desc="${id}.description" icon="fldr_obj.gif" />
+	
+	<!-- Clear Resource Cache -->
+	<action id="replaydh.ui.core.mainPanel.clearResourceCache"
+		name="${id}.name" desc="${id}.description" icon="clear_co.gif" />
+	
+	<!-- ToolBar List for header area -->
+	<action-list id="replaydh.ui.core.mainPanel.menuBarList">
+		<action-list id="replaydh.ui.core.mainPanel.menuBarList.file" name="${id}.name">
+			<item type="action" value="replaydh.ui.core.mainPanel.changeWorkspace" />
+			<item type="action" value="replaydh.ui.core.mainPanel.importWorkflowSchema" />
+			<separator />
+			<item type="action" value="replaydh.ui.core.mainPanel.openWorkspaceFolder" />
+			<separator />
+			<action id="replaydh.ui.core.mainPanel.exit" name="${id}.name" desc="${id}.description" />
+		</action-list>
+		<action-list id="replaydh.ui.core.mainPanel.menuBarList.window" name="${id}.name">
+			<action id="replaydh.ui.core.mainPanel.showMetadataManager" name="${id}.name" desc="${id}.description" />
+			<separator/>
+			<item type="action" value="replaydh.ui.core.mainPanel.toggleDetails" />
+		</action-list>
+		<action-list id="replaydh.ui.core.mainPanel.menuBarList.help" name="${id}.name">
+			<action id="replaydh.ui.core.mainPanel.about" name="${id}.name" desc="${id}.description" />
+		</action-list>
+	</action-list>
+	
+</actions>

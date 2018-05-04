@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+		xmlns:cmn="https://www.ub.uni-stuttgart.de/replay/CommonTypes"
+		targetNamespace="https://www.ub.uni-stuttgart.de/replay/CommonTypes"
+		attributeFormDefault="unqualified"
+		elementFormDefault="qualified">
+		
+	<xsd:complexType name="simpleLabelType">
+		<xsd:annotation>
+			<xsd:documentation>Basic label definition with support for localization</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="name" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>A localizable name to identify this label</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="description" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>A localizable description to identify this label</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="id" type="cmn:simpleIdentifierAttr" use="required">
+			<xsd:annotation>
+				<xsd:documentation>The loca-independent identifier of this label</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="localizationBase" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation>The base string used to construct localization keys for this label. Note that this string itself is of no use when the global "useDefaultLocalizationSuffixes" attribute is not set.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:simpleType name="simpleNameAttr">
+        <xsd:annotation>
+			<xsd:documentation>A compact identifier starting with an upper- or lowercase letter and otherwise only containing alphanumeric characters without any whitespaces</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="[A-Za-z]\w*" />
+		</xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="simpleIdentifierAttr">
+        <xsd:annotation>
+        	<xsd:documentation>General format of identifiers, minimum length of 3 characters, starting with a letter character, followed by any positive number of any one of alphanumeric, colon, underscore or hyphen and ended by an alphanumeric character</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:string">
+    		<xsd:pattern value="[A-Za-z][:_.\-\w]+\w" />
+    	</xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="multiplicityAttr">
+        <xsd:annotation>
+        	<xsd:documentation>Multiplicity of an element, following the bwfdm.replaydh.utils.Multiplicity enum values</xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:string">
+        	<xsd:enumeration value="none" />
+        	<xsd:enumeration value="none-or-one" />
+        	<xsd:enumeration value="one" />
+        	<xsd:enumeration value="one-or-more" />
+        	<xsd:enumeration value="any" />
+    	</xsd:restriction>
+    </xsd:simpleType>
+    
+</xsd:schema>

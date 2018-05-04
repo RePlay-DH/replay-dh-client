@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--
+   The action_attributes parameter entity is a convenient representation
+   of the common attributes between an action and an action-list.
+
+   template - a reference to a previously defined action. 
+           
+   type - if the value is "single" then the action represents a command
+          action. If the value is "toggle" then the action is a multi-state
+          action which may be selected or unselected. This value is
+          "single" by default.
+    
+   name - the label for the action. Will be used as a localization key.
+   			If no localization value could be found for a key, the name
+   			string will be used in its raw form.
+
+   mnemonic - the mnemonic to use for the action. Should be a single character.
+
+   icon - the relative path to an image in the classpath that represents
+            a small icon.
+            
+   sicon - the relative path to an image in the classpath that represents
+            a small icon used as selected icon in toggle actions.
+
+   licon - the relative path to an image in the classpath that represents a large icon.
+   
+   slicon - the relative path to an image in the classpath that represents a large icon
+   			used as selected icon in toggle actions.
+   
+
+   desc - a short description of the action. Used for localization with the same
+   			rules as the name attribute.
+   			
+   virtual - marks an action definition to serve as a template. Templates cannot be 
+   			instantiated as actions directly but rather actions can be derived from
+   			them. This way an application can define templates with attributes for
+   			commonly used actions like 'copy', 'cut' and so on and then derive
+   			specialized actions for different usages like 'copyEditorContent' without
+   			the need to redefine all attributes for each derived action.
+   			
+   command - a string passed as action command to events created by the action. Can
+   			be used to distinguish between multiple actions handled by the same
+   			callback method.
+    
+   accel - a string that represents the keyboard accelerator to invoke
+           the action. The string should be formatted according to the syntax
+           outlined in the javadoc for the static method:
+
+                     javax.swing.KeyStroke#getKeyStroke(String)
+
+           For example, the string "control S" represents the Control-S key.
+-->
+
+<!ENTITY % action_attributes "idref     CDATA #IMPLIED
+          template      CDATA #IMPLIED
+          type      (single | toggle) #IMPLIED
+          name      CDATA #IMPLIED
+          mnemonic  CDATA #IMPLIED
+          icon    CDATA #IMPLIED
+          sicon    CDATA #IMPLIED
+          licon      CDATA #IMPLIED
+          slicon      CDATA #IMPLIED
+          desc      CDATA #IMPLIED
+          virtual	(true | false) #IMPLIED
+          command    CDATA #IMPLIED
+          accel     CDATA #IMPLIED"
+>
+
+<!ELEMENT actions (action | action-list | action-set)*>
+
+<!-- 
+    An action-set is an ordered collection of actions
+    and grouping informations. 
+-->
+
+<!ELEMENT action-set (action | group)*>
+<!ATTLIST action-set id ID #REQUIRED>
+
+<!-- 
+    The action element represents the properties of a javax.swing.Action. 
+    This element can be a placeholder for an action within an action-set
+    or action-list.
+    
+    id - a unique id for the action.
+
+    The idref attribute should be used instead of the id attribute if an action 
+    refers to a previous action definition. An action with both an id and 
+    idref is undefined.
+
+    See the desciption for the action_attributes entity for a detailed
+    description of the rest of the attributes.
+
+-->
+
+<!ELEMENT action EMPTY>
+<!ATTLIST action 
+          id        ID #IMPLIED
+          %action_attributes;
+>
+
+
+<!--
+    The action-list is used to define lists and trees of actions.
+    These can map to toolbars, menus and popups. Note that the list
+    itself might define another action as well. This action is typically
+    used to 'activate' the component constructed from the list information.
+
+    See the desciption for the action_attributes entity for a detailed
+    description of the rest of the attributes.
+-->
+
+<!ELEMENT action-list (item | action | group | action-set | action-list | separator | empty)*>
+<!ATTLIST action-list
+          id        ID #REQUIRED
+          %action_attributes;
+>
+
+
+<!--
+    The item elements describes a single entry in an action-list
+    Type attribute format and its handling:
+    
+    action:			Id used to resolve actual action instance to be
+    				placed at the component
+    action-list:	Id used to resolve an action-list that will be
+    				inserted. The way this "insertion" is done depends
+    				on the component being created. A menu will typically
+    				be layed out hierarchically whereas a tool-bar will 
+    				have nested action-lists "inlined".
+    action-set:		Id to resolve a collection of actions to be inserted
+    label:			String or localization key that is used on a JLabel
+    custom:			Value treated as placeholder that is passed to the
+    				'properties' map to fetch the object to be inserted.
+    				This replacement object can be of the following types:
+    				String - Displayed via JLabel
+    				Action - Inserted at position of 'custom' element
+    				ActionSet - Inserted at position of 'custom' element
+    				ActionList - Inserted at position of 'custom' element
+    				Component - Added to the container being populated
+    				If the replacement object is an array its elements will 
+    				be iterated and handled one by one according to the above
+    				scheme. Note that is not possible to embed additional
+    				arrays within the single replacement array.
+    separator:		Call to the containers 'addSeparator()' method. Some
+    				containers allow for the 'size' of the separator to be
+    				specified. For such a container the 'value' attribute is
+    				being interpreted as either a numerical width or one of
+    				'small', 'medium', 'wide' with an implementation
+    				specific mapping to actual separator width values.
+    empty:			Places an empty placeholder at the current position (using 'value' as width).
+    glue:			Inserts a 'glue' component, i.e. a component that expands
+    				automatically to consume free space. This item type is not
+    				supported by all action components. Usually only tool-bar
+    				components make use of this.
+-->
+
+<!ELEMENT item EMPTY>
+<!ATTLIST item
+          type      (action|action-list|action-set|label|custom|separator|empty|glue) #REQUIRED
+          value		CDATA #IMPLIED
+>
+
+<!--
+    Generates a group of actions with a mutually exclusive selection state.
+    Typically components generated for those actions are JToggleButton or
+    JRadioButtonMenuItem instances. 
+    
+    All actions defined or referenced within a group element should have 
+    their type attribute set to 'toggle'.
+-->
+
+<!ELEMENT group (action)*>
+<!ATTLIST group
+          id        CDATA #REQUIRED
+>
+
+<!--
+    Shortform for an item element with its type attribute set to 'separator'
+-->
+
+<!ELEMENT separator EMPTY>
+
+<!--
+    Shortform for an item element with its type attribute set to 'empty'
+-->
+
+<!ELEMENT empty EMPTY>

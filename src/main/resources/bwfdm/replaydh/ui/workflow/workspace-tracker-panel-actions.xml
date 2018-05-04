@@ -1,0 +1,31 @@
+<?xml version="1.0" ?>
+<!DOCTYPE actions SYSTEM "action-list.dtd">
+<actions>
+
+	<!--
+		WORKSPACE TRACKER PANEL
+	-->
+	
+	<!-- Create Dummy File -->
+	<action id="replaydh.ui.core.workspaceTrackerPanel.createDummyFile"
+		name="${id}.name" desc="${id}.description" icon="add_obj.gif" />
+	
+	<!-- Edit Dummy File -->
+	<action id="replaydh.ui.core.workspaceTrackerPanel.editDummyFile"
+		name="${id}.name" desc="${id}.description" icon="write_obj.gif" />
+	
+	<!-- Delete Dummy File -->
+	<action id="replaydh.ui.core.workspaceTrackerPanel.deleteDummyFile"
+		name="${id}.name" desc="${id}.description" icon="delete_obj.gif" />
+		
+	<!-- ToolBar List for header area -->
+	<action-list id="replaydh.ui.core.workspaceTrackerPanel.toolBarList">
+		<item type="label" value="replaydh.panels.workspaceTracker.title" />
+		<item type="glue" />
+		<!-- TODO mode the 3 dummy actions into dev mode injection!!! -->
+		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.createDummyFile" />
+		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.deleteDummyFile" />
+		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.editDummyFile" />
+	</action-list>
+	
+</actions>

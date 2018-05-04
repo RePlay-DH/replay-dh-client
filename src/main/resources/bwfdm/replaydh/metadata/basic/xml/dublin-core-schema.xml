@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdh:metadataSchema xmlns:rdh="https://www.ub.uni-stuttgart.de/replay/Metadata" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="https://www.ub.uni-stuttgart.de/replay/Metadata Metadata.xsd"
+	localizationRoot="replaydh.metadataSchema.default"
+	useDefaultLocalizationSuffixes="true"
+	localize="true"
+	id="replaydh.metadata.schema.default"
+	description="Basic schema following DataCite kernel 4.0">
+
+	<rdh:entries>
+		<rdh:entry id=""></rdh:entry>
+	</rdh:entries>  
+</rdh:metadataSchema>

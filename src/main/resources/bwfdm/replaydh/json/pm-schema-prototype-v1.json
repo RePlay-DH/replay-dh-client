@@ -1,0 +1,176 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "Process Metadata Schema",
+	"description": "Simplified description of a prototypical workflow step (version 1.0)",
+	
+    "definitions": {
+	
+		"resourceTypesGeneral": {
+			"description": "List of basic resource types borrowed from DataCite kernel 4.0",
+			"enum": [ "Audiovisual", "Collection", "Dataset", "Event", "Image", "InteractiveResource", "Model", "PhysicalObject", "Service", "Software", "Sound", "Text", "Workflow", "Other" ]
+		},
+		
+		"resourceType": {
+			"description": "Open description of a resource type, allows free type naming besides the core set of DataCite values. Potential format recommendation: Role/Subrole with Role being an instance from the resourceTypesGeneral list and Subrole a more specified variant.",
+			"anyOf": [ 
+				{ "$ref": "#/definitions/resourceTypeGeneral" },
+				{ "type": "string"}
+			]
+		},
+
+		"personRolesGeneral": {
+			"description": "List of a few typical roles for humans in a workflow step",
+			"enum": [ "Annotator", "Operator", "Curator", "Editor", "Creator", "PI", "Participant", "Other" ]
+		},
+		
+		"personRole": {
+			"description": "Open description of a person's role in a workflow step",
+			"anyOf": [ 
+				{ "$ref": "#/definitions/personRolesGeneral" },
+				{ "type": "string"}
+			]
+		},
+		
+		"personIdentifierTypesGeneral": {
+			"description": "List options on how to identify a person",
+			"enum": [ "alias", "name", "firstname-lastname", "ORCID", "other" ]
+		},
+		
+		"personIdentifier": {
+			"description": "Typed identifier for persons involved in the workflow",
+			"type": "object",
+			"properties": {
+				"type": {
+					"anyOf": [ 
+						{ "$ref": "#/definitions/personIdentifierTypesGeneral" },
+						{ "type": "string" }
+					]
+				},
+				"id": { "type": "string"}
+			},
+			"required": ["type", "id"]
+		},
+		
+		"resourceIdentifierTypesGeneral": {
+			"description": "List of ways to identify a single resource. The RDH-ID term is a placeholder for the client internal referencing mechanism and depending on the storage solution it will interface with.",
+			"enum": [ "URL", "VLO-Handle", "DOI", "RDH-ID", "other" ]
+		},
+		
+		"resourceIdentifier": {
+			"description": "Typed identifier for resources (files, services, tools, ...) involved in the workflow",
+			"type": "object",
+			"properties": {
+				"type": {
+					"anyOf": [ 
+						{ "$ref": "#/definitions/resourceIdentifierTypesGeneral" },
+						{ "type": "string" }
+					]
+				},
+				"id": { "type": "string"}
+			},
+			"required": ["type", "id"]
+		},
+		
+		"resource": {
+			"description": "A non-person participant of the workflow",
+			"type": "object",
+			"properties": {
+				"type": { "$ref": "#/definitions/resourceType" },
+				"identifiers": { 
+					"type": "array",
+					"items": {"$ref": "#/definitions/resourceIdentifier" },
+					"uniqueItems": true
+				},
+				"checksum": { "type": "string" }
+			},
+			"required": ["type", "identifier"]
+		},
+		
+		"person": {
+			"description": "A human participant of the workflow",
+			"type": "object",
+			"properties": {
+				"role": { "$ref": "#/definitions/personRole" },
+				"identifiers": { 
+					"type": "array",
+					"items": {"$ref": "#/definitions/personIdentifier" },
+					"uniqueItems": true
+				}
+			},
+			"required": ["role", "identifier"]
+		}
+	},
+	
+	"type": "object",
+	
+	"properties": {
+		
+		"title": {
+			"description": "Short label assigned by the user",
+			"type": "string"
+		},
+		
+		"schemaVersion": {
+			"description": "Version of the metadata schema used - 1 or 1.0 for this initial schema definition",
+			"type": "string"
+		},
+		
+		"description": {
+			"description": "Free form text where the user can describe the workflow step",
+			"type": "string"
+		},
+		
+		"timestamp": {
+			"description": "Date and time of this step's recording YYYY-MM-DD hh:mm:ss",
+			"type": "string"
+		},
+	
+		"input": {
+			"description": "List of input resources, usually local files",
+			"type": "array",
+			"items": { "$ref": "#/definitions/resource" },
+			"uniqueItems": true
+		},
+		
+		"tool": {
+			"description": "An executable used to produce the output resources",
+			"type": "object",
+			"anyOf": [
+				{ "$ref": "#/definitions/resource" },
+				{ "properties": { 
+					"parameters": { 
+						"description": "For command line execution the raw set of parameters or even the complete call as entered on the shell should go here. In case of complex configuration files being used it is better to add them as a separate input resource of appropriate type.",
+						"type": "string" 
+					},
+					"environment": {
+						"description": "It might be reasonable to record the local execution environment for local executables. Like OS, architecture, etc...",
+						"type": "string" 
+					}
+					}
+				}
+			]
+		},
+		
+		"persons": {
+			"description": "List of human participants in this workflow step",
+			"type": "array",
+			"items": { "$ref": "#/definitions/person" },
+			"uniqueItems": true
+		},
+		
+		"output": {
+			"description": "List of output resources, exclusively local files",
+			"type": "array",
+			"items": { "$ref": "#/definitions/resource" },
+			"uniqueItems": true
+		},
+		
+		"properties": {
+			"description": "Map of additional meta informations provided outside of pure process metadata as string-string mappings",
+			"type": "object",
+			"additionalProperties": { 
+				"type": "string" 
+			}
+		}
+	}
+}

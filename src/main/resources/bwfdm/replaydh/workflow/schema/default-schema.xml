@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdh:workflowSchema xmlns:rdh="https://www.ub.uni-stuttgart.de/replay/Workflow" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="https://www.ub.uni-stuttgart.de/replay/Workflow Workflow.xsd"
+	localizationRoot="replaydh.workflowSchema.default"
+	useDefaultLocalizationSuffixes="true"
+	localize="true"
+	id="replaydh.workflow.schema.default"
+	description="Basic schema developed in the context of computational linguistics and with resource types borrowed from DataCite kernel 4.0">
+
+  <rdh:personIdentifiers allowCustomIdentifierTypes="true" defaultIdentifierType="name">
+    <rdh:identifierType id="alias" uniqueness="ambiguous" localizationBase="alias"/>
+    <rdh:identifierType id="name" uniqueness="ambiguous" localizationBase="name"/>
+    <rdh:identifierType id="organization" uniqueness="ambiguous" localizationBase="organization"/>
+    <rdh:identifierType id="local-name" uniqueness="environment-unique" localizationBase="localName"/>
+    <rdh:identifierType id="firstname-lastname" uniqueness="ambiguous" localizationBase="firstnameLastname"/>
+    <rdh:identifierType id="orcid" uniqueness="globally-unique" localizationBase="orcid"/>
+    <rdh:identifierType id="homepage" uniqueness="globally-unique" localizationBase="homepage"/>
+    <rdh:identifierType id="email" uniqueness="globally-unique" localizationBase="email"/>
+    <rdh:identifierType id="address" uniqueness="globally-unique" localizationBase="address"/>
+  </rdh:personIdentifiers>
+  
+  <rdh:resourceIdentifiers allowCustomIdentifierTypes="true" defaultIdentifierType="name-version">
+    <rdh:identifierType id="name-version" uniqueness="ambiguous" localizationBase="nameVersion"/>
+    <rdh:identifierType id="url" uniqueness="globally-unique" localizationBase="url"/>
+    <rdh:identifierType id="path" uniqueness="locally-unique" localizationBase="path"/>
+    <rdh:identifierType id="checksum" uniqueness="hash" localizationBase="checksum"/>
+    <rdh:identifierType id="vlo-handle" uniqueness="globally-unique" localizationBase="vloHandle"/>
+    <rdh:identifierType id="doi" uniqueness="globally-unique" localizationBase="doi"/>
+    <rdh:identifierType id="rdh-id" uniqueness="environment-unique" localizationBase="rdhID"/>
+    <rdh:identifierType id="group" uniqueness="locally-unique" localizationBase="group"/>
+  </rdh:resourceIdentifiers>
+  
+  <!-- List of basic resource types borrowed from DataCite kernel 4.0 -->
+  <rdh:resourceTypes allowCompoundLabels="true" allowCustomLabels="true" compoundSeparator="/" defaultLabel="dataset">
+    <rdh:label id="audio-visual" localizationBase="audioVisual"/>
+    <rdh:label id="collection" localizationBase="collection"/>
+    <rdh:label id="dataset" localizationBase="dataset"/>
+    <rdh:label id="event" localizationBase="event"/>
+    <rdh:label id="image" localizationBase="image"/>
+    <rdh:label id="interactive-object" localizationBase="interactiveObject"/>
+    <rdh:label id="model" localizationBase="model"/>
+    <rdh:label id="physical-object" localizationBase="physicalObject"/>
+    <rdh:label id="service" localizationBase="service"/>
+    <rdh:label id="software" localizationBase="software"/>
+    <rdh:label id="sound" localizationBase="sound"/>
+    <rdh:label id="text" localizationBase="text"/>
+    <rdh:label id="workflow" localizationBase="workflow"/>
+  </rdh:resourceTypes>
+  
+  <rdh:roles allowCompoundLabels="false" allowCustomLabels="true" defaultLabel="creator">
+    <rdh:label id="annotator" localizationBase="annotator"/>
+    <rdh:label id="operator" localizationBase="operator"/>
+    <rdh:label id="curator" localizationBase="curator"/>
+    <rdh:label id="editor" localizationBase="editor"/>
+    <rdh:label id="creator" localizationBase="creator"/>
+    <rdh:label id="consultant" localizationBase="consultant"/>
+    <rdh:label id="principal-investigator" localizationBase="principalInvestigator"/>
+    <rdh:label id="participant" localizationBase="participant"/>
+  </rdh:roles>
+  
+</rdh:workflowSchema>

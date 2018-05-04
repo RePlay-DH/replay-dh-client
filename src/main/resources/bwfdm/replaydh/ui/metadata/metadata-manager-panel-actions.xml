@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<!DOCTYPE actions SYSTEM "action-list.dtd">
+<actions>
+
+	<!--
+		METADATA MANAGER PANEL
+	-->
+	
+	<!-- Add Record -->
+	<action id="replaydh.ui.core.metadataManagerPanel.addRecord"
+		name="${id}.name" desc="${id}.description" icon="data-add-icon.png" />
+	
+	<!-- Edit Record -->
+	<action id="replaydh.ui.core.metadataManagerPanel.editRecord"
+		name="${id}.name" desc="${id}.description" icon="data-edit-icon.png" />
+	
+	<!-- Remove Record -->
+	<action id="replaydh.ui.core.metadataManagerPanel.removeRecord"
+		name="${id}.name" desc="${id}.description" icon="data-delete-icon.png" />
+	
+		
+	<!-- ToolBar List for header area -->
+	<action-list id="replaydh.ui.core.metadataManagerPanel.toolBarList">
+		<item type="label" value="replaydh.ui.core.metadataManagerPanel.selectedRepository" />
+		<item type="custom" value="selector" />
+		<item type="glue" />
+	</action-list>
+	
+</actions>

@@ -1,0 +1,285 @@
+<?xml version="1.0" ?>
+<!DOCTYPE actions SYSTEM "action-list.dtd">
+<actions>
+
+	<!--
+		SHARED TEMPLATES
+	-->
+	
+	<!-- Copy -->
+	<action id="actions.default.copyAction" virtual="true"
+		name="actions.text.copy-to-clipboard.name" 
+		desc="actions.text.copy-to-clipboard.description" 
+		icon="copy_edit.gif" 
+		accel="control C" 
+		command="copy" />
+	
+	<!-- Cut -->
+	<action id="actions.default.cutAction" virtual="true"
+		name="actions.text.cut-to-clipboard.name" 
+		desc="actions.text.cut-to-clipboard.description" 
+		icon="cut_edit.gif" 
+		accel="control X" 
+		command="cut" />
+	
+	<!-- Paste -->
+	<action id="actions.default.pasteAction" virtual="true"
+		name="actions.text.paste-from-clipboard.name" 
+		desc="actions.text.paste-from-clipboard.description" 
+		icon="paste_edit.gif" 
+		accel="control V" 
+		command="paste" />
+	
+	<!-- Clear -->
+	<action id="actions.default.clearAction" virtual="true"
+		name="actions.text.clear.name" 
+		desc="actions.text.clear.description" 
+		icon="clear_co.gif" 
+		accel="escape" 
+		command="clear" />
+	
+	<!-- Select ALl -->
+	<action id="actions.default.selectAllAction" virtual="true"
+		name="actions.text.select-all.name" 
+		desc="actions.text.select-all.description" 
+		icon="select.gif" 
+		accel="control A"
+	 	command="select-all" />
+	
+	<!-- Undo -->
+	<action id="actions.default.undoAction" virtual="true"
+		name="actions.text.undo.name" 
+		desc="actions.text.undo.description" 
+		icon="undo_edit.gif" 
+		accel="control Z"
+	 	command="undo" />
+	
+	<!-- Redo -->
+	<action id="actions.default.redoAction" virtual="true"
+		name="actions.text.redo.name" 
+		desc="actions.text.redo.description" 
+		icon="redo_edit.gif"
+		accel="control Y"
+	 	command="redo" />
+	
+	<!-- Expand All -->
+	<action id="actions.default.expandAllAction" virtual="true"
+		name="actions.tree.expandAll.name" 
+		desc="actions.tree.expandAll.description"
+		icon="expandall.gif" />
+	
+	<!-- Collapse All -->
+	<action id="actions.default.collapseAllAction" virtual="true"
+		name="actions.tree.collapseAll.name" 
+		desc="actions.tree.collapseAll.description" 
+		icon="collapseall.gif" />
+	
+	<!-- Add -->
+	<action id="actions.default.addAction" virtual="true"
+		name="actions.default.add" 
+		desc="actions.default.add" 
+		icon="add_obj.gif"
+		command="add" />
+	
+	<!-- Remove -->
+	<action id="actions.default.removeAction" virtual="true"
+		name="actions.default.remove" 
+		desc="actions.default.remove" 
+		icon="delete_obj.gif"
+		command="remove" />
+	
+	<!-- Edit -->
+	<action id="actions.default.editAction" virtual="true"
+		name="actions.default.edit" 
+		desc="actions.default.edit"
+		icon="write_obj.gif"
+		command="edit" />
+	
+	<!-- Open -->
+	<action id="actions.default.openAction" virtual="true"
+		name="actions.default.open" 
+		desc="oactions.default.pen"
+		command="open" />
+	
+	<!-- Close -->
+	<action id="actions.default.closeAction" virtual="true"
+		name="actions.default.close" 
+		desc="actions.default.close"
+		command="close" />
+	
+	<!-- Rename -->
+	<action id="actions.default.renameAction" virtual="true"
+		name="actions.default.rename" 
+		desc="actions.default.rename" 
+		icon="wordassist_co.gif" 
+		command="rename" />
+	
+	<!-- Inspect -->
+	<action id="actions.default.inspectAction" virtual="true"
+		name="actions.default.inspect" 
+		desc="actions.default.inspect"
+		icon="insp_sbook.gif"
+		command="inspect" />
+	
+	<!-- Print -->
+	<action id="actions.default.printAction" virtual="true"
+		name="actions.default.print" 
+		desc="actions.default.print"
+		icon="print_edit.gif" 
+		command="print" />
+	
+	<!-- Clone -->
+	<action id="actions.default.cloneAction" virtual="true"
+		name="actions.default.clone" 
+		desc="actions.default.clone"
+		icon="breakpoint_view.gif"
+		command="clone" />
+	
+	<!-- Open Preferences -->
+	<action id="actions.default.openPreferencesAction" virtual="true"
+		name="sharedActions.openPreferences.name" 
+		desc="sharedActions.openPreferences.description"
+		icon="settings.gif" 
+		command="preferences" />
+	
+	<!-- Load -->
+	<action id="actions.default.loadAction" virtual="true"
+		name="actions.default.load" 
+		desc="actions.default.load"
+		icon="fldr_obj.gif" 
+		command="load" />
+	
+	<!-- Execute -->
+	<action id="actions.default.executeAction" virtual="true"
+		name="actions.default.execute" 
+		desc="actions.default.execute"
+		icon="nav_go.gif" 
+		command="execute" />
+	
+	<!-- Zoom In -->
+	<action id="actions.default.zoomInAction" virtual="true"
+		name="actions.default.zoomIn" 
+		desc="actions.default.zoomIn"
+		icon="zoomin.gif"
+		command="zoom-in" />
+	
+	<!-- Zoom Out -->
+	<action id="actions.default.zoomOutAction" virtual="true"
+		name="actions.default.zoomOut" 
+		desc="actions.default.zoomOut"
+		icon="zoomout.gif" 
+		command="zom-out" />
+	
+	<!-- Zoom -->
+	<action id="actions.default.zoomAction" virtual="true"
+		name="actions.default.zoom" 
+		desc="actions.default.zoom"
+		icon="zoom.gif"
+		command="zoom" />
+	
+	<!-- Refresh -->
+	<action id="actions.default.refreshAction" virtual="true"
+		name="actions.default.refresh" 
+		desc="actions.default.refresh"
+		icon="nav_refresh.gif"
+		command="refresh" />
+	
+	<!-- Save -->
+	<action id="actions.default.saveAction" virtual="true"
+		name="actions.default.save" 
+		desc="actions.default.save"
+		icon="save_edit.gif" 
+		command="save" />
+	
+	<!-- Save As -->
+	<action id="actions.default.saveAsAction" virtual="true"
+		name="actions.default.saveAs" 
+		desc="actions.default.saveAs"
+		icon="saveas_edit.gif"
+		command="save-as" />
+	
+	<!-- New -->
+	<action id="actions.default.newAction" virtual="true"
+		name="actions.default.new" 
+		desc="actions.default.new"
+		icon="new_icon.gif"
+		command="new" />
+	
+	<!-- Import -->
+	<action id="actions.default.importAction" virtual="true"
+		name="actions.default.import" 
+		desc="actions.default.import"
+		icon="import_wiz.gif"
+		command="import" />
+	
+	<!-- Export -->
+	<action id="actions.default.exportAction" virtual="true"
+		name="actions.default.export" 
+		desc="actions.default.export"
+		icon="export_wiz.gif"
+		command="export" />
+	
+	<!-- Filter -->
+	<action id="actions.default.filterAction" virtual="true"
+		name="actions.default.filter" 
+		desc="actions.default.filter"
+		icon="filter_apply.png"
+		command="filter" />
+	
+	<!-- Clear Filter -->
+	<action id="actions.default.clearFilterAction" virtual="true"
+		name="actions.default.clearFilter" 
+		desc="actions.default.clearFilter"
+		icon="filter_reset.png" 
+		command="clear-filter" />
+	
+	<!-- First Element -->
+	<action id="actions.default.firstElementAction" virtual="true"
+		name="actions.navigation.first.name" 
+		desc="actions.navigation.first.description"
+		icon="navi_left_stop.png"
+		command="firstElement" />
+
+	<!-- Previous Element -->
+	<action id="actions.default.previousElementAction" virtual="true"
+		name="actions.navigation.previous.name" 
+		desc="actions.navigation.previous.description"
+		icon="navi_left.png"
+		command="previousElement" />
+ 
+	<!-- Next Element -->
+	<action id="actions.default.nextElementAction" virtual="true"
+		name="actions.navigation.next.name" 
+		desc="actions.navigation.next.description"
+		icon="navi_right.png"
+		command="nextElement" />
+ 
+	<!-- Last Element -->
+	<action id="actions.default.lastElementAction" virtual="true"
+		name="actions.navigation.last.name" 
+		desc="actions.navigation.last.description"
+		icon="navi_right_stop.png"
+		command="lastElement" />
+ 
+	<!-- Start Media -->
+	<action id="actions.default.startAction" virtual="true"
+		name="actions.media.start.name" 
+		desc="actions.media.start.description"
+		icon="media_playback_start.png"
+		command="start" />
+ 
+	<!-- Stop Media -->
+	<action id="actions.default.stopAction" virtual="true"
+		name="actions.media.stop.name" 
+		desc="actions.media.stop.description"
+		icon="media_playback_stop.png"
+		command="stop" />
+ 
+	<!-- Pause Media -->
+	<action id="actions.default.pauseAction" virtual="true"
+		name="actions.media.pause.name" 
+		desc="actions.media.pause.description"
+		icon="media_playback_pause.png"
+		command="pause" />	
+
+</actions>

@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+		targetNamespace="https://www.ub.uni-stuttgart.de/replay/Workflow"
+		xmlns:wfl="https://www.ub.uni-stuttgart.de/replay/Workflow" 
+		xmlns:cmn="https://www.ub.uni-stuttgart.de/replay/CommonTypes" 
+		attributeFormDefault="unqualified"
+		elementFormDefault="qualified">
+		
+	<xsd:import schemaLocation="https://www.ub.uni-stuttgart.de/replay/CommonTypes CommonTypes.xsd" 
+		namespace="https://www.ub.uni-stuttgart.de/replay/CommonTypes" />
+		
+	<xsd:element name="workflowSchema">
+		
+        <xsd:annotation>
+			<xsd:documentation></xsd:documentation>
+		</xsd:annotation>
+        
+        <xsd:complexType>
+			<xsd:sequence minOccurs="0">
+				<xsd:element name="personIdentifiers" type="wfl:identifierSchemaType">
+					<xsd:annotation>
+						<xsd:documentation>Specification of supported types for identifying persons</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="resourceIdentifiers" type="wfl:identifierSchemaType">
+					<xsd:annotation>
+						<xsd:documentation>Specification of supported types for identifying resources</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="resourceTypes" type="wfl:labelSchemaType">
+					<xsd:annotation>
+						<xsd:documentation>Specification of supported labels for resource types</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="roles" type="wfl:labelSchemaType">
+					<xsd:annotation>
+						<xsd:documentation>Specification of supported roles for human workflow participants</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+			</xsd:sequence>
+			<xsd:attribute name="id" type="cmn:simpleIdentifierAttr" use="required">
+				<xsd:annotation>
+					<xsd:documentation>The globally unique identifier for this schema. Note that the internal identifier for the default schema "replay-dh.workflow.schema.default" is reserved!</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="description" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation>Optional human readable description of the schema</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="localize" type="xsd:boolean" use="optional">
+				<xsd:annotation>
+					<xsd:documentation>If set to "true" all name and/or description fields will be treated as localization keys.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="useDefaultLocalizationSuffixes" type="xsd:boolean" use="optional">
+				<xsd:annotation>
+					<xsd:documentation>If set to "true", all localization keys will be suffixed with their respective default suffixes. Those are ".name" for the name key and ".description" for the description property.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="localizationRoot" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation>Optional localization prefix to simplify definition of loca keys in the schema. If this attribute is present, all loca keys defined in sub-elements will be prefixed by the value. Ignored if the "localize" attribute is set to "false".</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+		</xsd:complexType>
+    </xsd:element>
+		
+	<xsd:complexType name="identifierSchemaType">
+		<xsd:annotation>
+			<xsd:documentation>Specification of identifier types supported in a certain context</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="identifierType" type="wfl:identifierTypeType" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Identifier types supported by this schema</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="defaultIdentifierType" type="cmn:simpleIdentifierAttr">
+			<xsd:annotation>
+				<xsd:documentation>Optional marker for a declared label to be preferred</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="allowCustomIdentifierTypes" type="xsd:boolean">
+			<xsd:annotation>
+				<xsd:documentation>Flag to indicate whether additional identifier types are allowed</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+		
+	<xsd:complexType name="labelSchemaType">
+		<xsd:annotation>
+			<xsd:documentation>Specification of descriptive labels for a certain context</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="label" type="wfl:labelType" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Main-labels for this schema</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="defaultLabel" type="cmn:simpleIdentifierAttr">
+			<xsd:annotation>
+				<xsd:documentation>Optional marker for a declared label to be preferred</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="allowCustomLabels" type="xsd:boolean">
+			<xsd:annotation>
+				<xsd:documentation>Flag to indicate whether additional labels are allowed</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="allowCompoundLabels" type="xsd:boolean">
+			<xsd:annotation>
+				<xsd:documentation>Flag to indicate whether this schema supports compound labels</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="compoundSeparator" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation>Optional separator used for constructing compound labels</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	
+	<xsd:complexType name="labelType">
+		<xsd:annotation>
+			<xsd:documentation>Basic label definition with support for localization</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="cmn:simpleLabelType">
+				<xsd:sequence>
+					<xsd:element name="subLabels" minOccurs="0" maxOccurs="1">
+						<xsd:annotation>
+							<xsd:documentation>List of legal sub-labels for this label</xsd:documentation>
+						</xsd:annotation>
+						<xsd:complexType>
+							<xsd:sequence maxOccurs="unbounded" minOccurs="1">
+								<xsd:element name="subLabel" type="cmn:simpleLabelType">
+									<xsd:annotation>
+										<xsd:documentation>Sub-label for legal use with the hosting main-label</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+							</xsd:sequence>
+						</xsd:complexType>
+					</xsd:element>
+				</xsd:sequence>
+				<xsd:attribute name="allowCompounds" type="xsd:boolean" use="optional">
+					<xsd:annotation>
+						<xsd:documentation>Flag to override global compound settings for this label</xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+	
+	<xsd:complexType name="identifierTypeType">
+		<xsd:annotation>
+			<xsd:documentation></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexContent>
+			<xsd:extension base="cmn:simpleLabelType">
+				<xsd:attribute name="uniqueness" type="wfl:uniquenessType">
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+	
+	<xsd:simpleType name="uniquenessType">
+        <xsd:annotation>
+			<xsd:documentation>Constants usable for defining uniqueness of an identifier type</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="globally-unique">
+				<xsd:annotation>
+					<xsd:documentation>No external disambiguation needed, identifier is unique across all instances of RePlay-DH.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="environment-unique">
+				<xsd:annotation>
+					<xsd:documentation></xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="locally-unique">
+				<xsd:annotation>
+					<xsd:documentation></xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="hash">
+				<xsd:annotation>
+					<xsd:documentation></xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="ambiguous">
+				<xsd:annotation>
+					<xsd:documentation></xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+		</xsd:restriction>
+    </xsd:simpleType>
+    
+</xsd:schema>

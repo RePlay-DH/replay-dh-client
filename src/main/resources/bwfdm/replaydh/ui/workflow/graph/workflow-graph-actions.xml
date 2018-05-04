@@ -1,0 +1,100 @@
+<?xml version="1.0" ?>
+<!DOCTYPE actions SYSTEM "action-list.dtd">
+<actions>
+
+	<!--
+		WORKSPACE GRAPH
+	-->
+	
+	<!-- Load Dummy Graph -->
+	<action id="replaydh.ui.core.workflowGraph.loadDummyGraph"
+		name="${id}.name" desc="${id}.description" icon="icons8-bug-40.png" />
+	
+	<!-- Refresh Graph -->
+	<action id="replaydh.ui.core.workflowGraph.refreshGraph"
+		name="${id}.name" desc="${id}.description" icon="refresh.gif" />
+	
+	<!-- Change Active Step -->
+	<action id="replaydh.ui.core.workflowGraph.changeActiveStep"
+		name="${id}.name" desc="${id}.description" icon="navi_down.png" />
+	
+	<!-- Focus Active Step -->
+	<action id="replaydh.ui.core.workflowGraph.focusActiveStep"
+		name="${id}.name" desc="${id}.description" icon="compress.gif" />
+		
+	<!-- Compress Step -->
+	<action id="replaydh.ui.core.workflowGraph.compressStep"
+		name="${id}.name" desc="${id}.description" icon="collapseall.gif"/>
+		
+	<!-- Expand Step -->
+	<action id="replaydh.ui.core.workflowGraph.expandStep"
+		name="${id}.name" desc="${id}.description" icon="expandall.gif"/>
+		
+	<!-- Export Step Metadata -->
+	<action id="replaydh.ui.core.workflowGraph.exportStepMetadata"
+		name="${id}.name" desc="${id}.description" icon="externalize.gif"/>
+		
+	<!-- Export Step Resources -->
+	<action id="replaydh.ui.core.workflowGraph.exportStepResources"
+		name="${id}.name" desc="${id}.description" icon="export_wiz.gif"/>
+		
+	<!-- Export Metadata -->
+	<action id="replaydh.ui.core.workflowGraph.exportMetadata"
+		name="${id}.name" desc="${id}.description" icon="externalize.gif"/>
+		
+	<!-- Export Resources -->
+	<action id="replaydh.ui.core.workflowGraph.exportResources"
+		name="${id}.name" desc="${id}.description" icon="export_wiz.gif"/>
+		
+	<!-- Publish Resources -->
+	<!-- 
+		<action id="replaydh.ui.core.workflowGraph.publishResources"
+		name="${id}.name" desc="${id}.description" icon="icons8-epub-40.png"/>
+	 -->
+	
+	<!-- Toggle Compress Pipes -->
+	<action id="replaydh.ui.core.workflowGraph.toggleCompressPipes"
+		name="${id}.name" desc="${id}.description" icon="collapseall.gif" sicon="expandall.gif" type="toggle" />
+		
+	<!-- ToolBar List for header area -->
+	<action-list id="replaydh.ui.core.workflowGraph.toolBarList">
+		<!-- <item type="label" value="replaydh.panels.workflowGraph.title" /> -->
+		<item type="custom" value="workflowTitle" />
+		<item type="glue" />
+		<item type="action" value="replaydh.ui.core.workflowGraph.exportMetadata" />
+		<item type="action" value="replaydh.ui.core.workflowGraph.exportResources" />
+		<separator />
+		<action-list id="replaydh.ui.core.workflowGraph.publishResources" 
+			name="${id}.name" desc="${id}.description" icon="icons8-epub-40.png">
+			<item type="custom" value="publisherExtensions" />
+		</action-list>
+		<separator />
+		<item type="action" value="replaydh.ui.core.workflowGraph.changeActiveStep" />
+		<item type="action" value="replaydh.ui.core.workflowGraph.focusActiveStep" />
+		<separator />
+		<item type="action" value="replaydh.ui.core.workflowGraph.toggleCompressPipes" />
+		<separator />
+		
+		<!--  
+		<item type="action" value="replaydh.ui.core.workflowGraph.loadDummyGraph" />
+		<separator />
+		-->
+		<item type="action" value="replaydh.ui.core.workflowGraph.refreshGraph" />
+	</action-list>
+	
+	<action-list id="replaydh.ui.core.workflowGraph.popupMenuList">
+		<item type="action" value="replaydh.ui.core.workflowGraph.changeActiveStep" />
+		<separator />
+		<item type="action" value="replaydh.ui.core.workflowGraph.compressStep" />
+		<item type="action" value="replaydh.ui.core.workflowGraph.expandStep" />
+		<separator />
+		<item type="action" value="replaydh.ui.core.workflowGraph.exportStepMetadata" />
+		<item type="action" value="replaydh.ui.core.workflowGraph.exportStepResources" />
+		<!-- 
+		<separator />
+		<item type="action" value="replaydh.ui.core.workflowGraph.exportMetadata" />
+		<item type="action" value="replaydh.ui.core.workflowGraph.exportResources" />
+		 -->
+	</action-list>
+	
+</actions>
