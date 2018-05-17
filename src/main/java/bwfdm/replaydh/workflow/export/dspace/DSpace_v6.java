@@ -22,39 +22,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.http.ParseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLContexts;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +48,8 @@ import org.swordapp.client.UriRegistry;
 
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.HierarchyObject;
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.CollectionObject;
+import bwfdm.replaydh.workflow.export.dspace.WebUtils;
+import bwfdm.replaydh.workflow.export.dspace.WebUtils.RequestType;
 
 
 public class DSpace_v6 implements PublicationRepository{
@@ -107,7 +84,7 @@ public class DSpace_v6 implements PublicationRepository{
 		setServiceDocumentURL(serviceDocumentURL);
 		
 		// HttpClient which ignores the ssl certificate
-		this.client = createHttpClientWithSSLSupport();
+		this.client = WebUtils.createHttpClientWithSSLSupport();
 		
 		//TODO: original version, without ignoring of ssl certificate
 		//this.client = HttpClientBuilder.create().build();
@@ -116,38 +93,11 @@ public class DSpace_v6 implements PublicationRepository{
 	}
 	
 	
-	//=== Private methods ===
-
-	
-	/** 
-	 * Create a ClosableHttpClient with ignoring of SSL certificates
-	 * @return
+	/*
+	 * ---------------
+	 * Private methods
+	 * ---------------
 	 */
-	private CloseableHttpClient createHttpClientWithSSLSupport() {
-		
-		try {
-			KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-			
-			SSLContextBuilder builder = new SSLContextBuilder();
-			builder.loadTrustMaterial(trustStore, new TrustSelfSignedStrategy() {
-				@Override
-			    public boolean isTrusted(X509Certificate[] chain, String authType)
-			            throws CertificateException {
-			        return true;
-			    }
-			});
-			SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build());	
-			return HttpClients.custom().setSSLSocketFactory(
-		            sslsf).setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).build();
-			
-			//return HttpClients.custom().setSSLSocketFactory(sslsf).build();
-			
-		} catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
-			log.error("Exception by creation of http-clinet with ssl support: " + e.getClass() + ": " + e.getMessage());
-			e.printStackTrace();
-			return null;
-		}		
-	}
 	
 	
 	/**
@@ -212,8 +162,7 @@ public class DSpace_v6 implements PublicationRepository{
 	}
 	
 	
-	private String getFileExtension(String fileName) {
-		
+	private String getFileExtension(String fileName) {	
 		String extension = "";
 		int i = fileName.lastIndexOf('.');
 		if(i>0) {
@@ -233,53 +182,11 @@ public class DSpace_v6 implements PublicationRepository{
 	}
 	
 	
-	/**
-	 * Get a response to the REST-request
-	 * @param url
-	 * @param contentType
-	 * @param acceptType
-	 * @return
+	/*
+	 * ------------------------------
+	 * DSpace specific public methods
+	 * ------------------------------ 
 	 */
-	private CloseableHttpResponse getResponse(String url, String contentType, String acceptType) {
-		try {
-			HttpGet request = new HttpGet(url);
-			request.addHeader("Content-Type", contentType);
-			request.addHeader("Accept", acceptType);
-			CloseableHttpResponse response = client.execute(request);
-			return response;
-			
-		} catch (IOException e) {
-			log.error("Exception by http request: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			return null;
-		}
-	}
-	
-	/**
-	 * Get a response entity as a String
-	 * 
-	 * @param response
-	 * @return
-	 */
-	private String getResponseEntityAsString(CloseableHttpResponse response) {
-		try {
-			return EntityUtils.toString(response.getEntity(),"UTF-8");
-		} catch (ParseException | IOException e) {
-			log.error("Exception by converting response entity to String: " 
-						+ e.getClass().getSimpleName() + ": " + e.getMessage());
-			return null;			
-		} 
-	}
-	
-	private void closeResponse(CloseableHttpResponse response) {
-		try {
-			response.close();
-		} catch (IOException e) {
-			log.error("Exception by response closing: "	+ e.getClass().getSimpleName() + ": " + e.getMessage());
-		}
-	}
-	
-		
-	//=== DSpace specific public methods ===
 	
 	
 	public void setServiceDocumentURL(String serviceDocumentURL) {
@@ -300,13 +207,13 @@ public class DSpace_v6 implements PublicationRepository{
 	 */
 	public boolean isRestAccessible() {
 		
-		final CloseableHttpResponse response = getResponse(this.restTestURL, APPLICATION_JSON, APPLICATION_JSON);
+		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.restTestURL, RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
 		if((response != null) && (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK)) {
-			closeResponse(response);
+			WebUtils.closeResponse(response);
 			return true;
 		} else {
 			if(response != null) {
-				closeResponse(response);
+				WebUtils.closeResponse(response);
 			}
 			return false;
 		}
@@ -347,10 +254,10 @@ public class DSpace_v6 implements PublicationRepository{
 		
 		List<String> communityList = new ArrayList<String>(0);
 		
-		final CloseableHttpResponse response = getResponse(this.hierarchyURL, APPLICATION_JSON, APPLICATION_JSON);
+		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.hierarchyURL, RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
 		final HierarchyObject hierarchy = JsonUtils.jsonStringToObject(
-					getResponseEntityAsString(response), HierarchyObject.class);
-		closeResponse(response);
+					WebUtils.getResponseEntityAsString(response), HierarchyObject.class);
+		WebUtils.closeResponse(response);
 		
 		// Get List of communities or "null", if collection is not found
 		communityList = hierarchy.getCommunityListForCollection(hierarchy, collectionHandle, communityList);
@@ -389,10 +296,10 @@ public class DSpace_v6 implements PublicationRepository{
 		}	
 		
 		// Get all collections via REST to check, if swordCollectionPath contains a REST-handle
-		final CloseableHttpResponse response = getResponse(this.collectionsURL, APPLICATION_JSON, APPLICATION_JSON);
+		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.collectionsURL, RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
 		final CollectionObject[] collections = JsonUtils.jsonStringToObject(
-					getResponseEntityAsString(response), CollectionObject[].class);
-		closeResponse(response);
+					WebUtils.getResponseEntityAsString(response), CollectionObject[].class);
+		WebUtils.closeResponse(response);
 		
 		// Compare REST-handle and swordCollectionPath
 		for(CollectionObject collection: collections) {
@@ -487,8 +394,12 @@ public class DSpace_v6 implements PublicationRepository{
 	}
 	
 	
-	//=== PublicationRepository interface methods ===
-	
+	/* 
+	 * ---------------------------------------
+	 * PublicationRepository interface methods
+	 * ---------------------------------------
+	 */ 
+		
 	
 	/**
 	 * {@inheritDoc}
