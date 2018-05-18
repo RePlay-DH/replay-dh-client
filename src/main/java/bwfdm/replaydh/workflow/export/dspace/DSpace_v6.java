@@ -94,9 +94,9 @@ public class DSpace_v6 implements PublicationRepository{
 	
 	
 	/*
-	 * ---------------
-	 * Private methods
-	 * ---------------
+	 * -------------------------------
+	 * Private general purpose methods
+	 * -------------------------------
 	 */
 	
 	
@@ -145,10 +145,8 @@ public class DSpace_v6 implements PublicationRepository{
 	 * 
 	 * @return Map<String, String> where key=URL, value=Title
 	 */
-	private Map<String, String> getAvailableCollectionsViaSWORD(AuthCredentials authCredentials){
+	private Map<String, String> getAvailableCollectionsViaSWORD(ServiceDocument serviceDocument){
 		Map<String, String> collections = new HashMap<String, String>();
-		SWORDClient swordClient = new SWORDClient();
-		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
 		
 		if(serviceDocument != null) {
 			for(SWORDWorkspace workspace : serviceDocument.getWorkspaces()) {
@@ -161,7 +159,11 @@ public class DSpace_v6 implements PublicationRepository{
 		return collections;
 	}
 	
-	
+	/**
+	 * Get a file extension (without a dot) from the file name (e.g. "txt", "zip", ...)
+	 * @param fileName
+	 * @return
+	 */
 	private String getFileExtension(String fileName) {	
 		String extension = "";
 		int i = fileName.lastIndexOf('.');
@@ -172,6 +174,12 @@ public class DSpace_v6 implements PublicationRepository{
 	}
 	
 	
+	/**
+	 * Get package format basing on the file name.
+	 * E.g. {@link UriRegistry.PACKAGE_SIMPLE_ZIP} {@link UriRegistry.PACKAGE_BINARY}
+	 * @param fileName
+	 * @return 
+	 */
 	private String getPackageFormat(String fileName) {
 		String extension = this.getFileExtension(fileName);
 		
@@ -183,15 +191,16 @@ public class DSpace_v6 implements PublicationRepository{
 	
 	
 	/*
-	 * ------------------------------
-	 * DSpace specific public methods
-	 * ------------------------------ 
+	 * -----------------------
+	 * DSpace specific methods
+	 * ----------------------- 
 	 */
 	
 	
 	public void setServiceDocumentURL(String serviceDocumentURL) {
 		this.serviceDocumentURL = serviceDocumentURL;
 	}
+	
 	
 	public void setAllRestURLs(String restURL) {
 		this.restURL = restURL;
@@ -200,7 +209,8 @@ public class DSpace_v6 implements PublicationRepository{
 		this.hierarchyURL = this.restURL + "/hierarchy";
 		this.restTestURL = this.restURL + "/test";
 	}
-		
+	
+	
 	/**
 	 * Check if REST-interface is accessible.
 	 * @return
@@ -219,6 +229,7 @@ public class DSpace_v6 implements PublicationRepository{
 		}
 	}
 	
+	
 	/**
 	 * Check if SWORDv2-protocol is accessible
 	 * @return
@@ -227,7 +238,6 @@ public class DSpace_v6 implements PublicationRepository{
 		
 		SWORDClient swordClient = new SWORDClient();
 		AuthCredentials authCredentials = new AuthCredentials(adminUser, String.valueOf(adminPassword));
-		
 		if(this.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials) != null) {
 			return true;
 		} else {
@@ -247,17 +257,34 @@ public class DSpace_v6 implements PublicationRepository{
 	 */
 	public List<String> getCommunitiesForCollection(String collectionURL){
 		
-		String collectionHandle = getCollectionHandle(collectionURL);
+		SWORDClient swordClient = new SWORDClient();
+		AuthCredentials authCredentials = new AuthCredentials(adminUser, String.valueOf(adminPassword));
+		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
+		
+		HierarchyObject hierarchy = getHierarchyObject();
+		CollectionObject[] existedCollectionObjects = getAllCollectionObjects();
+		
+		return getCommunitiesForCollection(collectionURL, serviceDocument, hierarchy, existedCollectionObjects);
+	}
+	
+	
+	/**
+	 * Private method with logic. Get a list of communities for the collection
+	 * Specific only for DSpace-6.
+	 * <p>
+	 * REST and SWORD requests are used. ServiceDocument must be received already.
+	 * 
+	 * @return a {@code List<String>} of communities (0 or more communities are possible) 
+	 * 		   or {@code null} if a collection was not found
+	 */
+	private List<String> getCommunitiesForCollection(String collectionURL, ServiceDocument serviceDocument, HierarchyObject hierarchy, CollectionObject[] existedCollectionObjects){
+		
+		String collectionHandle = getCollectionHandle(collectionURL, serviceDocument, existedCollectionObjects);
 		if(collectionHandle == null) {
 			return null;
 		}
 		
 		List<String> communityList = new ArrayList<String>(0);
-		
-		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.hierarchyURL, RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
-		final HierarchyObject hierarchy = JsonUtils.jsonStringToObject(
-					WebUtils.getResponseEntityAsString(response), HierarchyObject.class);
-		WebUtils.closeResponse(response);
 		
 		// Get List of communities or "null", if collection is not found
 		communityList = hierarchy.getCommunityListForCollection(hierarchy, collectionHandle, communityList);
@@ -271,6 +298,20 @@ public class DSpace_v6 implements PublicationRepository{
 	
 	
 	/**
+	 * Get a complete hierarchy of collections as HierarchyObject. REST is used. Works up DSpace-6.
+	 * @return {@link HierarchyObject}
+	 */
+	private HierarchyObject getHierarchyObject() {
+		
+		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.hierarchyURL, RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
+		final HierarchyObject hierarchy = JsonUtils.jsonStringToObject(
+					WebUtils.getResponseEntityAsString(response), HierarchyObject.class);
+		WebUtils.closeResponse(response);
+		return hierarchy;
+	}
+	
+	
+	/**
 	 * Get a collection handle based on the collection URL.
 	 * <p> 
 	 * REST and SWORDv2 requests are used.
@@ -279,13 +320,31 @@ public class DSpace_v6 implements PublicationRepository{
 	 * @return String with a handle or {@code null} if collectionURL was not found 
 	 */
 	public String getCollectionHandle(String collectionURL) {
-		
-		String swordCollectionPath = ""; //collectionURL without a hostname and port
-		
-		// Find a collectionURL inside of all avaialble collections. SWORD is used.
+				
+		// Get ServiceDocument
 		SWORDClient swordClient = new SWORDClient();
 		AuthCredentials authCredentials = new AuthCredentials(adminUser, String.valueOf(adminPassword));
 		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
+		
+		// Get all collections via REST to check, if swordCollectionPath contains a REST-handle
+		CollectionObject[] existedCollectionObjects = getAllCollectionObjects();
+		
+		return getCollectionHandle(collectionURL, serviceDocument, existedCollectionObjects);	
+	}
+	
+	
+	/**
+	 * Private method with logic. Get a collection handle based on the collection URL. 
+	 * <p> 
+	 * REST and SWORDv2 requests are used. ServiceDocument must be already retrieved.
+	 * 
+	 * @param collectionURL
+	 * @param serviceDocument
+	 * @return String with a handle or {@code null} if collectionURL was not found 
+	 */
+	private String getCollectionHandle(String collectionURL, ServiceDocument serviceDocument, CollectionObject[] existedCollections) {
+		
+		String swordCollectionPath = ""; //collectionURL without a hostname and port
 		
 		for(SWORDWorkspace workspace : serviceDocument.getWorkspaces()) {
 			for (SWORDCollection collection : workspace.getCollections()) {
@@ -294,20 +353,28 @@ public class DSpace_v6 implements PublicationRepository{
 				}				
 			}
 		}	
-		
-		// Get all collections via REST to check, if swordCollectionPath contains a REST-handle
-		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.collectionsURL, RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
-		final CollectionObject[] collections = JsonUtils.jsonStringToObject(
-					WebUtils.getResponseEntityAsString(response), CollectionObject[].class);
-		WebUtils.closeResponse(response);
-		
+
 		// Compare REST-handle and swordCollectionPath
-		for(CollectionObject collection: collections) {
+		for(CollectionObject collection: existedCollections) {
 			if(swordCollectionPath.contains(collection.handle)) {
 				return collection.handle;
 			}
 		}		
 		return null; //collectionURL was not found	
+	}
+	
+	
+	/**
+	 * Get all existed collections as an array of CollectionObject. REST is used.
+	 * @return
+	 */
+	private CollectionObject[] getAllCollectionObjects() {
+		
+		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.collectionsURL, RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
+		final CollectionObject[] collections = JsonUtils.jsonStringToObject(
+					WebUtils.getResponseEntityAsString(response), CollectionObject[].class);
+		WebUtils.closeResponse(response);
+		return collections;
 	}
 	
 	
@@ -548,7 +615,7 @@ public class DSpace_v6 implements PublicationRepository{
 			return false;
 		}		
 	}
-			
+		
 	
 	/**
 	 * {@inheritDoc}
@@ -593,8 +660,10 @@ public class DSpace_v6 implements PublicationRepository{
 	@Override
 	public Map<String, String> getUserAvailableCollectionsWithTitle(String userLogin) {
 		
+		SWORDClient swordClient = new SWORDClient();
 		AuthCredentials authCredentials = getNewAuthCredentials(adminUser, adminPassword, userLogin);	
-		return this.getAvailableCollectionsViaSWORD(authCredentials);
+		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
+		return this.getAvailableCollectionsViaSWORD(serviceDocument);
 	}
 
 	/**
@@ -602,8 +671,10 @@ public class DSpace_v6 implements PublicationRepository{
 	 */
 	@Override
 	public Map<String, String> getAdminAvailableCollectionsWithTitle() {
+		SWORDClient swordClient = new SWORDClient();
 		AuthCredentials authCredentials = new AuthCredentials(adminUser, String.valueOf(adminPassword)); // login as "adminUser"		
-		return this.getAvailableCollectionsViaSWORD(authCredentials);
+		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
+		return this.getAvailableCollectionsViaSWORD(serviceDocument);
 	}
 	
 	
@@ -622,11 +693,22 @@ public class DSpace_v6 implements PublicationRepository{
 	 */
 	@Override
 	public Map<String, String> getUserAvailableCollectionsWithFullName(String userLogin, String fullNameSeparator) {
-		AuthCredentials authCredentials = getNewAuthCredentials(adminUser, adminPassword, userLogin);		
-		Map<String, String> collectionsMap = this.getAvailableCollectionsViaSWORD(authCredentials);
 		
+		// Get all available for the user collections from the ServiceDocument (via SWORD)
+		SWORDClient swordClient = new SWORDClient();
+		AuthCredentials authCredentials = getNewAuthCredentials(adminUser, adminPassword, userLogin);		
+		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
+		Map<String, String> collectionsMap = this.getAvailableCollectionsViaSWORD(serviceDocument); //all available collections
+		
+		// Get complete hierarchy of collections. Is needed later to get communities of the collection.
+		final HierarchyObject hierarchy = getHierarchyObject();
+		
+		// Get all existed collections via REST as an array of CollectionObject. Is needed later to get communities of the collection. 
+		final CollectionObject[] existedCollectionObjects = getAllCollectionObjects();
+		
+		// Extend the collection name with communities and separators
 		for(String url: collectionsMap.keySet()) {
-			List<String> communities = this.getCommunitiesForCollection(url);
+			List<String> communities = this.getCommunitiesForCollection(url, serviceDocument, hierarchy, existedCollectionObjects);
 			String fullName = "";
 			for(String community: communities) {
 				fullName += community + fullNameSeparator; // add community + separator
