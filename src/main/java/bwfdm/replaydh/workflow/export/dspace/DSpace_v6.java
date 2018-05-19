@@ -111,7 +111,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 * @param userLogin
 	 * @return
 	 */
-	private AuthCredentials getNewAuthCredentials(String adminUser, char[] adminPassword, String userLogin) {
+	protected AuthCredentials getNewAuthCredentials(String adminUser, char[] adminPassword, String userLogin) {
 		
 		if(adminUser.equals(userLogin)) {
 			return new AuthCredentials(userLogin, String.valueOf(adminPassword)); // without "on-behalf-of"
@@ -129,7 +129,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 * @param authCredentials
 	 * @return ServiceDocument or null in case of error/exception
 	 */
-	private ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials) {
+	protected ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials) {
 		ServiceDocument serviceDocument = null;
 		try {
 			serviceDocument = swordClient.getServiceDocument(this.serviceDocumentURL, authCredentials);
@@ -146,7 +146,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 * 
 	 * @return Map<String, String> where key=URL, value=Title
 	 */
-	private Map<String, String> getAvailableCollectionsViaSWORD(ServiceDocument serviceDocument){
+	protected Map<String, String> getAvailableCollectionsViaSWORD(ServiceDocument serviceDocument){
 		Map<String, String> collections = new HashMap<String, String>();
 		
 		if(serviceDocument != null) {
@@ -165,7 +165,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 * @param fileName
 	 * @return
 	 */
-	private String getFileExtension(String fileName) {	
+	protected String getFileExtension(String fileName) {	
 		String extension = "";
 		int i = fileName.lastIndexOf('.');
 		if(i>0) {
@@ -181,7 +181,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 * @param fileName
 	 * @return 
 	 */
-	private String getPackageFormat(String fileName) {
+	protected String getPackageFormat(String fileName) {
 		String extension = this.getFileExtension(fileName);
 		
 		if(extension.toLowerCase().equals("zip")) {
@@ -278,7 +278,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 * @return a {@code List<String>} of communities (0 or more communities are possible) 
 	 * 		   or {@code null} if a collection was not found
 	 */
-	private List<String> getCommunitiesForCollection(String collectionURL, ServiceDocument serviceDocument, HierarchyObject hierarchy, CollectionObject[] existedCollectionObjects){
+	protected List<String> getCommunitiesForCollection(String collectionURL, ServiceDocument serviceDocument, HierarchyObject hierarchy, CollectionObject[] existedCollectionObjects){
 		
 		String collectionHandle = getCollectionHandle(collectionURL, serviceDocument, existedCollectionObjects);
 		if(collectionHandle == null) {
@@ -302,7 +302,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 * Get a complete hierarchy of collections as HierarchyObject. REST is used. Works up DSpace-6.
 	 * @return {@link HierarchyObject}
 	 */
-	private HierarchyObject getHierarchyObject() {
+	protected HierarchyObject getHierarchyObject() {
 		
 		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.hierarchyURL, RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
 		final HierarchyObject hierarchy = JsonUtils.jsonStringToObject(
@@ -343,7 +343,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 * @param serviceDocument
 	 * @return String with a handle or {@code null} if collectionURL was not found 
 	 */
-	private String getCollectionHandle(String collectionURL, ServiceDocument serviceDocument, CollectionObject[] existedCollections) {
+	protected String getCollectionHandle(String collectionURL, ServiceDocument serviceDocument, CollectionObject[] existedCollections) {
 		
 		String swordCollectionPath = ""; //collectionURL without a hostname and port
 		
@@ -369,7 +369,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 * Get all existed collections as an array of CollectionObject. REST is used.
 	 * @return
 	 */
-	private CollectionObject[] getAllCollectionObjects() {
+	protected CollectionObject[] getAllCollectionObjects() {
 		
 		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.collectionsURL, RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
 		final CollectionObject[] collections = JsonUtils.jsonStringToObject(
@@ -396,7 +396,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 *  	   "StatusCode" parameter from the response in case of {@code SwordRequestType.REPLACE} request,
 	 *  	   or {@code null} in case of error
 	 */
-	private String publishElement(String userLogin, String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, String> metadataMap) {
+	protected String publishElement(String userLogin, String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, String> metadataMap) {
 		
 		// Check if only 1 parameter is used (metadata OR file). 
 		// Multipart is not supported.
@@ -522,7 +522,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 * @param swordRequestType
 	 * @return
 	 */
-	private boolean publishMetadata(String userLogin, String collectionURL, Map<String, String> metadataMap, SwordRequestType swordRequestType) {
+	protected boolean publishMetadata(String userLogin, String collectionURL, Map<String, String> metadataMap, SwordRequestType swordRequestType) {
 		
 		String mimeFormat = "application/atom+xml";
 		String packageFormat = UriRegistry.PACKAGE_BINARY;
@@ -559,7 +559,7 @@ public class DSpace_v6 implements PublicationRepository{
 	 * @param swordRequestType
 	 * @return
 	 */
-	private boolean publishMetadata(String userLogin, String collectionURL, File metadataFileXML, SwordRequestType swordRequestType) {
+	protected boolean publishMetadata(String userLogin, String collectionURL, File metadataFileXML, SwordRequestType swordRequestType) {
 		
 		// Check if file has an XML-extension
 		if(!getFileExtension(metadataFileXML.getName()).toLowerCase().equals("xml")) {
