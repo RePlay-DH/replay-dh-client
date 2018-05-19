@@ -44,6 +44,7 @@ import org.swordapp.client.SWORDCollection;
 import org.swordapp.client.SWORDError;
 import org.swordapp.client.SWORDWorkspace;
 import org.swordapp.client.ServiceDocument;
+import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.HierarchyObject;
@@ -391,19 +392,16 @@ public class DSpace_v6 implements PublicationRepository{
 	 * @param packageFormat - see {@link UriRegistry.PACKAGE_SIMPLE_ZIP} or {@linkplain UriRegistry.PACKAGE_BINARY}
 	 * @param file
 	 * @param metadataMap
-	 * @return "Location" parameter from the response, or {@code null} in case of error
+	 * @return "Location" parameter from the response in case of {@code SwordRequestType.DEPOSIT} request, 
+	 *  	   "StatusCode" parameter from the response in case of {@code SwordRequestType.REPLACE} request,
+	 *  	   or {@code null} in case of error
 	 */
-	private String publishElement(String userLogin, String collectionURL, String mimeFormat, String packageFormat, File file, Map<String, String> metadataMap) {
+	private String publishElement(String userLogin, String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, String> metadataMap) {
 		
 		// Check if only 1 parameter is used (metadata OR file). 
 		// Multipart is not supported.
 		if( ((file != null)&&(metadataMap != null)) || ((file == null)&&(metadataMap == null)) ) {
 			return null; 
-		}
-		
-		//Check if userLogin is registered
-		if(!isUserRegistered(userLogin)) {
-			return null;
 		}
 		
 		SWORDClient swordClient = new SWORDClient();
@@ -434,12 +432,21 @@ public class DSpace_v6 implements PublicationRepository{
 			deposit.setMimeType(mimeFormat);
 			deposit.setPackaging(packageFormat);
 			deposit.setInProgress(true);
-			//deposit.setMd5("fileMD5");
-			//deposit.setSuggestedIdentifier("abcdefg");
+			//deposit.setMd5("fileMD5");					//put here only as example
+			//deposit.setSuggestedIdentifier("abcdefg");	//put here only as example
 			
-			DepositReceipt receipt = swordClient.deposit(collectionURL, deposit, authCredentials);
 			
-			return receipt.getLocation(); // "Location" parameter from the response
+			switch (swordRequestType) {
+			case DEPOSIT:
+				DepositReceipt receipt = swordClient.deposit(collectionURL, deposit, authCredentials);
+				return receipt.getLocation(); //"Location" parameter from the response
+			case REPLACE:
+				SwordResponse response = swordClient.replace(collectionURL, deposit, authCredentials);
+				return Integer.toString(response.getStatusCode()); //"StatusCode" parameter from the response
+			default:
+				log.error("Wrong SWORD-request type: " + swordRequestType + " : Supported here types are: " + SwordRequestType.DEPOSIT + ", " + SwordRequestType.REPLACE);
+				return null;					
+			}
 			
 		} catch (FileNotFoundException e) {
 			log.error("Exception by accessing a file: " + e.getClass().getSimpleName() + ": " + e.getMessage());
@@ -480,11 +487,11 @@ public class DSpace_v6 implements PublicationRepository{
 	 */
 	@Override
 	public boolean publishFile(String userLogin, String collectionURL, File fileFullPath) {
-		
+			
 		String mimeFormat = "application/zip"; // for every file type, to publish even "XML" files as a normal file
 		String packageFormat = getPackageFormat(fileFullPath.getName()); //zip-archive or separate file
 		
-		if(publishElement(userLogin, collectionURL, mimeFormat, packageFormat, fileFullPath, null) != null) {
+		if(publishElement(userLogin, collectionURL, SwordRequestType.DEPOSIT, mimeFormat, packageFormat, fileFullPath, null) != null) {
 			return true;
 		} else {
 			return false;
@@ -503,11 +510,24 @@ public class DSpace_v6 implements PublicationRepository{
 	 */
 	@Override
 	public boolean publishMetadata(String userLogin, String collectionURL, Map<String, String> metadataMap) {
+		return publishMetadata(userLogin, collectionURL, metadataMap, SwordRequestType.DEPOSIT);	
+	}
+	
+	
+	/**
+	 * Private method which can use different request types. See {@link SwordRequestType}.
+	 * @param userLogin
+	 * @param collectionURL
+	 * @param metadataMap
+	 * @param swordRequestType
+	 * @return
+	 */
+	private boolean publishMetadata(String userLogin, String collectionURL, Map<String, String> metadataMap, SwordRequestType swordRequestType) {
 		
 		String mimeFormat = "application/atom+xml";
 		String packageFormat = UriRegistry.PACKAGE_BINARY;
 		
-		if(publishElement(userLogin, collectionURL, mimeFormat, packageFormat, null, metadataMap) != null) {
+		if(publishElement(userLogin, collectionURL, swordRequestType, mimeFormat, packageFormat, null, metadataMap) != null) {
 			return true;
 		} else {
 			return false;
@@ -527,6 +547,19 @@ public class DSpace_v6 implements PublicationRepository{
 	 */
 	@Override
 	public boolean publishMetadata(String userLogin, String collectionURL, File metadataFileXML) {
+		return publishMetadata(userLogin, collectionURL, metadataFileXML, SwordRequestType.DEPOSIT);	
+	}
+	
+	
+	/**
+	 * Private method which can use different request types. See {@link SwordRequestType}.
+	 * @param userLogin
+	 * @param collectionURL
+	 * @param metadataFileXML
+	 * @param swordRequestType
+	 * @return
+	 */
+	private boolean publishMetadata(String userLogin, String collectionURL, File metadataFileXML, SwordRequestType swordRequestType) {
 		
 		// Check if file has an XML-extension
 		if(!getFileExtension(metadataFileXML.getName()).toLowerCase().equals("xml")) {
@@ -536,13 +569,13 @@ public class DSpace_v6 implements PublicationRepository{
 		String mimeFormat = "application/atom+xml";
 		String packageFormat = getPackageFormat(metadataFileXML.getName());
 		
-		if(publishElement(userLogin, collectionURL, mimeFormat, packageFormat, metadataFileXML, null) != null) {
+		if(publishElement(userLogin, collectionURL, swordRequestType, mimeFormat, packageFormat, metadataFileXML, null) != null) {
 			return true;
 		} else {
 			return false;
 		}		
 	}
-	
+		
 	
 	/**
 	 * {@inheritDoc}
@@ -556,11 +589,11 @@ public class DSpace_v6 implements PublicationRepository{
 		String packageFormat = getPackageFormat(fileFullPath.getName());
 		
 		// Step 1: publish file (as file or archive), without metadata
-		String editLink = publishElement(userLogin, collectionURL, mimeFormat, packageFormat, fileFullPath, null);
+		String editLink = publishElement(userLogin, collectionURL, SwordRequestType.DEPOSIT, mimeFormat, packageFormat, fileFullPath, null); //"POST" request (DEPOSIT)
 		
 		// Step 2: add metadata (as a Map structure)
 		if (editLink != null) {
-			return publishMetadata(userLogin, editLink, metadataMap);
+			return publishMetadata(userLogin, editLink, metadataMap, SwordRequestType.REPLACE); //"PUT" request (REPLACE) to overwrite some previous automatically generated metadata
 		} else {
 			return false;
 		}
@@ -585,11 +618,11 @@ public class DSpace_v6 implements PublicationRepository{
 		String packageFormat = getPackageFormat(fileFullPath.getName());
 		
 		// Step 1: publish file (as file or archive), without metadata
-		String editLink = publishElement(userLogin, collectionURL, mimeFormat, packageFormat, fileFullPath, null); 
+		String editLink = publishElement(userLogin, collectionURL, SwordRequestType.DEPOSIT, mimeFormat, packageFormat, fileFullPath, null); //"POST" request (DEPOSIT)
 		
 		// Step 2: add metadata (as XML-file)
 		if (editLink != null) {
-			return publishMetadata(userLogin, editLink, metadataFileXML); 
+			return publishMetadata(userLogin, editLink, metadataFileXML, SwordRequestType.REPLACE); //"PUT" request (REPLACE) to overwrite some previous automatically generated metadata
 		} else {
 			return false;
 		}
@@ -725,5 +758,36 @@ public class DSpace_v6 implements PublicationRepository{
 		
 		return this.getUserAvailableCollectionsWithFullName(this.adminUser, fullNameSeparator);
 	}
+	
+	
+	/*
+	 * -------------
+	 * Extra classes
+	 * -------------
+	 */
+	
+	
+	public static enum SwordRequestType {	
+		DEPOSIT("DEPOSIT"), //"POST" request
+		REPLACE("REPLACE"), //"PUT" request
+		DELETE("DELETE")	//reserved for the future
+		;
+		
+		private final String label;
+		
+		private SwordRequestType(String label) {
+			this.label = label;
+		}
+		
+		public String getLabel() {
+			return label;
+		}
+		
+		@Override
+		public String toString() {
+			return label;
+		}
+	}
+	
 	
 }
