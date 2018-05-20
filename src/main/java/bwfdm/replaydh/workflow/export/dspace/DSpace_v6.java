@@ -23,7 +23,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -53,7 +52,7 @@ import bwfdm.replaydh.workflow.export.dspace.WebUtils;
 import bwfdm.replaydh.workflow.export.dspace.WebUtils.RequestType;
 
 
-public class DSpace_v6 implements PublicationRepository{
+public class DSpace_v6 extends DSpaceRepository {
 
 	protected static final Logger log = LoggerFactory.getLogger(DSpace_v6.class);
 	
@@ -70,10 +69,6 @@ public class DSpace_v6 implements PublicationRepository{
 	protected String collectionsURL;
 	protected String hierarchyURL;
 	protected String restTestURL;
-	// Header constants
-	protected final String APPLICATION_JSON = "application/json";
-	protected final String CONTENT_TYPE_HEADER = "Content-Type";
-	protected final String ACCEPT_HEADER = "Accept";
 	
 	CloseableHttpClient client;
 		
@@ -91,103 +86,6 @@ public class DSpace_v6 implements PublicationRepository{
 		//this.client = HttpClientBuilder.create().build();
 		
 		setAllRestURLs(restURL);
-	}
-	
-	
-	/*
-	 * -------------------------------
-	 * Private general purpose methods
-	 * -------------------------------
-	 */
-	
-	
-	/**
-	 * Get new authentication credentials. 
-	 * <p> To disactivate "on-behalf-of" option please use the same string for "adminUser" and "userLogin".
-	 * <p> If "adminUser" and "userLogin" are different, "on-behalf-of" option will be used.
-	 * 
-	 * @param adminUser
-	 * @param adminPassword
-	 * @param userLogin
-	 * @return
-	 */
-	protected AuthCredentials getNewAuthCredentials(String adminUser, char[] adminPassword, String userLogin) {
-		
-		if(adminUser.equals(userLogin)) {
-			return new AuthCredentials(userLogin, String.valueOf(adminPassword)); // without "on-behalf-of"
-		} else {
-			return new AuthCredentials(adminUser, String.valueOf(adminPassword), userLogin); // with "on-behalf-of"
-		}
-	}
-	
-	
-	/**
-	 * Get service document via SWORD v2
-	 * 
-	 * @param swordClient
-	 * @param serviceDocumentURL
-	 * @param authCredentials
-	 * @return ServiceDocument or null in case of error/exception
-	 */
-	protected ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials) {
-		ServiceDocument serviceDocument = null;
-		try {
-			serviceDocument = swordClient.getServiceDocument(this.serviceDocumentURL, authCredentials);
-		} catch (SWORDClientException | ProtocolViolationException e) {
-			log.error("Exception by accessing service document: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			return null;
-		}
-		return serviceDocument;
-	}
-	
-	
-	/**
-	 * Get available collections via SWORD v2
-	 * 
-	 * @return Map<String, String> where key=URL, value=Title
-	 */
-	protected Map<String, String> getAvailableCollectionsViaSWORD(ServiceDocument serviceDocument){
-		Map<String, String> collections = new HashMap<String, String>();
-		
-		if(serviceDocument != null) {
-			for(SWORDWorkspace workspace : serviceDocument.getWorkspaces()) {
-				for (SWORDCollection collection : workspace.getCollections()) {
-					// key = full URL, value = Title
-					collections.put(collection.getHref().toString(), collection.getTitle());
-				}
-			}
-		}
-		return collections;
-	}
-	
-	/**
-	 * Get a file extension (without a dot) from the file name (e.g. "txt", "zip", ...)
-	 * @param fileName
-	 * @return
-	 */
-	protected String getFileExtension(String fileName) {	
-		String extension = "";
-		int i = fileName.lastIndexOf('.');
-		if(i>0) {
-			extension = fileName.substring(i+1);
-		}
-		return extension;		
-	}
-	
-	
-	/**
-	 * Get package format basing on the file name.
-	 * E.g. {@link UriRegistry.PACKAGE_SIMPLE_ZIP} {@link UriRegistry.PACKAGE_BINARY}
-	 * @param fileName
-	 * @return 
-	 */
-	protected String getPackageFormat(String fileName) {
-		String extension = this.getFileExtension(fileName);
-		
-		if(extension.toLowerCase().equals("zip")) {
-			return UriRegistry.PACKAGE_SIMPLE_ZIP;
-		}
-		return UriRegistry.PACKAGE_BINARY;
 	}
 	
 	
@@ -238,8 +136,8 @@ public class DSpace_v6 implements PublicationRepository{
 	public boolean isSwordAccessible() {
 		
 		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = new AuthCredentials(adminUser, String.valueOf(adminPassword));
-		if(this.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials) != null) {
+		AuthCredentials authCredentials = new AuthCredentials(this.adminUser, String.valueOf(this.adminPassword));
+		if(DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials) != null) {
 			return true;
 		} else {
 			return false;
@@ -259,8 +157,8 @@ public class DSpace_v6 implements PublicationRepository{
 	public List<String> getCommunitiesForCollection(String collectionURL){
 		
 		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = new AuthCredentials(adminUser, String.valueOf(adminPassword));
-		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
+		AuthCredentials authCredentials = new AuthCredentials(this.adminUser, String.valueOf(this.adminPassword));
+		ServiceDocument serviceDocument = DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials);
 		
 		HierarchyObject hierarchy = getHierarchyObject();
 		CollectionObject[] existedCollectionObjects = getAllCollectionObjects();
@@ -324,8 +222,8 @@ public class DSpace_v6 implements PublicationRepository{
 				
 		// Get ServiceDocument
 		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = new AuthCredentials(adminUser, String.valueOf(adminPassword));
-		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
+		AuthCredentials authCredentials = new AuthCredentials(this.adminUser, String.valueOf(this.adminPassword));
+		ServiceDocument serviceDocument = DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials);
 		
 		// Get all collections via REST to check, if swordCollectionPath contains a REST-handle
 		CollectionObject[] existedCollectionObjects = getAllCollectionObjects();
@@ -405,7 +303,7 @@ public class DSpace_v6 implements PublicationRepository{
 		}
 		
 		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = getNewAuthCredentials(adminUser, adminPassword, userLogin);
+		AuthCredentials authCredentials = getNewAuthCredentials(this.adminUser, this.adminPassword, userLogin);
 		
 		FileInputStream fis = null;
 		
@@ -658,9 +556,9 @@ public class DSpace_v6 implements PublicationRepository{
 	@Override
 	public boolean isUserRegistered(String userLogin) {	
 		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = getNewAuthCredentials(adminUser, adminPassword, userLogin);
+		AuthCredentials authCredentials = getNewAuthCredentials(this.adminUser, this.adminPassword, userLogin);
 		
-		if(this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials) != null) {
+		if(DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials) != null) {
 			return true;
 		} else {
 			return false;
@@ -675,8 +573,8 @@ public class DSpace_v6 implements PublicationRepository{
 	@Override
 	public boolean isUserAssigned(String userLogin) {
 		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = getNewAuthCredentials(adminUser, adminPassword, userLogin);
-		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
+		AuthCredentials authCredentials = getNewAuthCredentials(this.adminUser, this.adminPassword, userLogin);
+		ServiceDocument serviceDocument = DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials);
 
 		int collectionCount = 0;
 		if(serviceDocument != null) {
@@ -691,12 +589,11 @@ public class DSpace_v6 implements PublicationRepository{
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Map<String, String> getUserAvailableCollectionsWithTitle(String userLogin) {
-		
+	public Map<String, String> getUserAvailableCollectionsWithTitle(String userLogin) {		
 		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = getNewAuthCredentials(adminUser, adminPassword, userLogin);	
-		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
-		return this.getAvailableCollectionsViaSWORD(serviceDocument);
+		AuthCredentials authCredentials = getNewAuthCredentials(this.adminUser, this.adminPassword, userLogin);	
+		ServiceDocument serviceDocument = DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials);
+		return DSpaceRepository.getAvailableCollectionsViaSWORD(serviceDocument);
 	}
 
 	/**
@@ -705,9 +602,9 @@ public class DSpace_v6 implements PublicationRepository{
 	@Override
 	public Map<String, String> getAdminAvailableCollectionsWithTitle() {
 		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = new AuthCredentials(adminUser, String.valueOf(adminPassword)); // login as "adminUser"		
-		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
-		return this.getAvailableCollectionsViaSWORD(serviceDocument);
+		AuthCredentials authCredentials = new AuthCredentials(this.adminUser, String.valueOf(this.adminPassword)); // login as "adminUser"		
+		ServiceDocument serviceDocument = DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials);
+		return DSpaceRepository.getAvailableCollectionsViaSWORD(serviceDocument);
 	}
 	
 	
@@ -729,9 +626,9 @@ public class DSpace_v6 implements PublicationRepository{
 		
 		// Get all available for the user collections from the ServiceDocument (via SWORD)
 		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = getNewAuthCredentials(adminUser, adminPassword, userLogin);		
-		ServiceDocument serviceDocument = this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials);
-		Map<String, String> collectionsMap = this.getAvailableCollectionsViaSWORD(serviceDocument); //all available collections
+		AuthCredentials authCredentials = getNewAuthCredentials(this.adminUser, this.adminPassword, userLogin);		
+		ServiceDocument serviceDocument = DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials);
+		Map<String, String> collectionsMap = DSpaceRepository.getAvailableCollectionsViaSWORD(serviceDocument); //all available collections
 		
 		// Get complete hierarchy of collections. Is needed later to get communities of the collection.
 		final HierarchyObject hierarchy = getHierarchyObject();
@@ -752,42 +649,13 @@ public class DSpace_v6 implements PublicationRepository{
 		return collectionsMap;
 	}
 
-
+	
+	/**
+	 * {@inheritDoc}	  
+	 */
 	@Override
 	public Map<String, String> getAdminAvailableCollectionsWithFullName(String fullNameSeparator) {
-		
 		return this.getUserAvailableCollectionsWithFullName(this.adminUser, fullNameSeparator);
 	}
-	
-	
-	/*
-	 * -------------
-	 * Extra classes
-	 * -------------
-	 */
-	
-	
-	public static enum SwordRequestType {	
-		DEPOSIT("DEPOSIT"), //"POST" request
-		REPLACE("REPLACE"), //"PUT" request
-		DELETE("DELETE")	//reserved for the future
-		;
-		
-		private final String label;
-		
-		private SwordRequestType(String label) {
-			this.label = label;
-		}
-		
-		public String getLabel() {
-			return label;
-		}
-		
-		@Override
-		public String toString() {
-			return label;
-		}
-	}
-	
 	
 }
