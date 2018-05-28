@@ -111,7 +111,7 @@ import bwfdm.replaydh.workflow.schema.impl.LocalSchemaManager;
  * @author Markus Gärtner
  *
  */
-public final class RDHClient {
+public class RDHClient {
 
 	//TODO define debug flag for testing
 

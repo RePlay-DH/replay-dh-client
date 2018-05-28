@@ -17,15 +17,13 @@
 	<!-- Delete Dummy File -->
 	<action id="replaydh.ui.core.workspaceTrackerPanel.deleteDummyFile"
 		name="${id}.name" desc="${id}.description" icon="delete_obj.gif" />
-		
 	<!-- ToolBar List for header area -->
 	<action-list id="replaydh.ui.core.workspaceTrackerPanel.toolBarList">
 		<item type="label" value="replaydh.panels.workspaceTracker.title" />
 		<item type="glue" />
-		<!-- TODO mode the 3 dummy actions into dev mode injection!!! -->
-		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.createDummyFile" />
-		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.deleteDummyFile" />
-		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.editDummyFile" />
+		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.createDummyFile" condition="global:debug" />
+		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.deleteDummyFile" condition="global:debug" />
+		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.editDummyFile" condition="global:debug" />
 	</action-list>
 	
 </actions>

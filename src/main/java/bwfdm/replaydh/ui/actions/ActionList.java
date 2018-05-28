@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.actions;
@@ -125,6 +125,18 @@ public final class ActionList {
 	}
 
 	/**
+	 * Fetches the {@code condition} if any that can be used to
+	 * determine whether to actually build a component for the given {@code index}.
+	 */
+	public String getConditionAt(int index) {
+		if(list!=null) {
+			ListEntry entry = list.get(index);
+			return entry.getCondition();
+		}
+		return null;
+	}
+
+	/**
 	 * Returns the number of elements in this list or {@code 0}
 	 * if it is empty
 	 */
@@ -162,14 +174,14 @@ public final class ActionList {
 		}
 	}
 
-	void add(EntryType type, String value) {
+	void add(EntryType type, String value, String condition) {
 		requireNonNull(type);
 
 		if(list==null) {
 			list = new ArrayList<>();
 		}
 
-		ListEntry entry = new ListEntry(type, value);
+		ListEntry entry = new ListEntry(type, value, condition);
 		list.add(entry);
 	}
 
@@ -185,9 +197,9 @@ public final class ActionList {
 	 * @param type the {@code ResourceEntryType} to be added, must not be {@code null}
 	 * @param value {@code String} to be added, may be {@code null}
 	 */
-	public void add(Object owner, EntryType type, String value) {
+	public void add(Object owner, EntryType type, String value, String condition) {
 		checkOwner(owner);
-		add(type, value);
+		add(type, value, condition);
 	}
 
 	/**
@@ -243,19 +255,25 @@ public final class ActionList {
 	private static class ListEntry implements Cloneable {
 		private EntryType type;
 		private String value;
+		private String condition;
 
 		/**
 		 * @param type
 		 * @param value
 		 */
-		ListEntry(EntryType type, String value) {
+		ListEntry(EntryType type, String value, String condition) {
 			this.type = type;
 			this.value = value;
+			this.condition = condition;
 		}
 
 		@Override
 		public ListEntry clone() {
-			return new ListEntry(type, value);
+			try {
+				return (ListEntry) super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new InternalError(e);
+			}
 		}
 
 		/**
@@ -272,9 +290,16 @@ public final class ActionList {
 			return value;
 		}
 
+		/**
+		 * @return the condition
+		 */
+		public String getCondition() {
+			return condition;
+		}
+
 		@Override
 		public String toString() {
-			return String.format("type: %s value: %s", type, value); //$NON-NLS-1$
+			return String.format("type: %s value: %s condition: %s", type, value, condition); //$NON-NLS-1$
 		}
 	}
 

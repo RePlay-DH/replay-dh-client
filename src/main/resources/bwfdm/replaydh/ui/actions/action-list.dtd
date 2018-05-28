@@ -119,6 +119,20 @@
 
 <!--
     The item elements describes a single entry in an action-list
+    
+    The 'condition' attribute allows to filter which parts of an action-list
+    should actually be instantiated on the GUI side based on global settings
+    or properties provided to the current building task.
+    The general format of this attribute is '[<namespace>:]<value>' with
+    <namespace> being one of the following:
+    	
+    	global		Uses a fixed set of properties depending on the current app
+    	
+    
+    Condition attribute format and its handling:
+    
+    global:<xxx>	
+    
     Type attribute format and its handling:
     
     action:			Id used to resolve actual action instance to be
@@ -158,6 +172,7 @@
 <!ELEMENT item EMPTY>
 <!ATTLIST item
           type      (action|action-list|action-set|label|custom|separator|empty|glue) #REQUIRED
+          condition	CDATA #IMPLIED
           value		CDATA #IMPLIED
 >
 
@@ -180,9 +195,15 @@
 -->
 
 <!ELEMENT separator EMPTY>
+<!ATTLIST separator
+          condition	CDATA #IMPLIED
+>
 
 <!--
     Shortform for an item element with its type attribute set to 'empty'
 -->
 
 <!ELEMENT empty EMPTY>
+<!ATTLIST empty
+          condition	CDATA #IMPLIED
+>

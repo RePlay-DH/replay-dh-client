@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.actions;
@@ -105,6 +105,7 @@ public class ActionManager {
 
 	private volatile ResourceManager resourceManager;
 	private volatile IconRegistry iconRegistry;
+	private volatile ConditionResolver conditionResolver;
 
 	private final ActionManager parent;
 
@@ -126,7 +127,7 @@ public class ActionManager {
 		if(instance==null) {
 			synchronized (ActionManager.class) {
 				if(instance==null) {
-					ActionManager manager = new ActionManager(null, null, null);
+					ActionManager manager = new ActionManager(null, null, null, null);
 
 					URL actionLocation = ActionManager.class.getResource(
 							"default-actions.xml"); //$NON-NLS-1$
@@ -157,10 +158,11 @@ public class ActionManager {
 	/**
 	 *
 	 */
-	public ActionManager(ActionManager parent, ResourceManager resourceManager, IconRegistry iconRegistry) {
+	public ActionManager(ActionManager parent, ResourceManager resourceManager, IconRegistry iconRegistry, ConditionResolver conditionResolver) {
 		this.parent = parent;
 		this.resourceManager = resourceManager;
 		this.iconRegistry = iconRegistry;
+		this.conditionResolver = conditionResolver;
 
 		// Inherit silent flag from parent
 		if(parent!=null) {
@@ -196,16 +198,37 @@ public class ActionManager {
 		return iconRegistry;
 	}
 
+	/**
+	 * @return the conditionResolver
+	 */
+	public ConditionResolver getConditionResolver() {
+		if(conditionResolver==null) {
+			synchronized (this) {
+				if(conditionResolver==null && parent!=null)
+					conditionResolver = parent.getConditionResolver();
+
+				if(conditionResolver==null)
+					conditionResolver = ConditionResolver.EMPTY_RESOLVER;
+			}
+		}
+
+		return conditionResolver;
+	}
+
 	public ActionManager derive() {
-		return new ActionManager(this, null, null);
+		return new ActionManager(this, null, null, null);
 	}
 
 	public ActionManager derive(ResourceManager resourceManager) {
-		return new ActionManager(this, resourceManager, null);
+		return new ActionManager(this, resourceManager, null, null);
 	}
 
 	public ActionManager derive(ResourceManager resourceManager, IconRegistry iconRegistry) {
-		return new ActionManager(this, resourceManager, iconRegistry);
+		return new ActionManager(this, resourceManager, iconRegistry, null);
+	}
+
+	public ActionManager derive(ResourceManager resourceManager, IconRegistry iconRegistry, ConditionResolver conditionResolver) {
+		return new ActionManager(this, resourceManager, iconRegistry, conditionResolver);
 	}
 
 	protected boolean isSilent() {
@@ -926,6 +949,10 @@ public class ActionManager {
 		}
 	}
 
+	protected boolean checkCondition(String condition, Map<String, Object> properties) {
+		return ConditionResolver.resolve(condition, getConditionResolver(), properties);
+	}
+
 	protected void feedActionList(final Component container,
 			final ComponentHandler handler, final ActionList list, final Map<String, Object> properties) {
 
@@ -938,6 +965,14 @@ public class ActionManager {
 		boolean separatorAllowed = false;
 		for(int i=0; i<size; i++) {
 			index = rightToLeft ? size-i-1 : i;
+
+			String condition = list.getConditionAt(index);
+
+			// Make sure we only feed items that we are supposed to do under the current circumstances!
+			if(condition!=null && !checkCondition(condition, properties)) {
+				continue;
+			}
+
 			String value = list.getValueAt(index);
 			switch (list.getTypeAt(index)) {
 			case LABEL:
@@ -1440,6 +1475,8 @@ public class ActionManager {
     private final static String COMMAND_ATTRIBUTE = "command"; //$NON-NLS-1$
     private final static String TEMPLATE_ATTRIBUTE = "template"; //$NON-NLS-1$
 
+    private final static String CONDITION_ATTRIBUTE = "condition"; //$NON-NLS-1$
+
     private final static int ACCEL_INDEX = 0;
     private final static int DESC_INDEX = 1;
     private final static int SMALL_ICON_INDEX = 2;
@@ -1565,7 +1602,8 @@ public class ActionManager {
 				String id = attributes.getValue(ID_ATTRIBUTE);
 				actionSet = new ActionSet(id);
 				if (actionList != null) {
-					actionList.add(EntryType.ACTION_SET_ID, id);
+					String condition = attributes.getValue(CONDITION_ATTRIBUTE);
+					actionList.add(EntryType.ACTION_SET_ID, id, condition);
 				}
 				addActionSet(id, actionSet);
 			} else if (ACTION_LIST_ELEMENT.equals(name)) {
@@ -1592,7 +1630,8 @@ public class ActionManager {
 				ActionList newList = new ActionList(id);
 				newList.setActionId(idref);
 				if (actionList != null) {
-					actionList.add(EntryType.ACTION_LIST_ID, id);
+					String condition = attributes.getValue(CONDITION_ATTRIBUTE);
+					actionList.add(EntryType.ACTION_LIST_ID, id, condition);
 					actionListStack.push(actionList);
 				}
 				addActionList(id, newList);
@@ -1615,7 +1654,8 @@ public class ActionManager {
 				if(actionSet!=null) {
 					actionSet.add(id, groupId);
 				} else if(actionList!=null) {
-					actionList.add(EntryType.ACTION_ID, id);
+					String condition = attributes.getValue(CONDITION_ATTRIBUTE);
+					actionList.add(EntryType.ACTION_ID, id, condition);
 					if(groupId!=null) {
 						actionList.mapGroup(id, groupId);
 					}
@@ -1624,18 +1664,21 @@ public class ActionManager {
 				groupId = attributes.getValue(ID_ATTRIBUTE);
 			} else if (EMPTY_ELEMENT.equals(name)) {
 				if (actionList != null) {
-					actionList.add(EntryType.EMPTY, null);
+					String condition = attributes.getValue(CONDITION_ATTRIBUTE);
+					actionList.add(EntryType.EMPTY, null, condition);
 				}
 			} else if (SEPARATOR_ELEMENT.equals(name)) {
 				if (actionList != null) {
-					actionList.add(EntryType.SEPARATOR, null);
+					String condition = attributes.getValue(CONDITION_ATTRIBUTE);
+					actionList.add(EntryType.SEPARATOR, null, condition);
 				}
 			} else if(ITEM_ELEMENT.equals(name)) {
 				if(actionList!=null) {
 					String type = attributes.getValue(TYPE_ATTRIBUTE);
 					String value = attributes.getValue(VALUE_ATTRIBUTE);
+					String condition = attributes.getValue(CONDITION_ATTRIBUTE);
 
-					actionList.add(EntryType.parse(type), value);
+					actionList.add(EntryType.parse(type), value, condition);
 				}
 			}
 		}

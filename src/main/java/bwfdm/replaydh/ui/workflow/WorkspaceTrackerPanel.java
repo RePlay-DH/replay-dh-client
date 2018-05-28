@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.workflow;
@@ -31,7 +31,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -76,26 +78,6 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 
 	private static final Logger log = LoggerFactory.getLogger(WorkspaceTrackerPanel.class);
 
-	private static volatile ActionManager sharedActionManager;
-
-	private static ActionManager getSharedActionManager() {
-		GuiUtils.checkEDT();
-
-		ActionManager actionManager = sharedActionManager;
-		if(actionManager==null) {
-			actionManager = ActionManager.globalManager().derive();
-			try {
-				actionManager.loadActions(WorkspaceTrackerPanel.class.getResource("workspace-tracker-panel-actions.xml"));
-			} catch (IOException e) {
-				throw new RDHException("Failed to load actions for"+WorkspaceTrackerPanel.class, e);
-			}
-
-			sharedActionManager = actionManager;
-		}
-
-		return actionManager;
-	}
-
 	private final RDHEnvironment environment;
 
 	private final ActionManager actionManager;
@@ -108,11 +90,7 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 
 	private final JToolBar toolBar;
 
-	private final FileOutlinePanel trackedPanel;
-	private final FileOutlinePanel newFilesPanel;
-	private final FileOutlinePanel missingFilesPanel;
-	private final FileOutlinePanel modifiedFilesPanel;
-	private final FileOutlinePanel corruptedPanel;
+	private final Map<TrackingStatus, FileOutlinePanel> panels = new EnumMap<>(TrackingStatus.class);
 	private final JLabel contentHeader;
 
 	/**
@@ -137,9 +115,13 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 
 		handler = new Handler();
 
-		actionManager = getSharedActionManager().derive();
+		actionManager = environment.getClient().getGui().getActionManager().derive();
+		try {
+			actionManager.loadActions(WorkspaceTrackerPanel.class.getResource("workspace-tracker-panel-actions.xml"));
+		} catch (IOException e) {
+			throw new RDHException("Failed to load actions for"+WorkspaceTrackerPanel.class, e);
+		}
 		actionMapper = actionManager.mapper(this);
-
 		toolBar = actionManager.createToolBar("replaydh.ui.core.workspaceTrackerPanel.toolBarList", null);
 
 		fileTracker = environment.getClient().getFileTracker();
@@ -147,11 +129,9 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 
 		contentHeader = (JLabel) GuiUtils.createInfoComponent("", false, null);
 
-		trackedPanel = new FileOutlinePanel(TrackingStatus.TRACKED);
-		newFilesPanel = new FileOutlinePanel(TrackingStatus.UNKNOWN);
-		missingFilesPanel = new FileOutlinePanel(TrackingStatus.MISSING);
-		modifiedFilesPanel = new FileOutlinePanel(TrackingStatus.MODIFIED);
-		corruptedPanel = new FileOutlinePanel(TrackingStatus.CORRUPTED);
+		for(TrackingStatus status : TrackingStatus.values()) {
+			panels.put(status, new FileOutlinePanel(status));
+		}
 
 		contentPanel = new ScrollablePanel();
 		contentPanel.setScrollableWidth(ScrollableSizeHint.FIT);
@@ -161,11 +141,11 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 				.rows("pref, 5dlu, pref, pref, pref, pref, pref")
 				.panel(contentPanel)
 				.add(contentHeader)		.xy(1, 1)
-				.add(corruptedPanel)	.xy(1, 3)
-				.add(newFilesPanel)		.xy(1, 4)
-				.add(missingFilesPanel)	.xy(1, 5)
-				.add(modifiedFilesPanel).xy(1, 6)
-				.add(trackedPanel)		.xy(1, 7)
+				.add(panel(TrackingStatus.CORRUPTED))	.xy(1, 3)
+				.add(panel(TrackingStatus.UNKNOWN))		.xy(1, 4)
+				.add(panel(TrackingStatus.MISSING))		.xy(1, 5)
+				.add(panel(TrackingStatus.MODIFIED))	.xy(1, 6)
+				.add(panel(TrackingStatus.TRACKED))		.xy(1, 7)
 				.build();
 
 		environment.addPropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, handler);
@@ -180,6 +160,13 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 		refreshActions();
 
 		update();
+	}
+
+	private FileOutlinePanel panel(TrackingStatus status) {
+		FileOutlinePanel panel = panels.get(status);
+		if(panel==null)
+			throw new IllegalStateException("No outline panel for tracking status: "+status);
+		return panel;
 	}
 
 	private void registerActions() {
@@ -204,6 +191,11 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 		actionMapper.dispose();
 	}
 
+	private void checkDevMode() {
+		if(!environment.getClient().isDevMode())
+			throw new IllegalStateException("Cannot execute method outside of dev mode!!!");
+	}
+
 	@Experimental
 	private Path getNewFile() {
 		Path workspace = fileTracker.getTrackedFolder();
@@ -218,6 +210,8 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 
 	@Experimental
 	private void createDummyFile() {
+		checkDevMode();
+
 		Path file = getNewFile();
 		try {
 			Files.createFile(file);
@@ -252,6 +246,8 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 
 	@Experimental
 	private void editDummyFile() {
+		checkDevMode();
+
 		Path file = getRandomFile();
 		if(file!=null) {
 			appendToDummyFile(file);
@@ -269,6 +265,8 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 
 	@Experimental
 	private void deleteDummyFile() {
+		checkDevMode();
+
 		Path file = getRandomFile();
 		if(file!=null) {
 			try {
@@ -367,23 +365,23 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 
 				if(hasCorrupted) {
 					Set<LocalFileObject> files = wrapFilesFromTracker(TrackingStatus.CORRUPTED);
-					corruptedPanel.setFiles(extractFilesForUpdate(filesToUpdate, files));
+					panel(TrackingStatus.CORRUPTED).setFiles(extractFilesForUpdate(filesToUpdate, files));
 				}
 				if(hasNew) {
 					Set<LocalFileObject> files = wrapFilesFromTracker(TrackingStatus.UNKNOWN);
-					newFilesPanel.setFiles(extractFilesForUpdate(filesToUpdate, files));
+					panel(TrackingStatus.UNKNOWN).setFiles(extractFilesForUpdate(filesToUpdate, files));
 				}
 				if(hasMissing) {
 					Set<LocalFileObject> files = wrapFilesFromTracker(TrackingStatus.MISSING);
-					missingFilesPanel.setFiles(extractFilesForUpdate(filesToUpdate, files));
+					panel(TrackingStatus.MISSING).setFiles(extractFilesForUpdate(filesToUpdate, files));
 				}
 				if(hasModified) {
 					Set<LocalFileObject> files = wrapFilesFromTracker(TrackingStatus.MODIFIED);
-					modifiedFilesPanel.setFiles(extractFilesForUpdate(filesToUpdate, files));
+					panel(TrackingStatus.MODIFIED).setFiles(extractFilesForUpdate(filesToUpdate, files));
 				}
 				if(hasTracked) {
 					Set<LocalFileObject> files = wrapFilesFromTracker(TrackingStatus.TRACKED);
-					trackedPanel.setFiles(extractFilesForUpdate(filesToUpdate, files));
+					panel(TrackingStatus.TRACKED).setFiles(extractFilesForUpdate(filesToUpdate, files));
 				}
 
 				showCorruptedPanel = hasCorrupted;
@@ -414,11 +412,11 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 			break;
 		}
 
-		corruptedPanel.setVisible(showCorruptedPanel);
-		newFilesPanel.setVisible(showNewPanel);
-		missingFilesPanel.setVisible(showMissingPanel);
-		modifiedFilesPanel.setVisible(showModifiedPanel);
-		trackedPanel.setVisible(showTrackedPanel);
+		panel(TrackingStatus.CORRUPTED).setVisible(showCorruptedPanel);
+		panel(TrackingStatus.UNKNOWN).setVisible(showNewPanel);
+		panel(TrackingStatus.MISSING).setVisible(showMissingPanel);
+		panel(TrackingStatus.MODIFIED).setVisible(showModifiedPanel);
+		panel(TrackingStatus.TRACKED).setVisible(showTrackedPanel);
 
 		String text = null;
 		if(textKey!=null) {
@@ -440,16 +438,10 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 
 	private FileOutlinePanel getFileOutlinePanel(TrackingStatus trackingStatus) {
 		switch (trackingStatus) {
-		case UNKNOWN: return newFilesPanel;
-		case MISSING: return missingFilesPanel;
-		case MODIFIED: return modifiedFilesPanel;
-		case CORRUPTED: return corruptedPanel;
-
-		case IGNORED:
-		case TRACKED: return null;
+		case IGNORED: return null;
 
 		default:
-			throw new IllegalArgumentException("Unknown tracking status: "+trackingStatus);
+			return panel(trackingStatus);
 		}
 	}
 
