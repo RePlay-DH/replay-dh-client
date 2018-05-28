@@ -20,7 +20,6 @@ package bwfdm.replaydh.workflow.export.dspace;
 
 import static java.util.Objects.requireNonNull;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
@@ -43,7 +42,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
@@ -57,7 +55,6 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.UIManager;
-import javax.swing.border.Border;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -80,7 +77,6 @@ import bwfdm.replaydh.ui.helper.AbstractWizardStep;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
-import bwfdm.replaydh.workflow.WorkflowStep;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
 
 public class DSpacePublisherWizard {
@@ -94,9 +90,6 @@ public class DSpacePublisherWizard {
 				environment/*, FINISH /*<-- TEST*/ , CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
-
-	private final static Border defaultBorder = new JTextField().getBorder();
-	private final static Border redBorder = BorderFactory.createLineBorder(Color.RED, 2, false);
 
 	/**
 	 * Context for the wizard
@@ -303,6 +296,11 @@ public class DSpacePublisherWizard {
 //	 * <p>
 //	 * Timer in background, is used to cancel the SwingWorker instance after the timeout.
 //	 * Should be called as "new Thread(new BackgroundTimer<T,V>(worker, timeOut)).start();"
+//	 * <p>
+//	 * e.g.:
+//	 * worker.execute();
+//	 * new Thread(new BackgroundTimer<Boolean, Object>(worker, timeOut)).start();
+//   *	
 //	 * @author vk
 //	 *
 //	 * @param <T> the first parameter of SwingWorker
@@ -376,8 +374,6 @@ public class DSpacePublisherWizard {
 		private JTextArea statusMessage;
 		private JButton openRepositoryButton;
 
-		private String defaultRepositoryURL;
-
 		private String restURL;
 		private String serviceDocumentURL;
 
@@ -448,8 +444,8 @@ public class DSpacePublisherWizard {
 						if(restOK) {
 							//no-op
 						} else {
-							if(tfUrl.isEnabled()) {
-								tfUrl.setBorder(redBorder);
+							if(tfUrl.isEnabled() && tfUrl.isEditable()) {
+								GuiUtils.toggleChangeableBorder(tfUrl, true); //set red border as a sign of wrong URL
 							}
 							statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.wrongUrlMessage"));
 							checkLoginButton.setEnabled(true); //in case of the Internet problem user have to click it again
@@ -491,11 +487,10 @@ public class DSpacePublisherWizard {
 					// Worker was finished properly
 					if(!isCancelled()) {
 						if(loginOK) {
-							pfUserPassword.setBorder(defaultBorder);
 							checkLoginButton.setEnabled(false);
 						} else {
-							pfUserPassword.setText("");
-							pfUserPassword.setBorder(redBorder);
+							pfUserPassword.setText(""); 
+							GuiUtils.toggleChangeableBorder(pfUserPassword, true); //set red border as a sign of the wrong password
 							checkLoginButton.setEnabled(false);
 							statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.wrongLoginMessage"));
 						}
@@ -545,6 +540,12 @@ public class DSpacePublisherWizard {
 				setNextEnabled(false); 		//disable "next" button
 			}
 		};
+				
+		private boolean checkAndUpdateBorder(JTextField tf) {
+			boolean isValid = (tf.getText().trim()!=null) && (!tf.getText().trim().isEmpty()); // do not store "getText()" result in extra variable because of the password
+			GuiUtils.toggleChangeableBorder(tf, !isValid);
+			return isValid;
+		}
 
 		@Override
 		protected JPanel createPanel() {
@@ -553,61 +554,38 @@ public class DSpacePublisherWizard {
 
 			loginOK = false;
 			restOK = false;
-			timeOut = 30; //seconds
+			timeOut = 60; //seconds
 
-			//TODO: -> tfUrl.setEenabled(true)
+			//TODO: -> tfUrl.setEditable(true)
 			tfUrl = new JTextField();
-			tfUrl.setEnabled(false); 	//disable the URL for test reasons.
+			tfUrl.setEditable(false);	//make the URL not editable for test reasons.
 										//But wizard is already available to check the URL automatically
 										//and provide messages in case of error
-
+			
 			tfUserLogin = new JTextField();
 			pfUserPassword = new JPasswordField();
+			
+			GuiUtils.prepareChangeableBorder(tfUrl);
+			GuiUtils.prepareChangeableBorder(tfUserLogin);
+			GuiUtils.prepareChangeableBorder(pfUserPassword);
 
-			statusMessage = GuiUtils.createTextArea("");
+			statusMessage = GuiUtils.createTextArea(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.pleaseLoginMessage"));
 
 			DocumentAdapter adapter = new DocumentAdapter() {
+				
 				@Override
 				public void anyUpdate(DocumentEvent e) {
 
-					// Check if some fields are empty to show a red border
-					//
-					// URL
-					if(e.getDocument() == tfUrl.getDocument()) {
-						if(tfUrl.getText().equals("")) {
-							tfUrl.setBorder(redBorder);
-						} else {
-							tfUrl.setBorder(defaultBorder);
-						}
-					}
-					// Login
-					if(e.getDocument() == tfUserLogin.getDocument()) {
-						if(tfUserLogin.getText().equals("")) {
-							tfUserLogin.setBorder(redBorder);
-						} else {
-							tfUserLogin.setBorder(defaultBorder);
-						}
-					}
-					// Password
-					if(e.getDocument() == pfUserPassword.getDocument()) {
-						if(pfUserPassword.getPassword().length == 0) {
-							pfUserPassword.setBorder(redBorder);
-						} else {
-							pfUserPassword.setBorder(defaultBorder);
-						}
-					}
-
-					// Disable "next" button, set loginOK to false, enable "check login" button if possible
-					// -> to force the user to check the login again
-					setNextEnabled(false);
 					loginOK = false;
-					if((tfUrl.getBorder() == redBorder)
-								|| (tfUserLogin.getBorder() == redBorder)
-								|| (pfUserPassword.getBorder() == redBorder)) {
-						checkLoginButton.setEnabled(false);
-					} else {
-						checkLoginButton.setEnabled(true);
-					}
+					setNextEnabled(false);
+					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.pleaseLoginMessage"));
+
+					boolean loginButtonEnabled = true;					
+					loginButtonEnabled &= checkAndUpdateBorder(tfUrl);
+					loginButtonEnabled &= checkAndUpdateBorder(tfUserLogin);
+					loginButtonEnabled &= checkAndUpdateBorder(pfUserPassword);					
+					
+					checkLoginButton.setEnabled(loginButtonEnabled);
 				}
 			};
 
@@ -953,9 +931,6 @@ public class DSpacePublisherWizard {
 		@Override
 		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
-			
-			//TODO: think about info from current workflow step
-			WorkflowStep workflowStep = environment.getClient().getWorkflowSource().get().getActiveStep();
 			
 			//TODO: use it to fill in the text fields with not null values. Should be used later, when we use some metadata-schema
 			MetadataObject mdObject = context.metadataObject;
