@@ -8,14 +8,32 @@ import org.camunda.bpm.model.bpmn.builder.ServiceTaskBuilder;
 
 
 public class BPMNExporter {
-	static ProcessBuilder modelInstance = Bpmn.createExecutableProcess();
+	static ProcessBuilder process = Bpmn.createExecutableProcess();
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		
-		ServiceTaskBuilder task=modelInstance.startEvent().id("start").sequenceFlowId("startflow").serviceTask().name("Process Payment").id("t0").sequenceFlowId("flow0");
+		ServiceTaskBuilder task=process.startEvent().id("start").sequenceFlowId("startflow").serviceTask().name("Process Payment").id("t0").sequenceFlowId("flow0");
 				
 		task=task.serviceTask().name("Task1").id("t1").sequenceFlowId("flow1");
+		
+		/*ServiceTask tasktest=task.getElement();
+		
+		ModelTypeInstanceContext context = new ModelTypeInstanceContext(tasktest.getDomElement(), (ModelInstanceImpl) tasktest.getModelInstance(), (ModelElementTypeImpl) tasktest.getElementType());
+		
+		//DataObjectReference input = new DataObjectReferenceImpl(context);
+		
+		DataInput input = new DataInputImpl(context);
+		
+		//input.setDataObject(data);
+		
+		DataInputAssociation aso = new DataInputAssociationImpl(context);
+		
+		IoSpecification io = new IoSpecificationImpl(context);
+		
+		io.getDataInputs().add(input);
+		
+		aso.getSources().add(input);*/
 		
 		ExclusiveGatewayBuilder gateway=task.exclusiveGateway("g1").name("gateway1").id("g1").sequenceFlowId("flowg1");
 		
@@ -34,13 +52,14 @@ public class BPMNExporter {
 		
 		task1.endEvent().id("end1");
 		
-		modelInstance.name("Process Payment");
+		process.name("Process Payment");
 		
 		File file = null;
 		file = new File("src/test/java/bwfdm/replaydh/experiments/bpmn/bpmn-model-api.bpmn");
 		
-		Bpmn.validateModel(modelInstance.done());
-		Bpmn.writeModelToFile(file,modelInstance.done());
-
+		Bpmn.validateModel(process.done());
+		
+		Bpmn.writeModelToFile(file,process.done());
+		
 	}
 }

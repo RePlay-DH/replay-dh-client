@@ -1,115 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_3f260af4-26b9-4fa8-8f17-b0d9a0736f96" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL">
-  <process id="process_16e559e1-1490-49e8-b7b7-5513c6b5846a" isExecutable="true" name="Process Payment">
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions_900108bf-5077-4250-85ef-9d021c566b14" targetNamespace="http://camunda.org/examples">
+  <process id="process-with-one-task">
     <startEvent id="start">
-      <outgoing>startflow</outgoing>
+      <outgoing>start-task1</outgoing>
     </startEvent>
-    <sequenceFlow id="startflow" sourceRef="start" targetRef="t0"/>
-    <serviceTask id="t0" name="Process Payment">
-      <incoming>startflow</incoming>
-      <outgoing>flow0</outgoing>
-    </serviceTask>
-    <sequenceFlow id="flow0" sourceRef="t0" targetRef="t1"/>
-    <serviceTask id="t1" name="Task1">
-      <incoming>flow0</incoming>
-      <outgoing>flow1</outgoing>
-    </serviceTask>
-    <sequenceFlow id="flow1" sourceRef="t1" targetRef="g1"/>
-    <exclusiveGateway id="g1" name="gateway1">
-      <incoming>flow1</incoming>
-      <outgoing>flowg1y</outgoing>
-      <outgoing>flowg1n</outgoing>
-    </exclusiveGateway>
-    <sequenceFlow id="flowg1y" name="Yes" sourceRef="g1" targetRef="t1a">
-      <conditionExpression id="conditionExpression_02f0c083-3f8d-4d9a-99f7-d14d83a53e98">#{choice}</conditionExpression>
-    </sequenceFlow>
-    <serviceTask id="t1a" name="Task1a">
-      <incoming>flowg1y</incoming>
-      <outgoing>flow1a</outgoing>
-    </serviceTask>
-    <sequenceFlow id="flow1a" sourceRef="t1a" targetRef="end1"/>
-    <sequenceFlow id="flowg1n" name="No" sourceRef="g1" targetRef="t1b">
-      <conditionExpression id="conditionExpression_c2729bcc-b32a-431d-995a-cb852bac2d5b">#{!choice}</conditionExpression>
-    </sequenceFlow>
-    <serviceTask id="t1b" name="Task1b">
-      <incoming>flowg1n</incoming>
-      <outgoing>flow1b</outgoing>
-    </serviceTask>
-    <sequenceFlow id="flow1b" sourceRef="t1b" targetRef="t2b"/>
-    <serviceTask id="t2b" name="Task2b">
-      <incoming>flow1b</incoming>
-      <outgoing>flow2b</outgoing>
-    </serviceTask>
-    <sequenceFlow id="flow2b" sourceRef="t2b" targetRef="end2"/>
-    <endEvent id="end2">
-      <incoming>flow2b</incoming>
+    <userTask id="task1" name="User Task">
+      <incoming>start-task1</incoming>
+      <outgoing>task1-end</outgoing>
+    </userTask>
+    <endEvent id="end">
+      <incoming>task1-end</incoming>
     </endEvent>
-    <endEvent id="end1">
-      <incoming>flow1a</incoming>
-    </endEvent>
+    <sequenceFlow id="start-task1" sourceRef="start" targetRef="task1"/>
+    <sequenceFlow id="task1-end" sourceRef="task1" targetRef="end"/>
   </process>
-  <bpmndi:BPMNDiagram id="BPMNDiagram_eae8d86a-0817-486f-ab7a-4124e28a31d7">
-    <bpmndi:BPMNPlane bpmnElement="process_16e559e1-1490-49e8-b7b7-5513c6b5846a" id="BPMNPlane_0fd6ed28-5efb-42f3-981f-c967fab9447f">
-      <bpmndi:BPMNShape bpmnElement="start" id="BPMNShape_f9f3bfb5-1cb0-4f30-b6c7-a426a02f8474">
-        <dc:Bounds height="36.0" width="36.0" x="100.0" y="100.0"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="t0" id="BPMNShape_290ef23f-2bbd-4221-8bc6-b864f75b2b76">
-        <dc:Bounds height="80.0" width="100.0" x="186.0" y="78.0"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge bpmnElement="startflow" id="BPMNEdge_b89d2623-16cd-4f77-8198-9e4da5c7d2f4">
-        <di:waypoint x="136.0" y="118.0"/>
-        <di:waypoint x="186.0" y="118.0"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape bpmnElement="t1" id="BPMNShape_61ef6bff-24ee-4073-8aaf-23801938f098">
-        <dc:Bounds height="80.0" width="100.0" x="336.0" y="78.0"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge bpmnElement="flow0" id="BPMNEdge_a3fc19dd-f652-4919-9cd3-338b3345d711">
-        <di:waypoint x="286.0" y="118.0"/>
-        <di:waypoint x="336.0" y="118.0"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape bpmnElement="g1" id="BPMNShape_8e5c37d2-8e91-4f33-90e1-bf456b517df4" isMarkerVisible="true">
-        <dc:Bounds height="50.0" width="50.0" x="486.0" y="93.0"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_ba8022b7-e5ca-46a2-b5ee-464151f5fb95">
-        <di:waypoint x="436.0" y="118.0"/>
-        <di:waypoint x="486.0" y="118.0"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape bpmnElement="t1a" id="BPMNShape_5156a468-c01d-42d3-ab82-de7d0f413bd3">
-        <dc:Bounds height="80.0" width="100.0" x="586.0" y="78.0"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge bpmnElement="flowg1y" id="BPMNEdge_d9196a7f-612e-407f-ba26-f0873aa40944">
-        <di:waypoint x="536.0" y="118.0"/>
-        <di:waypoint x="586.0" y="118.0"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape bpmnElement="t1b" id="BPMNShape_69f34237-6f3a-44b9-a22a-612deb5b5ca3">
-        <dc:Bounds height="80.0" width="100.0" x="586.0" y="208.0"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge bpmnElement="flowg1n" id="BPMNEdge_9ab6030e-ba2f-4452-b130-34e450defabf">
-        <di:waypoint x="511.0" y="143.0"/>
-        <di:waypoint x="511.0" y="248.0"/>
-        <di:waypoint x="586.0" y="248.0"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape bpmnElement="t2b" id="BPMNShape_c5c2efc2-b55d-44d9-a8a4-bec3f2bb146e">
-        <dc:Bounds height="80.0" width="100.0" x="736.0" y="208.0"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge bpmnElement="flow1b" id="BPMNEdge_b484ba01-f132-46d6-8f0d-72ff762cc7e4">
-        <di:waypoint x="686.0" y="248.0"/>
-        <di:waypoint x="736.0" y="248.0"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape bpmnElement="end2" id="BPMNShape_795fdc8c-f7e2-4b2b-912e-1fcffa59b6ea">
-        <dc:Bounds height="36.0" width="36.0" x="886.0" y="230.0"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge bpmnElement="flow2b" id="BPMNEdge_5e0c292b-b817-4968-af86-0a12312a2418">
-        <di:waypoint x="836.0" y="248.0"/>
-        <di:waypoint x="886.0" y="248.0"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape bpmnElement="end1" id="BPMNShape_b3b35cc4-d842-4265-847b-92280a39525b">
-        <dc:Bounds height="36.0" width="36.0" x="736.0" y="100.0"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge bpmnElement="flow1a" id="BPMNEdge_7389ade0-f504-4043-98b4-b3e7596a33b5">
-        <di:waypoint x="686.0" y="118.0"/>
-        <di:waypoint x="736.0" y="118.0"/>
-      </bpmndi:BPMNEdge>
-    </bpmndi:BPMNPlane>
-  </bpmndi:BPMNDiagram>
 </definitions>
