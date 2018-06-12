@@ -149,6 +149,35 @@
 				</doc-text>
 			</doc>
 		</parameter-def>
+	</extension-point>
+			
+	<extension-point id="PreferencesTab" parent-point-id="Localizable" 
+			parent-plugin-id="bwfdm.replaydh.core">
+		<doc>
+			<doc-text>
+				Allows for registration of components for the preferences dialog
+				of the client. Registered extensions will be listed as tabs and
+				loaded lazily when the user decides to open their content.
+				
+				Special node on the localization key for the "path" property:
+				Strings will be split using the dot symbol '.' as delimiter
+				and extracted elements ar used to form the tree structure.
+			</doc-text>
+		</doc>
+		<parameter-def id="path" multiplicity="one">
+			<doc>
+				<doc-text>
+					The path to place the tab under in a GUI, with dot symbol '.' as element delimiter.
+				</doc-text>
+			</doc>
+		</parameter-def>
+		<parameter-def id="class">
+			<doc>
+				<doc-text>
+					Tab class itself, needs to implement bwfdm.replaydh.ui.config.PreferencesTab interface!
+				</doc-text>
+			</doc>
+		</parameter-def>
 	</extension-point>	
 	
 	<!-- Standard Extensions -->
