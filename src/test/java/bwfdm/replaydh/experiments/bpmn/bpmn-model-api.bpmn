@@ -1,17 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions_900108bf-5077-4250-85ef-9d021c566b14" targetNamespace="http://camunda.org/examples">
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions_da16dd16-eb3c-499f-a913-f586d451e954" targetNamespace="http://camunda.org/examples">
   <process id="process-with-one-task">
     <startEvent id="start">
       <outgoing>start-task1</outgoing>
     </startEvent>
     <userTask id="task1" name="User Task">
       <incoming>start-task1</incoming>
-      <outgoing>task1-end</outgoing>
+      <outgoing>task1-gateway1</outgoing>
     </userTask>
-    <endEvent id="end">
-      <incoming>task1-end</incoming>
+    <serviceTask id="task2a" name="Task 2A">
+      <incoming>gateway1-task2a</incoming>
+      <outgoing>task2a-enda</outgoing>
+    </serviceTask>
+    <serviceTask id="task2b" name="Task 2B">
+      <incoming>gateway1-task2b</incoming>
+      <outgoing>task2b-endb</outgoing>
+      <ioSpecification id="ios">
+        <dataInput id="din"/>
+        <dataOutput id="dout"/>
+        <inputSet id="is">
+          <dataInputRefs>din</dataInputRefs>
+        </inputSet>
+        <outputSet id="os">
+          <dataOutputRefs>dout</dataOutputRefs>
+        </outputSet>
+      </ioSpecification>
+    </serviceTask>
+    <endEvent id="enda">
+      <incoming>task2a-enda</incoming>
     </endEvent>
+    <endEvent id="endb">
+      <incoming>task2b-endb</incoming>
+    </endEvent>
+    <exclusiveGateway id="gateway1" name="Gateway 1">
+      <incoming>task1-gateway1</incoming>
+      <outgoing>gateway1-task2a</outgoing>
+      <outgoing>gateway1-task2b</outgoing>
+    </exclusiveGateway>
     <sequenceFlow id="start-task1" sourceRef="start" targetRef="task1"/>
-    <sequenceFlow id="task1-end" sourceRef="task1" targetRef="end"/>
+    <sequenceFlow id="task1-gateway1" sourceRef="task1" targetRef="gateway1"/>
+    <sequenceFlow id="gateway1-task2a" sourceRef="gateway1" targetRef="task2a"/>
+    <sequenceFlow id="gateway1-task2b" sourceRef="gateway1" targetRef="task2b"/>
+    <sequenceFlow id="task2a-enda" sourceRef="task2a" targetRef="enda"/>
+    <sequenceFlow id="task2b-endb" sourceRef="task2b" targetRef="endb"/>
   </process>
 </definitions>
