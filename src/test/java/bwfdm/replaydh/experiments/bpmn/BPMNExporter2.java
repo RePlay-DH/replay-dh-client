@@ -5,7 +5,9 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.BpmnModelElementInstance;
 import org.camunda.bpm.model.bpmn.instance.DataInput;
+import org.camunda.bpm.model.bpmn.instance.DataInputAssociation;
 import org.camunda.bpm.model.bpmn.instance.DataOutput;
+import org.camunda.bpm.model.bpmn.instance.DataOutputAssociation;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
 import org.camunda.bpm.model.bpmn.instance.EndEvent;
 import org.camunda.bpm.model.bpmn.instance.ExclusiveGateway;
@@ -30,7 +32,8 @@ public class BPMNExporter2 {
 		// TODO Auto-generated method stub
 		
 		Definitions definitions = modelInstance.newInstance(Definitions.class);
-		definitions.setTargetNamespace("http://camunda.org/examples");
+		definitions.setTargetNamespace("https://www.ub.uni-stuttgart.de/replay/");
+		definitions.setId("replay");
 		modelInstance.setDefinitions(definitions);
 
 		// create the process
@@ -61,6 +64,9 @@ public class BPMNExporter2 {
 		// properties
 		IoSpecification ios = createElement(process, "ios", IoSpecification.class);
 		
+		DataOutputAssociation douta = createElement(task2b, "douta", DataOutputAssociation.class);
+		DataInputAssociation dina = createElement(task2b, "dina", DataInputAssociation.class);
+		
 		InputSet is =  modelInstance.newInstance(InputSet.class);
 		is.setId("is");
 		OutputSet os = modelInstance.newInstance(OutputSet.class);
@@ -69,6 +75,10 @@ public class BPMNExporter2 {
 		DataInput din = createElement(ios, "din", DataInput.class);
 		DataOutput dout = createElement(ios, "dout", DataOutput.class);
 		
+		douta.setTarget(dout);
+		douta.getSources().add(dout);
+		dina.setTarget(din);
+		dina.getSources().add(din);
 		
 		ios.getInputSets().add(is);
 		ios.getOutputSets().add(os);

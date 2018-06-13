@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="definitions_da16dd16-eb3c-499f-a913-f586d451e954" targetNamespace="http://camunda.org/examples">
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="replay" targetNamespace="https://www.ub.uni-stuttgart.de/replay/">
   <process id="process-with-one-task">
     <startEvent id="start">
       <outgoing>start-task1</outgoing>
@@ -25,6 +25,14 @@
           <dataOutputRefs>dout</dataOutputRefs>
         </outputSet>
       </ioSpecification>
+      <dataInputAssociation id="dina">
+        <sourceRef>din</sourceRef>
+        <targetRef>din</targetRef>
+      </dataInputAssociation>
+      <dataOutputAssociation id="douta">
+        <sourceRef>dout</sourceRef>
+        <targetRef>dout</targetRef>
+      </dataOutputAssociation>
     </serviceTask>
     <endEvent id="enda">
       <incoming>task2a-enda</incoming>
