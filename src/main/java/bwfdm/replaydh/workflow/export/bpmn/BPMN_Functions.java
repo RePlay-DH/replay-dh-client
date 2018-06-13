@@ -16,7 +16,7 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.workflow.export.owl;
+package bwfdm.replaydh.workflow.export.bpmn;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -47,9 +47,9 @@ import bwfdm.replaydh.workflow.schema.IdentifierType.Uniqueness;
  * @author Florian Fritze
  *
  */
-public class PLAN_J_Functions {
+public class BPMN_Functions {
 	
-	public PLAN_J_Functions() {
+	public BPMN_Functions() {
 		om.setNsPrefixes(prefixesmap);
 		
 	}
