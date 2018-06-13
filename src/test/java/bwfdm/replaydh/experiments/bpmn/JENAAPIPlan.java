@@ -46,7 +46,7 @@ import bwfdm.replaydh.workflow.export.WorkflowExportInfo.Mode;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo.ObjectScope;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo.Type;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo.WorkflowScope;
-import bwfdm.replaydh.workflow.export.bpmn.BPMN_Functions;
+import bwfdm.replaydh.workflow.export.bpmn.BPMN_S_Functions;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
 
@@ -154,8 +154,8 @@ public class JENAAPIPlan {
 
 		exportInfo = builder.build();
 
-		BPMN_Functions functions;
-		functions = new BPMN_Functions();
+		BPMN_S_Functions functions;
+		functions = new BPMN_S_Functions();
 		System.out.println("Yeah: "+exportInfo.getTargetStep().getTitle());
 		
 		try {
