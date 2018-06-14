@@ -1,0 +1,234 @@
+@prefix :        <http://www.ub.uni-stuttgart.de/replay#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix datacite:  <http://purl.org/spar/datacite/> .
+@prefix dcterms:  <http://purl.org/dc/terms/> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix p-plan:  <http://purl.org/net/p-plan#> .
+@prefix prov:    <http://www.w3.org/ns/prov#> .
+
+:resource2
+      a       prov:Entity ;
+      dcterms:identifier
+              [ rdfs:label "model1" ;
+                dcterms:type "Name-version"
+              ] ;
+      dcterms:identifier
+              [ rdfs:label "path/to/model/dir/file1.xml" ;
+                dcterms:type "Path"
+              ] ;
+      dcterms:type "inputResource" , "dataset/model" .
+
+:Association_person1
+      a       prov:Association ;
+      prov:agent :person1 ;
+      prov:hadPlan :Workflow ;
+      prov:hadRole "annotator" .
+
+prov:SoftwareAgent
+      a       owl:Class ;
+      rdfs:subClassOf prov:Agent .
+
+prov:AgentInfluence
+      a       owl:Class ;
+      rdfs:subClassOf prov:Influence .
+
+prov:Association
+      a       owl:Class ;
+      rdfs:subClassOf prov:AgentInfluence .
+
+prov:agent
+      a       owl:ObjectProperty ;
+      rdfs:domain prov:AgentInfluence ;
+      rdfs:range prov:Agent .
+
+prov:used
+      a       owl:ObjectProperty ;
+      rdfs:domain prov:Activity ;
+      rdfs:range prov:Entity .
+
+prov:influenced
+      a       owl:ObjectProperty ;
+      rdfs:domain prov:Agent ;
+      rdfs:range prov:Entity .
+
+:person1
+      a       prov:Person ;
+      dcterms:identifier
+              [ rdfs:label "约翰 2" ;
+                dcterms:type "Name"
+              ] ;
+      prov:generated :resource3 ;
+      prov:influenced :resource3 .
+
+:Activity_step_3
+      a       prov:Activity ;
+      rdfs:label "curate" ;
+      dcterms:description "Some random description for step: curate" ;
+      prov:generated :resource3 ;
+      prov:influenced :Activity_step_4 ;
+      prov:qualifiedAssociation
+              :Association_person2 ;
+      prov:used :resource2 , :resource3 ;
+      prov:wasAssociatedWith
+              :person2 .
+
+prov:Person
+      a       owl:Class ;
+      rdfs:subClassOf prov:Agent .
+
+:Activity_step_1
+      a       prov:Activity ;
+      rdfs:label "init" ;
+      dcterms:description "Some random description for step: init" ;
+      prov:influenced :Activity_step_2 ;
+      prov:used :resource2 , :resource1 .
+
+dcterms:type
+      a       owl:DatatypeProperty ;
+      rdfs:range xsd:string .
+
+prov:Activity
+      a       owl:Class .
+
+:Activity_step_5
+      a       prov:Activity ;
+      rdfs:label "analyze" ;
+      dcterms:description "Some random description for step: analyze" ;
+      prov:generated :resource3 ;
+      prov:qualifiedAssociation
+              :Association_person1 , :Association_person2 , :Association_tool1 ;
+      prov:used :resource2 , :resource3 , :resource1 ;
+      prov:wasAssociatedWith
+              :tool1 , :person1 , :person2 .
+
+prov:Influence
+      a       owl:Class .
+
+prov:Plan
+      a       owl:Class .
+
+dcterms:identifier
+      a       owl:DatatypeProperty , owl:ObjectProperty .
+
+:resource3
+      a       prov:Entity ;
+      dcterms:identifier
+              [ rdfs:label "output/dir/result.xml" ;
+                dcterms:type "Path"
+              ] ;
+      dcterms:type "inputResource" , "outputResource" , "dataset/analysis" .
+
+:Association_person2
+      a       prov:Association ;
+      prov:agent :person2 ;
+      prov:hadPlan :Workflow ;
+      prov:hadRole "annotator" .
+
+prov:Entity
+      a       owl:Class ;
+      owl:disjointWith prov:Person .
+
+prov:generated
+      a       owl:ObjectProperty ;
+      rdfs:domain prov:Activity ;
+      rdfs:range prov:Entity .
+
+:resource1
+      a       prov:Entity ;
+      dcterms:identifier
+              [ rdfs:label "path/to/model/dir/file2.xml" ;
+                dcterms:type "Path"
+              ] ;
+      dcterms:identifier
+              [ rdfs:label "model2" ;
+                dcterms:type "Name-version"
+              ] ;
+      dcterms:type "inputResource" , "dataset/model" .
+
+prov:hadRole
+      a       owl:DatatypeProperty ;
+      rdfs:range xsd:string .
+
+prov:wasAssociatedWith
+      a       owl:ObjectProperty ;
+      rdfs:domain prov:Activity ;
+      rdfs:range prov:Agent .
+
+:person2
+      a       prov:Person ;
+      dcterms:identifier
+              [ rdfs:label "约翰 1" ;
+                dcterms:type "Name"
+              ] ;
+      prov:generated :resource3 ;
+      prov:influenced :resource3 .
+
+prov:wasInfluencedBy
+      a       owl:ObjectProperty ;
+      rdfs:domain prov:Entity ;
+      rdfs:range prov:Entity .
+
+:Activity_step_4
+      a       prov:Activity ;
+      rdfs:label "train" ;
+      dcterms:description "Some random description for step: train" ;
+      prov:generated :resource3 ;
+      prov:influenced :Activity_step_5 ;
+      prov:qualifiedAssociation
+              :Association_tool1 ;
+      prov:used :resource2 , :resource3 , :resource1 ;
+      prov:wasAssociatedWith
+              :tool1 .
+
+dcterms:description
+      a       owl:DatatypeProperty ;
+      rdfs:range xsd:string .
+
+:Workflow
+      a       prov:Plan .
+
+:Activity_step_2
+      a       prov:Activity ;
+      rdfs:label "annotate" ;
+      dcterms:description "Some random description for step: annotate" ;
+      prov:generated :resource3 ;
+      prov:influenced :Activity_step_3 ;
+      prov:qualifiedAssociation
+              :Association_person1 , :Association_person2 ;
+      prov:used :resource2 , :resource3 , :resource1 ;
+      prov:wasAssociatedWith
+              :person1 , :person2 .
+
+:Association_tool1
+      a       prov:Association ;
+      prov:agent :tool1 ;
+      prov:hadPlan :Workflow .
+
+:tool1
+      a       prov:SoftwareAgent ;
+      dcterms:description "-v -file path/to/my/dir/model.xml" , "amd64" ;
+      dcterms:identifier
+              [ rdfs:label "myTool-v1" ;
+                dcterms:type "Name-version"
+              ] ;
+      prov:generated :resource3 ;
+      prov:influenced :Activity_step_5 , :Activity_step_4 .
+
+rdfs:label
+      a       owl:DatatypeProperty ;
+      rdfs:range xsd:string .
+
+prov:hadPlan
+      a       owl:ObjectProperty ;
+      rdfs:domain prov:Association ;
+      rdfs:range prov:Plan .
+
+prov:qualifiedAssociation
+      a       owl:ObjectProperty ;
+      rdfs:domain prov:Activity ;
+      rdfs:range prov:Association .
+
+prov:Agent
+      a       owl:Class .

@@ -34,14 +34,7 @@ import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.vocabulary.XSD;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.BpmnModelElementInstance;
-import org.camunda.bpm.model.bpmn.instance.Definitions;
-import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.Process;
-import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
-
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
@@ -203,7 +196,7 @@ public class BPMN_S_Functions extends BPMN_Basics {
 	
 	private Map<String,String> persons = new HashMap<String,String>();
 	
-	
+	private Process process = null;
 	/**
 	 * Iterates over a set of workflowsteps
 	 * @param workFlow
@@ -211,7 +204,7 @@ public class BPMN_S_Functions extends BPMN_Basics {
 	 * @throws MalformedURLException 
 	 */
 	public void iterateOverSteps(Workflow workFlow, Set<WorkflowStep> workFlowSteps) throws MalformedURLException {
-		Process process = createElement(definitions, workFlow.getTitle(), Process.class);
+		process = createElement(definitions, workFlow.getTitle(), Process.class);
 		for (WorkflowStep workFlowStep : workFlowSteps) {
 			if (!(workFlow.isInitialStep(workFlowStep))) {
 				Set<Resource> inputResources = workFlowStep.getInput();

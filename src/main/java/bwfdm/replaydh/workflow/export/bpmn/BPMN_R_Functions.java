@@ -36,6 +36,8 @@ import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.vocabulary.XSD;
+import org.camunda.bpm.model.bpmn.instance.Process;
+
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
@@ -50,11 +52,13 @@ import bwfdm.replaydh.workflow.schema.IdentifierType.Uniqueness;
  */
 public class BPMN_R_Functions extends BPMN_Basics {
 	
-	public BPMN_R_Functions() {
+	public BPMN_R_Functions(Workflow workflow) {
 		super(nsrpdh);
+		workFlow=workflow;
+		process = createElement(definitions, workflow.getTitle(), Process.class);
 		om.setNsPrefixes(prefixesmap);
 	}
-
+	private Workflow workFlow = null;
 	
 	private final static String nsrdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 	private final static String nsxsd = "http://www.w3.org/2001/XMLSchema#";
@@ -133,6 +137,7 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	
 	private WorkflowStep exportWorkflowStep = null;
 	
+	private Process process = null;
 	
 	public WorkflowStep getExportWorkflowStep() {
 		return exportWorkflowStep;
@@ -190,12 +195,12 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	 * @param workFlowStep
 	 * @throws MalformedURLException 
 	 */
-	public void showHistory(Workflow workFlow, WorkflowStep workFlowStep) throws MalformedURLException {
+	public void showHistory(WorkflowStep workFlowStep) throws MalformedURLException {
 		Set<Resource> inputResources = workFlowStep.getInput();
 		Set<Resource> outputResources = workFlowStep.getOutput();
 		if (workFlow.hasPreviousSteps(workFlowStep)) {
 			for (WorkflowStep wfs : workFlow.getPreviousSteps(workFlowStep)) {
-				showHistory(workFlow,wfs);
+				showHistory(wfs);
 				showResources(workFlowStep, inputResources, outputResources);
 				if (!(workFlow.isInitialStep(wfs))) {
 					Individual nActivity = pOActivity.createIndividual(nsrpdh+"Activity_"+workFlowStep.getId());

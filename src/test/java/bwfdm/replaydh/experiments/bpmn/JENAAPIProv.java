@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.Set;
+
 import bwfdm.replaydh.core.RDHClient;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHLifecycleException;
@@ -46,12 +47,12 @@ import bwfdm.replaydh.workflow.export.WorkflowExportInfo.Mode;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo.ObjectScope;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo.Type;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo.WorkflowScope;
-import bwfdm.replaydh.workflow.export.bpmn.BPMN_S_Functions;
+import bwfdm.replaydh.workflow.export.bpmn.BPMN_R_Functions;
 import bwfdm.replaydh.workflow.impl.DefaultWorkflow;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
 
-public class JENAAPIPlan {
+public class JENAAPIProv {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -123,7 +124,7 @@ public class JENAAPIPlan {
 		}
 
 		builder.encoding(Charset.defaultCharset());
-		Path output = Paths.get("./src/test/java/bwfdm/replaydh/experiments/bpmn/pontology.owl");
+		Path output = Paths.get("./src/test/java/bwfdm/replaydh/experiments/bpmn/ontology.owl");
 		IOResource resource = new FileResource(output, AccessMode.WRITE);
 		try {
 			resource.prepare();
@@ -155,12 +156,12 @@ public class JENAAPIPlan {
 
 		exportInfo = builder.build();
 
-		BPMN_S_Functions functions;
-		functions = new BPMN_S_Functions();
+		BPMN_R_Functions functions;
+		functions = new BPMN_R_Functions(exportInfo.getWorkflow());
 		System.out.println("Yeah: "+exportInfo.getTargetStep().getTitle());
-		
+
 		try {
-			functions.iterateOverSteps(exportInfo.getWorkflow(), exportInfo.getSteps());
+			functions.showHistory(exportInfo.getTargetStep());
 		} catch (MalformedURLException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
