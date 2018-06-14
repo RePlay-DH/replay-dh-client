@@ -50,7 +50,7 @@ import bwfdm.replaydh.workflow.schema.IdentifierType.Uniqueness;
 public class BPMN_S_Functions extends BPMN_Basics {
 	
 	public BPMN_S_Functions() {
-		super(nsrpdh);
+		super(nsrpdh,"replay");
 		om.setNsPrefixes(prefixesmap);
 		
 	}

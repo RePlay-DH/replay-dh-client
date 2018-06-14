@@ -18,6 +18,7 @@
  */
 package bwfdm.replaydh.workflow.export.bpmn;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.MalformedURLException;
@@ -36,7 +37,16 @@ import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.vocabulary.XSD;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.instance.DataInput;
+import org.camunda.bpm.model.bpmn.instance.DataOutput;
+import org.camunda.bpm.model.bpmn.instance.EndEvent;
+import org.camunda.bpm.model.bpmn.instance.InputSet;
+import org.camunda.bpm.model.bpmn.instance.IoSpecification;
+import org.camunda.bpm.model.bpmn.instance.OutputSet;
 import org.camunda.bpm.model.bpmn.instance.Process;
+import org.camunda.bpm.model.bpmn.instance.StartEvent;
+import org.camunda.bpm.model.bpmn.instance.UserTask;
 
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Person;
@@ -53,9 +63,10 @@ import bwfdm.replaydh.workflow.schema.IdentifierType.Uniqueness;
 public class BPMN_R_Functions extends BPMN_Basics {
 	
 	public BPMN_R_Functions(Workflow workflow) {
-		super(nsrpdh);
+		super(nsrpdh,"replay");
 		workFlow=workflow;
-		process = createElement(definitions, workflow.getTitle(), Process.class);
+		process_name=workflow.getTitle().replaceAll(" ", "_");
+		process = createElement(definitions, process_name, Process.class);
 		om.setNsPrefixes(prefixesmap);
 	}
 	private Workflow workFlow = null;
@@ -139,6 +150,34 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	
 	private Process process = null;
 	
+	private String process_name;
+	
+	private boolean first_iteration = true;
+	
+	private boolean in_the_process_chain = false;
+	
+	private IoSpecification ios = null;
+	
+	private String chosenID = null;
+	
+	private int number = 0;
+	
+	private DataInput din = null;
+	
+	private DataOutput dout = null;
+	
+	private InputSet is = modelInstance.newInstance(InputSet.class);
+	
+	private OutputSet os = modelInstance.newInstance(OutputSet.class);
+	
+	private UserTask userTask = null;
+	
+	private UserTask previousUserTask = null;
+	
+	private StartEvent startEvent = null;
+	
+	private EndEvent endEvent = null;
+	
 	public WorkflowStep getExportWorkflowStep() {
 		return exportWorkflowStep;
 	}
@@ -198,16 +237,75 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	public void showHistory(WorkflowStep workFlowStep) throws MalformedURLException {
 		Set<Resource> inputResources = workFlowStep.getInput();
 		Set<Resource> outputResources = workFlowStep.getOutput();
+		if (first_iteration) {
+			ios = createElement(process, "iospec_"+process_name, IoSpecification.class);
+			ios.getOutputSets().add(os);
+			ios.getInputSets().add(is);
+			for (Resource outputResource : outputResources) {
+				chosenID=getBestID(outputResource.getIdentifiers());
+				if ((resources.containsKey(chosenID)) == false) {
+					number=resources.size()+1;
+					resources.put(chosenID, "resource"+number);
+					dout = createElement(ios, resources.get(chosenID), DataOutput.class);
+					for(Identifier id : outputResource.getIdentifiers()) {
+						if (id.getType().getName() != null) {
+							dout.setName(id.getId());
+						}
+					}
+					os.getDataOutputRefs().add(dout);
+				}
+				
+			}
+			first_iteration=false;
+		}
 		if (workFlow.hasPreviousSteps(workFlowStep)) {
 			for (WorkflowStep wfs : workFlow.getPreviousSteps(workFlowStep)) {
 				showHistory(wfs);
 				showResources(workFlowStep, inputResources, outputResources);
 				if (!(workFlow.isInitialStep(wfs))) {
+					if (in_the_process_chain) {
+						userTask = createElement(process, "Activity_"+wfs.getId(), UserTask.class);
+						userTask.setName(workFlowStep.getTitle());
+						createSequenceFlow(process, previousUserTask, userTask);
+						previousUserTask=userTask;
+					} else {
+						userTask = createElement(process, "Activity_"+wfs.getId(), UserTask.class);
+						userTask.setName(workFlowStep.getTitle());
+						previousUserTask=userTask;
+						createSequenceFlow(process, startEvent, userTask);
+						in_the_process_chain=true;
+					}
 					Individual nActivity = pOActivity.createIndividual(nsrpdh+"Activity_"+workFlowStep.getId());
 					Individual nPreviousActivity = pOActivity.createIndividual(nsrpdh+"Activity_"+wfs.getId());
 					nPreviousActivity.addProperty(pOinfluenced, nActivity);
 				}
 			}
+		} else if (workFlow.isInitialStep(workFlowStep)) {
+			if (workFlow.hasNextSteps(workFlowStep)) {
+				for (WorkflowStep wfs : workFlow.getNextSteps(workFlowStep)) {
+					inputResources = wfs.getInput();
+					for (Resource inputResource : inputResources) {
+						chosenID=getBestID(inputResource.getIdentifiers());
+						if ((resources.containsKey(chosenID)) == false) {
+							number=resources.size()+1;
+							resources.put(chosenID, "resource"+number);
+							din = createElement(ios, resources.get(chosenID), DataInput.class);
+							for(Identifier id : inputResource.getIdentifiers()) {
+								if (id.getType().getName() != null) {
+									din.setName(id.getId());
+								}
+							}
+							is.getDataInputs().add(din);
+						}
+					}
+					startEvent = createElement(process, "start", StartEvent.class);
+					startEvent.setName(wfs.getTitle());
+				}
+			}
+		}
+		if (!(workFlow.hasNextSteps(workFlowStep))) {
+			endEvent = createElement(process, "end", EndEvent.class);
+			createSequenceFlow(process, previousUserTask, endEvent);
 		}
 	}
 	
@@ -221,8 +319,6 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	 */
 	public void showResources(WorkflowStep workFlowStep, Set<Resource> inputResources, Set<Resource> outputResources) throws MalformedURLException {
 		Individual nProvPLAN = pOPlan.createIndividual(nsrpdh+"Workflow");
-		int number=0;
-		String chosenID=null;
 		Individual inOEntity = null;
 		List<Individual> inids = new ArrayList<Individual>();
 		Individual outOEntity = null;
@@ -416,6 +512,10 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	 */
 	public void writeOnt(Writer writer, String fileending) throws IOException {
 		om.write(writer,fileending);
+		Bpmn.validateModel(modelInstance);
+		File file;
+		file = new File("src/test/java/bwfdm/replaydh/experiments/bpmn/bpmn-model-api.bpmn");
+		Bpmn.writeModelToFile(file, modelInstance);
 	}
 	
 	/**

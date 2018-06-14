@@ -38,7 +38,6 @@ import bwfdm.replaydh.io.resources.IOResource;
 import bwfdm.replaydh.utils.AccessMode;
 import bwfdm.replaydh.utils.Options;
 import bwfdm.replaydh.workflow.Resource;
-import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.WorkflowStep;
 import bwfdm.replaydh.workflow.WorkflowUtils;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
@@ -61,7 +60,7 @@ public class JENAAPIProv {
 
 		//File file = new File("./local.owl");
 
-		DefaultWorkflow wf = (DefaultWorkflow) WorkflowUtils.createLinearWorkflow(schema);
+		DefaultWorkflow wf = (DefaultWorkflow) WorkflowUtils.createForkedWorkflow(schema);
 
 		//Workflow wf = WorkflowUtils.createForkedWorkflow(schema);
 		wf.setTitle("My workflow");
@@ -140,7 +139,7 @@ public class JENAAPIProv {
 			if (!(wf.isInitialStep(step))) {
 				System.out.println("Title: "+step.getTitle());
 				System.out.println(step.getOutput());
-				if(step.getTitle().equals("analyze")) {
+				if(step.getTitle().equals("correct")) {
 					builder.resources(step.getOutput());
 					builder.targetStep(step);
 					break;

@@ -15,9 +15,9 @@ import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
  */
 public class BPMN_Basics {
 	
-	BPMN_Basics(String namespaceURI) {
+	BPMN_Basics(String namespaceURI, String id) {
 		definitions.setTargetNamespace(namespaceURI);
-		definitions.setId("replay");
+		definitions.setId(id);
 		modelInstance.setDefinitions(definitions);
 	}
 	

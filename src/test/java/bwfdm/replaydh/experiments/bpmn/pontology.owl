@@ -60,7 +60,7 @@ prov:influenced
       p-plan:correspondsToStep
               :step_5 ;
       prov:qualifiedAssociation
-              :Association_person1 , :Association_person2 , :Association_tool1 .
+              :Association_tool1 .
 
 :step_5
       a       p-plan:Step ;
@@ -72,17 +72,17 @@ prov:influenced
               :step_4 ;
       p-plan:isStepOfPlan :Workflow ;
       prov:wasAssociatedWith
-              :tool1 , :person1 , :person2 .
+              :tool1 .
 
 :resource3
       a       p-plan:Variable ;
       dcterms:identifier
-              [ rdfs:label "path/to/model/dir/file2.xml" ;
-                dcterms:type "Path"
-              ] ;
-      dcterms:identifier
               [ rdfs:label "model2" ;
                 dcterms:type "Name-version"
+              ] ;
+      dcterms:identifier
+              [ rdfs:label "path/to/model/dir/file2.xml" ;
+                dcterms:type "Path"
               ] ;
       dcterms:type "inputResource" , "dataset/model" .
 
@@ -153,11 +153,23 @@ p-plan:isStepOfPlan
                 dcterms:type "Name-version"
               ] ;
       p-plan:hasInputVar "-v -file path/to/my/dir/model.xml" ;
-      prov:influenced :Activity_step_5 , :Activity_step_4 .
+      prov:influenced :Activity_step_5 , :Activity_step_6 , :Activity_step_4 .
 
 rdfs:label
       a       owl:DatatypeProperty ;
       rdfs:range xsd:string .
+
+:step_6
+      a       p-plan:Step ;
+      rdfs:label "correct" ;
+      dcterms:description "Some random description for step: correct" ;
+      p-plan:hasInputVar :resource2 , :resource3 , :resource1 ;
+      p-plan:hasOutputVar :resource1 ;
+      p-plan:isPreceededBy
+              :step_5 ;
+      p-plan:isStepOfPlan :Workflow ;
+      prov:wasAssociatedWith
+              :tool1 , :person2 .
 
 prov:qualifiedAssociation
       a       owl:ObjectProperty ;
@@ -262,6 +274,13 @@ p-plan:hasInputVar
       rdfs:domain p-plan:Step ;
       rdfs:range xsd:string , p-plan:Variable .
 
+:Activity_step_6
+      a       p-plan:Activity , prov:Activity ;
+      p-plan:correspondsToStep
+              :step_6 ;
+      prov:qualifiedAssociation
+              :Association_person2 , :Association_tool1 .
+
 :step_4
       a       p-plan:Step ;
       rdfs:label "train" ;
@@ -269,7 +288,7 @@ p-plan:hasInputVar
       p-plan:hasInputVar :resource2 , :resource3 , :resource1 ;
       p-plan:hasOutputVar :resource1 ;
       p-plan:isPreceededBy
-              :step_3 ;
+              :step_1 ;
       p-plan:isStepOfPlan :Workflow ;
       prov:wasAssociatedWith
               :tool1 .

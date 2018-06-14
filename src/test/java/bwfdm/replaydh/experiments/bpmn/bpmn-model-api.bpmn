@@ -1,55 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="replay" targetNamespace="https://www.ub.uni-stuttgart.de/replay/">
-  <process id="process-with-one-task">
-    <startEvent id="start">
-      <outgoing>start-task1</outgoing>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="replay" targetNamespace="http://www.ub.uni-stuttgart.de/replay#">
+  <process id="My_workflow">
+    <ioSpecification id="iospec_My_workflow">
+      <dataInput id="resource2" name="path/to/model/dir/file2.xml"/>
+      <dataInput id="resource3" name="path/to/model/dir/file1.xml"/>
+      <dataOutput id="resource1" name="output/dir/result.xml"/>
+      <inputSet id="inputSet_98de008d-cf16-4fb6-8d15-2738fadc2c34">
+        <dataInputRefs>resource2</dataInputRefs>
+        <dataInputRefs>resource3</dataInputRefs>
+      </inputSet>
+      <outputSet id="outputSet_b9ef03a6-c49a-4af6-9745-f19f87c36e98">
+        <dataOutputRefs>resource1</dataOutputRefs>
+      </outputSet>
+    </ioSpecification>
+    <startEvent id="start" name="init">
+      <outgoing>start-Activity_step_1</outgoing>
     </startEvent>
-    <userTask id="task1" name="User Task">
-      <incoming>start-task1</incoming>
-      <outgoing>task1-gateway1</outgoing>
+    <userTask id="Activity_step_1" name="train">
+      <incoming>start-Activity_step_1</incoming>
+      <outgoing>Activity_step_1-Activity_step_4</outgoing>
     </userTask>
-    <serviceTask id="task2a" name="Task 2A">
-      <incoming>gateway1-task2a</incoming>
-      <outgoing>task2a-enda</outgoing>
-    </serviceTask>
-    <serviceTask id="task2b" name="Task 2B">
-      <incoming>gateway1-task2b</incoming>
-      <outgoing>task2b-endb</outgoing>
-      <ioSpecification id="ios">
-        <dataInput id="din"/>
-        <dataOutput id="dout"/>
-        <inputSet id="is">
-          <dataInputRefs>din</dataInputRefs>
-        </inputSet>
-        <outputSet id="os">
-          <dataOutputRefs>dout</dataOutputRefs>
-        </outputSet>
-      </ioSpecification>
-      <dataInputAssociation id="dina">
-        <sourceRef>din</sourceRef>
-        <targetRef>din</targetRef>
-      </dataInputAssociation>
-      <dataOutputAssociation id="douta">
-        <sourceRef>dout</sourceRef>
-        <targetRef>dout</targetRef>
-      </dataOutputAssociation>
-    </serviceTask>
-    <endEvent id="enda">
-      <incoming>task2a-enda</incoming>
+    <sequenceFlow id="start-Activity_step_1" sourceRef="start" targetRef="Activity_step_1"/>
+    <userTask id="Activity_step_4" name="analyze">
+      <incoming>Activity_step_1-Activity_step_4</incoming>
+      <outgoing>Activity_step_4-Activity_step_5</outgoing>
+    </userTask>
+    <sequenceFlow id="Activity_step_1-Activity_step_4" sourceRef="Activity_step_1" targetRef="Activity_step_4"/>
+    <userTask id="Activity_step_5" name="correct">
+      <incoming>Activity_step_4-Activity_step_5</incoming>
+      <outgoing>Activity_step_5-end</outgoing>
+    </userTask>
+    <sequenceFlow id="Activity_step_4-Activity_step_5" sourceRef="Activity_step_4" targetRef="Activity_step_5"/>
+    <endEvent id="end">
+      <incoming>Activity_step_5-end</incoming>
     </endEvent>
-    <endEvent id="endb">
-      <incoming>task2b-endb</incoming>
-    </endEvent>
-    <exclusiveGateway id="gateway1" name="Gateway 1">
-      <incoming>task1-gateway1</incoming>
-      <outgoing>gateway1-task2a</outgoing>
-      <outgoing>gateway1-task2b</outgoing>
-    </exclusiveGateway>
-    <sequenceFlow id="start-task1" sourceRef="start" targetRef="task1"/>
-    <sequenceFlow id="task1-gateway1" sourceRef="task1" targetRef="gateway1"/>
-    <sequenceFlow id="gateway1-task2a" sourceRef="gateway1" targetRef="task2a"/>
-    <sequenceFlow id="gateway1-task2b" sourceRef="gateway1" targetRef="task2b"/>
-    <sequenceFlow id="task2a-enda" sourceRef="task2a" targetRef="enda"/>
-    <sequenceFlow id="task2b-endb" sourceRef="task2b" targetRef="endb"/>
+    <sequenceFlow id="Activity_step_5-end" sourceRef="Activity_step_5" targetRef="end"/>
   </process>
 </definitions>
