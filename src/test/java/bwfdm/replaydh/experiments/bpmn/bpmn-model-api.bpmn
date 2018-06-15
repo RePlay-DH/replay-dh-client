@@ -2,38 +2,80 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="replay" targetNamespace="http://www.ub.uni-stuttgart.de/replay#">
   <process id="My_workflow">
     <ioSpecification id="iospec_My_workflow">
-      <dataInput id="resource2" name="path/to/model/dir/file2.xml"/>
-      <dataInput id="resource3" name="path/to/model/dir/file1.xml"/>
-      <dataOutput id="resource1" name="output/dir/result.xml"/>
-      <inputSet id="inputSet_98de008d-cf16-4fb6-8d15-2738fadc2c34">
-        <dataInputRefs>resource2</dataInputRefs>
-        <dataInputRefs>resource3</dataInputRefs>
+      <dataInput id="inputResource1" name="path/to/model/dir/file2.xml"/>
+      <dataInput id="inputResource2" name="path/to/model/dir/file1.xml"/>
+      <dataOutput id="outputResource1" name="output/dir/result.xml"/>
+      <inputSet id="inputSet_d1b22ba7-a237-4823-8f25-69ea7963218f">
+        <dataInputRefs>inputResource1</dataInputRefs>
+        <dataInputRefs>inputResource2</dataInputRefs>
       </inputSet>
-      <outputSet id="outputSet_b9ef03a6-c49a-4af6-9745-f19f87c36e98">
-        <dataOutputRefs>resource1</dataOutputRefs>
+      <outputSet id="outputSet_818ad8c0-5dbd-4de0-9a49-4d394c0538d3">
+        <dataOutputRefs>outputResource1</dataOutputRefs>
       </outputSet>
     </ioSpecification>
     <startEvent id="start" name="init">
-      <outgoing>start-Activity_step_1</outgoing>
+      <outgoing>start-Activity_step_4</outgoing>
     </startEvent>
-    <userTask id="Activity_step_1" name="train">
-      <incoming>start-Activity_step_1</incoming>
-      <outgoing>Activity_step_1-Activity_step_4</outgoing>
-    </userTask>
-    <sequenceFlow id="start-Activity_step_1" sourceRef="start" targetRef="Activity_step_1"/>
-    <userTask id="Activity_step_4" name="analyze">
-      <incoming>Activity_step_1-Activity_step_4</incoming>
+    <userTask id="Activity_step_4" name="train">
+      <incoming>start-Activity_step_4</incoming>
       <outgoing>Activity_step_4-Activity_step_5</outgoing>
+      <ioSpecification id="iospec_step_4">
+        <dataInput id="inputResource3" name="output/dir/result.xml"/>
+        <dataInput id="inputResource4" name="path/to/model/dir/file2.xml"/>
+        <dataInput id="inputResource5" name="path/to/model/dir/file1.xml"/>
+        <dataOutput id="outputResource2" name="output/dir/result.xml"/>
+        <inputSet id="inputSet_ee97386d-c5c8-4de3-b2f7-3e56f5bd458d">
+          <dataInputRefs>inputResource3</dataInputRefs>
+          <dataInputRefs>inputResource4</dataInputRefs>
+          <dataInputRefs>inputResource5</dataInputRefs>
+        </inputSet>
+        <outputSet id="outputSet_f9268b7c-50b5-4f4e-9204-2151ce4fdf5d">
+          <dataOutputRefs>outputResource2</dataOutputRefs>
+        </outputSet>
+      </ioSpecification>
     </userTask>
-    <sequenceFlow id="Activity_step_1-Activity_step_4" sourceRef="Activity_step_1" targetRef="Activity_step_4"/>
-    <userTask id="Activity_step_5" name="correct">
+    <sequenceFlow id="start-Activity_step_4" sourceRef="start" targetRef="Activity_step_4"/>
+    <userTask id="Activity_step_5" name="analyze">
       <incoming>Activity_step_4-Activity_step_5</incoming>
-      <outgoing>Activity_step_5-end</outgoing>
+      <outgoing>Activity_step_5-Activity_step_6</outgoing>
+      <ioSpecification id="iospec_step_5">
+        <dataInput id="inputResource6" name="path/to/model/dir/file1.xml"/>
+        <dataInput id="inputResource7" name="path/to/model/dir/file2.xml"/>
+        <dataInput id="inputResource8" name="output/dir/result.xml"/>
+        <dataOutput id="outputResource3" name="output/dir/result.xml"/>
+        <inputSet id="inputSet_4b20dd4f-8520-4f80-9992-72cb9e29bea4">
+          <dataInputRefs>inputResource6</dataInputRefs>
+          <dataInputRefs>inputResource7</dataInputRefs>
+          <dataInputRefs>inputResource8</dataInputRefs>
+        </inputSet>
+        <outputSet id="outputSet_f311d796-60d5-4b77-8244-5d1561527a48">
+          <dataOutputRefs>outputResource3</dataOutputRefs>
+        </outputSet>
+      </ioSpecification>
     </userTask>
     <sequenceFlow id="Activity_step_4-Activity_step_5" sourceRef="Activity_step_4" targetRef="Activity_step_5"/>
+    <userTask id="Activity_step_6" name="correct">
+      <incoming>Activity_step_5-Activity_step_6</incoming>
+      <outgoing>Activity_step_6-end</outgoing>
+      <ioSpecification id="iospec_step_6">
+        <dataInput id="inputResource9" name="output/dir/result.xml"/>
+        <dataInput id="inputResource10" name="path/to/model/dir/file1.xml"/>
+        <dataInput id="inputResource11" name="path/to/model/dir/file2.xml"/>
+        <dataOutput id="outputResource4" name="output/dir/result.xml"/>
+        <inputSet id="inputSet_4a7a30cd-02eb-42a8-ba94-a7f21eea067a">
+          <dataInputRefs>inputResource9</dataInputRefs>
+          <dataInputRefs>inputResource10</dataInputRefs>
+          <dataInputRefs>inputResource11</dataInputRefs>
+        </inputSet>
+        <outputSet id="outputSet_bdd39012-6b1f-47b3-b4f9-71871fff0617">
+          <dataOutputRefs>outputResource4</dataOutputRefs>
+        </outputSet>
+      </ioSpecification>
+    </userTask>
+    <sequenceFlow id="Activity_step_5-Activity_step_6" sourceRef="Activity_step_5" targetRef="Activity_step_6"/>
     <endEvent id="end">
-      <incoming>Activity_step_5-end</incoming>
+      <incoming>Activity_step_6-end</incoming>
     </endEvent>
-    <sequenceFlow id="Activity_step_5-end" sourceRef="Activity_step_5" targetRef="end"/>
+    <sequenceFlow id="Activity_step_6-end" sourceRef="Activity_step_6" targetRef="end"/>
   </process>
 </definitions>

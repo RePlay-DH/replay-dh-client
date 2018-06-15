@@ -39,6 +39,7 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.vocabulary.XSD;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.instance.DataInput;
+import org.camunda.bpm.model.bpmn.instance.DataObject;
 import org.camunda.bpm.model.bpmn.instance.DataOutput;
 import org.camunda.bpm.model.bpmn.instance.EndEvent;
 import org.camunda.bpm.model.bpmn.instance.InputSet;
@@ -160,7 +161,9 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	
 	private String chosenID = null;
 	
-	private int number = 0;
+	private int numberInput = 0;
+	
+	private int numberOutput = 0;
 	
 	private DataInput din = null;
 	
@@ -244,9 +247,10 @@ public class BPMN_R_Functions extends BPMN_Basics {
 			for (Resource outputResource : outputResources) {
 				chosenID=getBestID(outputResource.getIdentifiers());
 				if ((resources.containsKey(chosenID)) == false) {
-					number=resources.size()+1;
-					resources.put(chosenID, "resource"+number);
+					numberOutput++;
+					resources.put(chosenID, "outputResource"+numberOutput);
 					dout = createElement(ios, resources.get(chosenID), DataOutput.class);
+					//dataoutput.put(chosenID, dout);
 					for(Identifier id : outputResource.getIdentifiers()) {
 						if (id.getType().getName() != null) {
 							dout.setName(id.getId());
@@ -261,16 +265,20 @@ public class BPMN_R_Functions extends BPMN_Basics {
 		if (workFlow.hasPreviousSteps(workFlowStep)) {
 			for (WorkflowStep wfs : workFlow.getPreviousSteps(workFlowStep)) {
 				showHistory(wfs);
-				showResources(workFlowStep, inputResources, outputResources);
 				if (!(workFlow.isInitialStep(wfs))) {
+					/*
+					 * Checks if it is the beginning of the process chain, if 'yes' else will be chosen
+					 */
 					if (in_the_process_chain) {
-						userTask = createElement(process, "Activity_"+wfs.getId(), UserTask.class);
+						userTask = createElement(process, "Activity_"+workFlowStep.getId(), UserTask.class);
 						userTask.setName(workFlowStep.getTitle());
+						showResources(workFlowStep, inputResources, outputResources, userTask);
 						createSequenceFlow(process, previousUserTask, userTask);
 						previousUserTask=userTask;
 					} else {
-						userTask = createElement(process, "Activity_"+wfs.getId(), UserTask.class);
+						userTask = createElement(process, "Activity_"+workFlowStep.getId(), UserTask.class);
 						userTask.setName(workFlowStep.getTitle());
+						showResources(workFlowStep, inputResources, outputResources, userTask);
 						previousUserTask=userTask;
 						createSequenceFlow(process, startEvent, userTask);
 						in_the_process_chain=true;
@@ -287,9 +295,10 @@ public class BPMN_R_Functions extends BPMN_Basics {
 					for (Resource inputResource : inputResources) {
 						chosenID=getBestID(inputResource.getIdentifiers());
 						if ((resources.containsKey(chosenID)) == false) {
-							number=resources.size()+1;
-							resources.put(chosenID, "resource"+number);
+							numberInput++;
+							resources.put(chosenID, "inputResource"+numberInput);
 							din = createElement(ios, resources.get(chosenID), DataInput.class);
+							//datainput.put(chosenID, din);
 							for(Identifier id : inputResource.getIdentifiers()) {
 								if (id.getType().getName() != null) {
 									din.setName(id.getId());
@@ -317,7 +326,17 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	 * @param stepcounter
 	 * @throws MalformedURLException 
 	 */
-	public void showResources(WorkflowStep workFlowStep, Set<Resource> inputResources, Set<Resource> outputResources) throws MalformedURLException {
+	public void showResources(WorkflowStep workFlowStep, Set<Resource> inputResources, Set<Resource> outputResources, UserTask userTask) throws MalformedURLException {
+		String step_id=workFlowStep.getId().replaceAll(" ", "_");
+		IoSpecification ios = createElement(userTask, "iospec_"+step_id, IoSpecification.class);
+		//Map<String,DataOutput> dataoutput = new HashMap<String,DataOutput>();
+		//Map<String,DataInput> datainput = new HashMap<String,DataInput>();
+		DataInput din = null;
+		DataOutput dout = null;
+		InputSet isStep = modelInstance.newInstance(InputSet.class);
+		OutputSet osStep = modelInstance.newInstance(OutputSet.class);
+		ios.getOutputSets().add(osStep);
+		ios.getInputSets().add(isStep);
 		Individual nProvPLAN = pOPlan.createIndividual(nsrpdh+"Workflow");
 		Individual inOEntity = null;
 		List<Individual> inids = new ArrayList<Individual>();
@@ -353,9 +372,11 @@ public class BPMN_R_Functions extends BPMN_Basics {
 			 * and assigns it a new individual
 			 */
 			if ((resources.containsKey(chosenID)) == false) {
-				number=resources.size()+1;
-				resources.put(chosenID, "resource"+number);
+				numberInput++;
+				resources.put(chosenID, "inputResource"+numberInput);
+				din = createElement(ios, "inputResource"+numberInput, DataInput.class);
 			 
+				//datainput.put(chosenID, din);
 				inOEntity = pOEntity.createIndividual(nsrpdh+resources.get(chosenID));
 				inOEntity.addProperty(dcType, "inputResource");
 				inids.add(inOEntity);
@@ -366,6 +387,7 @@ public class BPMN_R_Functions extends BPMN_Basics {
 				nIDActivity.addProperty(POused, inOEntity);
 				for(Identifier id : inputResource.getIdentifiers()) {
 					iDIN = om.createLiteral(id.getId().toString());
+					din.setName(id.getId());
 					if (id.getType().getName() != null) {
 						idType = om.createLiteral(id.getType().getName());
 						inOEntity.addProperty(dCOIdentifier, om.createResource().addProperty(rdfslabel, iDIN)
@@ -374,11 +396,18 @@ public class BPMN_R_Functions extends BPMN_Basics {
 						inOEntity.addProperty(dCIdentifier,iDIN);
 					}
 				}
+				isStep.getDataInputs().add(din);
 			} else {
 				inOEntity = pOEntity.createIndividual(nsrpdh+resources.get(chosenID));
 				inOEntity.addProperty(dcType, "inputResource");
 				inids.add(inOEntity);
 				nIDActivity.addProperty(POused, inOEntity);
+				numberInput++;
+				din = createElement(ios, "inputResource"+numberInput, DataInput.class);
+				for(Identifier id : inputResource.getIdentifiers()) {
+					din.setName(id.getId());
+				}
+				isStep.getDataInputs().add(din);
 			}
 		}
 		/*
@@ -391,9 +420,11 @@ public class BPMN_R_Functions extends BPMN_Basics {
 			 * and assigns it a new individual
 			 */
 			if ((resources.containsKey(chosenID)) == false) {
-				number=resources.size()+1;
-				resources.put(chosenID, "resource"+number);
+				numberOutput++;
+				resources.put(chosenID, "outputResource"+numberOutput);
+				dout = createElement(ios, "outputResource"+numberOutput, DataOutput.class);
 			 
+				//dataoutput.put(chosenID, dout);
 				outOEntity = pOEntity.createIndividual(nsrpdh+resources.get(chosenID));
 				outOEntity.addProperty(dcType,"outputResource");
 				outids.add(outOEntity);
@@ -407,6 +438,7 @@ public class BPMN_R_Functions extends BPMN_Basics {
 				}
 				for(Identifier id : outputResource.getIdentifiers()) {
 					iDOUT = om.createLiteral(id.getId().toString());
+					dout.setName(id.getId());
 					if (id.getType().getName() != null) {
 						idType = om.createLiteral(id.getType().getName());
 						outOEntity.addProperty(dCOIdentifier, om.createResource().addProperty(rdfslabel, iDOUT)
@@ -415,15 +447,22 @@ public class BPMN_R_Functions extends BPMN_Basics {
 						outOEntity.addProperty(dCIdentifier,iDOUT);
 					}
 				}
+				osStep.getDataOutputRefs().add(dout);
 			} else {
 				outOEntity = pOEntity.createIndividual(nsrpdh+resources.get(chosenID));
 				outOEntity.addProperty(dcType,"outputResource");
 				outids.add(outOEntity);
 				nIDActivity.addProperty(pOgenerated, outOEntity);
+				numberOutput++;
+				dout = createElement(ios, "outputResource"+numberOutput, DataOutput.class);
+				for(Identifier id : outputResource.getIdentifiers()) {
+					dout.setName(id.getId());
+				}
+				osStep.getDataOutputRefs().add(dout);
 			}
 				
 		}
-		if (!(workFlowStep.getTool() == null)) {
+		/*if (!(workFlowStep.getTool() == null)) {
 			chosenID=getBestID(workFlowStep.getTool().getIdentifiers());
 			if ((tools.containsKey(chosenID)) == false) {
 				number=tools.size()+1;
@@ -501,7 +540,7 @@ public class BPMN_R_Functions extends BPMN_Basics {
 				personEntity = pOPerson.createIndividual(nsrpdh+persons.get(chosenID));
 				nIDActivity.addProperty(pOwasAssociatedWith, personEntity);
 			}
-		}
+		}*/
 	}
 	
 	/**

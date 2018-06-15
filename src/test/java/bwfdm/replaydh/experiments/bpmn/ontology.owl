@@ -8,16 +8,6 @@
 @prefix p-plan:  <http://purl.org/net/p-plan#> .
 @prefix prov:    <http://www.w3.org/ns/prov#> .
 
-:Association_person1
-      a       prov:Association ;
-      prov:agent :person1 ;
-      prov:hadPlan :Workflow ;
-      prov:hadRole "annotator" .
-
-:resource2
-      a       prov:Entity ;
-      dcterms:type "inputResource" .
-
 prov:SoftwareAgent
       a       owl:Class ;
       rdfs:subClassOf prov:Agent .
@@ -35,6 +25,10 @@ prov:agent
       rdfs:domain prov:AgentInfluence ;
       rdfs:range prov:Agent .
 
+:inputResource2
+      a       prov:Entity ;
+      dcterms:type "inputResource" .
+
 prov:used
       a       owl:ObjectProperty ;
       rdfs:domain prov:Activity ;
@@ -45,25 +39,13 @@ prov:influenced
       rdfs:domain prov:Agent ;
       rdfs:range prov:Entity .
 
-:person1
-      a       prov:Person ;
-      dcterms:identifier
-              [ rdfs:label "约翰 1" ;
-                dcterms:type "Name"
-              ] ;
-      prov:generated :resource1 ;
-      prov:influenced :resource1 .
-
 prov:Person
       a       owl:Class ;
       rdfs:subClassOf prov:Agent .
 
 :Activity_step_1
       a       prov:Activity ;
-      rdfs:label "init" ;
-      dcterms:description "Some random description for step: init" ;
-      prov:influenced :Activity_step_4 ;
-      prov:used :resource2 , :resource3 .
+      prov:influenced :Activity_step_4 .
 
 dcterms:type
       a       owl:DatatypeProperty ;
@@ -76,13 +58,9 @@ prov:Activity
       a       prov:Activity ;
       rdfs:label "analyze" ;
       dcterms:description "Some random description for step: analyze" ;
-      prov:generated :resource1 ;
+      prov:generated :outputResource1 ;
       prov:influenced :Activity_step_6 ;
-      prov:qualifiedAssociation
-              :Association_tool1 ;
-      prov:used :resource2 , :resource3 , :resource1 ;
-      prov:wasAssociatedWith
-              :tool1 .
+      prov:used :inputResource1 , :inputResource2 , :outputResource1 .
 
 prov:Influence
       a       owl:Class .
@@ -93,10 +71,6 @@ prov:Plan
 dcterms:identifier
       a       owl:DatatypeProperty , owl:ObjectProperty .
 
-:resource3
-      a       prov:Entity ;
-      dcterms:type "inputResource" .
-
 prov:Entity
       a       owl:Class ;
       owl:disjointWith prov:Person .
@@ -106,9 +80,9 @@ prov:generated
       rdfs:domain prov:Activity ;
       rdfs:range prov:Entity .
 
-:resource1
+:inputResource1
       a       prov:Entity ;
-      dcterms:type "inputResource" , "outputResource" .
+      dcterms:type "inputResource" .
 
 prov:hadRole
       a       owl:DatatypeProperty ;
@@ -123,13 +97,9 @@ prov:wasAssociatedWith
       a       prov:Activity ;
       rdfs:label "train" ;
       dcterms:description "Some random description for step: train" ;
-      prov:generated :resource1 ;
+      prov:generated :outputResource1 ;
       prov:influenced :Activity_step_5 ;
-      prov:qualifiedAssociation
-              :Association_tool1 ;
-      prov:used :resource2 , :resource3 , :resource1 ;
-      prov:wasAssociatedWith
-              :tool1 .
+      prov:used :inputResource1 , :inputResource2 , :outputResource1 .
 
 prov:wasInfluencedBy
       a       owl:ObjectProperty ;
@@ -143,31 +113,12 @@ dcterms:description
 :Workflow
       a       prov:Plan .
 
-:tool1
-      a       prov:SoftwareAgent ;
-      dcterms:description "-v -file path/to/my/dir/model.xml" , "amd64" ;
-      dcterms:identifier
-              [ rdfs:label "myTool-v1" ;
-                dcterms:type "Name-version"
-              ] ;
-      prov:generated :resource1 ;
-      prov:influenced :Activity_step_5 , :Activity_step_6 , :Activity_step_4 .
-
-:Association_tool1
-      a       prov:Association ;
-      prov:agent :tool1 ;
-      prov:hadPlan :Workflow .
-
 :Activity_step_6
       a       prov:Activity ;
       rdfs:label "correct" ;
       dcterms:description "Some random description for step: correct" ;
-      prov:generated :resource1 ;
-      prov:qualifiedAssociation
-              :Association_person1 , :Association_tool1 ;
-      prov:used :resource2 , :resource3 , :resource1 ;
-      prov:wasAssociatedWith
-              :tool1 , :person1 .
+      prov:generated :outputResource1 ;
+      prov:used :inputResource1 , :inputResource2 , :outputResource1 .
 
 rdfs:label
       a       owl:DatatypeProperty ;
@@ -177,6 +128,10 @@ prov:hadPlan
       a       owl:ObjectProperty ;
       rdfs:domain prov:Association ;
       rdfs:range prov:Plan .
+
+:outputResource1
+      a       prov:Entity ;
+      dcterms:type "inputResource" , "outputResource" .
 
 prov:qualifiedAssociation
       a       owl:ObjectProperty ;
