@@ -94,7 +94,7 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	
 	private boolean first_iteration = true;
 	
-	private boolean in_the_process_chain = false;
+	private boolean in_the_beginning = true;
 	
 	private IoSpecification ios = null;
 	
@@ -116,6 +116,8 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	
 	private UserTask userTask = null;
 	
+	private UserTask userTaskBeforeEnd = null;
+	
 	private UserTask previousUserTask = null;
 	
 	private StartEvent startEvent = null;
@@ -123,6 +125,10 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	private EndEvent endEvent = null;
 	
 	private DataObject dao = null;
+	
+	private Set<Resource> inputResources = null;
+	
+	private Set<Resource> outputResources = null;
 	
 	public WorkflowStep getExportWorkflowStep() {
 		return exportWorkflowStep;
@@ -151,10 +157,9 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	 * @throws MalformedURLException 
 	 */
 	public void showHistory(WorkflowStep workFlowStep) throws MalformedURLException {
-		Set<Resource> inputResources = workFlowStep.getInput();
-		Set<Resource> outputResources = workFlowStep.getOutput();
 		if (first_iteration) {
 			ios = createElement(process, "iospec_"+process_name, IoSpecification.class);
+			outputResources = workFlowStep.getOutput();
 			ios.getOutputSets().add(os);
 			ios.getInputSets().add(is);
 			for (Resource outputResource : outputResources) {
@@ -176,6 +181,11 @@ public class BPMN_R_Functions extends BPMN_Basics {
 				
 			}
 			first_iteration=false;
+			userTaskBeforeEnd = createElement(process, "Activity_"+workFlowStep.getId(), UserTask.class);
+			userTaskBeforeEnd.setName(workFlowStep.getTitle());
+			inputResources=workFlowStep.getInput();
+			outputResources=workFlowStep.getOutput();
+			showResources(workFlowStep, inputResources, outputResources, userTaskBeforeEnd);
 		}
 		if (workFlow.hasPreviousSteps(workFlowStep)) {
 			for (WorkflowStep wfs : workFlow.getPreviousSteps(workFlowStep)) {
@@ -184,51 +194,56 @@ public class BPMN_R_Functions extends BPMN_Basics {
 					/*
 					 * Checks if it is the beginning of the process chain, if 'yes' else will be chosen
 					 */
-					if (in_the_process_chain) {
-						userTask = createElement(process, "Activity_"+workFlowStep.getId(), UserTask.class);
-						userTask.setName(workFlowStep.getTitle());
-						showResources(workFlowStep, inputResources, outputResources, userTask);
+					if (in_the_beginning == false) {
+						userTask = createElement(process, "Activity_"+wfs.getId(), UserTask.class);
+						userTask.setName(wfs.getTitle());
+						inputResources=wfs.getInput();
+						outputResources=wfs.getOutput();
+						showResources(wfs, inputResources, outputResources, userTask);
 						createSequenceFlow(process, previousUserTask, userTask);
 						previousUserTask=userTask;
 					} else {
-						userTask = createElement(process, "Activity_"+workFlowStep.getId(), UserTask.class);
-						userTask.setName(workFlowStep.getTitle());
-						showResources(workFlowStep, inputResources, outputResources, userTask);
+						startEvent = createElement(process, "start", StartEvent.class);
+						userTask = createElement(process, "Activity_"+wfs.getId(), UserTask.class);
+						userTask.setName(wfs.getTitle());
+						inputResources=wfs.getInput();
+						outputResources=wfs.getOutput();
+						showResources(wfs, inputResources, outputResources, userTask);
 						previousUserTask=userTask;
 						createSequenceFlow(process, startEvent, userTask);
-						in_the_process_chain=true;
+						in_the_beginning=false;
 					}
-				}
-			}
-		} else if (workFlow.isInitialStep(workFlowStep)) {
-			if (workFlow.hasNextSteps(workFlowStep)) {
-				for (WorkflowStep wfs : workFlow.getNextSteps(workFlowStep)) {
-					inputResources = wfs.getInput();
-					for (Resource inputResource : inputResources) {
-						chosenID=getBestID(inputResource.getIdentifiers());
-						if ((resources.containsKey(chosenID)) == false) {
-							numberInput++;
-							numberDataObjects++;
-							resources.put(chosenID, "inputResource"+numberInput);
-							din = createElement(ios, resources.get(chosenID), DataInput.class);
-							dao = createElement(process, "dataObject"+numberDataObjects, DataObject.class);
-							dataObjects.put(chosenID, dao);
-							for(Identifier id : inputResource.getIdentifiers()) {
-								if (id.getType().getName() != null) {
-									din.setName(id.getId());
+				} else {
+					if (workFlow.hasNextSteps(wfs)) {
+						for (WorkflowStep wfsinit : workFlow.getNextSteps(workFlowStep)) {
+							inputResources = wfsinit.getInput();
+							for (Resource inputResource : inputResources) {
+								chosenID=getBestID(inputResource.getIdentifiers());
+								if ((resources.containsKey(chosenID)) == false) {
+									numberInput++;
+									numberDataObjects++;
+									resources.put(chosenID, "inputResource"+numberInput);
+									din = createElement(ios, resources.get(chosenID), DataInput.class);
+									dao = createElement(process, "dataObject"+numberDataObjects, DataObject.class);
+									dataObjects.put(chosenID, dao);
+									for(Identifier id : inputResource.getIdentifiers()) {
+										if (id.getType().getName() != null) {
+											din.setName(id.getId());
+										}
+									}
+									is.getDataInputs().add(din);
 								}
 							}
-							is.getDataInputs().add(din);
+							break;
 						}
 					}
-					startEvent = createElement(process, "start", StartEvent.class);
-					startEvent.setName(wfs.getTitle());
 				}
 			}
-		}
+		} 
 		if (!(workFlow.hasNextSteps(workFlowStep))) {
 			endEvent = createElement(process, "end", EndEvent.class);
-			createSequenceFlow(process, previousUserTask, endEvent);
+			createSequenceFlow(process, previousUserTask, userTaskBeforeEnd);
+			createSequenceFlow(process, userTaskBeforeEnd, endEvent);
 		}
 	}
 	
@@ -249,12 +264,15 @@ public class BPMN_R_Functions extends BPMN_Basics {
 		OutputSet osStep = modelInstance.newInstance(OutputSet.class);
 		iosStep.getOutputSets().add(osStep);
 		iosStep.getInputSets().add(isStep);
-		DataOutputAssociation douta = createElement(userTask, "dataOutAssoc_"+step_id, DataOutputAssociation.class);
-		DataInputAssociation dina = createElement(userTask, "dataInAssoc_"+step_id, DataInputAssociation.class);
+		DataOutputAssociation douta = null;
+		DataInputAssociation dina = null;
 		/*
 		 * Iterates over all available input resources
 		 */
+		int inputCounter = 0;
 		for (Resource inputResource : inputResources) {
+			inputCounter++;
+			dina = createElement(userTask, "dataInAssoc_"+inputCounter+"_"+step_id, DataInputAssociation.class);
 			chosenID=getBestID(inputResource.getIdentifiers());
 			/*
 			 * Checks if the chosenID is already known. If not, it puts the new ID to the map
@@ -287,7 +305,10 @@ public class BPMN_R_Functions extends BPMN_Basics {
 		/*
 		 * Iterates over all available output resources
 		 */
+		int outputCounter = 0;
 		for (Resource outputResource : outputResources) {
+			outputCounter++;
+			douta = createElement(userTask, "dataOutAssoc_"+outputCounter+"_"+step_id, DataOutputAssociation.class);
 			chosenID=getBestID(outputResource.getIdentifiers());
 			/*
 			 * Checks if the chosenID is already known. If not, it puts the new ID to the map

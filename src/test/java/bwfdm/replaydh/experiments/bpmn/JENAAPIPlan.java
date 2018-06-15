@@ -59,7 +59,7 @@ public class JENAAPIPlan {
 
 		//File file = new File("./local.owl");
 
-		DefaultWorkflow wf = (DefaultWorkflow) WorkflowUtils.createForkedWorkflow(schema);
+		DefaultWorkflow wf = (DefaultWorkflow) WorkflowUtils.createLinearWorkflow(schema);
 
 		//Workflow wf = WorkflowUtils.createForkedWorkflow(schema);
 		wf.setTitle("My workflow");

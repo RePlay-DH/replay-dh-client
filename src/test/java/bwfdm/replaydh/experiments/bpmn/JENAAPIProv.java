@@ -60,7 +60,7 @@ public class JENAAPIProv {
 
 		//File file = new File("./local.owl");
 
-		DefaultWorkflow wf = (DefaultWorkflow) WorkflowUtils.createForkedWorkflow(schema);
+		DefaultWorkflow wf = (DefaultWorkflow) WorkflowUtils.createLinearWorkflow(schema);
 
 		//Workflow wf = WorkflowUtils.createForkedWorkflow(schema);
 		wf.setTitle("My workflow");
@@ -139,7 +139,7 @@ public class JENAAPIProv {
 			if (!(wf.isInitialStep(step))) {
 				System.out.println("Title: "+step.getTitle());
 				System.out.println(step.getOutput());
-				if(step.getTitle().equals("correct")) {
+				if(step.getTitle().equals("analyze")) {
 					builder.resources(step.getOutput());
 					builder.targetStep(step);
 					break;
