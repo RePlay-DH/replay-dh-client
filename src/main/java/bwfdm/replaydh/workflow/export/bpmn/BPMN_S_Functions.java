@@ -16,7 +16,7 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.workflow.export.owl;
+package bwfdm.replaydh.workflow.export.bpmn;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -34,7 +34,7 @@ import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.vocabulary.XSD;
-
+import org.camunda.bpm.model.bpmn.instance.Process;
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
@@ -47,9 +47,10 @@ import bwfdm.replaydh.workflow.schema.IdentifierType.Uniqueness;
  * @author Florian Fritze
  *
  */
-public class PLAN_J_Functions {
+public class BPMN_S_Functions extends BPMN_Basics {
 	
-	public PLAN_J_Functions() {
+	public BPMN_S_Functions() {
+		super(nsrpdh,"replay");
 		om.setNsPrefixes(prefixesmap);
 		
 	}
@@ -70,7 +71,6 @@ public class PLAN_J_Functions {
 	private final static OntModel som = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
 	
 	private OntModel om = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM,som);
-	
 	
 	/**
 	 * Classes of Prov-O
@@ -196,7 +196,7 @@ public class PLAN_J_Functions {
 	
 	private Map<String,String> persons = new HashMap<String,String>();
 	
-	
+	private Process process = null;
 	/**
 	 * Iterates over a set of workflowsteps
 	 * @param workFlow
@@ -204,6 +204,7 @@ public class PLAN_J_Functions {
 	 * @throws MalformedURLException 
 	 */
 	public void iterateOverSteps(Workflow workFlow, Set<WorkflowStep> workFlowSteps) throws MalformedURLException {
+		process = createElement(definitions, workFlow.getTitle(), Process.class);
 		for (WorkflowStep workFlowStep : workFlowSteps) {
 			if (!(workFlow.isInitialStep(workFlowStep))) {
 				Set<Resource> inputResources = workFlowStep.getInput();

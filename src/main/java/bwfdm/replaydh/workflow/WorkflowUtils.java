@@ -220,7 +220,7 @@ public class WorkflowUtils {
 		workflow.addWorkflowStep(step1, step2);
 
 		WorkflowStep step3 = createStep(workflow, "train", true, 2, true, 0);
-		workflow.addWorkflowStep(step0, step3);
+		workflow.addWorkflowStep(step1, step3);
 
 		WorkflowStep step4 = createStep(workflow, "analyze", true, 2, true, 0);
 		workflow.addWorkflowStep(step3, step4);
