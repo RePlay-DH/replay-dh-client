@@ -144,21 +144,6 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	 */
 	public void showHistory(WorkflowStep workFlowStep) throws MalformedURLException {
 		if (first_iteration) {
-			outputResources = workFlowStep.getOutput();
-			for (Resource outputResource : outputResources) {
-				chosenID=getBestID(outputResource.getIdentifiers());
-				if ((dataObjects.containsKey(chosenID)) == false) {
-					numberDataObjects++;
-					dao = createElement(process, "dataObject"+numberDataObjects, DataObject.class);
-					dataObjects.put(chosenID, dao);
-					for(Identifier id : outputResource.getIdentifiers()) {
-						if (id.getType().getName() != null) {
-							dao.setName(id.getId());
-						}
-					}
-				}
-				
-			}
 			userTask = createElement(process, "Activity_"+workFlowStep.getId(), UserTask.class);
 			userTask.setName(workFlowStep.getTitle());
 			inputResources=workFlowStep.getInput();
@@ -181,20 +166,6 @@ public class BPMN_R_Functions extends BPMN_Basics {
 					previousUserTask=userTask;
 					showHistory(wfs);
 				} else {
-					inputResources = workFlowStep.getInput();
-					for (Resource inputResource : inputResources) {
-						chosenID=getBestID(inputResource.getIdentifiers());
-						if ((dataObjects.containsKey(chosenID)) == false) {
-							numberDataObjects++;
-							dao = createElement(process, "dataObject"+numberDataObjects, DataObject.class);
-							for(Identifier id : inputResource.getIdentifiers()) {
-								if (id.getType().getName() != null) {
-									dao.setName(id.getId());
-								}
-							}
-							dataObjects.put(chosenID, dao);
-						}
-					}
 					startEvent = createElement(process, "start", StartEvent.class);
 					createSequenceFlow(process, startEvent, previousUserTask);
 				}
@@ -271,6 +242,7 @@ public class BPMN_R_Functions extends BPMN_Basics {
 		/*
 		 * Iterates over all available output resources
 		 */
+		if (!(outputResources.isEmpty())) {
 		int outputCounter = 0;
 		for (Resource outputResource : outputResources) {
 			outputCounter++;
@@ -313,6 +285,7 @@ public class BPMN_R_Functions extends BPMN_Basics {
 				douta.setTarget(dataObjects.get(chosenID));
 			}
 				
+		}
 		}
 	}
 	

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="replay" targetNamespace="http://www.ub.uni-stuttgart.de/replay#">
   <process id="My_workflow">
-    <dataObject id="dataObject1" name="output/dir/result.xml"/>
     <userTask id="Activity_step_5" name="analyze">
       <incoming>Activity_step_4-Activity_step_5</incoming>
       <outgoing>Activity_step_5-end</outgoing>
@@ -10,21 +9,21 @@
         <dataInput id="inputResource2" name="path/to/model/dir/file2.xml"/>
         <dataInput id="inputResource3" name="output/dir/result.xml"/>
         <dataOutput id="outputResource1" name="output/dir/result.xml"/>
-        <inputSet id="inputSet_4f6c630f-297b-4c33-9d27-5a178a305873">
+        <inputSet id="inputSet_203f34ae-db31-42b2-8cf5-706c43125ffa">
           <dataInputRefs>inputResource1</dataInputRefs>
           <dataInputRefs>inputResource2</dataInputRefs>
           <dataInputRefs>inputResource3</dataInputRefs>
         </inputSet>
-        <outputSet id="outputSet_bb97c2c2-d1e3-450e-b9c9-07b49f8b9943">
+        <outputSet id="outputSet_3fe11042-b869-4d15-b28a-920315344f8d">
           <dataOutputRefs>outputResource1</dataOutputRefs>
         </outputSet>
       </ioSpecification>
       <dataInputAssociation id="dataInAssoc_1_step_5">
-        <sourceRef>dataObject2</sourceRef>
+        <sourceRef>dataObject1</sourceRef>
         <targetRef>inputResource1</targetRef>
       </dataInputAssociation>
       <dataInputAssociation id="dataInAssoc_2_step_5">
-        <sourceRef>dataObject3</sourceRef>
+        <sourceRef>dataObject2</sourceRef>
         <targetRef>inputResource2</targetRef>
       </dataInputAssociation>
       <dataInputAssociation id="dataInAssoc_3_step_5">
@@ -33,11 +32,12 @@
       </dataInputAssociation>
       <dataOutputAssociation id="dataOutAssoc_1_step_5">
         <sourceRef>outputResource1</sourceRef>
-        <targetRef>dataObject1</targetRef>
+        <targetRef>dataObject3</targetRef>
       </dataOutputAssociation>
     </userTask>
-    <dataObject id="dataObject2" name="path/to/model/dir/file1.xml"/>
-    <dataObject id="dataObject3" name="path/to/model/dir/file2.xml"/>
+    <dataObject id="dataObject1" name="path/to/model/dir/file1.xml"/>
+    <dataObject id="dataObject2" name="path/to/model/dir/file2.xml"/>
+    <dataObject id="dataObject3" name="output/dir/result.xml"/>
     <endEvent id="end">
       <incoming>Activity_step_5-end</incoming>
     </endEvent>
@@ -50,30 +50,30 @@
         <dataInput id="inputResource5" name="path/to/model/dir/file2.xml"/>
         <dataInput id="inputResource6" name="path/to/model/dir/file1.xml"/>
         <dataOutput id="outputResource2" name="output/dir/result.xml"/>
-        <inputSet id="inputSet_5421af73-3018-4c75-b081-82107060791f">
+        <inputSet id="inputSet_577d0758-bc09-4166-bc8e-5bc97f715921">
           <dataInputRefs>inputResource4</dataInputRefs>
           <dataInputRefs>inputResource5</dataInputRefs>
           <dataInputRefs>inputResource6</dataInputRefs>
         </inputSet>
-        <outputSet id="outputSet_d379f71e-6318-446f-8e58-51ef9488290f">
+        <outputSet id="outputSet_9f39931b-3735-40b0-beb9-3a02f745b9f8">
           <dataOutputRefs>outputResource2</dataOutputRefs>
         </outputSet>
       </ioSpecification>
       <dataInputAssociation id="dataInAssoc_1_step_4">
-        <sourceRef>dataObject1</sourceRef>
+        <sourceRef>dataObject3</sourceRef>
         <targetRef>inputResource4</targetRef>
       </dataInputAssociation>
       <dataInputAssociation id="dataInAssoc_2_step_4">
-        <sourceRef>dataObject3</sourceRef>
+        <sourceRef>dataObject2</sourceRef>
         <targetRef>inputResource5</targetRef>
       </dataInputAssociation>
       <dataInputAssociation id="dataInAssoc_3_step_4">
-        <sourceRef>dataObject2</sourceRef>
+        <sourceRef>dataObject1</sourceRef>
         <targetRef>inputResource6</targetRef>
       </dataInputAssociation>
       <dataOutputAssociation id="dataOutAssoc_1_step_4">
         <sourceRef>outputResource2</sourceRef>
-        <targetRef>dataObject1</targetRef>
+        <targetRef>dataObject3</targetRef>
       </dataOutputAssociation>
     </userTask>
     <sequenceFlow id="Activity_step_4-Activity_step_5" sourceRef="Activity_step_4" targetRef="Activity_step_5"/>
@@ -84,25 +84,25 @@
         <dataInput id="inputResource7" name="output/dir/result.xml"/>
         <dataInput id="inputResource8" name="path/to/model/dir/file1.xml"/>
         <dataOutput id="outputResource3" name="output/dir/result.xml"/>
-        <inputSet id="inputSet_5893970b-e172-4fa6-ad79-0c876c34aa2b">
+        <inputSet id="inputSet_c7a4291d-8dff-4bc3-ad30-15d51f1ff6e1">
           <dataInputRefs>inputResource7</dataInputRefs>
           <dataInputRefs>inputResource8</dataInputRefs>
         </inputSet>
-        <outputSet id="outputSet_617aedf6-00fe-45c9-aff6-0a88c6922ece">
+        <outputSet id="outputSet_4192684d-b9f8-48a3-b1b8-f426b3116822">
           <dataOutputRefs>outputResource3</dataOutputRefs>
         </outputSet>
       </ioSpecification>
       <dataInputAssociation id="dataInAssoc_1_step_3">
-        <sourceRef>dataObject1</sourceRef>
+        <sourceRef>dataObject3</sourceRef>
         <targetRef>inputResource7</targetRef>
       </dataInputAssociation>
       <dataInputAssociation id="dataInAssoc_2_step_3">
-        <sourceRef>dataObject2</sourceRef>
+        <sourceRef>dataObject1</sourceRef>
         <targetRef>inputResource8</targetRef>
       </dataInputAssociation>
       <dataOutputAssociation id="dataOutAssoc_1_step_3">
         <sourceRef>outputResource3</sourceRef>
-        <targetRef>dataObject1</targetRef>
+        <targetRef>dataObject3</targetRef>
       </dataOutputAssociation>
     </userTask>
     <sequenceFlow id="Activity_step_3-Activity_step_4" sourceRef="Activity_step_3" targetRef="Activity_step_4"/>
@@ -114,30 +114,30 @@
         <dataInput id="inputResource10" name="path/to/model/dir/file1.xml"/>
         <dataInput id="inputResource11" name="path/to/model/dir/file2.xml"/>
         <dataOutput id="outputResource4" name="output/dir/result.xml"/>
-        <inputSet id="inputSet_a85a0cd7-77b3-4dc0-9966-c19636a96c8f">
+        <inputSet id="inputSet_9eca522f-417e-4132-afb5-95a5e4762135">
           <dataInputRefs>inputResource9</dataInputRefs>
           <dataInputRefs>inputResource10</dataInputRefs>
           <dataInputRefs>inputResource11</dataInputRefs>
         </inputSet>
-        <outputSet id="outputSet_67d4a902-3edb-43a6-a618-9d54d54d2789">
+        <outputSet id="outputSet_11e9dccc-6ab7-4593-9e36-9c433820cc46">
           <dataOutputRefs>outputResource4</dataOutputRefs>
         </outputSet>
       </ioSpecification>
       <dataInputAssociation id="dataInAssoc_1_step_2">
-        <sourceRef>dataObject1</sourceRef>
+        <sourceRef>dataObject3</sourceRef>
         <targetRef>inputResource9</targetRef>
       </dataInputAssociation>
       <dataInputAssociation id="dataInAssoc_2_step_2">
-        <sourceRef>dataObject2</sourceRef>
+        <sourceRef>dataObject1</sourceRef>
         <targetRef>inputResource10</targetRef>
       </dataInputAssociation>
       <dataInputAssociation id="dataInAssoc_3_step_2">
-        <sourceRef>dataObject3</sourceRef>
+        <sourceRef>dataObject2</sourceRef>
         <targetRef>inputResource11</targetRef>
       </dataInputAssociation>
       <dataOutputAssociation id="dataOutAssoc_1_step_2">
         <sourceRef>outputResource4</sourceRef>
-        <targetRef>dataObject1</targetRef>
+        <targetRef>dataObject3</targetRef>
       </dataOutputAssociation>
     </userTask>
     <sequenceFlow id="Activity_step_2-Activity_step_3" sourceRef="Activity_step_2" targetRef="Activity_step_3"/>
@@ -147,18 +147,18 @@
       <ioSpecification id="iospec_step_1">
         <dataInput id="inputResource12" name="path/to/model/dir/file2.xml"/>
         <dataInput id="inputResource13" name="path/to/model/dir/file1.xml"/>
-        <inputSet id="inputSet_df45cc37-47e2-4b71-9bd3-fe43e2f8e8d9">
+        <inputSet id="inputSet_7b788229-22c2-4566-bee1-3f53a9a8d2a1">
           <dataInputRefs>inputResource12</dataInputRefs>
           <dataInputRefs>inputResource13</dataInputRefs>
         </inputSet>
-        <outputSet id="outputSet_f827b822-9199-4d9c-9b25-bde505ac9ada"/>
+        <outputSet id="outputSet_cc9d2a75-709e-4e9e-84f4-f54feadba48a"/>
       </ioSpecification>
       <dataInputAssociation id="dataInAssoc_1_step_1">
-        <sourceRef>dataObject3</sourceRef>
+        <sourceRef>dataObject2</sourceRef>
         <targetRef>inputResource12</targetRef>
       </dataInputAssociation>
       <dataInputAssociation id="dataInAssoc_2_step_1">
-        <sourceRef>dataObject2</sourceRef>
+        <sourceRef>dataObject1</sourceRef>
         <targetRef>inputResource13</targetRef>
       </dataInputAssociation>
     </userTask>
