@@ -18,9 +18,8 @@
  */
 package bwfdm.replaydh.workflow.export.bpmn;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.Writer;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -67,6 +66,9 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	
 	private Map<String,String> resources = new HashMap<String,String>();
 	
+	/**
+	 * Stores all the dataObjects which are direct children of the process
+	 */
 	private Map<String,DataObject> dataObjects = new HashMap<String,DataObject>();
 	
 	private WorkflowStep exportWorkflowStep = null;
@@ -95,8 +97,14 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	
 	private DataObject dao = null;
 	
+	/**
+	 * A set of input resources
+	 */
 	private Set<Resource> inputResources = null;
 	
+	/**
+	 * A set of output resources
+	 */
 	private Set<Resource> outputResources = null;
 	
 	public WorkflowStep getExportWorkflowStep() {
@@ -271,11 +279,9 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	 * @param fileending
 	 * @throws IOException
 	 */
-	public void writeOnt(Writer writer, String fileending) throws IOException {
+	public void writeBpmn(OutputStream writer, String fileending) throws IOException {
 		Bpmn.validateModel(modelInstance);
-		File file;
-		file = new File("src/test/java/bwfdm/replaydh/experiments/bpmn/bpmn-model-api.bpmn");
-		Bpmn.writeModelToFile(file, modelInstance);
+		Bpmn.writeModelToStream(writer, modelInstance);
 	}
 	
 	/**

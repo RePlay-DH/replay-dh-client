@@ -21,6 +21,7 @@ package bwfdm.replaydh.experiments.bpmn;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.nio.charset.Charset;
@@ -123,7 +124,7 @@ public class JENAAPIProv {
 		}
 
 		builder.encoding(Charset.defaultCharset());
-		Path output = Paths.get("./src/test/java/bwfdm/replaydh/experiments/bpmn/ontology.owl");
+		Path output = Paths.get("./src/test/java/bwfdm/replaydh/experiments/bpmn/bpmn-export.xml");
 		IOResource resource = new FileResource(output, AccessMode.WRITE);
 		try {
 			resource.prepare();
@@ -165,9 +166,9 @@ public class JENAAPIProv {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-		try (Writer writer = exportInfo.createWriter()){
+		try (OutputStream writer = exportInfo.createOutputStream()){
 
-			functions.writeOnt(writer,"TURTLE");
+			functions.writeBpmn(writer,"xml");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
