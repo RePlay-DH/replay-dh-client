@@ -101,19 +101,17 @@ import bwfdm.replaydh.workflow.schema.impl.LocalSchemaManager;
  * <table border="1">
  * <tr><th>Option</th><th>Type</th><th>Variants</th><th>Description</th></tr>
  * <tr><td>-v</td><td>flag</td><td>-Dintern.verbose=true</td><td>Causes the client to write additional logging information.</td></tr>
- * <tr><td>-config &lt;name&gt;</td><td>string</td><td>-</td><td>Name of the file containing additional settings and which should be used to save changes made by the user.</td></tr>
+ * <tr><td>-dev</td><td>flag</td><td>-Dintern.debug=true</td><td>Starts the client in developer mode, making available additional debugging functions.</td></tr>
+ * <tr><td>-config &lt;name&gt;</td><td>string</td><td>-</td><td>Name of the file containing additional settings. This file will also be used to save changes made by the user.</td></tr>
  * <tr><td>-dir &lt;file&gt;</td><td>path string</td><td>-Duser.folder=&lt;file&gt;</td><td>Path to the client folder where settings and other client internal informations get stored.</td></tr>
  * <tr><td>-workspace &lt;file&gt;</td><td>path string</td><td>-Dclient.workspace.path=&lt;file&gt;</td><td>Path to the currently active working directory.</td></tr>
- * <tr><td>-D&lt;key&gt;=&lt;value&gt;</td><td>strings</td><td>-</td><td>Allows to override client settings</td></tr>
- * <tr><td></td><td></td><td></td><td></td></tr>
+ * <tr><td>-D&lt;key&gt;=&lt;value&gt;</td><td>strings</td><td>-</td><td>Allows to override client settings (this is a basic java command line feature and listed here simply for the sake of completeness, as the client reads in the full set of currently set Java properties as base of the internal settings, with higher priority that the read in config file).</td></tr>
  * </table>
  *
  * @author Markus Gärtner
  *
  */
 public class RDHClient {
-
-	//TODO define debug flag for testing
 
 	private static final Logger log = LoggerFactory.getLogger(RDHClient.class);
 
