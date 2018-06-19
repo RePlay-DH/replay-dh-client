@@ -94,8 +94,6 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	
 	private boolean first_iteration = true;
 	
-	private IoSpecification ios = null;
-	
 	private String chosenID = null;
 	
 	private int numberInput = 0;
@@ -103,14 +101,6 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	private int numberOutput = 0;
 	
 	private int numberDataObjects = 0;
-	
-	private DataInput din = null;
-	
-	private DataOutput dout = null;
-	
-	private InputSet is = modelInstance.newInstance(InputSet.class);
-	
-	private OutputSet os = modelInstance.newInstance(OutputSet.class);
 	
 	private UserTask userTask = null;
 	
@@ -154,25 +144,18 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	 */
 	public void showHistory(WorkflowStep workFlowStep) throws MalformedURLException {
 		if (first_iteration) {
-			ios = createElement(process, "iospec_"+process_name, IoSpecification.class);
 			outputResources = workFlowStep.getOutput();
-			ios.getOutputSets().add(os);
-			ios.getInputSets().add(is);
 			for (Resource outputResource : outputResources) {
 				chosenID=getBestID(outputResource.getIdentifiers());
-				if ((resources.containsKey(chosenID)) == false) {
-					numberOutput++;
+				if ((dataObjects.containsKey(chosenID)) == false) {
 					numberDataObjects++;
-					resources.put(chosenID, "outputResource"+numberOutput);
-					dout = createElement(ios, resources.get(chosenID), DataOutput.class);
 					dao = createElement(process, "dataObject"+numberDataObjects, DataObject.class);
 					dataObjects.put(chosenID, dao);
 					for(Identifier id : outputResource.getIdentifiers()) {
 						if (id.getType().getName() != null) {
-							dout.setName(id.getId());
+							dao.setName(id.getId());
 						}
 					}
-					os.getDataOutputRefs().add(dout);
 				}
 				
 			}
@@ -201,20 +184,16 @@ public class BPMN_R_Functions extends BPMN_Basics {
 					inputResources = workFlowStep.getInput();
 					for (Resource inputResource : inputResources) {
 						chosenID=getBestID(inputResource.getIdentifiers());
-						numberInput++;
-						din = createElement(ios, "inputResource"+numberInput, DataInput.class);
-						for(Identifier id : inputResource.getIdentifiers()) {
-							if (id.getType().getName() != null) {
-								din.setName(id.getId());
-							}
-						}
-						if ((resources.containsKey(chosenID)) == false) {
+						if ((dataObjects.containsKey(chosenID)) == false) {
 							numberDataObjects++;
-							resources.put(chosenID, "inputResource"+numberInput);
 							dao = createElement(process, "dataObject"+numberDataObjects, DataObject.class);
+							for(Identifier id : inputResource.getIdentifiers()) {
+								if (id.getType().getName() != null) {
+									dao.setName(id.getId());
+								}
+							}
 							dataObjects.put(chosenID, dao);
 						}
-						is.getDataInputs().add(din);
 					}
 					startEvent = createElement(process, "start", StartEvent.class);
 					createSequenceFlow(process, startEvent, previousUserTask);
@@ -256,13 +235,22 @@ public class BPMN_R_Functions extends BPMN_Basics {
 			 */
 			if ((resources.containsKey(chosenID)) == false) {
 				numberInput++;
-				numberDataObjects++;
 				resources.put(chosenID, "inputResource"+numberInput);
 				din = createElement(iosStep, "inputResource"+numberInput, DataInput.class);
-				dao = createElement(process, "dataObject"+numberDataObjects, DataObject.class);
-				dataObjects.put(chosenID, dao);
+				if ((dataObjects.containsKey(chosenID)) == false) {
+					numberDataObjects++;
+					dao = createElement(process, "dataObject"+numberDataObjects, DataObject.class);
+					for(Identifier id : inputResource.getIdentifiers()) {
+						if (id.getType().getName() != null) {
+							dao.setName(id.getId());
+						}
+					}
+					dataObjects.put(chosenID, dao);
+				}
 				for(Identifier id : inputResource.getIdentifiers()) {
-					din.setName(id.getId());
+					if (id.getType().getName() != null) {
+						din.setName(id.getId());
+					}
 				}
 				isStep.getDataInputs().add(din);
 				dina.getSources().add(dao);
@@ -271,7 +259,9 @@ public class BPMN_R_Functions extends BPMN_Basics {
 				numberInput++;
 				din = createElement(iosStep, "inputResource"+numberInput, DataInput.class);
 				for(Identifier id : inputResource.getIdentifiers()) {
-					din.setName(id.getId());
+					if (id.getType().getName() != null) {
+						din.setName(id.getId());
+					}
 				}
 				isStep.getDataInputs().add(din);
 				dina.getSources().add(dataObjects.get(chosenID));
@@ -292,13 +282,22 @@ public class BPMN_R_Functions extends BPMN_Basics {
 			 */
 			if ((resources.containsKey(chosenID)) == false) {
 				numberOutput++;
-				numberDataObjects++;
 				resources.put(chosenID, "outputResource"+numberOutput);
 				dout = createElement(iosStep, "outputResource"+numberOutput, DataOutput.class);
-				dao = createElement(process, "dataObject"+numberDataObjects, DataObject.class);
-				dataObjects.put(chosenID, dao);
+				if ((dataObjects.containsKey(chosenID)) == false) {
+					numberDataObjects++;
+					dao = createElement(process, "dataObject"+numberDataObjects, DataObject.class);
+					for(Identifier id : outputResource.getIdentifiers()) {
+						if (id.getType().getName() != null) {
+							dao.setName(id.getId());
+						}
+					}
+					dataObjects.put(chosenID, dao);
+				}
 				for(Identifier id : outputResource.getIdentifiers()) {
-					dout.setName(id.getId());
+					if (id.getType().getName() != null) {
+						dout.setName(id.getId());
+					}
 				}
 				osStep.getDataOutputRefs().add(dout);
 				douta.getSources().add(dout);
