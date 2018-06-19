@@ -26,9 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.jena.ontology.OntModel;
-import org.apache.jena.ontology.OntModelSpec;
-import org.apache.jena.rdf.model.ModelFactory;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.instance.DataInput;
 import org.camunda.bpm.model.bpmn.instance.DataInputAssociation;
@@ -61,26 +58,12 @@ public class BPMN_R_Functions extends BPMN_Basics {
 		workFlow=workflow;
 		process_name=workflow.getTitle().replaceAll(" ", "_");
 		process = createElement(definitions, process_name, Process.class);
-		om.setNsPrefixes(prefixesmap);
 	}
 	private Workflow workFlow = null;
 	
-	private final static String nsrdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
-	private final static String nsxsd = "http://www.w3.org/2001/XMLSchema#";
-	private final static String nsrdfs = "http://www.w3.org/2000/01/rdf-schema#";
-	private final static String nspplan = "http://purl.org/net/p-plan#";
-	private final static String nsprov = "http://www.w3.org/ns/prov#";
-	private final static String nsdcterms = "http://purl.org/dc/terms/";
-	private final static String nsdatacite = "http://purl.org/spar/datacite/";
 	private final static String nsrpdh = "http://www.ub.uni-stuttgart.de/replay#";
 	
 	private final static Map<String,String> prefixesmap = new HashMap<String,String>();
-	
-	private final static OntModel som = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-	
-	private OntModel om = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM,som);
-	
-	
 	
 	private Map<String,String> resources = new HashMap<String,String>();
 	
@@ -125,13 +108,6 @@ public class BPMN_R_Functions extends BPMN_Basics {
 	}
 
 	static {
-		prefixesmap.put("rdf", nsrdf);
-		prefixesmap.put("xsd", nsxsd);
-		prefixesmap.put("rdfs", nsrdfs);
-		prefixesmap.put("p-plan", nspplan);
-		prefixesmap.put("prov", nsprov);
-		prefixesmap.put("dcterms", nsdcterms);
-		prefixesmap.put("datacite", nsdatacite);
 		prefixesmap.put("", nsrpdh);
 	}
 	

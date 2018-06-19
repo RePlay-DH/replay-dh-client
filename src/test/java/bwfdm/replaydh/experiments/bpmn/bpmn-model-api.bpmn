@@ -9,12 +9,12 @@
         <dataInput id="inputResource2" name="path/to/model/dir/file2.xml"/>
         <dataInput id="inputResource3" name="output/dir/result.xml"/>
         <dataOutput id="outputResource1" name="output/dir/result.xml"/>
-        <inputSet id="inputSet_203f34ae-db31-42b2-8cf5-706c43125ffa">
+        <inputSet id="inputSet_2ed7b0d4-1b54-4d84-a2f5-3740af410441">
           <dataInputRefs>inputResource1</dataInputRefs>
           <dataInputRefs>inputResource2</dataInputRefs>
           <dataInputRefs>inputResource3</dataInputRefs>
         </inputSet>
-        <outputSet id="outputSet_3fe11042-b869-4d15-b28a-920315344f8d">
+        <outputSet id="outputSet_f5f32b85-8f19-4935-a58b-6d551b54a721">
           <dataOutputRefs>outputResource1</dataOutputRefs>
         </outputSet>
       </ioSpecification>
@@ -50,12 +50,12 @@
         <dataInput id="inputResource5" name="path/to/model/dir/file2.xml"/>
         <dataInput id="inputResource6" name="path/to/model/dir/file1.xml"/>
         <dataOutput id="outputResource2" name="output/dir/result.xml"/>
-        <inputSet id="inputSet_577d0758-bc09-4166-bc8e-5bc97f715921">
+        <inputSet id="inputSet_e6b5119b-45fb-41f8-b6f8-f56e366c9ef4">
           <dataInputRefs>inputResource4</dataInputRefs>
           <dataInputRefs>inputResource5</dataInputRefs>
           <dataInputRefs>inputResource6</dataInputRefs>
         </inputSet>
-        <outputSet id="outputSet_9f39931b-3735-40b0-beb9-3a02f745b9f8">
+        <outputSet id="outputSet_a45c7ad9-1872-4154-894e-577535313355">
           <dataOutputRefs>outputResource2</dataOutputRefs>
         </outputSet>
       </ioSpecification>
@@ -84,11 +84,11 @@
         <dataInput id="inputResource7" name="output/dir/result.xml"/>
         <dataInput id="inputResource8" name="path/to/model/dir/file1.xml"/>
         <dataOutput id="outputResource3" name="output/dir/result.xml"/>
-        <inputSet id="inputSet_c7a4291d-8dff-4bc3-ad30-15d51f1ff6e1">
+        <inputSet id="inputSet_e3a5725c-5839-4bda-96f7-666c051988a0">
           <dataInputRefs>inputResource7</dataInputRefs>
           <dataInputRefs>inputResource8</dataInputRefs>
         </inputSet>
-        <outputSet id="outputSet_4192684d-b9f8-48a3-b1b8-f426b3116822">
+        <outputSet id="outputSet_1914bce8-1e10-44e4-9ad9-b6acde24320d">
           <dataOutputRefs>outputResource3</dataOutputRefs>
         </outputSet>
       </ioSpecification>
@@ -114,12 +114,12 @@
         <dataInput id="inputResource10" name="path/to/model/dir/file1.xml"/>
         <dataInput id="inputResource11" name="path/to/model/dir/file2.xml"/>
         <dataOutput id="outputResource4" name="output/dir/result.xml"/>
-        <inputSet id="inputSet_9eca522f-417e-4132-afb5-95a5e4762135">
+        <inputSet id="inputSet_7055b75b-cc32-4359-bc17-f88737d35f63">
           <dataInputRefs>inputResource9</dataInputRefs>
           <dataInputRefs>inputResource10</dataInputRefs>
           <dataInputRefs>inputResource11</dataInputRefs>
         </inputSet>
-        <outputSet id="outputSet_11e9dccc-6ab7-4593-9e36-9c433820cc46">
+        <outputSet id="outputSet_6e79bfea-28d4-4eaf-9a3c-46df27305a46">
           <dataOutputRefs>outputResource4</dataOutputRefs>
         </outputSet>
       </ioSpecification>
@@ -147,11 +147,11 @@
       <ioSpecification id="iospec_step_1">
         <dataInput id="inputResource12" name="path/to/model/dir/file2.xml"/>
         <dataInput id="inputResource13" name="path/to/model/dir/file1.xml"/>
-        <inputSet id="inputSet_7b788229-22c2-4566-bee1-3f53a9a8d2a1">
+        <inputSet id="inputSet_80c525c9-d096-42f0-96c9-35289f0439c5">
           <dataInputRefs>inputResource12</dataInputRefs>
           <dataInputRefs>inputResource13</dataInputRefs>
         </inputSet>
-        <outputSet id="outputSet_cc9d2a75-709e-4e9e-84f4-f54feadba48a"/>
+        <outputSet id="outputSet_839d02c4-f9da-4889-8f5f-c1dd4a29192b"/>
       </ioSpecification>
       <dataInputAssociation id="dataInAssoc_1_step_1">
         <sourceRef>dataObject2</sourceRef>
