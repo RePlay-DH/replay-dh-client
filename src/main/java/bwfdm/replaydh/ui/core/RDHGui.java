@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import bwfdm.replaydh.core.AbstractRDHTool;
+import bwfdm.replaydh.core.RDHClient;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHException;
 import bwfdm.replaydh.core.RDHLifecycleException;
@@ -163,7 +164,7 @@ public class RDHGui extends AbstractRDHTool {
 	 * settings.
 	 */
 	public boolean isCanUseSystemTray() {
-		return canUseSystemTray;
+		return canUseSystemTray && !getEnvironment().getBoolean(RDHProperty.CLIENT_UI_TRAY_DISABLED, false);
 	}
 
 	/**
@@ -253,7 +254,7 @@ public class RDHGui extends AbstractRDHTool {
 					}
 
 					GuiUtils.showInfo(null, ResourceManager.getInstance().get("replaydh.canceledSetup"));
-					invokeShutdown();
+					invokeShutdown(false);
 					return;
 				} else {
 					// Everything went fine, finalize setup
@@ -331,7 +332,7 @@ public class RDHGui extends AbstractRDHTool {
 		return location;
 	}
 
-	public void invokeShutdown() {
+	public void invokeShutdown(boolean restart) {
 		// Prevent concurrent attempts to shutdown the client
 		if(shutdownRequestActive.compareAndSet(false, true)) {
 
@@ -354,7 +355,12 @@ public class RDHGui extends AbstractRDHTool {
 				 *  shutting down.
 				 */
 				if(hasEnvironment()) {
-					getEnvironment().getClient().shutdown();
+					RDHClient client = getEnvironment().getClient();
+					if(restart) {
+						client.restart();
+					} else {
+						client.shutdown();
+					}
 				}
 			} finally {
 				// Usually this code will never be reached when the client actually shuts down
@@ -491,7 +497,7 @@ public class RDHGui extends AbstractRDHTool {
 	}
 
 	/**
-	 * CLoses the given window, removes it from the list
+	 * Closes the given window, removes it from the list
 	 * of open windows and either {@link #disposeGracefully(Window) disposes}
 	 * off it or "closes it to tray" if the tray area is supported and
 	 * the window was the last visible main window for the client.
@@ -508,6 +514,7 @@ public class RDHGui extends AbstractRDHTool {
 				showTrayIcon();
 			}
 		} else {
+			//TODO ask user confirmation in case this is the last window and we would otherwise shutdown the client
 			disposeGracefully(window);
 		}
 	}
@@ -582,7 +589,7 @@ public class RDHGui extends AbstractRDHTool {
 		}
 
 		private void exitClient(ActionEvent ae) {
-			invokeShutdown();
+			invokeShutdown(false);
 		}
 
 		private void restoreClient(ActionEvent ae) {
@@ -633,7 +640,7 @@ public class RDHGui extends AbstractRDHTool {
 		@Override
 		public void windowClosed(WindowEvent e) {
 			if(openWindows.isEmpty()) {
-				invokeShutdown();
+				invokeShutdown(false);
 			}
 		}
 	}

@@ -32,6 +32,8 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +43,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -134,15 +137,7 @@ public class RDHClient {
 			throw new IllegalAccessError("Not allowed to invoke main method more than once per JVM session");
 
 		try {
-
-			// Copy all system properties into our options
-			Options options = new Options();
-			System.getProperties().forEach((key, value) -> options.put((String) key, value));
-			readArguments(args, options);
-
-//			System.out.println(options);
-
-			client = new RDHClient(options);
+			client = new RDHClient(args);
 
 			// If the boot sequence finishes without errors we're good to show UI
 			client.boot();
@@ -163,6 +158,134 @@ public class RDHClient {
 		}
 
 		//TODO show errors as dialog!
+	}
+
+	public static RDHClient client() {
+		RDHClient client = RDHClient.client;
+		checkState("No client instance available", client!=null);
+		return client;
+	}
+
+	public static boolean hasClient() {
+		return client!=null;
+	}
+
+	//TODO storage for RDHTool instances
+
+	private final Map<RDHTool, ToolLifecycleState> tools = new IdentityHashMap<>();
+
+	private final List<ToolLifecycleListener> toolLifecycleListeners = new CopyOnWriteArrayList<>();
+
+	/**
+	 * Startup options (saved so we can use them for shutdown as well)
+	 */
+	private final Options options;
+
+	private final String[] args;
+
+	private final Lazy<JGitAdapter> gitAdapter = Lazy.create(this::createGitAdapter, true);;
+
+	private final Lazy<MetadataRepository> localMetadataRepository = Lazy.create(this::createLocalMetadataRepository, true);
+
+	/**
+	 * Dynamic client settings, workspace and locale
+	 */
+	private final Lazy<RDHEnvironment> environment = Lazy.create(this::createEnvironment, true);
+
+	private ResourceManager resourceManager;
+
+	private final Lazy<ScheduledExecutorService> executorService = Lazy.create(this::createExecutorService, true);
+
+	private final Lazy<IdentifiableResolver> resourceResolver = Lazy.create(this::createResourceResolver, true);
+
+	private final Lazy<RDHGui> gui = Lazy.create(this::createGui, true);
+
+	private final Lazy<SchemaManager> schemaManager = Lazy.create(this::createSchemaManager, true);
+
+	private final Lazy<ResourceCache> resourceCache = Lazy.create(this::createResourceCache, true);
+
+	private final Lazy<PluginEngine> pluginEngine = Lazy.create(this::createPluginEngine, true);
+
+	private final boolean verbose;
+
+	private final boolean debug;
+
+	/**
+	 * Root folder to store config files and other such information.
+	 */
+	private final Path userFolder;
+	private final boolean createUserFolderIfMissing;
+
+	private final Path clientFolder;
+
+	private final EnvironmentObserver environmentObserver = new EnvironmentObserver();
+
+	private final Object lock = new Object();
+
+	private volatile boolean active = false;
+
+	private volatile boolean doRestart = false;
+
+	private final String configFilename;
+
+	private final Object terminationLock = new Object();
+
+	private final Properties appInfo;
+
+	/**
+	 * Creates a new  client using provided options.
+	 *
+	 * @param options
+	 * @throws RDHLifecycleException
+	 */
+	public RDHClient(String[] args) throws RDHLifecycleException {
+
+		this.args = args.clone();
+		this.options = new Options();
+
+		// Copy all system properties into our settings
+		System.getProperties().forEach((key, value) -> options.put((String) key, value));
+
+		readArguments(args, options);
+
+		appInfo = new Properties();
+		try(InputStream in = RDHClient.class.getResourceAsStream("app.ini");
+				Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+			appInfo.load(reader);
+		} catch (IOException e) {
+			throw new RDHLifecycleException("Unable to read internal app info file", e);
+		}
+
+		configFilename = options.get(RDHProperty.INTERN_CONFIG_FILE.getKey(), "config.ini");
+
+		verbose = options.getBoolean(RDHProperty.INTERN_VERBOSE.getKey());
+
+		debug = options.getBoolean(RDHProperty.INTERN_DEBUG.getKey());
+
+		String clientPath = (String) options.get(RDHProperty.INTERN_CLIENT_FOLDER.getKey());
+		if(clientPath==null) {
+			URL source = getClass().getProtectionDomain().getCodeSource().getLocation();
+			if(source==null)
+				throw new RDHLifecycleException("Unable to obtain client folder - no code source for client jar-archive available");
+
+			try {
+				clientFolder = Paths.get(source.toURI()).getParent();
+			} catch (URISyntaxException e) {
+				throw new RDHLifecycleException("Unable to convert path of code source to usable client fddler: "+source, e);
+			}
+		} else {
+			clientFolder = Paths.get(clientPath);
+		}
+
+		String userPath = (String) options.get(RDHProperty.INTERN_USER_FOLDER.getKey());
+		if(userPath==null) {
+			userFolder = Paths.get((String)options.get("user.home"),
+					"."+getAppInfo(AppProperty.NAME), getAppInfo(AppProperty.VERSION));
+			createUserFolderIfMissing = true;
+		} else {
+			userFolder = Paths.get(userPath);
+			createUserFolderIfMissing = false;
+		}
 	}
 
 	private static void readArguments(String[] args, Options options) {
@@ -208,126 +331,6 @@ public class RDHClient {
 
 	private static void addOption(Options options, RDHProperty property, Object value) {
 		options.put(property.getKey(), value.toString());
-	}
-
-	public static RDHClient client() {
-		RDHClient client = RDHClient.client;
-		checkState("No client instance available", client!=null);
-		return client;
-	}
-
-	public static boolean hasClient() {
-		return client!=null;
-	}
-
-	//TODO storage for RDHTool instances
-
-	private final Map<RDHTool, ToolLifecycleState> tools = new IdentityHashMap<>();
-
-	private final List<ToolLifecycleListener> toolLifecycleListeners = new CopyOnWriteArrayList<>();
-
-	/**
-	 * Startup options (saved so we can use them for shutdown as well)
-	 */
-	private final Options options;
-
-	private final Lazy<JGitAdapter> gitAdapter = Lazy.create(this::createGitAdapter, true);;
-
-	private final Lazy<MetadataRepository> localMetadataRepository = Lazy.create(this::createLocalMetadataRepository, true);
-
-	/**
-	 * Dynamic client settings, workspace and locale
-	 */
-	private final Lazy<RDHEnvironment> environment = Lazy.create(this::createEnvironment, true);
-
-	private ResourceManager resourceManager;
-
-	private final Lazy<ScheduledExecutorService> executorService = Lazy.create(this::createExecutorService, true);
-
-	private final Lazy<IdentifiableResolver> resourceResolver = Lazy.create(this::createResourceResolver, true);
-
-	private final Lazy<RDHGui> gui = Lazy.create(this::createGui, true);
-
-	private final Lazy<SchemaManager> schemaManager = Lazy.create(this::createSchemaManager, true);
-
-	private final Lazy<ResourceCache> resourceCache = Lazy.create(this::createResourceCache, true);
-
-	private final Lazy<PluginEngine> pluginEngine = Lazy.create(this::createPluginEngine, true);
-
-	private final boolean verbose;
-
-	private final boolean debug;
-
-	/**
-	 * Root folder to store config files and other such information.
-	 */
-	private final Path userFolder;
-	private final boolean createUserFolderIfMissing;
-
-	private final Path clientFolder;
-
-	private final EnvironmentObserver environmentObserver = new EnvironmentObserver();
-
-	private final Object lock = new Object();
-
-	private volatile boolean active = false;
-
-	private final String configFilename;
-
-	private final Object terminationLock = new Object();
-
-	private final Properties appInfo;
-
-	/**
-	 * Creates a new  client using provided options.
-	 *
-	 * @param options
-	 * @throws RDHLifecycleException
-	 */
-	public RDHClient(Options options) throws RDHLifecycleException {
-		requireNonNull(options);
-
-		appInfo = new Properties();
-		try(InputStream in = RDHClient.class.getResourceAsStream("app.ini");
-				Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-			appInfo.load(reader);
-		} catch (IOException e) {
-			throw new RDHLifecycleException("Unable to read internal app info file", e);
-		}
-
-		configFilename = options.get(RDHProperty.INTERN_CONFIG_FILE.getKey(), "config.ini");
-
-		verbose = options.getBoolean(RDHProperty.INTERN_VERBOSE.getKey());
-
-		debug = options.getBoolean(RDHProperty.INTERN_DEBUG.getKey());
-
-		String clientPath = (String) options.get(RDHProperty.INTERN_CLIENT_FOLDER.getKey());
-		if(clientPath==null) {
-			URL source = getClass().getProtectionDomain().getCodeSource().getLocation();
-			if(source==null)
-				throw new RDHLifecycleException("Unable to obtain client folder - no code source for client jar-archive available");
-
-			try {
-				clientFolder = Paths.get(source.toURI()).getParent();
-			} catch (URISyntaxException e) {
-				throw new RDHLifecycleException("Unable to convert path of code source to usable client fddler: "+source, e);
-			}
-		} else {
-			clientFolder = Paths.get(clientPath);
-		}
-
-		String userPath = (String) options.get(RDHProperty.INTERN_USER_FOLDER.getKey());
-		if(userPath==null) {
-			userFolder = Paths.get((String)options.get("user.home"),
-					"."+getAppInfo(AppProperty.NAME), getAppInfo(AppProperty.VERSION));
-			createUserFolderIfMissing = true;
-		} else {
-			userFolder = Paths.get(userPath);
-			createUserFolderIfMissing = false;
-		}
-
-		// Defensive copying of supplied options so we keep a read-only static set
-		this.options = options.clone();
 	}
 
 	private void delegateLogOutput() throws RDHLifecycleException {
@@ -1051,8 +1054,6 @@ public class RDHClient {
 		}
 	}
 
-	//TODO implement a restart function?
-
 	/**
 	 * Causes the client to terminate by continuing the shutdown section
 	 * of the main method.
@@ -1067,6 +1068,11 @@ public class RDHClient {
 		synchronized (terminationLock) {
 			terminationLock.notifyAll();
 		}
+	}
+
+	public void restart() {
+		doRestart = true;
+		shutdown();
 	}
 
 	/**
@@ -1093,7 +1099,7 @@ public class RDHClient {
 		synchronized (lock) {
 			checkState("Client already shut down", active);
 
-			log.info("Client shutdown initiated");
+			log.info("Client shutdown initiated. Restart requested: ", doRestart ? "yes" : "no");
 
 			List<ErrorDescription> errors = new ArrayList<>();
 
@@ -1151,10 +1157,10 @@ public class RDHClient {
 				executorService.shutdown();
 				if(!executorService.isTerminated()) {
 					try {
-						log.info("Terminating executor service");
+						log.info("Terminating executor service (this may take a while)");
 						// Multiple log entries are an indicator for problematic pending tasks
 						while(!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
-							log.warn("Termination of executor service timed out");
+							log.warn("Termination of executor service timed out...");
 						}
 					} catch (InterruptedException e) {
 						errors.add(new ErrorDescription(e, "Termination of executor service interrupted"));
@@ -1165,6 +1171,13 @@ public class RDHClient {
 			// From here on the environment will be unusable
 			environment.dispose();
 
+			/*
+			 * Finally show an error dialog in case we encountered any issues so far.
+			 * Note that from this point on any exception that also kills the UI
+			 * means that the client can finish shutting down in an "orderly" fashion
+			 * as no additional threads keep the VM alive (at least once the last window
+			 * closes...).
+			 */
 			if(!errors.isEmpty()) {
 				log.info("Client shutdown encountered {} errors", errors.size());
 
@@ -1193,7 +1206,75 @@ public class RDHClient {
 
 			// Maybe move this flag switch up a bit?
 			active = false;
+
+			/*
+			 *  If we are instructed to restart the client, now is
+			 *  the time to create a new process and let the current one end.
+			 */
+			if(doRestart) {
+				try {
+					invokeRestart();
+				} catch (IOException e) {
+					log.error("Failed to restart client", e);
+
+					//TODO maybe also show a notification dialog?
+				}
+			}
 		}
+	}
+
+	private void invokeRestart() throws IOException {
+
+		log.info("Initiating restart...");
+
+		RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+
+		Path jarFile = IOUtils.getJarFile();
+		boolean isJar = jarFile.getFileName().toString().endsWith(".jar");
+
+		List<String> command = new ArrayList<>();
+
+		command.add("java");
+
+		String classpath = System.getProperty("java.class.path");
+		if(!isJar) {
+			classpath += System.getProperty("path.separator")+jarFile.toString();
+		}
+
+		Collections.addAll(command, "-cp", classpath);
+
+		// Add all VM arguments prior to the client parameters
+		if(isJar) {
+			command.addAll(runtime.getInputArguments());
+		}
+
+		// Add jar target if applicable
+		if(isJar) {
+			String jarName = jarFile.getFileName().toString();
+			Collections.addAll(command, "-jar", jarName);
+		} else {
+			// If no jar available (run in an IDE maybe?) directly start the client class
+			command.add(RDHClient.class.getName());
+		}
+
+		// Now add the client arguments
+		Collections.addAll(command, args);
+
+		Process process = new ProcessBuilder(command)
+				.inheritIO()
+				.directory(jarFile.getParent().toFile())
+				.start();
+
+		try {
+			// Give the new process a little time for startup
+			process.waitFor(2, TimeUnit.SECONDS);
+		} catch (InterruptedException ignore) {
+			// no-op
+		}
+
+		log.info("New client process started, alive={} ... exiting current session", process.isAlive());
+
+		// From here on the current process will end gracefully
 	}
 
 	public static class ErrorDescription {

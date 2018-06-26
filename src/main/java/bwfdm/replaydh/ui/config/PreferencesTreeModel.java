@@ -21,13 +21,15 @@ package bwfdm.replaydh.ui.config;
 import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import org.java.plugin.registry.Extension;
 
 import bwfdm.replaydh.core.PluginEngine;
+import bwfdm.replaydh.ui.id.ExtensionIdentity;
 import bwfdm.replaydh.ui.id.Identity;
 import bwfdm.replaydh.ui.tree.AbstractTreeModel;
 
@@ -41,6 +43,9 @@ import bwfdm.replaydh.ui.tree.AbstractTreeModel;
  */
 public class PreferencesTreeModel extends AbstractTreeModel {
 
+	private static final String TAB_ID = "PreferencesTab";
+	private static final String GROUP_ID = "PreferencesGroup";
+
 	private final PluginEngine pluginEngine;
 
 	public PreferencesTreeModel(PluginEngine pluginEngine) {
@@ -48,28 +53,41 @@ public class PreferencesTreeModel extends AbstractTreeModel {
 
 		this.pluginEngine = requireNonNull(pluginEngine);
 
-		final Set<String> paths = new HashSet<>();
+		Collection<Extension> tabExtensions = pluginEngine.getExtensions(
+				PluginEngine.CORE_PLUGIN_ID, TAB_ID);
 
-		for(Extension extension : pluginEngine.getExtensions(PluginEngine.CORE_PLUGIN_ID, "PreferencesTab")) {
-			String path = extension.getParameter("path").valueAsString();
-			requireNonNull(path);
+		final Map<Extension, Node> nodes = new HashMap<>();
 
-			if(paths.contains(path))
-				throw new IllegalArgumentException("Duplicate path for preferences tab: "+path);
+		for(Extension extension : tabExtensions) {
 
-			String[] elements = pathElements(path);
+			Node parent = getRoot();
+			Extension.Parameter groupDef = extension.getParameter("group");
+			if(groupDef!=null) {
+				parent = ensureGroup(groupDef.valueAsExtension(), nodes);
+			}
 
-			addNode(elements, extension);
-
+			Node node = new Node(parent, extension, pluginEngine);
+			parent.addElement(node);
 		}
 	}
 
-	private String[] pathElements(String path) {
-		return path.split("\\.");
-	}
+	private Node ensureGroup(Extension group, Map<Extension, Node> nodes) {
+		Node node = nodes.get(group);
 
-	private void addNode(String[] elements, Extension extension) {
-		//TODO
+		if(node==null) {
+			Node parent = getRoot();
+			Extension.Parameter parentDef = group.getParameter("parent");
+			if(parentDef!=null) {
+				Extension parentExt = parentDef.valueAsExtension();
+				parent = ensureGroup(parentExt, nodes);
+			}
+
+			node = new Node(parent, group, pluginEngine);
+			parent.addElement(node);
+			nodes.put(group, node);
+		}
+
+		return node;
 	}
 
 	/**
@@ -135,7 +153,7 @@ public class PreferencesTreeModel extends AbstractTreeModel {
 		return node.elements==null ? 0 : node.elements.size();
 	}
 
-	private enum NodeType {
+	public enum NodeType {
 		/**
 		 * Describes the singular root node
 		 */
@@ -178,15 +196,17 @@ public class PreferencesTreeModel extends AbstractTreeModel {
 			type = NodeType.ROOT;
 		}
 
-		Node(Node parent) {
+		Node(Node parent, String path) {
 			extension = null;
 			this.parent = requireNonNull(parent);
+			type = NodeType.PROXY;
 		}
 
-		Node(Node parent, Extension extension) {
+		Node(Node parent, Extension extension, PluginEngine pluginEngine) {
 			this.parent = requireNonNull(parent);
 			this.extension = requireNonNull(extension);
 			type = NodeType.TAB;
+			label = new ExtensionIdentity(extension, pluginEngine);
 		}
 
 		void addElement(Node node) {
@@ -196,12 +216,20 @@ public class PreferencesTreeModel extends AbstractTreeModel {
 			elements.add(node);
 		}
 
+		boolean hasElement(Node node) {
+			return elements!=null && elements.contains(node);
+		}
+
 		public Extension getExtension() {
 			return extension;
 		}
 
 		public Identity getLabel() {
 			return label;
+		}
+
+		public NodeType getType() {
+			return type;
 		}
 	}
 }

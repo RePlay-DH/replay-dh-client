@@ -16,49 +16,13 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.config;
-
-import java.awt.Component;
-
-import javax.swing.JTree;
-import javax.swing.tree.DefaultTreeCellRenderer;
-
-import bwfdm.replaydh.ui.config.PreferencesTreeModel.Node;
-import bwfdm.replaydh.ui.id.Identity;
+package bwfdm.replaydh.ui.config.tabs;
 
 /**
  * @author Markus Gärtner
  *
  */
-public class PreferencesTreeCellRenderer extends DefaultTreeCellRenderer {
+public class WorkspacePreferencesTab {
 
-	private static final long serialVersionUID = -9023901239785973601L;
-
-	/**
-	 * @see javax.swing.tree.DefaultTreeCellRenderer#getTreeCellRendererComponent(javax.swing.JTree, java.lang.Object, boolean, boolean, boolean, int, boolean)
-	 */
-	@Override
-	public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf,
-			int row, boolean hasFocus) {
-
-		Identity label = null;
-
-		if(value instanceof Node) {
-			Node node = (Node) value;
-			label = node.getLabel();
-		}
-
-		if(label!=null) {
-			value = label.getName();
-		}
-
-		super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-
-		if(label!=null) {
-			setToolTipText(label.getDescription());
-			setIcon(label.getIcon());
-		}
-
-		return this;
-	}
+	//TODO
 }

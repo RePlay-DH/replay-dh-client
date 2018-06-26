@@ -16,49 +16,65 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.config;
+package bwfdm.replaydh.utils;
 
-import java.awt.Component;
+import static java.util.Objects.requireNonNull;
 
-import javax.swing.JTree;
-import javax.swing.tree.DefaultTreeCellRenderer;
+import java.util.ArrayList;
+import java.util.List;
 
-import bwfdm.replaydh.ui.config.PreferencesTreeModel.Node;
-import bwfdm.replaydh.ui.id.Identity;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 /**
  * @author Markus Gärtner
  *
  */
-public class PreferencesTreeCellRenderer extends DefaultTreeCellRenderer {
+public class DefaultChangeSource implements ChangeSource {
 
-	private static final long serialVersionUID = -9023901239785973601L;
+	private final List<ChangeListener> listeners = new ArrayList<>();
+
+	private transient ChangeEvent changeEvent;
+
+	private final Object owner;
+
+	public DefaultChangeSource(Object owner) {
+		this.owner = requireNonNull(owner);
+	}
+
+	public DefaultChangeSource() {
+		this.owner = this;
+	}
+
+	private ChangeEvent getChangeEvent() {
+		if(changeEvent==null) {
+			changeEvent = new ChangeEvent(owner);
+		}
+		return changeEvent;
+	}
 
 	/**
-	 * @see javax.swing.tree.DefaultTreeCellRenderer#getTreeCellRendererComponent(javax.swing.JTree, java.lang.Object, boolean, boolean, boolean, int, boolean)
+	 * @see bwfdm.replaydh.utils.ChangeSource#addChangeListener(javax.swing.event.ChangeListener)
 	 */
 	@Override
-	public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf,
-			int row, boolean hasFocus) {
+	public void addChangeListener(ChangeListener listener) {
+		listeners.add(listener);
+	}
 
-		Identity label = null;
+	/**
+	 * @see bwfdm.replaydh.utils.ChangeSource#removeChangeListener(javax.swing.event.ChangeListener)
+	 */
+	@Override
+	public void removeChangeListener(ChangeListener listener) {
+		listeners.remove(listener);
+	}
 
-		if(value instanceof Node) {
-			Node node = (Node) value;
-			label = node.getLabel();
+	public void fireChange() {
+		if(!listeners.isEmpty()) {
+			ChangeEvent event = getChangeEvent();
+			for(ChangeListener listener : listeners) {
+				listener.stateChanged(event);
+			}
 		}
-
-		if(label!=null) {
-			value = label.getName();
-		}
-
-		super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-
-		if(label!=null) {
-			setToolTipText(label.getDescription());
-			setIcon(label.getIcon());
-		}
-
-		return this;
 	}
 }

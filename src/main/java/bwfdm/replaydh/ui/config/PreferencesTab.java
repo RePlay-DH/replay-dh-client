@@ -22,11 +22,17 @@ import java.awt.Component;
 import java.util.Collections;
 import java.util.Set;
 
+import bwfdm.replaydh.core.RDHEnvironment;
+import bwfdm.replaydh.utils.ChangeSource;
+
 /**
+ * Implementations of this class muust have a constructor that takes
+ * as its sole argument an instance of {@link RDHEnvironment}!
+ *
  * @author Markus Gärtner
  *
  */
-public interface PreferencesTab extends AutoCloseable {
+public interface PreferencesTab extends AutoCloseable, ChangeSource {
 
 	/**
 	 * Returns the component used to display the associated UI of
@@ -49,13 +55,38 @@ public interface PreferencesTab extends AutoCloseable {
 	 * If the tab has {@link #hasPendingChanges() pending changes}
 	 * then persist those in the underlying settings.
 	 */
-	void apply();
+	TabResult apply();
 
 	/**
 	 * Resets the underlying settings back to their system defaults
 	 * and updates the UI accordingly.
 	 */
 	void resetDefaults();
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Note that this method can be called repeatedly during the lifecycle of
+	 * a tab. After the first invocation all subsequent calls will require an
+	 * intermediate call to {@link #update()} to "revive" the tab.
+	 * <p>
+	 * This default implementation does nothing.
+	 *
+	 * @see java.lang.AutoCloseable#close()
+	 */
+	@Override
+	default void close() {
+		// no-op
+	}
+
+	/**
+	 * Called by the client before showing a tab.
+	 * Gives the tab the opportunity to refresh its content
+	 * based on the underlying settings.
+	 */
+	default void update() {
+		// no-op
+	}
 
 	/**
 	 * Allows the tab to customize the surrounding user interface by
@@ -78,6 +109,13 @@ public interface PreferencesTab extends AutoCloseable {
 		;
 	}
 
+	public enum TabResult {
+		DONE,
+		FAILED,
+		REQUIRES_RESTART,
+		;
+	}
+
 	public enum UiOptions {
 		/**
 		 * Signals that the tab doesn't require the optional "reset defaults"
@@ -85,6 +123,8 @@ public interface PreferencesTab extends AutoCloseable {
 		 * upon user interactions.
 		 */
 		SYNCHRONOUS,
+
+		//TODO maybe add option that only signals a tab doesn't have designated default values?
 		;
 	}
 }

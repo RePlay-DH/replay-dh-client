@@ -16,49 +16,17 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.config;
+package bwfdm.replaydh.utils;
 
-import java.awt.Component;
-
-import javax.swing.JTree;
-import javax.swing.tree.DefaultTreeCellRenderer;
-
-import bwfdm.replaydh.ui.config.PreferencesTreeModel.Node;
-import bwfdm.replaydh.ui.id.Identity;
+import javax.swing.event.ChangeListener;
 
 /**
  * @author Markus Gärtner
  *
  */
-public class PreferencesTreeCellRenderer extends DefaultTreeCellRenderer {
+public interface ChangeSource {
 
-	private static final long serialVersionUID = -9023901239785973601L;
+	void addChangeListener(ChangeListener listener);
 
-	/**
-	 * @see javax.swing.tree.DefaultTreeCellRenderer#getTreeCellRendererComponent(javax.swing.JTree, java.lang.Object, boolean, boolean, boolean, int, boolean)
-	 */
-	@Override
-	public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf,
-			int row, boolean hasFocus) {
-
-		Identity label = null;
-
-		if(value instanceof Node) {
-			Node node = (Node) value;
-			label = node.getLabel();
-		}
-
-		if(label!=null) {
-			value = label.getName();
-		}
-
-		super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-
-		if(label!=null) {
-			setToolTipText(label.getDescription());
-			setIcon(label.getIcon());
-		}
-
-		return this;
-	}
+	void removeChangeListener(ChangeListener listener);
 }
