@@ -225,6 +225,26 @@
 		</parameter>
 	</extension>
 	
+	<extension id="BPMNExporter" plugin-id="bwfdm.replaydh.core" point-id="WorkflowExporter">
+		<doc>
+			<doc-text>
+				Exporter to convert workflow metadata into plan information
+				following the PPLAN ontology.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.BPMNExporter.name" />
+		<parameter id="description" value="replaydh.plugins.BPMNExporter.description" />
+		<parameter id="class" value="bwfdm.replaydh.workflow.export.bpmn.BPMNExporter" />
+		
+		<parameter id="type" value="metadata" />
+		<parameter id="workflowScope" value="all" />
+		
+		<parameter id="format">
+			<parameter id="extension" value=".xml" />
+			<parameter id="description" value="replaydh.plugins.BPMNExporter.xml" />
+		</parameter>
+	</extension>
+	
 	<extension id="DSpacePublisher" plugin-id="bwfdm.replaydh.core" point-id="ResourcePublisher">
 		<doc>
 			<doc-text>
