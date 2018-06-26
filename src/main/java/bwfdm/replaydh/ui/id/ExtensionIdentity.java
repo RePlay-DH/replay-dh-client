@@ -81,7 +81,7 @@ public class ExtensionIdentity implements Identity {
 	}
 
 	private String getResource(String key) {
-		return resources==null ? key
+		return resources==null ? ResourceManager.getInstance().get(key)
 				: resources.getResource(ResourceManager.getInstance().getLocale(), key);
 	}
 
