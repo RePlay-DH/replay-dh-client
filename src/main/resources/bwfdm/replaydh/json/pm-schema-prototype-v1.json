@@ -13,7 +13,7 @@
 		"resourceType": {
 			"description": "Open description of a resource type, allows free type naming besides the core set of DataCite values. Potential format recommendation: Role/Subrole with Role being an instance from the resourceTypesGeneral list and Subrole a more specified variant.",
 			"anyOf": [ 
-				{ "$ref": "#/definitions/resourceTypeGeneral" },
+				{ "$ref": "#/definitions/resourceTypesGeneral" },
 				{ "type": "string"}
 			]
 		},
