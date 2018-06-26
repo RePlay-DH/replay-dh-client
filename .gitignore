@@ -82,3 +82,4 @@ hs_err_pid*
 /git-test-repo
 /clrArchBit.bat
 /temp
+/src/test/java/bwfdm/replaydh/experiments/bpmn
