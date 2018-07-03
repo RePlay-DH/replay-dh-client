@@ -1452,6 +1452,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		private Set<LocalFileObject> filesToRemove = null;
 		private Set<LocalFileObject> modifiedFiles = null;
 
+		private Set<LocalFileObject> newFilesToIgnore = null;
+		private Set<LocalFileObject> modifiedFilesToIgnore = null;
+
 		/**
 		 * THe newly created workflow step.
 		 * Guaranteed to be non-null if the task finishes
@@ -1596,6 +1599,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		}
 
+		private void filterLargeFiles() {
+
+		}
+
 		/**
 		 * @see javax.swing.SwingWorker#doInBackground()
 		 */
@@ -1618,10 +1625,14 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				// Add all files and collect new Identifiable instances
 				Set<Identifiable> newResources = addFilesAsOutput(newStep);
 
-				// Add all the previously
+				// Add all the previously cached resources
 				applyCachedResources(newStep);
 
-				// Start the part where the user gets involved
+				/*
+				 *  Start the part where the user gets involved.
+				 *  We do this synchronously on the event dispatch thread
+				 *  and block here until the GUI part is finished.
+				 */
 				// BEGIN EDT
 				SwingUtilities.invokeAndWait( () -> {
 					opSuccess.setBoolean(interactiveCommit(newStep));
