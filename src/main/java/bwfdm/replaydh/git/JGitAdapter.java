@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.git;
@@ -735,51 +735,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			}
 		}
 	}
-
-//	/**
-//	 * @see bwfdm.replaydh.core.RDHTool#stop(RDHEnvironment)
-//	 */
-//	@Override
-//	public void stop(RDHEnvironment environment) {
-//		environment.removePropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, this);
-//
-//		super.stop(environment);
-//	}
-
-//	@Override
-//	public void propertyChange(PropertyChangeEvent evt) {
-//
-//		// Ignore all property changes other than workspace
-//		if(!RDHEnvironment.NAME_WORKSPACE.equals(evt.getPropertyName())) {
-//			return;
-//		}
-//
-//		final Workspace workspace = (Workspace) evt.getNewValue();
-//
-//		synchronized (gitLock) {
-//
-//			if(workspace!=null) {
-//				Path workspacePath = workspace.getFolder();
-//				Path gitDir = getGitDir(workspacePath);
-//
-//				// If we're already working on the given workspace, don't bother rebuilding
-//				if(isCurrentGit(gitDir)) {
-//					return;
-//				}
-//			}
-//
-//			// Always try to disconnect from a potential former git repository to enter a "clean" state
-//			disconnectGit();
-//
-//			// Only if a new workspace has been selected do we need to make a fresh connection attempt
-//			if(workspace!=null) {
-//				connectGitAndLoadWorkspace(workspacePath)
-//
-//				if(!connectGitAndLoadWorkspace(workspace))
-//					throw new GitException("Recent attempt to connect to local git failed");
-//			}
-//		}
-//	}
 
 	/**
 	 * The workflow graph will be backed by this git such that each transaction
@@ -2206,6 +2161,12 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 				super.fireWorkflowStepPropertyChanged(step, propertyName);
 		}
 
+		/**
+		 * Shortcut method for internal use by {@link JGitAdapter} only.
+		 * <p>
+		 * Exposes a proxy to {@link #addWorkflowStepImpl(WorkflowStep, WorkflowStep)}
+		 * for package private access.
+		 */
 		boolean addWorkflowStepDirect(WorkflowStep source, WorkflowStep target) {
 			return super.addWorkflowStepImpl(source, target);
 		}
@@ -2229,6 +2190,11 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			setActiveStepImpl(step);
 		}
 
+		/**
+		 * Shortcut method for internal use by {@link JGitAdapter} only.
+		 * Exposes a proxy to {@link #getInitialStepUnchecked()}
+		 * for package private access.
+		 */
 		WorkflowStep getInitialStepDirect() {
 			return getInitialStepUnchecked();
 		}
@@ -2244,7 +2210,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 				return false;
 			}
 
-			//TODO perform the git stuff and rollback if it fails
+			// Perform Git level actions
 			try {
 				checkout(step);
 			} catch (IOException | GitException e) {

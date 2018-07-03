@@ -44,9 +44,66 @@ import bwfdm.replaydh.io.resources.IOResource;
 public class IOUtils {
 
 	public static final int BUFFER_LENGTH = 1<<14;
-	public static final long KB = 1L<<10;
-	public static final long MB = 1L<<20;
-	public static final long GB = 1L<<30;
+
+	/**
+	 * Kilobyte notation in decimal form
+	 */
+	public static final long KB = 1000;
+	/**
+	 * Megabyte notation in decimal form
+	 */
+	public static final long MB = KB*KB;
+	/**
+	 * Gigabyte notation in decimal form
+	 */
+	public static final long GB = MB*KB;
+
+	public static String readableSize(long size) {
+
+		if(size<KB) {
+			return size+" Bytes";
+		} else if(size<MB) {
+			return size/KB+" KB";
+		} else if(size<GB) {
+			return size/MB+" MB";
+		} else {
+			return size/GB+" GB";
+		}
+	}
+
+	public static long parseSizeFactor(String s) {
+		switch (s) {
+		case "Bytes": return 1;
+		case "KB": return KB;
+		case "MB": return MB;
+		case "GB": return GB;
+
+		default:
+			throw new IllegalArgumentException("Unknown unit value: "+s);
+		}
+	}
+
+	public static long parseSize(String s) {
+		s = s.trim();
+
+		int unitIdx = -1;
+
+		for(int i=0; i<s.length(); i++) {
+			if(!Character.isDigit(s.charAt(i))) {
+				unitIdx = i;
+				break;
+			}
+		}
+
+		if(unitIdx==-1) {
+			return Long.parseLong(s);
+		} else {
+			long size = Long.parseLong(s.substring(0, unitIdx));
+			long factor = parseSizeFactor(s.substring(unitIdx).trim());
+
+			return size * factor;
+		}
+	}
 
 	public static URL getJarLocation() throws NoSuchFileException {
 		CodeSource source = IOUtils.class.getProtectionDomain().getCodeSource();
