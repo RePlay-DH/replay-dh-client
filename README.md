@@ -7,6 +7,8 @@ Integrated Tool for tracking, versioning and publishing workflows.
 - Export metadata or data from your workflow in various formats
 - Publish directly to institutional repositories such as [DSpace](https://www.duraspace.org/dspace/ "DSpace's Homepage") from within the client
 
+See the original [project homepage](https://www.ub.uni-stuttgart.de/replay/) for additional information and associated publications.
+
 ### Setup
 
 The RePlay-DH Client does not require installation of any local software other than Java version 8 or newer. To begin using the client, download one of the [releases](https://github.com/RePlay-DH/replay-dh-client/releases) available in the code section on our GitHub page (or alternatively you can also build and package the client locally with maven).

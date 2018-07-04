@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.core;
@@ -89,6 +89,7 @@ import bwfdm.replaydh.io.TrackingStatus;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.actions.ActionManager;
+import bwfdm.replaydh.ui.config.PreferencesDialog;
 import bwfdm.replaydh.ui.core.RDHChangeWorkspaceWizard.ChangeWorkspaceContext;
 import bwfdm.replaydh.ui.core.ResourceDragController.Mode;
 import bwfdm.replaydh.ui.helper.CloseableUI;
@@ -501,7 +502,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.addStep", handler::addWorkflowStep);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.exit", handler::exitClient);
+		actionMapper.mapTask("replaydh.ui.core.mainPanel.restart", handler::restartClient);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.about", handler::showAboutDialog);
+		actionMapper.mapTask("replaydh.ui.core.mainPanel.preferences", handler::showPreferencesDialog);
 
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.openWorkspaceFolder", handler::openWorkspaceFolder);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.clearResourceCache", handler::clearResourceCache);
@@ -1145,11 +1148,23 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				log.info("User requested client shutdown");
 			}
 
-			environment.getClient().getGui().invokeShutdown();
+			environment.getClient().getGui().invokeShutdown(false);
+		}
+
+		private void restartClient() {
+			if(isVerbose()) {
+				log.info("User requested client restart");
+			}
+
+			environment.getClient().getGui().invokeShutdown(true);
 		}
 
 		private void showAboutDialog() {
 			AboutDialog.showDialog(SwingUtilities.getWindowAncestor(controlPanel));
+		}
+
+		private void showPreferencesDialog() {
+			PreferencesDialog.showDialog(environment, RDHMainPanel.this);
 		}
 
 		private void openWorkspaceFolder() {
@@ -1285,7 +1300,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			if(wizardDone) {
 				loadWorkspace(context);
 			} else if(exitOnCancel) {
-				SwingUtilities.invokeLater(() -> environment.getClient().getGui().invokeShutdown());
+				SwingUtilities.invokeLater(() -> environment.getClient().getGui().invokeShutdown(false));
 			}
 		}
 
@@ -1437,6 +1452,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		private Set<LocalFileObject> filesToRemove = null;
 		private Set<LocalFileObject> modifiedFiles = null;
 
+		private Set<LocalFileObject> newFilesToIgnore = null;
+		private Set<LocalFileObject> modifiedFilesToIgnore = null;
+
 		/**
 		 * THe newly created workflow step.
 		 * Guaranteed to be non-null if the task finishes
@@ -1581,6 +1599,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		}
 
+		private void filterLargeFiles() {
+
+		}
+
 		/**
 		 * @see javax.swing.SwingWorker#doInBackground()
 		 */
@@ -1603,10 +1625,14 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				// Add all files and collect new Identifiable instances
 				Set<Identifiable> newResources = addFilesAsOutput(newStep);
 
-				// Add all the previously
+				// Add all the previously cached resources
 				applyCachedResources(newStep);
 
-				// Start the part where the user gets involved
+				/*
+				 *  Start the part where the user gets involved.
+				 *  We do this synchronously on the event dispatch thread
+				 *  and block here until the GUI part is finished.
+				 */
 				// BEGIN EDT
 				SwingUtilities.invokeAndWait( () -> {
 					opSuccess.setBoolean(interactiveCommit(newStep));

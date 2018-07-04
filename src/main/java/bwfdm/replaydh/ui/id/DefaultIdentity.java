@@ -49,8 +49,9 @@ public class DefaultIdentity implements MutableIdentity {
 		this.id = requireNonNull(id);
 	}
 
-	public DefaultIdentity(String id, String description, Icon icon) {
+	public DefaultIdentity(String id, String name, String description, Icon icon) {
 		this.id = requireNonNull(id);
+		this.name = name;
 		this.description = description;
 		this.icon = icon;
 	}
@@ -146,6 +147,7 @@ public class DefaultIdentity implements MutableIdentity {
 	/**
 	 * @param icon the icon to set
 	 */
+	@Override
 	public void setIcon(Icon icon) {
 		this.icon = icon;
 	}
