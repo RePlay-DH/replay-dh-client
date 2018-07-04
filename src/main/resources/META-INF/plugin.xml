@@ -216,6 +216,17 @@
 		<parameter id="class" value="bwfdm.replaydh.ui.config.tabs.GeneralPreferencesTab" />
 	</extension>
 	
+	<extension id="MetadataPreferencesTab" plugin-id="bwfdm.replaydh.core" point-id="PreferencesTab">
+		<doc>
+			<doc-text>
+				Groups all the general top-level settings in one place.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.metadataPreferencesTab.name" />
+		<parameter id="description" value="replaydh.plugins.metadataPreferencesTab.description" />
+		<parameter id="class" value="bwfdm.replaydh.ui.config.tabs.MetadataPreferencesTab" />
+	</extension>
+	
 	<!-- EXPORTERS -->
 	
 	<extension id="RawMetadataExporter" plugin-id="bwfdm.replaydh.core" point-id="WorkflowExporter">
