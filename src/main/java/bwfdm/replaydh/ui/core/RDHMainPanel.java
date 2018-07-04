@@ -40,6 +40,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -81,6 +82,7 @@ import bwfdm.replaydh.core.RDHProperty;
 import bwfdm.replaydh.core.Workspace;
 import bwfdm.replaydh.git.JGitAdapter;
 import bwfdm.replaydh.io.FileTracker;
+import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.io.TrackerException;
 import bwfdm.replaydh.io.TrackerListener;
@@ -107,7 +109,6 @@ import bwfdm.replaydh.ui.workflow.WorkspaceTrackerPanel;
 import bwfdm.replaydh.ui.workflow.graph.WorkflowGraph;
 import bwfdm.replaydh.ui.workflow.graph.WorkflowStepShape;
 import bwfdm.replaydh.utils.LazyCollection;
-import bwfdm.replaydh.utils.MutablePrimitives.MutableBoolean;
 import bwfdm.replaydh.utils.RDHUtils;
 import bwfdm.replaydh.utils.annotation.Experimental;
 import bwfdm.replaydh.workflow.Identifiable;
@@ -656,9 +657,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 	}
 
 	/**
-	 *
-	 * @param filesToAdd
-	 * @param filesToRemove
+	 * Present the user with an editor for managing the content of
+	 * a new workflow step.
 	 */
 	private boolean interactiveCommit(WorkflowStep newStep) {
 		GuiUtils.checkEDT();
@@ -681,6 +681,12 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 
 		return opSuccess;
+	}
+
+	private boolean interactiveFilterFiles(Set<LocalFileObject> newFilesToIgnore,
+			Set<LocalFileObject> modifiedFilesToIgnore) {
+
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -1579,12 +1585,12 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		private void persistAssociatedChanges(Set<Identifiable> newResources) throws TrackerException {
 
 			if(filesToAdd!=null && !filesToAdd.isEmpty()) {
-				fileTracker.applyTrackingAction(extractFiles(filesToAdd), TrackingAction.ADD);
+				fileTracker.applyTrackingAction(LocalFileObject.extractFiles(filesToAdd), TrackingAction.ADD);
 
 			}
 
 			if(filesToRemove!=null && !filesToRemove.isEmpty()) {
-				fileTracker.applyTrackingAction(extractFiles(filesToRemove), TrackingAction.REMOVE);
+				fileTracker.applyTrackingAction(LocalFileObject.extractFiles(filesToRemove), TrackingAction.REMOVE);
 			}
 
 			// Add new resources to the resolver
@@ -1599,8 +1605,22 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		}
 
-		private void filterLargeFiles() {
+		private Set<LocalFileObject> filterFiles(Set<LocalFileObject> files, long sizeLimit) {
 
+			LazyCollection<LocalFileObject> result = LazyCollection.lazySet();
+
+			for(Iterator<LocalFileObject> it = files.iterator(); it.hasNext();) {
+				LocalFileObject file = it.next();
+			}
+
+			return result.getAsSet();
+		}
+
+		private void filterLargeFiles() {
+			long sizeLimit = IOUtils.parseSize(environment.getProperty(RDHProperty.GIT_MAX_FILESIZE));
+
+			newFilesToIgnore = filterFiles(filesToAdd, sizeLimit);
+			modifiedFilesToIgnore = filterFiles(modifiedFiles, sizeLimit);
 		}
 
 		/**
@@ -1612,10 +1632,12 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				return Boolean.FALSE;
 			}
 
+			filterLargeFiles();
+
 			Workflow workflow = workflowSource.get();
 
 			// Flag signaling user confirmation
-			final MutableBoolean opSuccess = new MutableBoolean(false);
+			boolean opSuccess = false;
 
 			workflow.beginUpdate();
 			try {
@@ -1634,13 +1656,11 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				 *  and block here until the GUI part is finished.
 				 */
 				// BEGIN EDT
-				SwingUtilities.invokeAndWait( () -> {
-					opSuccess.setBoolean(interactiveCommit(newStep));
-				});
+				opSuccess = GuiUtils.invokeEDTAndWait(RDHMainPanel.this::interactiveCommit, newStep);
 				// END EDT
 
 				// Only if the user confirmed the dialog do we actually add the step and commit git changes!
-				if(opSuccess.booleanValue()) {
+				if(opSuccess) {
 					workflow.addWorkflowStep(newStep);
 
 					persistAssociatedChanges(newResources);
@@ -1649,7 +1669,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				workflow.endUpdate();
 			}
 
-			return opSuccess.booleanValue();
+			return opSuccess;
 		}
 
 		private Set<LocalFileObject> resolveFiles(TrackingStatus trackingStatus) throws IOException, InterruptedException, TrackerException {
@@ -1682,19 +1702,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				}
 			} finally {
 				resolver.unlock();
-			}
-
-			return result.getAsSet();
-		}
-
-		/**
-		 * Converts a collection of file object wrappers back into regular file path instances.
-		 */
-		private Set<Path> extractFiles(Collection<LocalFileObject> fileObjects) {
-			LazyCollection<Path> result = LazyCollection.lazySet();
-
-			for(LocalFileObject fileObject : fileObjects) {
-				result.add(fileObject.getFile());
 			}
 
 			return result.getAsSet();
