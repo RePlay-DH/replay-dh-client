@@ -42,7 +42,7 @@ public class PPLANExporter implements WorkflowExporter {
 	public void export(WorkflowExportInfo exportInfo) throws IOException {
 		checkArgument("Publishing not supported", exportInfo.isExport());
 
-		PLAN_J_Functions functions = new PLAN_J_Functions();
+		PLAN_J_Functions functions = new PLAN_J_Functions(exportInfo.getEnvironment());
 		functions.iterateOverSteps(exportInfo.getWorkflow(), exportInfo.getSteps());
 
 		// For real situations we should have a valid path + filename

@@ -8,8 +8,10 @@ import javax.swing.JCheckBox;
 import com.jgoodies.forms.builder.FormBuilder;
 
 import bwfdm.replaydh.core.RDHEnvironment;
+import bwfdm.replaydh.core.RDHProperty;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.config.DelegatingPreferencesTab;
+import bwfdm.replaydh.ui.config.PreferencesDelegate;
 
 /**
  * @author Florian Fritze
@@ -30,6 +32,7 @@ public class MetadataPreferencesTab extends DelegatingPreferencesTab {
 		
 		.build();
 
+		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.METADATA_EXPORT_ONTOLOGY,cbMetadataScope,true));
 		
 	}
 }

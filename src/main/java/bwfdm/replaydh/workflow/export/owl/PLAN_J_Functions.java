@@ -35,6 +35,8 @@ import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.vocabulary.XSD;
 
+import bwfdm.replaydh.core.RDHEnvironment;
+import bwfdm.replaydh.core.RDHProperty;
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
@@ -44,10 +46,13 @@ import bwfdm.replaydh.workflow.schema.IdentifierType.Uniqueness;
 
 public class PLAN_J_Functions {
 	
-	public PLAN_J_Functions() {
+	public PLAN_J_Functions(RDHEnvironment environment) {
 		om.setNsPrefixes(prefixesmap);
+		clientenv=environment;
 		
 	}
+	
+	private static RDHEnvironment clientenv = null;
 
 	//private OWLOntology o = null;
 	
@@ -145,6 +150,7 @@ public class PLAN_J_Functions {
 		prefixesmap.put("dcterms", nsdcterms);
 		prefixesmap.put("datacite", nsdatacite);
 		prefixesmap.put("", nsrpdh);
+		if (clientenv.getProperty(RDHProperty.METADATA_EXPORT_ONTOLOGY) == true) {
 		pOinfluenced.addDomain(pOAgent);
 		pOinfluenced.addRange(pOEntity);
 		//pOgenerated.addDomain(pOActivity);
@@ -183,6 +189,7 @@ public class PLAN_J_Functions {
 		pOPlan.addSubClass(pPPlan);
 		pPPlan.addSuperClass(pOPlan);
 		pOActivity.addSubClass(pPActivity);
+		}
 	}
 	
 	private Map<String,String> resources = new HashMap<String,String>();

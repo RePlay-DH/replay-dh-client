@@ -183,8 +183,14 @@ public enum RDHProperty {
 
 	DSPACE_REPOSITORY_URL("dspace.repository.url"),
 	DSPACE_REPOSITORY_NAME("dspace.repository.name"),
-	;
+	
 
+	/**
+	 * Metadata Export Settings
+	 */
+	METADATA_EXPORT_ONTOLOGY("metadata.export.ontology"),
+	;
+	
 	private final String key;
 
 	private RDHProperty(String key) {
