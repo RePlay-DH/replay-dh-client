@@ -32,7 +32,7 @@ public class MetadataPreferencesTab extends DelegatingPreferencesTab {
 		
 		.build();
 
-		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.METADATA_EXPORT_ONTOLOGY,cbMetadataScope,true));
+		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.OWL_METADATA_EXPORT_FULL_ONTOLOGY,cbMetadataScope,true));
 		
 	}
 }

@@ -67,7 +67,7 @@ public class PLAN_J_Functions {
 	
 	private final static Map<String,String> prefixesmap = new HashMap<String,String>();
 	
-	private final static OntModel som = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+	private final OntModel som = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
 	
 	private OntModel om = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM,som);
 	
@@ -76,15 +76,15 @@ public class PLAN_J_Functions {
 	 * Classes of Prov-O
 	 */
 	
-	private final static OntClass pOEntity = som.createClass(nsprov+"Entity");
-	private final static OntClass pOPerson = som.createClass(nsprov+"Person");
-	private final static OntClass pOSoftwareAgent = som.createClass(nsprov+"SoftwareAgent");
-	private final static OntClass pOAgent = som.createClass(nsprov+"Agent");
-	private final static OntClass pOActivity = som.createClass(nsprov+"Activity");
-	private final static OntClass pOAssociation = som.createClass(nsprov+"Association");
-	private final static OntClass pOInfluence = som.createClass(nsprov+"Influence");
-	private final static OntClass pOPlan = som.createClass(nsprov+"Plan");
-	private final static OntClass pOAgentInfluence = som.createClass(nsprov+"AgentInfluence");
+	private final OntClass pOEntity = som.createClass(nsprov+"Entity");
+	private final OntClass pOPerson = som.createClass(nsprov+"Person");
+	private final OntClass pOSoftwareAgent = som.createClass(nsprov+"SoftwareAgent");
+	private final OntClass pOAgent = som.createClass(nsprov+"Agent");
+	private final OntClass pOActivity = som.createClass(nsprov+"Activity");
+	private final OntClass pOAssociation = som.createClass(nsprov+"Association");
+	private final OntClass pOInfluence = som.createClass(nsprov+"Influence");
+	private final OntClass pOPlan = som.createClass(nsprov+"Plan");
+	private final OntClass pOAgentInfluence = som.createClass(nsprov+"AgentInfluence");
 	
 	
 	
@@ -92,52 +92,50 @@ public class PLAN_J_Functions {
 	 * Properties of Prov-O
 	 */
 	
-	private final static ObjectProperty pOinfluenced = som.createObjectProperty(nsprov+"influenced");
-	//private final static ObjectProperty pOgenerated = som.createObjectProperty(nsprov+"generated");
-	private final static ObjectProperty pOwasAssociatedWith = som.createObjectProperty(nsprov+"wasAssociatedWith");
-	//private final static ObjectProperty pOhadActivity = som.createObjectProperty(nsprov+"hadActivity");
-	private final static ObjectProperty pOqualifiedAssociation = som.createObjectProperty(nsprov+"qualifiedAssociation");
-	private final static ObjectProperty pOagent = som.createObjectProperty(nsprov+"agent");
+	private final ObjectProperty pOinfluenced = som.createObjectProperty(nsprov+"influenced");
+	private final ObjectProperty pOwasAssociatedWith = som.createObjectProperty(nsprov+"wasAssociatedWith");
+	private final ObjectProperty pOqualifiedAssociation = som.createObjectProperty(nsprov+"qualifiedAssociation");
+	private final ObjectProperty pOagent = som.createObjectProperty(nsprov+"agent");
 	
 	/**
 	 * Classes of P-Plan
 	 */
 	
 	
-	private final static OntClass pPStep = som.createClass(nspplan+"Step");
-	private final static OntClass pPVariable = som.createClass(nspplan+"Variable");
-	private final static OntClass pPPlan = som.createClass(nspplan+"Plan");
-	private final static OntClass pPActivity = som.createClass(nspplan+"Activity");
+	private final OntClass pPStep = som.createClass(nspplan+"Step");
+	private final OntClass pPVariable = som.createClass(nspplan+"Variable");
+	private final OntClass pPPlan = som.createClass(nspplan+"Plan");
+	private final OntClass pPActivity = som.createClass(nspplan+"Activity");
 	
 	
 	/**
 	 * Properties of P-Plan
 	 */
 	
-	private final static ObjectProperty pPhasOutputVar = som.createObjectProperty(nspplan+"hasOutputVar");
-	private final static ObjectProperty pPhasInputVar = som.createObjectProperty(nspplan+"hasInputVar");
-	private final static ObjectProperty pPisPreceededBy = som.createObjectProperty(nspplan+"isPreceededBy");
-	private final static ObjectProperty pPisStepOfPlan = som.createObjectProperty(nspplan+"isStepOfPlan");
-	private final static ObjectProperty pPcorrespondsToStep = som.createObjectProperty(nspplan+"correspondsToStep");
+	private final ObjectProperty pPhasOutputVar = som.createObjectProperty(nspplan+"hasOutputVar");
+	private final ObjectProperty pPhasInputVar = som.createObjectProperty(nspplan+"hasInputVar");
+	private final ObjectProperty pPisPreceededBy = som.createObjectProperty(nspplan+"isPreceededBy");
+	private final ObjectProperty pPisStepOfPlan = som.createObjectProperty(nspplan+"isStepOfPlan");
+	private final ObjectProperty pPcorrespondsToStep = som.createObjectProperty(nspplan+"correspondsToStep");
 	
 	
 	/**
 	 * DC and DataCite Properties
 	 */
 	
-	private final static DatatypeProperty dCIdentifier = som.createDatatypeProperty(nsdcterms+"identifier");
-	private final static ObjectProperty dCOIdentifier = som.createObjectProperty(nsdcterms+"identifier");
-	private final static DatatypeProperty hasDCDesc = som.createDatatypeProperty(nsdcterms+"description");
+	private final DatatypeProperty dCIdentifier = som.createDatatypeProperty(nsdcterms+"identifier");
+	private final ObjectProperty dCOIdentifier = som.createObjectProperty(nsdcterms+"identifier");
+	private final DatatypeProperty hasDCDesc = som.createDatatypeProperty(nsdcterms+"description");
 	
 	
 	/**
 	 * Various already mentioned properties 
 	 */
 	
-	private final static DatatypeProperty hadRole = som.createDatatypeProperty(nsprov+"hadRole");
-	private final static DatatypeProperty hasInputVar = som.createDatatypeProperty(nspplan+"hasInputVar");
-	private final static DatatypeProperty dcType = som.createDatatypeProperty(nsdcterms+"type");
-	private final static DatatypeProperty rdfslabel = som.createDatatypeProperty(nsrdfs+"label");
+	private final DatatypeProperty hadRole = som.createDatatypeProperty(nsprov+"hadRole");
+	private final DatatypeProperty hasInputVar = som.createDatatypeProperty(nspplan+"hasInputVar");
+	private final DatatypeProperty dcType = som.createDatatypeProperty(nsdcterms+"type");
+	private final DatatypeProperty rdfslabel = som.createDatatypeProperty(nsrdfs+"label");
 	
 	
 	
@@ -150,46 +148,6 @@ public class PLAN_J_Functions {
 		prefixesmap.put("dcterms", nsdcterms);
 		prefixesmap.put("datacite", nsdatacite);
 		prefixesmap.put("", nsrpdh);
-		if (clientenv.getProperty(RDHProperty.METADATA_EXPORT_ONTOLOGY) == true) {
-		pOinfluenced.addDomain(pOAgent);
-		pOinfluenced.addRange(pOEntity);
-		//pOgenerated.addDomain(pOActivity);
-		//pOgenerated.addRange(pOEntity);
-		pOwasAssociatedWith.addDomain(pOActivity);
-		pOwasAssociatedWith.addRange(pOAgent);
-		pOAgentInfluence.addSubClass(pOAssociation);
-		//pOhadActivity.addDomain(pOInfluence);
-		//pOhadActivity.addRange(pOActivity);
-		pPhasOutputVar.addDomain(pPStep);
-		pPhasOutputVar.addRange(pPVariable);
-		pPhasInputVar.addDomain(pPStep);
-		pPhasInputVar.addRange(pPVariable);
-		pPisPreceededBy.addDomain(pPStep);
-		pPisPreceededBy.addRange(pPStep);
-		pPisStepOfPlan.addDomain(pPStep);
-		pPisStepOfPlan.addRange(pPPlan);
-		pPcorrespondsToStep.addDomain(pPActivity);
-		pPcorrespondsToStep.addRange(pPStep);
-		pOAgent.addSubClass(pOPerson);
-		pOAgent.addSubClass(pOSoftwareAgent);
-		pOInfluence.addSubClass(pOAgentInfluence);
-		pOAgentInfluence.addSubClass(pOAssociation);
-		pOEntity.addDisjointWith(pOPerson);
-		hadRole.addRange(XSD.xstring);
-		hasInputVar.addRange(XSD.xstring);
-		rdfslabel.addRange(XSD.xstring);
-		dcType.addRange(XSD.xstring);
-		hasDCDesc.addRange(XSD.xstring);
-		pOAgent.addSubClass(pOPerson);
-		pOAgent.addSubClass(pOSoftwareAgent);
-		pOqualifiedAssociation.addDomain(pOActivity);
-		pOqualifiedAssociation.addRange(pOAssociation);
-		pOagent.addDomain(pOAgentInfluence);
-		pOagent.addRange(pOAgent);
-		pOPlan.addSubClass(pPPlan);
-		pPPlan.addSuperClass(pOPlan);
-		pOActivity.addSubClass(pPActivity);
-		}
 	}
 	
 	private Map<String,String> resources = new HashMap<String,String>();
@@ -206,6 +164,42 @@ public class PLAN_J_Functions {
 	 * @throws MalformedURLException 
 	 */
 	public void iterateOverSteps(Workflow workFlow, Set<WorkflowStep> workFlowSteps) throws MalformedURLException {
+		if (clientenv.getBoolean(RDHProperty.OWL_METADATA_EXPORT_FULL_ONTOLOGY, true) == true) {
+			pOinfluenced.addDomain(pOAgent);
+			pOinfluenced.addRange(pOEntity);
+			pOwasAssociatedWith.addDomain(pOActivity);
+			pOwasAssociatedWith.addRange(pOAgent);
+			pOAgentInfluence.addSubClass(pOAssociation);
+			pPhasOutputVar.addDomain(pPStep);
+			pPhasOutputVar.addRange(pPVariable);
+			pPhasInputVar.addDomain(pPStep);
+			pPhasInputVar.addRange(pPVariable);
+			pPisPreceededBy.addDomain(pPStep);
+			pPisPreceededBy.addRange(pPStep);
+			pPisStepOfPlan.addDomain(pPStep);
+			pPisStepOfPlan.addRange(pPPlan);
+			pPcorrespondsToStep.addDomain(pPActivity);
+			pPcorrespondsToStep.addRange(pPStep);
+			pOAgent.addSubClass(pOPerson);
+			pOAgent.addSubClass(pOSoftwareAgent);
+			pOInfluence.addSubClass(pOAgentInfluence);
+			pOAgentInfluence.addSubClass(pOAssociation);
+			pOEntity.addDisjointWith(pOPerson);
+			hadRole.addRange(XSD.xstring);
+			hasInputVar.addRange(XSD.xstring);
+			rdfslabel.addRange(XSD.xstring);
+			dcType.addRange(XSD.xstring);
+			hasDCDesc.addRange(XSD.xstring);
+			pOAgent.addSubClass(pOPerson);
+			pOAgent.addSubClass(pOSoftwareAgent);
+			pOqualifiedAssociation.addDomain(pOActivity);
+			pOqualifiedAssociation.addRange(pOAssociation);
+			pOagent.addDomain(pOAgentInfluence);
+			pOagent.addRange(pOAgent);
+			pOPlan.addSubClass(pPPlan);
+			pPPlan.addSuperClass(pOPlan);
+			pOActivity.addSubClass(pPActivity);
+		}
 		for (WorkflowStep workFlowStep : workFlowSteps) {
 			if (!(workFlow.isInitialStep(workFlowStep))) {
 				Set<Resource> inputResources = workFlowStep.getInput();

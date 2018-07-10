@@ -188,7 +188,7 @@ public enum RDHProperty {
 	/**
 	 * Metadata Export Settings
 	 */
-	METADATA_EXPORT_ONTOLOGY("metadata.export.ontology"),
+	OWL_METADATA_EXPORT_FULL_ONTOLOGY("export.owl.includeFullOntology"),
 	;
 	
 	private final String key;

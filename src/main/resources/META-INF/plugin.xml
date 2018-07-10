@@ -219,7 +219,7 @@
 	<extension id="MetadataPreferencesTab" plugin-id="bwfdm.replaydh.core" point-id="PreferencesTab">
 		<doc>
 			<doc-text>
-				Groups all the general top-level settings in one place.
+				Gives the user more options for the metadata export.
 			</doc-text>
 		</doc>
 		<parameter id="name" value="replaydh.plugins.metadataPreferencesTab.name" />
