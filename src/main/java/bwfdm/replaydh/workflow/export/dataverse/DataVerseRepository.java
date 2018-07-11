@@ -14,7 +14,7 @@ import org.swordapp.client.SWORDWorkspace;
 import org.swordapp.client.ServiceDocument;
 import org.swordapp.client.UriRegistry;
 
-import bwfdm.replaydh.workflow.export.dspace.PublicationRepository;
+import bwfdm.replaydh.workflow.export.dataverse.PublicationRepository;
 
 public abstract class DataVerseRepository implements PublicationRepository {
 	
@@ -43,7 +43,7 @@ public abstract class DataVerseRepository implements PublicationRepository {
 	 * @param userLogin
 	 * @return
 	 */
-	public static AuthCredentials getNewAuthCredentials(String adminUser, char[] adminPassword, String userLogin) {
+	public static AuthCredentials getNewAuthCredentials(String adminUser, String adminPassword, String userLogin) {
 		
 		if(adminUser.equals(userLogin)) {
 			return new AuthCredentials(userLogin, String.valueOf(adminPassword)); // without "on-behalf-of"
@@ -61,16 +61,7 @@ public abstract class DataVerseRepository implements PublicationRepository {
 	 * @param authCredentials
 	 * @return ServiceDocument or null in case of error/exception
 	 */
-	public static ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials) {
-		ServiceDocument serviceDocument = null;
-		try {
-			serviceDocument = swordClient.getServiceDocument(serviceDocumentURL, authCredentials);
-		} catch (SWORDClientException | ProtocolViolationException e) {
-			log.error("Exception by accessing service document: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			return null;
-		}
-		return serviceDocument;
-	}
+	public abstract ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials);
 	
 	
 	/**
