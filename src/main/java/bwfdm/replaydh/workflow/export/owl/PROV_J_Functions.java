@@ -46,6 +46,11 @@ import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.WorkflowStep;
 import bwfdm.replaydh.workflow.schema.IdentifierType.Uniqueness;
 
+/**
+ * 
+ * @author Florian Fritze
+ *
+ */
 public class PROV_J_Functions {
 	
 	public PROV_J_Functions(RDHEnvironment environment) {

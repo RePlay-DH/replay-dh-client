@@ -44,6 +44,11 @@ import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.WorkflowStep;
 import bwfdm.replaydh.workflow.schema.IdentifierType.Uniqueness;
 
+/**
+ * 
+ * @author Florian Fritze
+ *
+ */
 public class PLAN_J_Functions {
 	
 	public PLAN_J_Functions(RDHEnvironment environment) {
@@ -54,7 +59,6 @@ public class PLAN_J_Functions {
 	
 	private static RDHEnvironment clientenv = null;
 
-	//private OWLOntology o = null;
 	
 	private final static String nsrdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 	private final static String nsxsd = "http://www.w3.org/2001/XMLSchema#";
