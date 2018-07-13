@@ -21,6 +21,7 @@ import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
 import bwfdm.replaydh.workflow.export.dspace.DSpaceRepository;
+import bwfdm.replaydh.workflow.export.dspace.DSpaceRepository.SwordRequestType;
 
 /**
  * 
@@ -31,13 +32,13 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	
 	public DataVerseRepository_v4(String serviceDocumentURL, String adminUser, String adminPassword) {
 		this.serviceDocumentURL=serviceDocumentURL;
+		this.adminPassword=adminPassword;
 		swordClient = new SWORDClient();
 		authCredentials = new AuthCredentials(adminUser, String.valueOf(adminPassword));
 	}
 	
 	// For SWORD
-	protected static String adminUser;
-	protected static String adminPassword;
+	private String adminPassword;
 	protected String serviceDocumentURL;
 			
 	private AuthCredentials authCredentials = null;
@@ -84,7 +85,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	 *  	   "StatusCode" parameter from the response in case of {@code SwordRequestType.REPLACE} request,
 	 *  	   or {@code null} in case of error
 	 */
-	protected String publishElement(String userLogin, String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, String> metadataMap) {
+	protected String publishElement(String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, String> metadataMap) {
 		
 		// Check if only 1 parameter is used (metadata OR file). 
 		// Multipart is not supported.
@@ -93,7 +94,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		}
 		
 		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = getNewAuthCredentials(null, this.adminPassword, userLogin);
+		//AuthCredentials authCredentials = getNewAuthCredentials(null, this.adminPassword, userLogin);
 		
 		FileInputStream fis = null;
 		
@@ -208,21 +209,27 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	}
 
 	@Override
-	public boolean publishFile(String userLogin, String collectionURL, File fileFullPath) {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean publishFile(String collectionURL, File fileFullPath) {
+		String mimeFormat = "application/zip"; // for every file type, to publish even "XML" files as a normal file
+		String packageFormat = getPackageFormat(fileFullPath.getName()); //zip-archive or separate file
+		
+		if(publishElement(collectionURL, SwordRequestType.DEPOSIT, mimeFormat, packageFormat, fileFullPath, null) != null) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	@Override
-	public boolean publishMetadata(String userLogin, String collectionURL, Map<String, String> metadataMap) {
+	public boolean publishMetadata(String collectionURL, File fileFullPath) {
 		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean publishMetadata(String userLogin, String collectionURL, File metadataFileXML) {
-		// TODO Auto-generated method stub
-		return false;
+		String mimeFormat = "application/atom+xml";
+		
+		if(publishElement(collectionURL, SwordRequestType.DEPOSIT, mimeFormat, null, fileFullPath, null) != null) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	@Override
@@ -250,6 +257,22 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 			return null;
 		}
 		return serviceDocument;
+	}
+
+	@Override
+	public boolean publishMetadata(String userLogin, String collectionURL, File metadataFileXML) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public Map<String, String> getUserAvailableDatasetsWithTitle(String dataverse) {
+		// TODO Auto-generated method stub
+		if(this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials) != null) {
+			return super.getAvailableCollectionsViaSWORD(this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials));
+		} else {
+			return null;
+		}
 	}
 	
 	

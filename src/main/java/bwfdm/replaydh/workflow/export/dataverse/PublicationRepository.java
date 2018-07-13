@@ -79,6 +79,15 @@ public interface PublicationRepository {
 	public Map<String, String> getUserAvailableCollectionsWithTitle();
 	
 	/**
+	 * Get collections, which are available for the user
+	 * Could be, that user has an access only for some specific collections.
+	 *  
+	 * @param loginName
+	 * @return Map of Strings, where key="Collection full URL", value="Collection title", or empty Map if there are not available collections.
+	 */
+	public Map<String, String> getUserAvailableDatasetsWithTitle(String dataverse);
+	
+	/**
 	 * Get collections, which are available for the user, and show their full name
 	 * (e.g. for DSpace-repository it means "community/subcommunity/collection")
 	 * <p>
@@ -116,7 +125,7 @@ public interface PublicationRepository {
 	 * @param fileFullPath
 	 * @return
 	 */
-	public boolean publishFile(String userLogin, String collectionURL, File fileFullPath);
+	public boolean publishFile(String collectionURL, File fileFullPath);
 	
 	/**
 	 * Publish metada only (without any file) to some collection, which is available for the user.
@@ -127,7 +136,7 @@ public interface PublicationRepository {
 	 * @param metadataMap
 	 * @return
 	 */
-	public boolean publishMetadata(String userLogin, String collectionURL, Map<String, String> metadataMap);
+	public boolean publishMetadata(String collectionURL, File fileFullPath);
 		
 	/**
 	 * Publish metada only (without any file) to some collection, which is available for the user.
