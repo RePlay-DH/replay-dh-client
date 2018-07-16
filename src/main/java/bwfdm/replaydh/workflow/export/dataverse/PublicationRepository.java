@@ -20,6 +20,7 @@ package bwfdm.replaydh.workflow.export.dataverse;
  */
 
 import java.io.File;
+import java.util.List;
 
 /**
  * General Interface for the publication repository.
@@ -28,6 +29,9 @@ import java.io.File;
  */
 
 import java.util.Map;
+
+import org.apache.abdera.model.Entry;
+import org.apache.abdera.model.Feed;
 
 public interface PublicationRepository {
 
@@ -85,7 +89,7 @@ public interface PublicationRepository {
 	 * @param loginName
 	 * @return Map of Strings, where key="Collection full URL", value="Collection title", or empty Map if there are not available collections.
 	 */
-	public Map<String, String> getUserAvailableDatasetsWithTitle(String dataverse);
+	public List<Entry> getUserAvailableDatasets(Feed feed);
 	
 	/**
 	 * Get collections, which are available for the user, and show their full name

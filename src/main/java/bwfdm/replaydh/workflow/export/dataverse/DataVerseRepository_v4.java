@@ -4,8 +4,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.abdera.model.Entry;
+import org.apache.abdera.model.Feed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
@@ -21,7 +24,6 @@ import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
 import bwfdm.replaydh.workflow.export.dspace.DSpaceRepository;
-import bwfdm.replaydh.workflow.export.dspace.DSpaceRepository.SwordRequestType;
 
 /**
  * 
@@ -32,13 +34,11 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	
 	public DataVerseRepository_v4(String serviceDocumentURL, String adminUser, String adminPassword) {
 		this.serviceDocumentURL=serviceDocumentURL;
-		this.adminPassword=adminPassword;
 		swordClient = new SWORDClient();
 		authCredentials = new AuthCredentials(adminUser, String.valueOf(adminPassword));
 	}
 	
 	// For SWORD
-	private String adminPassword;
 	protected String serviceDocumentURL;
 			
 	private AuthCredentials authCredentials = null;
@@ -266,10 +266,10 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	}
 
 	@Override
-	public Map<String, String> getUserAvailableDatasetsWithTitle(String dataverse) {
+	public List<Entry> getUserAvailableDatasets(Feed feed) {
 		// TODO Auto-generated method stub
-		if(this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials) != null) {
-			return super.getAvailableCollectionsViaSWORD(this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials));
+		if(feed != null) {
+			return feed.getEntries();
 		} else {
 			return null;
 		}
