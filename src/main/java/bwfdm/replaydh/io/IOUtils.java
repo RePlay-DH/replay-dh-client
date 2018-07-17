@@ -19,6 +19,9 @@
 package bwfdm.replaydh.io;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,8 +37,12 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import bwfdm.replaydh.io.resources.IOResource;
+import bwfdm.replaydh.workflow.export.dspace.DSpacePublisher;
 
 /**
  * @author Markus Gärtner
@@ -181,4 +188,60 @@ public class IOUtils {
             out.write(buf, 0, len);
         }
     }
+
+	/**
+	 * Pack a List of files to the zip-file. The basePath should be equal to the workspace directory.  
+	 * <p>
+	 * The method uses FileOutputStream, ZipOutputStream and FileInputStream inside, which will be closed automatically at the end.
+	 * 
+	 * @param filesList
+	 * @param zipFile
+	 * @param basePath
+	 * @throws IOException
+	 */
+	public static void packFilesToZip(List<File> filesList, File zipFile, String basePath) throws IOException {
+		
+		try(	FileOutputStream fos = new FileOutputStream(zipFile); //fos and zos will be closed automatically 
+				ZipOutputStream zos = new ZipOutputStream(fos)	
+		) {
+			for(File file: filesList) {
+				
+				String zipEntryName = IOUtils.getRelativizedPath(file.getPath(), basePath); 
+				zipEntryName = DSpacePublisher.replaceNotAllowedCharacters(zipEntryName);
+								
+				try(FileInputStream fileInputStream = new FileInputStream(file)) { //fileInputStream will be closed automatically
+				
+					ZipEntry entry = new ZipEntry(zipEntryName);
+					zos.putNextEntry(entry);
+					
+					byte[] buffer = new byte[1024];
+					int length;
+					while ((length = fileInputStream.read(buffer)) >= 0) {
+						zos.write(buffer, 0, length);
+					}		
+					zos.closeEntry();
+				} // end of try. fileInputStream will be closed automatically
+			}								
+		} // end of try. fos and zos will be closed automatically. "Finally" do not needed. 
+	}
+
+	/**
+	 * <pre>
+	 * Get path, which is relative to some root path.
+	 * e.g.:
+	 * - absolutePath: /folder1/folder2/folder3/file.txt
+	 * - basePath: /folrder1/folder2/
+	 * - relativizedPath: folder3/file.txt
+	 * 
+	 * </pre>  
+	 * @param absolutePath
+	 * @param basePath
+	 * @return
+	 */
+	public static String getRelativizedPath(String absolutePath, String basePath) {
+		Path pathAbsolute = Paths.get(absolutePath);
+	    Path pathBase = Paths.get(basePath);
+	    Path pathRelative = pathBase.relativize(pathAbsolute);
+	    return pathRelative.toString();
+	}
 }
