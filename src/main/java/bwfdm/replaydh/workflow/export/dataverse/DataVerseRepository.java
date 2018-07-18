@@ -1,5 +1,6 @@
 package bwfdm.replaydh.workflow.export.dataverse;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -222,4 +223,37 @@ public abstract class DataVerseRepository implements PublicationRepository {
                 + ". Possible problem with SWORD server, or URL");
         return null;
     }
+
+	/**
+	 * Publish a file to some collections, which is available for the user.
+	 * 
+	 * @param userLogin
+	 * @param collectionURL
+	 * @param fileFullPath
+	 * @return
+	 */
+	public abstract boolean publishFile(String collectionURL, File fileFullPath);
+
+	/**
+	 * Publish metada only (without any file) to some collection, which is available for the user.
+	 * Metadata are described as a {@link java.util.Map}. 
+	 *  
+	 * @param userLogin
+	 * @param collectionURL
+	 * @param metadataMap
+	 * @return
+	 */
+	public abstract boolean publishMetadata(String collectionURL, File fileFullPath);
+
+	/**
+	 * Publish a file together with the metadata.
+	 * Metadata are described in the xml-file.
+	 * 
+	 * @param userLogin
+	 * @param collectionURL
+	 * @param fileFullPath
+	 * @param metadataFileXML
+	 * @return
+	 */
+	public abstract boolean publishFileAndMetadata(String userLogin, String collectionURL, File fileFullPath, File metadataFileXML);
 }

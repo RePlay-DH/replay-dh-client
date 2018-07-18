@@ -122,27 +122,6 @@ public interface PublicationRepository {
 	public Map<String, String> getAdminAvailableCollectionsWithFullName(String fullNameSeparator);
 	
 	/**
-	 * Publish a file to some collections, which is available for the user.
-	 * 
-	 * @param userLogin
-	 * @param collectionURL
-	 * @param fileFullPath
-	 * @return
-	 */
-	public boolean publishFile(String collectionURL, File fileFullPath);
-	
-	/**
-	 * Publish metada only (without any file) to some collection, which is available for the user.
-	 * Metadata are described as a {@link java.util.Map}. 
-	 *  
-	 * @param userLogin
-	 * @param collectionURL
-	 * @param metadataMap
-	 * @return
-	 */
-	public boolean publishMetadata(String collectionURL, File fileFullPath);
-		
-	/**
 	 * Publish metada only (without any file) to some collection, which is available for the user.
 	 * Metadata are described in the xml-file.
 	 * 
@@ -164,18 +143,6 @@ public interface PublicationRepository {
 	 * @return
 	 */
 	public boolean publishFileAndMetadata(String userLogin, String collectionURL, File fileFullPath, Map<String, String> metadataMap);
-	
-	/**
-	 * Publish a file together with the metadata.
-	 * Metadata are described in the xml-file.
-	 * 
-	 * @param userLogin
-	 * @param collectionURL
-	 * @param fileFullPath
-	 * @param metadataFileXML
-	 * @return
-	 */
-	public boolean publishFileAndMetadata(String userLogin, String collectionURL, File fileFullPath, File metadataFileXML);
 	
 }
 
