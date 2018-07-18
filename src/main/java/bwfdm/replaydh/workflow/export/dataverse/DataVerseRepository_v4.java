@@ -5,14 +5,19 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.abdera.model.Document;
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Feed;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.abdera.protocol.Response;
+import org.apache.abdera.protocol.client.AbderaClient;
+import org.apache.abdera.protocol.client.ClientResponse;
+import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.swordapp.client.AuthCredentials;
 import org.swordapp.client.Deposit;
 import org.swordapp.client.DepositReceipt;
@@ -42,22 +47,12 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	}
 	
 	// For SWORD
-	protected String serviceDocumentURL;
+	private String serviceDocumentURL;
 			
 	private AuthCredentials authCredentials = null;
 	
 	private SWORDClient swordClient = null;
 	
-	// For REST	
-	//
-	// URLs
-	protected String restURL;	
-	
-	protected static final Logger log = LoggerFactory.getLogger(DataVerseRepository_v4.class);
-
-	static {
-		
-	}
 	/**
 	 * Check if SWORDv2-protocol is accessible
 	 * @return
@@ -70,6 +65,75 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 			return false;
 		}
 	}
+	
+	public Feed getAtomFeed(String dataverseURL, AuthCredentials auth) throws SWORDClientException, MalformedURLException
+    {
+        // do some error checking and validations
+        if (dataverseURL == null)
+        {
+            log.error("Null string passed in to getAtomFeed; returning null");
+            return null;
+        }
+        if (log.isDebugEnabled())
+        {
+            log.debug("getting Atom Feed from " + dataverseURL);
+        }
+
+        AbderaClient client = new AbderaClient(this.abdera);
+
+        if (auth != null) {
+        	if (auth.getUsername() != null) {
+        		if (log.isDebugEnabled())
+                {
+                    log.debug("Setting username/password: " + auth.getUsername() + "/****password omitted *****");
+                }
+                UsernamePasswordCredentials unpw = new UsernamePasswordCredentials(auth.getUsername(), auth.getPassword());
+
+                // create the credentials - target and realm can be null (and are so by default)
+                try
+                {
+                    client.addCredentials(auth.getTarget(), auth.getRealm(), "basic", unpw);
+                }
+                catch (URISyntaxException e)
+                {
+                    log.error("Unable to parse authentication target in AuthCredential", e);
+                    throw new SWORDClientException("Unable to parse authentication target in AuthCredentials", e);
+                }
+        	}
+        }
+        // ensure that the URL is valid
+        URL url = new URL(dataverseURL);
+        if (log.isDebugEnabled())
+        {
+            log.debug("Formalised Atom Document URL to " + url.toString());
+        }
+
+        // make the request for atom feed
+        if (log.isDebugEnabled())
+        {
+           log.debug("Connecting to Server to Atom Feed Document from " + url.toString() + " ...");
+        }
+        ClientResponse resp = client.get(url.toString());
+        System.out.println("Output: "+resp);
+        if (log.isDebugEnabled())
+        {
+            log.debug("Successfully retrieved Atom Feed from " + url.toString());
+        }
+
+        // if the response is successful, get the Atom Feed out of the response
+        if (resp.getType() == Response.ResponseType.SUCCESS)
+        {
+            log.info("Retrieved Atom Feed from " + url.toString() + " with HTTP success code");
+            Document<Feed> doc = resp.getDocument();
+            Feed sd = doc.getRoot();
+            return sd;
+        }
+
+        // if we don't get anything respond with null
+        log.warn("Unable to retrieve Atom Feed from " + url.toString() + "; responded with " + resp.getStatus()
+                + ". Possible problem with SWORD server, or URL");
+        return null;
+    }
 	
 	/**
 	 * Publish a file or metadata. Private method.
@@ -97,7 +161,6 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		}
 		
 		SWORDClient swordClient = new SWORDClient();
-		//AuthCredentials authCredentials = getNewAuthCredentials(null, this.adminPassword, userLogin);
 		
 		FileInputStream fis = null;
 		
@@ -159,14 +222,8 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		}
 	}
 	
-	@Override
-	public boolean isAccessible() {
-		// TODO Auto-generated method stub
-		return false;
-	}
 
 	public Map<String, String> getUserAvailableCollectionsWithTitle() {
-		// TODO Auto-generated method stub
 		if(this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials) != null) {
 			return super.getAvailableCollectionsViaSWORD(this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials));
 		} else {
@@ -176,10 +233,8 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 
 
 	public boolean publishFile(String collectionURL, File fileFullPath) {
-		String mimeFormat = "application/zip"; // for every file type, to publish even "XML" files as a normal file
 		String packageFormat = getPackageFormat(fileFullPath.getName()); //zip-archive or separate file
-		
-		if(publishElement(collectionURL, SwordRequestType.DEPOSIT, mimeFormat, packageFormat, fileFullPath, null) != null) {
+		if(publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, fileFullPath, null) != null) {
 			return true;
 		} else {
 			return false;
@@ -187,10 +242,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	}
 
 	public boolean publishMetadata(String collectionURL, File fileFullPath) {
-		// TODO Auto-generated method stub
-		String mimeFormat = "application/atom+xml";
-		
-		if(publishElement(collectionURL, SwordRequestType.DEPOSIT, mimeFormat, null, fileFullPath, null) != null) {
+		if(publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null) != null) {
 			return true;
 		} else {
 			return false;
@@ -214,8 +266,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		}
 	}
 
-	public ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL,
-			AuthCredentials authCredentials) {
+	public ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials) {
 		ServiceDocument serviceDocument = null;
 		try {
 			serviceDocument = swordClient.getServiceDocument(serviceDocumentURL, authCredentials);
@@ -226,8 +277,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		return serviceDocument;
 	}
 
-	public Entry getUserAvailableMetadataset(Feed feed) {
-		// TODO Auto-generated method stub
+	public Entry getUserAvailableMetadataset(Feed feed, String doiId) {
 		if(feed != null) {
 			List<Entry> entries = feed.getEntries();
 			Entry chosenEntry = null;
@@ -239,7 +289,4 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 			return null;
 		}
 	}
-	
-	
-	
 }

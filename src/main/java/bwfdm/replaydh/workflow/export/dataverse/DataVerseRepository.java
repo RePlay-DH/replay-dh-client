@@ -3,20 +3,12 @@ package bwfdm.replaydh.workflow.export.dataverse;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.abdera.Abdera;
-import org.apache.abdera.model.Document;
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Feed;
-import org.apache.abdera.protocol.Response;
-import org.apache.abdera.protocol.client.AbderaClient;
-import org.apache.abdera.protocol.client.ClientResponse;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
@@ -27,17 +19,23 @@ import org.swordapp.client.SWORDWorkspace;
 import org.swordapp.client.ServiceDocument;
 import org.swordapp.client.UriRegistry;
 
-
+/**
+ * 
+ * @author Florian Fritze, Volodymyr Kushnarenko
+ *
+ */
 public abstract class DataVerseRepository {
 	
-	private static final Logger log = LoggerFactory.getLogger(DataVerseRepository.class);
+	protected static final Logger log = LoggerFactory.getLogger(DataVerseRepository.class);
 	
 	// Header constants
 	public static final String APPLICATION_JSON = "application/json";
 	public static final String CONTENT_TYPE_HEADER = "Content-Type";
 	public static final String ACCEPT_HEADER = "Accept";
+	public static final String MIME_FORMAT_ZIP = "application/zip";
+	public static final String MIME_FORMAT_ATOM_XML = "application/atom+xml";
 	
-	private Abdera abdera =  new Abdera();
+	protected Abdera abdera =  new Abdera();
 	
 	
 	/*
@@ -45,36 +43,6 @@ public abstract class DataVerseRepository {
 	 * General purpose methods
 	 * -------------------------------
 	 */
-	
-	
-	/**
-	 * Get new authentication credentials. 
-	 * <p> To disactivate "on-behalf-of" option please use the same string for "adminUser" and "userLogin".
-	 * <p> If "adminUser" and "userLogin" are different, "on-behalf-of" option will be used.
-	 * 
-	 * @param adminUser
-	 * @param adminPassword
-	 * @param userLogin
-	 * @return
-	 */
-	public static AuthCredentials getNewAuthCredentials(String adminUser, String adminPassword, String userLogin) {
-		
-		if(adminUser.equals(userLogin)) {
-			return new AuthCredentials(userLogin, String.valueOf(adminPassword)); // without "on-behalf-of"
-		} else {
-			return new AuthCredentials(adminUser, String.valueOf(adminPassword), userLogin); // with "on-behalf-of"
-		}
-	}
-
-	/**
-	 * Get service document via SWORD v2
-	 * 
-	 * @param swordClient
-	 * @param serviceDocumentURL
-	 * @param authCredentials
-	 * @return ServiceDocument or null in case of error/exception
-	 */
-	public abstract ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials);
 	
 	
 	/**
@@ -88,8 +56,8 @@ public abstract class DataVerseRepository {
 		if(serviceDocument != null) {
 			for(SWORDWorkspace workspace : serviceDocument.getWorkspaces()) {
 				for (SWORDCollection collection : workspace.getCollections()) {
-					// key = full URL, value = Title
-					collections.put(collection.getHref().toString(), collection.getTitle());
+					// key = Title, value = full URL
+					collections.put(collection.getTitle(), collection.getHref().toString());
 				}
 			}
 		}
@@ -157,74 +125,26 @@ public abstract class DataVerseRepository {
 		}
 	}	
 	
-	public Feed getAtomFeed(String dataversedURL, AuthCredentials auth) throws SWORDClientException, MalformedURLException
-    {
-        // do some error checking and validations
-        if (dataversedURL == null)
-        {
-            log.error("Null string passed in to getAtomFeed; returning null");
-            return null;
-        }
-        if (log.isDebugEnabled())
-        {
-            log.debug("getting Atom Feed from " + dataversedURL);
-        }
-
-        AbderaClient client = new AbderaClient(this.abdera);
-
-        if (auth != null) {
-        	if (auth.getUsername() != null) {
-        		if (log.isDebugEnabled())
-                {
-                    log.debug("Setting username/password: " + auth.getUsername() + "/****password omitted *****");
-                }
-                UsernamePasswordCredentials unpw = new UsernamePasswordCredentials(auth.getUsername(), auth.getPassword());
-
-                // create the credentials - target and realm can be null (and are so by default)
-                try
-                {
-                    client.addCredentials(auth.getTarget(), auth.getRealm(), "basic", unpw);
-                }
-                catch (URISyntaxException e)
-                {
-                    log.error("Unable to parse authentication target in AuthCredential", e);
-                    throw new SWORDClientException("Unable to parse authentication target in AuthCredentials", e);
-                }
-        	}
-        }
-        // ensure that the URL is valid
-        URL url = new URL(dataversedURL);
-        if (log.isDebugEnabled())
-        {
-            log.debug("Formalised Atom Document URL to " + url.toString());
-        }
-
-        // make the request for atom feed
-        if (log.isDebugEnabled())
-        {
-           log.debug("Connecting to Server to Atom Feed Document from " + url.toString() + " ...");
-        }
-        ClientResponse resp = client.get(url.toString());
-        System.out.println("Output: "+resp);
-        if (log.isDebugEnabled())
-        {
-            log.debug("Successfully retrieved Atom Feed from " + url.toString());
-        }
-
-        // if the response is successful, get the Atom Feed out of the response
-        if (resp.getType() == Response.ResponseType.SUCCESS)
-        {
-            log.info("Retrieved Atom Feed from " + url.toString() + " with HTTP success code");
-            Document<Feed> doc = resp.getDocument();
-            Feed sd = doc.getRoot();
-            return sd;
-        }
-
-        // if we don't get anything respond with null
-        log.warn("Unable to retrieve Atom Feed from " + url.toString() + "; responded with " + resp.getStatus()
-                + ". Possible problem with SWORD server, or URL");
-        return null;
-    }
+	/**
+	 * Get the Atom Feed of a Dataverse collection URL
+	 * @param dataverseURL
+	 * @param auth
+	 * @return
+	 * @throws SWORDClientException
+	 * @throws MalformedURLException
+	 */
+	public abstract Feed getAtomFeed(String dataverseURL, AuthCredentials auth) throws SWORDClientException, MalformedURLException;
+	
+	
+	/**
+	 * Get service document via SWORD v2
+	 * 
+	 * @param swordClient
+	 * @param serviceDocumentURL
+	 * @param authCredentials
+	 * @return ServiceDocument or null in case of error/exception
+	 */
+	public abstract ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials);
 
 	/**
 	 * Publish a file to some collections, which is available for the user.
@@ -261,7 +181,11 @@ public abstract class DataVerseRepository {
 	 */
 	public abstract boolean publishFileAndMetadata(String collectionURL, File dataFile, File metadataFileXML) throws IOException, SWORDClientException;
 
-	public abstract Entry getUserAvailableMetadataset(Feed feed);
+	/**
+	 * Get the entry in the Atom Feed which refers to the URL of the metadata entry in Dataverse. This entry is necessary to add files to the metadata entry in Dataverse.
+	 * @param feed
+	 * @return
+	 */
+	public abstract Entry getUserAvailableMetadataset(Feed feed, String doiId);
 
-	public abstract boolean isAccessible();
 }
