@@ -1,14 +1,17 @@
 package bwfdm.replaydh.workflow.export.dataverse;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.abdera.Abdera;
 import org.apache.abdera.model.Document;
+import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Feed;
 import org.apache.abdera.protocol.Response;
 import org.apache.abdera.protocol.client.AbderaClient;
@@ -24,9 +27,8 @@ import org.swordapp.client.SWORDWorkspace;
 import org.swordapp.client.ServiceDocument;
 import org.swordapp.client.UriRegistry;
 
-import bwfdm.replaydh.workflow.export.dataverse.PublicationRepository;
 
-public abstract class DataVerseRepository implements PublicationRepository {
+public abstract class DataVerseRepository {
 	
 	private static final Logger log = LoggerFactory.getLogger(DataVerseRepository.class);
 	
@@ -80,7 +82,7 @@ public abstract class DataVerseRepository implements PublicationRepository {
 	 * 
 	 * @return Map<String, String> where key=URL, value=Title
 	 */
-	public static Map<String, String> getAvailableCollectionsViaSWORD(ServiceDocument serviceDocument){
+	public Map<String, String> getAvailableCollectionsViaSWORD(ServiceDocument serviceDocument){
 		Map<String, String> collections = new HashMap<String, String>();
 		
 		if(serviceDocument != null) {
@@ -116,7 +118,7 @@ public abstract class DataVerseRepository implements PublicationRepository {
 	 * @param fileName
 	 * @return 
 	 */
-	public static String getPackageFormat(String fileName) {
+	public String getPackageFormat(String fileName) {
 		String extension = getFileExtension(fileName);
 		
 		if(extension.toLowerCase().equals("zip")) {
@@ -155,17 +157,17 @@ public abstract class DataVerseRepository implements PublicationRepository {
 		}
 	}	
 	
-	public Feed getAtomFeed(String sdURL, AuthCredentials auth) throws SWORDClientException, MalformedURLException
+	public Feed getAtomFeed(String dataversedURL, AuthCredentials auth) throws SWORDClientException, MalformedURLException
     {
         // do some error checking and validations
-        if (sdURL == null)
+        if (dataversedURL == null)
         {
             log.error("Null string passed in to getAtomFeed; returning null");
             return null;
         }
         if (log.isDebugEnabled())
         {
-            log.debug("getting Atom Feed from " + sdURL);
+            log.debug("getting Atom Feed from " + dataversedURL);
         }
 
         AbderaClient client = new AbderaClient(this.abdera);
@@ -191,7 +193,7 @@ public abstract class DataVerseRepository implements PublicationRepository {
         	}
         }
         // ensure that the URL is valid
-        URL url = new URL(sdURL);
+        URL url = new URL(dataversedURL);
         if (log.isDebugEnabled())
         {
             log.debug("Formalised Atom Document URL to " + url.toString());
@@ -206,20 +208,20 @@ public abstract class DataVerseRepository implements PublicationRepository {
         System.out.println("Output: "+resp);
         if (log.isDebugEnabled())
         {
-            log.debug("Successfully retrieved Service Document from " + url.toString());
+            log.debug("Successfully retrieved Atom Feed from " + url.toString());
         }
 
         // if the response is successful, get the Atom Feed out of the response
         if (resp.getType() == Response.ResponseType.SUCCESS)
         {
-            log.info("Retrieved Service Document from " + url.toString() + " with HTTP success code");
+            log.info("Retrieved Atom Feed from " + url.toString() + " with HTTP success code");
             Document<Feed> doc = resp.getDocument();
             Feed sd = doc.getRoot();
             return sd;
         }
 
         // if we don't get anything respond with null
-        log.warn("Unable to retrieve service document from " + url.toString() + "; responded with " + resp.getStatus()
+        log.warn("Unable to retrieve Atom Feed from " + url.toString() + "; responded with " + resp.getStatus()
                 + ". Possible problem with SWORD server, or URL");
         return null;
     }
@@ -251,9 +253,15 @@ public abstract class DataVerseRepository implements PublicationRepository {
 	 * 
 	 * @param userLogin
 	 * @param collectionURL
-	 * @param fileFullPath
+	 * @param dataFile
 	 * @param metadataFileXML
 	 * @return
+	 * @throws IOException 
+	 * @throws SWORDClientException 
 	 */
-	public abstract boolean publishFileAndMetadata(String userLogin, String collectionURL, File fileFullPath, File metadataFileXML);
+	public abstract boolean publishFileAndMetadata(String collectionURL, File dataFile, File metadataFileXML) throws IOException, SWORDClientException;
+
+	public abstract Entry getUserAvailableMetadataset(Feed feed);
+
+	public abstract boolean isAccessible();
 }

@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +25,7 @@ import org.swordapp.client.ServiceDocument;
 import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
+import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.workflow.export.dspace.DSpaceRepository;
 
 /**
@@ -162,25 +165,6 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		return false;
 	}
 
-	@Override
-	public void setCredentials(String user, char[] password) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean isUserRegistered(String loginName) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean isUserAssigned(String loginName) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
 	public Map<String, String> getUserAvailableCollectionsWithTitle() {
 		// TODO Auto-generated method stub
 		if(this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials) != null) {
@@ -190,25 +174,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		}
 	}
 
-	@Override
-	public Map<String, String> getUserAvailableCollectionsWithFullName(String loginName, String fullNameSeparator) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
-	@Override
-	public Map<String, String> getAdminAvailableCollectionsWithTitle() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Map<String, String> getAdminAvailableCollectionsWithFullName(String fullNameSeparator) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
 	public boolean publishFile(String collectionURL, File fileFullPath) {
 		String mimeFormat = "application/zip"; // for every file type, to publish even "XML" files as a normal file
 		String packageFormat = getPackageFormat(fileFullPath.getName()); //zip-archive or separate file
@@ -220,7 +186,6 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		}
 	}
 
-	@Override
 	public boolean publishMetadata(String collectionURL, File fileFullPath) {
 		// TODO Auto-generated method stub
 		String mimeFormat = "application/atom+xml";
@@ -232,21 +197,23 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		}
 	}
 
-	@Override
-	public boolean publishFileAndMetadata(String userLogin, String collectionURL, File fileFullPath,
-			Map<String, String> metadataMap) {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean publishFileAndMetadata(String collectionURL, File dataFile, File metadataFileXML) throws IOException, SWORDClientException {
+		Entry entry = null;
+		List<File> ziplist = new ArrayList<>();
+		ziplist.add(dataFile);
+		File zipfile = new File("ingest.zip");
+		if (this.publishMetadata(collectionURL, metadataFileXML) == false) {
+			return false;
+		}
+		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials));
+		IOUtils.packFilesToZip(ziplist, zipfile, ".");
+		if (this.publishFile(entry.getEditMediaLinkResolvedHref().toString(), zipfile) == false) {
+			return false;
+		} else {
+			return true;
+		}
 	}
 
-	@Override
-	public boolean publishFileAndMetadata(String userLogin, String collectionURL, File fileFullPath,
-			File metadataFileXML) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
 	public ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL,
 			AuthCredentials authCredentials) {
 		ServiceDocument serviceDocument = null;
@@ -259,17 +226,15 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		return serviceDocument;
 	}
 
-	@Override
-	public boolean publishMetadata(String userLogin, String collectionURL, File metadataFileXML) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public List<Entry> getUserAvailableDatasets(Feed feed) {
+	public Entry getUserAvailableMetadataset(Feed feed) {
 		// TODO Auto-generated method stub
 		if(feed != null) {
-			return feed.getEntries();
+			List<Entry> entries = feed.getEntries();
+			Entry chosenEntry = null;
+			for (Entry entry : entries) {
+				chosenEntry=entry;
+			}
+			return chosenEntry;
 		} else {
 			return null;
 		}
