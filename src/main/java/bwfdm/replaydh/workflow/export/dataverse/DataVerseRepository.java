@@ -155,7 +155,7 @@ public abstract class DataVerseRepository {
 	 * @param fileFullPath
 	 * @return
 	 */
-	public abstract String publishFile(String metadataSetHrefURL, File fileFullPath);
+	public abstract String publishZipFile(String metadataSetHrefURL, File fileFullPath);
 
 	/**
 	 * Publish metada only (without any file) to some collection, which is available for the user.
@@ -180,7 +180,7 @@ public abstract class DataVerseRepository {
 	 * @throws IOException 
 	 * @throws SWORDClientException 
 	 */
-	public abstract boolean publisNewMetadataAndFile(String collectionURL, List<File> fileslist, File metadataFileXML) throws IOException, SWORDClientException;
+	public abstract void publisNewMetadataAndFile(String collectionURL, List<File> fileslist, File metadataFileXML) throws IOException, SWORDClientException;
 
 	/**
 	 * Get the entry in the Atom Feed which refers to the URL of the metadata entry in Dataverse. This entry is necessary to add files to the metadata entry in Dataverse.

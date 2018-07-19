@@ -233,13 +233,13 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	}
 
 
-	public String publishFile(String metadataSetHrefURL, File fileFullPath) {
+	public String publishZipFile(String metadataSetHrefURL, File fileFullPath) {
 		String packageFormat = getPackageFormat(fileFullPath.getName()); //zip-archive or separate file
 		String returnValue = publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, fileFullPath, null);
 		if(returnValue != null) {
 			return returnValue;
 		} else {
-			return returnValue;
+			return null;
 		}
 	}
 
@@ -252,7 +252,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		}
 	}
 
-	public boolean publisNewMetadataAndFile(String collectionURL, List<File> fileslist, File metadataFileXML) throws IOException, SWORDClientException {
+	public void publisNewMetadataAndFile(String collectionURL, List<File> fileslist, File metadataFileXML) throws IOException, SWORDClientException {
 		Entry entry = null;
 		List<File> ziplist = new ArrayList<>();
 		for (File dataFile : fileslist) {
@@ -262,12 +262,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		String doiId = this.publishMetadata(collectionURL, metadataFileXML);
 		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials),doiId);
 		IOUtils.packFilesToZip(ziplist, zipfile, ".");
-		String returnValue = this.publishFile(entry.getEditMediaLinkResolvedHref().toString(), zipfile);
-		if (returnValue != null) {
-			return false;
-		} else {
-			return true;
-		}
+		this.publishZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipfile);
 	}
 
 	public ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials) {
@@ -305,6 +300,5 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 			}
 		}
 		return entries;
-		
 	}
 }
