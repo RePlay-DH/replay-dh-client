@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -194,7 +195,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 			switch (swordRequestType) {
 			case DEPOSIT:
 				DepositReceipt receipt = swordClient.deposit(collectionURL, deposit, authCredentials);
-				return receipt.getLocation(); //"Location" parameter from the response
+				return receipt.getEntry().getEditMediaLinkResolvedHref().toString(); //"Location" parameter from the response
 			case REPLACE:
 				SwordResponse response = swordClient.replace(collectionURL, deposit, authCredentials);
 				return Integer.toString(response.getStatusCode()); //"StatusCode" parameter from the response
@@ -232,34 +233,37 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	}
 
 
-	public boolean publishFile(String collectionURL, File fileFullPath) {
+	public String publishFile(String metadataSetHrefURL, File fileFullPath) {
 		String packageFormat = getPackageFormat(fileFullPath.getName()); //zip-archive or separate file
-		if(publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, fileFullPath, null) != null) {
-			return true;
+		String returnValue = publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, fileFullPath, null);
+		if(returnValue != null) {
+			return returnValue;
 		} else {
-			return false;
+			return returnValue;
 		}
 	}
 
-	public boolean publishMetadata(String collectionURL, File fileFullPath) {
-		if(publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null) != null) {
-			return true;
+	public String publishMetadata(String collectionURL, File fileFullPath) {
+		String returnValue = publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
+		if(returnValue != null) {
+			return returnValue;
 		} else {
-			return false;
+			return null;
 		}
 	}
 
-	public boolean publishFileAndMetadata(String collectionURL, File dataFile, File metadataFileXML) throws IOException, SWORDClientException {
+	public boolean publisNewMetadataAndFile(String collectionURL, List<File> fileslist, File metadataFileXML) throws IOException, SWORDClientException {
 		Entry entry = null;
 		List<File> ziplist = new ArrayList<>();
-		ziplist.add(dataFile);
-		File zipfile = new File("ingest.zip");
-		if (this.publishMetadata(collectionURL, metadataFileXML) == false) {
-			return false;
+		for (File dataFile : fileslist) {
+			ziplist.add(dataFile);
 		}
-		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials));
+		File zipfile = new File("ingest.zip");
+		String doiId = this.publishMetadata(collectionURL, metadataFileXML);
+		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials),doiId);
 		IOUtils.packFilesToZip(ziplist, zipfile, ".");
-		if (this.publishFile(entry.getEditMediaLinkResolvedHref().toString(), zipfile) == false) {
+		String returnValue = this.publishFile(entry.getEditMediaLinkResolvedHref().toString(), zipfile);
+		if (returnValue != null) {
 			return false;
 		} else {
 			return true;
@@ -282,11 +286,25 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 			List<Entry> entries = feed.getEntries();
 			Entry chosenEntry = null;
 			for (Entry entry : entries) {
-				chosenEntry=entry;
+				if (doiId.equals(entry.getEditMediaLinkResolvedHref().toString())) {
+					chosenEntry=entry;
+				}
 			}
 			return chosenEntry;
 		} else {
 			return null;
 		}
+	}
+	
+	public Map<String, String> getMetadataSetsWithId(Feed feed) {
+		Map<String, String> entries = new HashMap<>();
+		if(feed != null) {
+			List<Entry> entriesInFeed = feed.getEntries();
+			for (Entry entry : entriesInFeed) {
+				entries.put(entry.getId().toString(), entry.getTitle());
+			}
+		}
+		return entries;
+		
 	}
 }

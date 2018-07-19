@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.abdera.Abdera;
@@ -150,11 +151,11 @@ public abstract class DataVerseRepository {
 	 * Publish a file to some collections, which is available for the user.
 	 * 
 	 * @param userLogin
-	 * @param collectionURL
+	 * @param metadataSetHrefURL
 	 * @param fileFullPath
 	 * @return
 	 */
-	public abstract boolean publishFile(String collectionURL, File fileFullPath);
+	public abstract String publishFile(String metadataSetHrefURL, File fileFullPath);
 
 	/**
 	 * Publish metada only (without any file) to some collection, which is available for the user.
@@ -165,7 +166,7 @@ public abstract class DataVerseRepository {
 	 * @param metadataMap
 	 * @return
 	 */
-	public abstract boolean publishMetadata(String collectionURL, File fileFullPath);
+	public abstract String publishMetadata(String collectionURL, File fileFullPath);
 
 	/**
 	 * Publish a file together with the metadata.
@@ -173,13 +174,13 @@ public abstract class DataVerseRepository {
 	 * 
 	 * @param userLogin
 	 * @param collectionURL
-	 * @param dataFile
+	 * @param fileslist
 	 * @param metadataFileXML
 	 * @return
 	 * @throws IOException 
 	 * @throws SWORDClientException 
 	 */
-	public abstract boolean publishFileAndMetadata(String collectionURL, File dataFile, File metadataFileXML) throws IOException, SWORDClientException;
+	public abstract boolean publisNewMetadataAndFile(String collectionURL, List<File> fileslist, File metadataFileXML) throws IOException, SWORDClientException;
 
 	/**
 	 * Get the entry in the Atom Feed which refers to the URL of the metadata entry in Dataverse. This entry is necessary to add files to the metadata entry in Dataverse.
@@ -187,5 +188,12 @@ public abstract class DataVerseRepository {
 	 * @return
 	 */
 	public abstract Entry getUserAvailableMetadataset(Feed feed, String doiId);
+	
+	/**
+	 * Returns all the entries of a DataVerse URL saved in ID --> Title map
+	 * @param feed
+	 * @return
+	 */
+	public abstract Map<String, String> getMetadataSetsWithId(Feed feed);
 
 }
