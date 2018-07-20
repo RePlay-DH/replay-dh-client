@@ -46,7 +46,7 @@ import bwfdm.replaydh.ui.helper.AbstractDialogWorker;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.workflow.export.ResourcePublisher;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
-import bwfdm.replaydh.workflow.export.dspace.DSpacePublisherWizard.DataversePublisherContext;
+import bwfdm.replaydh.workflow.export.dataverse.DataversePublisherWizard.DataversePublisherContext;
 
 /**
  * @author Markus Gärtner

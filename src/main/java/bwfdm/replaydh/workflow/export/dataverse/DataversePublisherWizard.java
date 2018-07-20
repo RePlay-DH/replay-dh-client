@@ -91,8 +91,8 @@ public class DataversePublisherWizard {
 
 	public static Wizard<DataversePublisherContext> getWizard(Window parent, RDHEnvironment environment) {
 		@SuppressWarnings("unchecked")
-		Wizard<DSpacePublisherContext> wizard = new Wizard<>(
-				parent, ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.title"),
+		Wizard<DataversePublisherContext> wizard = new Wizard<>(
+				parent, ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.title"),
 				environment/*, FINISH /*<-- TEST*/ , CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
@@ -100,7 +100,7 @@ public class DataversePublisherWizard {
 	/**
 	 * Context for the wizard
 	 */
-	public static final class DSpacePublisherContext{
+	public static final class DataversePublisherContext{
 
 		final WorkflowExportInfo exportInfo;
 
@@ -117,7 +117,7 @@ public class DataversePublisherWizard {
 		PublicationRepository publicationRepository;
 		MetadataObject metadataObject;
 
-		public DSpacePublisherContext(WorkflowExportInfo exportInfo) {
+		public DataversePublisherContext(WorkflowExportInfo exportInfo) {
 			this.exportInfo = requireNonNull(exportInfo);
 		}
 
@@ -360,7 +360,7 @@ public class DataversePublisherWizard {
 	 * Abstract class for the wizard page
 	 * @author Volodymyr Kushnarenko
 	 */
-	private static abstract class DSpacePublisherStep extends AbstractWizardStep<DSpacePublisherContext> {
+	private static abstract class DSpacePublisherStep extends AbstractWizardStep<DataversePublisherContext> {
 		protected DSpacePublisherStep(String titleKey, String descriptionKey) {
 			super(titleKey, descriptionKey);
 		}
@@ -370,8 +370,8 @@ public class DataversePublisherWizard {
 	 * 1st. page - choose repository and check the user registration
 	 */
 	private static final DSpacePublisherStep CHOOSE_REPOSITORY = new DSpacePublisherStep(
-			"replaydh.wizard.dspacePublisher.chooseRepository.title",
-			"replaydh.wizard.dspacePublisher.chooseRepository.description") {
+			"replaydh.wizard.dataversePublisher.chooseRepository.title",
+			"replaydh.wizard.dataversePublisher.chooseRepository.description") {
 
 		private JTextField tfUrl;
 		private JTextField tfUserLogin;
@@ -453,12 +453,12 @@ public class DataversePublisherWizard {
 							if(tfUrl.isEnabled() && tfUrl.isEditable()) {
 								GuiUtils.toggleChangeableBorder(tfUrl, true); //set red border as a sign of wrong URL
 							}
-							statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.wrongUrlMessage"));
+							statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.wrongUrlMessage"));
 							checkLoginButton.setEnabled(true); //in case of the Internet problem user have to click it again
 						}
 					} else {
 						restOK = false;
-						statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.terminationMessage"));
+						statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.terminationMessage"));
 						checkLoginButton.setEnabled(true); //in case of the Internet problem user have to click it again
 						setNextEnabled(false);
 					}
@@ -498,13 +498,13 @@ public class DataversePublisherWizard {
 							pfUserPassword.setText(""); 
 							GuiUtils.toggleChangeableBorder(pfUserPassword, true); //set red border as a sign of the wrong password
 							checkLoginButton.setEnabled(false);
-							statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.wrongLoginMessage"));
+							statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.wrongLoginMessage"));
 						}
 					}
 					// Worker was terminated (timeout or exception)
 					else {
 						loginOK = false;
-						statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.terminationMessage"));
+						statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.terminationMessage"));
 						checkLoginButton.setEnabled(true); //in case of the Internet problem user have to click it again
 						setNextEnabled(false);
 					}
@@ -519,7 +519,7 @@ public class DataversePublisherWizard {
 		}
 
 		@Override
-		public Page<DSpacePublisherContext> next(RDHEnvironment environment, DSpacePublisherContext context) {
+		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 
 			// Save context:
 			context.repositoryURL = getHostURL(tfUrl.getText());
@@ -534,7 +534,7 @@ public class DataversePublisherWizard {
 		}
 
 		@Override
-		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
+		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 
 			if(environment != null) {
@@ -575,7 +575,7 @@ public class DataversePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfUserLogin);
 			GuiUtils.prepareChangeableBorder(pfUserPassword);
 
-			statusMessage = GuiUtils.createTextArea(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.pleaseLoginMessage"));
+			statusMessage = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.pleaseLoginMessage"));
 
 			DocumentAdapter adapter = new DocumentAdapter() {
 				
@@ -584,7 +584,7 @@ public class DataversePublisherWizard {
 
 					loginOK = false;
 					setNextEnabled(false);
-					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.pleaseLoginMessage"));
+					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.pleaseLoginMessage"));
 
 					boolean loginButtonEnabled = true;					
 					loginButtonEnabled &= checkAndUpdateBorder(tfUrl);
@@ -602,7 +602,7 @@ public class DataversePublisherWizard {
 
 
 			// Login button
-			checkLoginButton = new JButton(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.loginButton"));
+			checkLoginButton = new JButton(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.loginButton"));
 			checkLoginButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -623,7 +623,7 @@ public class DataversePublisherWizard {
 															);
 					// Prepare GUI for the repository requests
 					checkLoginButton.setEnabled(false);
-					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.waitMessage"));
+					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.waitMessage"));
 					restOK = false;
 					loginOK = false;
 
@@ -635,7 +635,7 @@ public class DataversePublisherWizard {
 				        	if(restOK) {
 				        		checkUserRegistrationAndGetCollections(publicationRepository, tfUserLogin.getText());
 				        		if(loginOK) {
-				        			statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.successMessage"));
+				        			statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.successMessage"));
 									setNextEnabled(true);
 								} else {
 									setNextEnabled(false);
@@ -647,7 +647,7 @@ public class DataversePublisherWizard {
 				}
 			});
 
-			openRepositoryButton = new JButton(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.loginInfoButton"));
+			openRepositoryButton = new JButton(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.loginInfoButton"));
 			openRepositoryButton.addActionListener(new ActionListener() {
 
 				@Override
@@ -666,11 +666,11 @@ public class DataversePublisherWizard {
 					.columns("pref, 6dlu, fill:pref:grow")
 					.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref")
 					.padding(Paddings.DLU4)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.urlLabel"))).xy(1, 1)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.urlLabel"))).xy(1, 1)
 					.add(tfUrl).xy(3, 1)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.loginLabel"))).xy(1, 3)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.loginLabel"))).xy(1, 3)
 					.add(tfUserLogin).xy(3, 3)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.passwordLabel"))).xy(1, 5)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.passwordLabel"))).xy(1, 5)
 					.add(pfUserPassword).xy(3, 5)
 					.add(checkLoginButton).xy(3, 7)
 					.add(openRepositoryButton).xy(3, 9)
@@ -686,14 +686,14 @@ public class DataversePublisherWizard {
 	 * 2nd. page - choose collection, where to publish
 	 */
 	private static final DSpacePublisherStep CHOOSE_COLLECTION = new DSpacePublisherStep(
-			"replaydh.wizard.dspacePublisher.chooseCollection.title",
-			"replaydh.wizard.dspacePublisher.chooseCollection.description") {
+			"replaydh.wizard.dataversePublisher.chooseCollection.title",
+			"replaydh.wizard.dataversePublisher.chooseCollection.description") {
 
 		private JComboBox<CollectionEntry> collectionsComboBox;
 		private JTextArea noAvailableCollectionsMessage;
 
 		@Override
-		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
+		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 
 			// Update combobox with collections
@@ -711,7 +711,7 @@ public class DataversePublisherWizard {
 		};
 
 		@Override
-		public Page<DSpacePublisherContext> next(RDHEnvironment environment, DSpacePublisherContext context) {
+		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 			// Store collection url
 			context.collectionURL = ((CollectionEntry)collectionsComboBox.getSelectedItem()).getEntry().getKey();
 
@@ -730,13 +730,13 @@ public class DataversePublisherWizard {
 			});
 
 			noAvailableCollectionsMessage = GuiUtils.createTextArea(ResourceManager.getInstance()
-					.get("replaydh.wizard.dspacePublisher.chooseCollection.noCollectionsMessage"));
+					.get("replaydh.wizard.dataversePublisher.chooseCollection.noCollectionsMessage"));
 
 			return FormBuilder.create()
 					.columns("fill:pref:grow")
 					.rows("pref, $nlg, pref, $nlg, pref")
 					.padding(Paddings.DLU4)
-					.add(new JLabel(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseCollection.collectionLabel"))).xy(1, 1)
+					.add(new JLabel(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseCollection.collectionLabel"))).xy(1, 1)
 					.add(collectionsComboBox).xy(1, 3)
 					.add(noAvailableCollectionsMessage).xy(1, 5)
 					.build();
@@ -748,8 +748,8 @@ public class DataversePublisherWizard {
 	 * 3rd. page - choose files for publishing
 	 */
 	private static final DSpacePublisherStep CHOOSE_FILES = new DSpacePublisherStep(
-			"replaydh.wizard.dspacePublisher.chooseFiles.title",
-			"replaydh.wizard.dspacePublisher.chooseFiles.description") {
+			"replaydh.wizard.dataversePublisher.chooseFiles.title",
+			"replaydh.wizard.dataversePublisher.chooseFiles.description") {
 
 		private JTextArea messageArea;
 		private DefaultTableModel tableModel;
@@ -830,7 +830,7 @@ public class DataversePublisherWizard {
 		}
 
 		@Override
-		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
+		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 
 			localEnvironment = environment;
@@ -847,7 +847,7 @@ public class DataversePublisherWizard {
 		};
 
 		@Override
-		public Page<DSpacePublisherContext> next(RDHEnvironment environment, DSpacePublisherContext context) {
+		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 
 			// Add files to the context
 			context.filesToPublish = new ArrayList<File>();
@@ -884,14 +884,14 @@ public class DataversePublisherWizard {
 				}
 			});
 
-			addFilesButton = new JButton(rm.get("replaydh.wizard.dspacePublisher.chooseFiles.addFilesButton"));
+			addFilesButton = new JButton(rm.get("replaydh.wizard.dataversePublisher.chooseFiles.addFilesButton"));
 			addFilesButton.addActionListener(this::addFilesButtonPressed);
 
-			removeFilesButton = new JButton(rm.get("replaydh.wizard.dspacePublisher.chooseFiles.removeFilesButton"));
+			removeFilesButton = new JButton(rm.get("replaydh.wizard.dataversePublisher.chooseFiles.removeFilesButton"));
 			removeFilesButton.addActionListener(this::removeFilesButtonPressed);
 			removeFilesButton.setEnabled(false);
 
-			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dspacePublisher.chooseFiles.infoText"));
+			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.chooseFiles.infoText"));
 
 			JPanel buttonPanel = FormBuilder.create()
 					.columns("fill:pref:grow")
@@ -904,7 +904,7 @@ public class DataversePublisherWizard {
 					.columns("fill:pref:grow, 6dlu, pref")
 					.rows("pref, $nlg, top:pref, $nlg, pref")
 					.padding(Paddings.DLU4)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseFiles.filesLabel"))).xy(1, 1)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseFiles.filesLabel"))).xy(1, 1)
 					.add(filesTable).xy(1, 3)
 					.add(buttonPanel).xy(3, 3)
 					.add(messageArea).xyw(1, 5, 3)
@@ -917,8 +917,8 @@ public class DataversePublisherWizard {
 	 * 4th. page - edit metadata
 	 */
 	private static final DSpacePublisherStep EDIT_METADATA = new DSpacePublisherStep(
-			"replaydh.wizard.dspacePublisher.editMetadata.title",
-			"replaydh.wizard.dspacePublisher.editMetadata.description") {
+			"replaydh.wizard.dataversePublisher.editMetadata.title",
+			"replaydh.wizard.dataversePublisher.editMetadata.description") {
 
 		private JTextField tfCreator;
 		private JTextField tfTitle;
@@ -935,7 +935,7 @@ public class DataversePublisherWizard {
 		private DateFormat format;
 
 		@Override
-		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
+		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 			
 			//TODO: use it to fill in the text fields with not null values. Should be used later, when we use some metadata-schema
@@ -967,7 +967,7 @@ public class DataversePublisherWizard {
 		};
 
 		@Override
-		public Page<DSpacePublisherContext> next(RDHEnvironment environment, DSpacePublisherContext context) {
+		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 
 			ResourceManager rm = ResourceManager.getInstance();
 
@@ -978,27 +978,27 @@ public class DataversePublisherWizard {
 
 			// Title
 			context.metadataObject.mapDoublinCoreToMetadata.put("title", tfTitle.getText());
-			context.metadataObject.mapDoublinCoreToLabel.put("title", rm.get("replaydh.wizard.dspacePublisher.editMetadata.titleLabel"));
+			context.metadataObject.mapDoublinCoreToLabel.put("title", rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"));
 
 			// Description
 			context.metadataObject.mapDoublinCoreToMetadata.put("description", tfDescription.getText());
-			context.metadataObject.mapDoublinCoreToLabel.put("description", rm.get("replaydh.wizard.dspacePublisher.editMetadata.descriptionLabel"));
+			context.metadataObject.mapDoublinCoreToLabel.put("description", rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
 
 			// Creator
 			context.metadataObject.mapDoublinCoreToMetadata.put("creator", tfCreator.getText());
-			context.metadataObject.mapDoublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dspacePublisher.editMetadata.creatorLabel"));
+			context.metadataObject.mapDoublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
 
 			// Publication year
 			context.metadataObject.mapDoublinCoreToMetadata.put("issued", tfPublicationYear.getText());
-			context.metadataObject.mapDoublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dspacePublisher.editMetadata.publicationYearLabel"));
+			context.metadataObject.mapDoublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));
 
 //			// Not used (reserved) metadata fields
 //			context.metadataObject.mapDoublinCoreToMetadata.put("identifier", tfIdentifier.getText());
-//			context.metadataObject.mapDoublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dspacePublisher.editMetadata.identifierLabel"));
+//			context.metadataObject.mapDoublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
 //			context.metadataObject.mapDoublinCoreToMetadata.put("publisher", tfPublisher.getText());
-//			context.metadataObject.mapDoublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dspacePublisher.editMetadata.publisherLabel"));
+//			context.metadataObject.mapDoublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
 //			context.metadataObject.mapDoublinCoreToMetadata.put("type", tfResourceType.getText());
-//			context.metadataObject.mapDoublinCoreToLabel.put("type", rm.get("replaydh.wizard.dspacePublisher.editMetadata.resourceTypeLabel"));
+//			context.metadataObject.mapDoublinCoreToLabel.put("type", rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
 
 			return FINISH;
 		}
@@ -1053,7 +1053,7 @@ public class DataversePublisherWizard {
 			//GuiUtils.prepareChangeableBorder(tfResourceType);
 
 			
-			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dspacePublisher.editMetadata.infoMessage"));
+			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
 
 
 			final DocumentAdapter adapter = new DocumentAdapter() {
@@ -1077,19 +1077,19 @@ public class DataversePublisherWizard {
 					.columns("pref, 6dlu, fill:pref:grow")
 					.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref")
 					.padding(Paddings.DLU4)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.titleLabel"))).xy(1, 1)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"))).xy(1, 1)
 					.add(tfTitle).xy(3, 1)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.descriptionLabel"))).xy(1, 3)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"))).xy(1, 3)
 					.add(tfDescription).xy(3, 3)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.creatorLabel"))).xy(1, 5)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"))).xy(1, 5)
 					.add(tfCreator).xy(3, 5)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.publicationYearLabel"))).xy(1, 7)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"))).xy(1, 7)
 					.add(tfPublicationYear).xy(3, 7)
-//					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.resourceTypeLabel"))).xy(1, 9)
+//					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"))).xy(1, 9)
 //					.add(tfResourceType).xy(3, 9)
-//					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.identifierLabel"))).xy(1, 11)
+//					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"))).xy(1, 11)
 //					.add(tfIdentifier).xy(3, 11)
-//					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.publisherLabel"))).xy(1, 13)
+//					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"))).xy(1, 13)
 //					.add(tfPublisher).xy(3, 13)
 					.add(messageArea).xyw(1, 9, 3)
 					.build();
@@ -1103,8 +1103,8 @@ public class DataversePublisherWizard {
 	 * Last page - entry point for the publication
 	 */
 	private static final DSpacePublisherStep FINISH = new DSpacePublisherStep(
-			"replaydh.wizard.dspacePublisher.finish.title",
-			"replaydh.wizard.dspacePublisher.finish.description") {
+			"replaydh.wizard.dataversePublisher.finish.title",
+			"replaydh.wizard.dataversePublisher.finish.description") {
 
 		private JTextArea repositoryUrlArea;
 		private JTextArea userLoginArea;
@@ -1114,7 +1114,7 @@ public class DataversePublisherWizard {
 		private JTextArea messageArea;
 
 		@Override
-		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
+		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 
 			// Repository URL
@@ -1143,7 +1143,7 @@ public class DataversePublisherWizard {
 			if(!strFiles.equals("")) {
 				strFiles = strFiles.substring(0, strFiles.length() - 1); //remove last "\n"
 			} else {
-				strFiles = ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.finish.noDataMessage");
+				strFiles = ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.finish.noDataMessage");
 			}
 			choosenFilesArea.setText(strFiles);
 
@@ -1157,16 +1157,16 @@ public class DataversePublisherWizard {
 			if(!strMetadata.equals("")) {
 				strMetadata = strMetadata.substring(0, strMetadata.length() - 1); //remove last "\n"
 			} else {
-				strMetadata = ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.finish.noDataMessage");
+				strMetadata = ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.finish.noDataMessage");
 			}
 			metadataArea.setText(strMetadata);
 
 			// Info message
-			messageArea.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.finish.infoMessage"));
+			messageArea.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.finish.infoMessage"));
 		};
 
 		@Override
-		public Page<DSpacePublisherContext> next(RDHEnvironment environment, DSpacePublisherContext context) {
+		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 			return null;
 		}
 
@@ -1187,15 +1187,15 @@ public class DataversePublisherWizard {
 					.columns("pref, 6dlu, fill:pref:grow")
 					.rows("top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref")
 					.padding(Paddings.DLU4)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.urlLabel"))).xy(1, 1)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.urlLabel"))).xy(1, 1)
 					.add(repositoryUrlArea).xy(3, 1)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.loginLabel"))).xy(1, 3)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.loginLabel"))).xy(1, 3)
 					.add(userLoginArea).xy(3, 3)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseCollection.collectionLabel"))).xy(1, 5)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseCollection.collectionLabel"))).xy(1, 5)
 					.add(choosenCollectionArea).xy(3, 5)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseFiles.filesLabel"))).xy(1, 7)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseFiles.filesLabel"))).xy(1, 7)
 					.add(choosenFilesArea).xy(3, 7)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.finish.metadataLabel"))).xy(1, 9)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.finish.metadataLabel"))).xy(1, 9)
 					.add(metadataArea).xy(3, 9)
 					.add(messageArea).xyw(1, 11, 3)
 					.build();
