@@ -33,7 +33,6 @@ import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
 import bwfdm.replaydh.io.IOUtils;
-import bwfdm.replaydh.workflow.export.dspace.DSpaceRepository;
 
 /**
  * 
@@ -58,8 +57,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	 * @return
 	 */
 	public boolean isSwordAccessible() {
-		SWORDClient swordClient = new SWORDClient();
-		if(DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials) != null) {
+		if(this.getServiceDocument(this.serviceDocumentURL) != null) {
 			return true;
 		} else {
 			return false;

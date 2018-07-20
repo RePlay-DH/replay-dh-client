@@ -78,7 +78,6 @@ import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
-import bwfdm.replaydh.workflow.export.dspace.DSpacePublisherWizard.DataversePublisherContext;
 
 /**
  * @author Volodymyr Kushnarenko
@@ -114,7 +113,7 @@ public class DataversePublisherWizard {
 		String userLogin;
 		Map<String, String> availableCollections;
 		List<File> filesToPublish;
-		PublicationRepository publicationRepository;
+		DataVerseRepository publicationRepository;
 		MetadataObject metadataObject;
 
 		public DataversePublisherContext(WorkflowExportInfo exportInfo) {
@@ -135,7 +134,7 @@ public class DataversePublisherWizard {
 		public String getUserLogin() {
 			return userLogin;
 		}
-		public PublicationRepository getPublicationRepository() {
+		public DataVerseRepository getPublicationRepository() {
 			return publicationRepository;
 		}
 		public Map<String, String> getAvailableCollections() {
@@ -389,14 +388,14 @@ public class DataversePublisherWizard {
 		private long timeOut; //in seconds
 
 		private Map<String, String> availableCollections;
-		private PublicationRepository publicationRepository;
+		private DataVerseRepository publicationRepository;
 
 		/**
 		 * Check the connection via REST-interface.
 		 * Sets the global flag {@code restOK=true} if connection is working, and {@code restOK=false} otherwise
 		 * @param publicationRepository
 		 */
-		private void checkAndCorrectRestURL(DSpace_v6 publicationRepository) {
+		private void checkAndCorrectRestURL(DataVerseRepository_v4 publicationRepository) {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
 
@@ -476,7 +475,7 @@ public class DataversePublisherWizard {
 		 * @param publicationRepository
 		 * @param userLogin
 		 */
-		private void checkUserRegistrationAndGetCollections(PublicationRepository publicationRepository, String userLogin) {
+		private void checkUserRegistrationAndGetCollections(DataVerseRepository publicationRepository, String userLogin) {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
 
@@ -631,7 +630,7 @@ public class DataversePublisherWizard {
 					SwingUtilities.invokeLater(new Runnable() {
 				        @Override
 						public void run() {
-				        	checkAndCorrectRestURL((DSpace_v6)publicationRepository);
+				        	checkAndCorrectRestURL((DataVerseRepository_v4)publicationRepository);
 				        	if(restOK) {
 				        		checkUserRegistrationAndGetCollections(publicationRepository, tfUserLogin.getText());
 				        		if(loginOK) {

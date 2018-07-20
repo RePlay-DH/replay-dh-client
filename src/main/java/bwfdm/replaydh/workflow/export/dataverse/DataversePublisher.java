@@ -182,7 +182,7 @@ public class DataversePublisher implements ResourcePublisher {
 		@Override
 		protected Boolean doInBackground() throws Exception {
 			
-			PublicationRepository repository = context.getPublicationRepository();
+			DataVerseRepository repository = context.getPublicationRepository();
 			boolean result = false;
 			
 			if(!context.getFilesToPublish().isEmpty()) {
