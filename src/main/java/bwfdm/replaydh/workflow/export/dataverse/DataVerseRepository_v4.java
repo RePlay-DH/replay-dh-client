@@ -41,18 +41,16 @@ import bwfdm.replaydh.workflow.export.dspace.DSpaceRepository;
  */
 public class DataVerseRepository_v4 extends DataVerseRepository {
 	
-	public DataVerseRepository_v4(String serviceDocumentURL, String adminUser, String adminPassword) {
+	public DataVerseRepository_v4(String serviceDocumentURL, String apiKey) {
 		this.serviceDocumentURL=serviceDocumentURL;
 		swordClient = new SWORDClient();
-		authCredentials = new AuthCredentials(adminUser, String.valueOf(adminPassword));
+		authCredentials = new AuthCredentials(apiKey, "null");
 	}
 	
 	// For SWORD
 	private String serviceDocumentURL;
 			
 	private AuthCredentials authCredentials = null;
-	
-	private SWORDClient swordClient = null;
 	
 	/**
 	 * Check if SWORDv2-protocol is accessible
@@ -225,22 +223,17 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	
 
 	public Map<String, String> getUserAvailableCollectionsWithTitle() {
-		if(this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials) != null) {
-			return super.getAvailableCollectionsViaSWORD(this.getServiceDocument(swordClient, serviceDocumentURL, authCredentials));
+		if(this.getServiceDocument(serviceDocumentURL) != null) {
+			return super.getAvailableCollectionsViaSWORD(this.getServiceDocument(serviceDocumentURL));
 		} else {
 			return null;
 		}
 	}
 
 
-	public String publishZipFile(String metadataSetHrefURL, File fileFullPath) {
+	public void publishZipFile(String metadataSetHrefURL, File fileFullPath) {
 		String packageFormat = getPackageFormat(fileFullPath.getName()); //zip-archive or separate file
-		String returnValue = publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, fileFullPath, null);
-		if(returnValue != null) {
-			return returnValue;
-		} else {
-			return null;
-		}
+		publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, fileFullPath, null);
 	}
 
 	public String publishMetadata(String collectionURL, File fileFullPath) {
@@ -248,6 +241,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		if(returnValue != null) {
 			return returnValue;
 		} else {
+			log.error("No return value from publishElement method");
 			return null;
 		}
 	}
@@ -265,7 +259,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		this.publishZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipfile);
 	}
 
-	public ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials) {
+	public ServiceDocument getServiceDocument(String serviceDocumentURL) {
 		ServiceDocument serviceDocument = null;
 		try {
 			serviceDocument = swordClient.getServiceDocument(serviceDocumentURL, authCredentials);
@@ -287,6 +281,7 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 			}
 			return chosenEntry;
 		} else {
+			log.error("Entry ID "+doiId+" was not found!");
 			return null;
 		}
 	}

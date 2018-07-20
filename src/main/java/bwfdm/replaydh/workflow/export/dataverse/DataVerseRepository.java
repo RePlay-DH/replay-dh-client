@@ -38,6 +38,8 @@ public abstract class DataVerseRepository {
 	
 	protected Abdera abdera =  new Abdera();
 	
+	protected SWORDClient swordClient = new SWORDClient();
+	
 	
 	/*
 	 * -------------------------------
@@ -145,7 +147,7 @@ public abstract class DataVerseRepository {
 	 * @param authCredentials
 	 * @return ServiceDocument or null in case of error/exception
 	 */
-	public abstract ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials);
+	public abstract ServiceDocument getServiceDocument(String serviceDocumentURL);
 
 	/**
 	 * Publish a file to some collections, which is available for the user.
@@ -155,7 +157,7 @@ public abstract class DataVerseRepository {
 	 * @param fileFullPath
 	 * @return
 	 */
-	public abstract String publishZipFile(String metadataSetHrefURL, File fileFullPath);
+	public abstract void publishZipFile(String metadataSetHrefURL, File fileFullPath);
 
 	/**
 	 * Publish metada only (without any file) to some collection, which is available for the user.
