@@ -19,6 +19,7 @@ import org.apache.abdera.protocol.Response;
 import org.apache.abdera.protocol.client.AbderaClient;
 import org.apache.abdera.protocol.client.ClientResponse;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
+import org.eclipse.jgit.util.FileUtils;
 import org.swordapp.client.AuthCredentials;
 import org.swordapp.client.Deposit;
 import org.swordapp.client.DepositReceipt;
@@ -231,9 +232,10 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	}
 
 
-	public void publishZipFile(String metadataSetHrefURL, File fileFullPath) {
-		String packageFormat = getPackageFormat(fileFullPath.getName()); //zip-archive or separate file
-		publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, fileFullPath, null);
+	public void publishZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
+		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
+		publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
+		FileUtils.delete(zipFile);
 	}
 
 	public String publishMetadata(String collectionURL, File fileFullPath) {
@@ -246,10 +248,10 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		}
 	}
 
-	public void publisNewMetadataAndFile(String collectionURL, List<File> fileslist, File metadataFileXML) throws IOException, SWORDClientException {
+	public void publisNewMetadataAndFile(String collectionURL, List<File> filelist, File metadataFileXML) throws IOException, SWORDClientException {
 		Entry entry = null;
 		List<File> ziplist = new ArrayList<>();
-		for (File dataFile : fileslist) {
+		for (File dataFile : filelist) {
 			ziplist.add(dataFile);
 		}
 		File zipfile = new File("ingest.zip");
