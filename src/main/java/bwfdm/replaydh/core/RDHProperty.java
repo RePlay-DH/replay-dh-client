@@ -183,6 +183,9 @@ public enum RDHProperty {
 
 	DSPACE_REPOSITORY_URL("dspace.repository.url"),
 	DSPACE_REPOSITORY_NAME("dspace.repository.name"),
+	
+	DATAVERSE_REPOSITORY_URL("dataverse.repository.url"),
+	DATAVERSE_REPOSITORY_NAME("dataverse.repository.name"),
 	;
 
 	private final String key;

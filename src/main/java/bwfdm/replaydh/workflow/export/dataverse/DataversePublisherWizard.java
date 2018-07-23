@@ -103,18 +103,16 @@ public class DataversePublisherWizard {
 
 		final WorkflowExportInfo exportInfo;
 
-		RDHEnvironment environment;
-		String repositoryURL;		//e.g. "http://123.11.11.11:8080/xmlui/" or "http://123.11.11.11:8080"
-		String userSubmissionsURL; 	//e.g. http://123.11.11.11:8080/xmlui/submissions
+		private RDHEnvironment environment;
+		private String repositoryURL;		//e.g. "http://123.11.11.11:8080/xmlui/" or "http://123.11.11.11:8080"
 									//TODO: could be also JSPUI !!!
-		String serviceDocumentURL;
-		String restURL;
-		String collectionURL;
-		String userLogin;
-		Map<String, String> availableCollections;
-		List<File> filesToPublish;
-		DataVerseRepository publicationRepository;
-		MetadataObject metadataObject;
+		private String serviceDocumentURL;
+		private String collectionURL;
+		private Map<String, String> availableCollections;
+		
+		private List<File> filesToPublish;
+		private DataverseRepository_v4 publicationRepository;
+		private MetadataObject metadataObject;
 
 		public DataversePublisherContext(WorkflowExportInfo exportInfo) {
 			this.exportInfo = requireNonNull(exportInfo);
@@ -125,20 +123,17 @@ public class DataversePublisherWizard {
 		public String getRepositoryURL() {
 			return repositoryURL;
 		}
-		public String getUserSubmissionsURL() {
-			return userSubmissionsURL;
-		}
 		public String getCollectionURL() {
 			return collectionURL;
 		}
-		public String getUserLogin() {
-			return userLogin;
-		}
-		public DataVerseRepository getPublicationRepository() {
+		public DataverseRepository getPublicationRepository() {
 			return publicationRepository;
 		}
 		public Map<String, String> getAvailableCollections() {
 			return availableCollections;
+		}
+		public void setAvailableCollections(Map<String, String> availableCollections) {
+			this.availableCollections = availableCollections;
 		}
 		public RDHEnvironment getEnvironment() {
 			return environment;
@@ -149,7 +144,9 @@ public class DataversePublisherWizard {
 		public MetadataObject getMetadataObject() {
 			return metadataObject;
 		}
-
+		public String getServiceDocumentURL() {
+			return serviceDocumentURL;
+		}
 	}
 
 	public static final class MetadataObject{
@@ -215,34 +212,9 @@ public class DataversePublisherWizard {
 		// Add "http://" if not existed
 		//TODO: should we use "https" instead?? Replace after the detailed testing with different repositories.
 		if((!url.startsWith("http://")) && (!url.startsWith("https://"))) {
-			url = "http://" + url;
+			url = "https://" + url;
 		}
 
-		return url;
-	}
-
-	/**
-	 * <pre>
-	 * Call at first {@link #getCorrectedURL(String)} and remove after that:
-	 * -- "/xmlui" or "/jspui" on the end
-	 * </pre>
-	 * @param fullURL
-	 * @return
-	 */
-	private static String getHostURL(final String fullURL) {
-		requireNonNull(fullURL);
-
-		// Remove '/' and add "http" if needed
-		String url = getCorrectedURL(fullURL);
-
-		// Remove extensions as "/xmlui" or "/jspui"
-		if(url.endsWith("/xmlui")) {
-			url = url.substring(0, url.length() - 6); //remove "/xmlui"
-		} else {
-			if(url.endsWith("/jspui")) {
-				url = url.substring(0, url.length() - 6); //remove "/jspui"
-			}
-		}
 		return url;
 	}
 
@@ -253,32 +225,12 @@ public class DataversePublisherWizard {
 	 * @return
 	 */
 	private static String createServiceDocumentURL(String url) {
-		String sdURL = getHostURL(url);
-		sdURL += "/swordv2/servicedocument";
+		url = getCorrectedURL(url);
+		url += "/dvn/api/data-deposit/v1.1/swordv2/service-document";
 
-		// Explicit replace "https://" with "http://", because of the SWORD-client, which does not support SSL-certificates
-		if(sdURL.startsWith("https://")) {
-			sdURL = sdURL.replaceFirst("https://", "http://");
-		}
-		return sdURL;
+		return url;
 	}
 
-	private static String createUserSubmissionsURL(String url) {
-		String submissionsURL = getCorrectedURL(url);
-		submissionsURL += "/submissions";
-		return submissionsURL;
-	}
-
-	/**
-	 * Create the rest-url based on the original publication repository url
-	 * @param url
-	 * @return
-	 */
-	public static String createRestURL(String url) {
-		String restURL = getHostURL(url);
-		restURL += "/rest";
-		return restURL;
-	}
 
 	/**
 	 * Wait until worker is finished, make error message visible in case of timeout or exception
@@ -359,8 +311,8 @@ public class DataversePublisherWizard {
 	 * Abstract class for the wizard page
 	 * @author Volodymyr Kushnarenko
 	 */
-	private static abstract class DSpacePublisherStep extends AbstractWizardStep<DataversePublisherContext> {
-		protected DSpacePublisherStep(String titleKey, String descriptionKey) {
+	private static abstract class DataversePublisherStep extends AbstractWizardStep<DataversePublisherContext> {
+		protected DataversePublisherStep(String titleKey, String descriptionKey) {
 			super(titleKey, descriptionKey);
 		}
 	}
@@ -368,164 +320,31 @@ public class DataversePublisherWizard {
 	/**
 	 * 1st. page - choose repository and check the user registration
 	 */
-	private static final DSpacePublisherStep CHOOSE_REPOSITORY = new DSpacePublisherStep(
+	private static final DataversePublisherStep CHOOSE_REPOSITORY = new DataversePublisherStep(
 			"replaydh.wizard.dataversePublisher.chooseRepository.title",
 			"replaydh.wizard.dataversePublisher.chooseRepository.description") {
 
 		private JTextField tfUrl;
-		private JTextField tfUserLogin;
-		private JPasswordField pfUserPassword;
+		private JPasswordField pAPIkey;
 		private JButton checkLoginButton;
 		private JTextArea statusMessage;
 		private JButton openRepositoryButton;
 
-		private String restURL;
 		private String serviceDocumentURL;
 
 		private boolean loginOK;
-		private boolean restOK;
-
-		private long timeOut; //in seconds
 
 		private Map<String, String> availableCollections;
-		private DataVerseRepository publicationRepository;
-
-		/**
-		 * Check the connection via REST-interface.
-		 * Sets the global flag {@code restOK=true} if connection is working, and {@code restOK=false} otherwise
-		 * @param publicationRepository
-		 */
-		private void checkAndCorrectRestURL(DataVerseRepository_v4 publicationRepository) {
-
-			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
-
-				/**
-				 * Replace "http://" via "https://" and otherwise
-				 * @param url
-				 */
-				protected void exchangeHttpHttps(String url) {
-					if(url.startsWith("http://")) {
-						url = url.replaceFirst("http://", "https://");
-					} else {
-						if(url.startsWith("https://")) {
-							url = url.replaceFirst("https://", "http://");
-						}
-					}
-				}
-
-				@Override
-				protected Boolean doInBackground() throws Exception {
-
-					if(restURL == null) {
-						return false;
-					}
-					String correctedRestURL = new String(restURL);
-					publicationRepository.setAllRestURLs(correctedRestURL);
-
-					//Exchange "http://" and "https://" if REST is not accessible
-					if(!publicationRepository.isRestAccessible()) {
-						exchangeHttpHttps(correctedRestURL);
-						// If the exchange did not help, move to the previous condition
-						if(!publicationRepository.isRestAccessible()) {
-							if(restURL == null) {
-								return false; //not really needed here
-							}
-							correctedRestURL = new String(restURL);
-							publicationRepository.setAllRestURLs(correctedRestURL);
-							restOK = false;
-							restURL = String.valueOf(correctedRestURL.toCharArray());
-							return restOK;
-						}
-					}
-
-					restURL = String.valueOf(correctedRestURL.toCharArray());
-					restOK = true;
-					return restOK;
-				}
-
-				@Override
-				protected void done() {
-					if(!isCancelled()) {
-						if(restOK) {
-							//no-op
-						} else {
-							if(tfUrl.isEnabled() && tfUrl.isEditable()) {
-								GuiUtils.toggleChangeableBorder(tfUrl, true); //set red border as a sign of wrong URL
-							}
-							statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.wrongUrlMessage"));
-							checkLoginButton.setEnabled(true); //in case of the Internet problem user have to click it again
-						}
-					} else {
-						restOK = false;
-						statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.terminationMessage"));
-						checkLoginButton.setEnabled(true); //in case of the Internet problem user have to click it again
-						setNextEnabled(false);
-					}
-				}
-			};
-			executeWorkerWithTimeout(worker, timeOut, "Exception by exchanging http/https");
-		}
+		private DataverseRepository_v4 publicationRepository;
 
 
-		/**
-		 * Check if user is registered, get available collections.
-		 * Repository request is realized as a worker in background, not EDT.
-		 * Sets the global flag {@code loginOK=true} if login is correct, and {@code loginOK=false} otherwise
-		 *
-		 * @param publicationRepository
-		 * @param userLogin
-		 */
-		private void checkUserRegistrationAndGetCollections(DataVerseRepository publicationRepository, String userLogin) {
 
-			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
-
-				@Override
-				protected Boolean doInBackground() throws Exception {
-					//Thread.sleep(20000); //for test, to imitate a long task and provocate termination on timeout
-					loginOK = publicationRepository.isUserRegistered(userLogin);
-					availableCollections = publicationRepository.getUserAvailableCollectionsWithFullName(userLogin, " -- ");
-					return loginOK;
-				}
-
-				@Override
-				protected void done() {
-					// Worker was finished properly
-					if(!isCancelled()) {
-						if(loginOK) {
-							checkLoginButton.setEnabled(false);
-						} else {
-							pfUserPassword.setText(""); 
-							GuiUtils.toggleChangeableBorder(pfUserPassword, true); //set red border as a sign of the wrong password
-							checkLoginButton.setEnabled(false);
-							statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.wrongLoginMessage"));
-						}
-					}
-					// Worker was terminated (timeout or exception)
-					else {
-						loginOK = false;
-						statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.terminationMessage"));
-						checkLoginButton.setEnabled(true); //in case of the Internet problem user have to click it again
-						setNextEnabled(false);
-					}
-				}
-			};
-			executeWorkerWithTimeout(worker, timeOut, "Exception by checking the user registrations");
-
-//			//Second option to start a timer in background thread. Self-made approach.
-//			//No exceptions, but GUI is working without delays.
-//			worker.execute();
-//			new Thread(new BackgroundTimer<Boolean, Object>(worker, timeOut)).start();
-		}
 
 		@Override
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 
 			// Save context:
-			context.repositoryURL = getHostURL(tfUrl.getText());
 			context.serviceDocumentURL = createServiceDocumentURL(tfUrl.getText());
-			context.restURL = createRestURL(tfUrl.getText());
-			context.userSubmissionsURL = createUserSubmissionsURL(tfUrl.getText());
-			context.userLogin = tfUserLogin.getText();
 			context.availableCollections = availableCollections;
 			context.publicationRepository = publicationRepository;
 
@@ -537,11 +356,11 @@ public class DataversePublisherWizard {
 			super.refresh(environment, context); //call parent "refresh"
 
 			if(environment != null) {
-				tfUrl.setText(environment.getProperty(RDHProperty.DSPACE_REPOSITORY_URL));
+				tfUrl.setText(environment.getProperty(RDHProperty.DATAVERSE_REPOSITORY_URL));
 			}
 
 			if(!loginOK) {
-				pfUserPassword.setText(""); //clear password field
+				pAPIkey.setText(""); //clear password field
 				setNextEnabled(false); 		//disable "next" button
 			}
 		};
@@ -558,21 +377,17 @@ public class DataversePublisherWizard {
 			ResourceManager rm = ResourceManager.getInstance();
 
 			loginOK = false;
-			restOK = false;
-			timeOut = 60; //seconds
 
 			//TODO: -> tfUrl.setEditable(true)
 			tfUrl = new JTextField();
-			tfUrl.setEditable(false);	//make the URL not editable for test reasons.
+			tfUrl.setEditable(true);	//make the URL not editable for test reasons.
 										//But wizard is already available to check the URL automatically
 										//and provide messages in case of error
 			
-			tfUserLogin = new JTextField();
-			pfUserPassword = new JPasswordField();
+			pAPIkey = new JPasswordField();
 			
 			GuiUtils.prepareChangeableBorder(tfUrl);
-			GuiUtils.prepareChangeableBorder(tfUserLogin);
-			GuiUtils.prepareChangeableBorder(pfUserPassword);
+			GuiUtils.prepareChangeableBorder(pAPIkey);
 
 			statusMessage = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.pleaseLoginMessage"));
 
@@ -587,8 +402,7 @@ public class DataversePublisherWizard {
 
 					boolean loginButtonEnabled = true;					
 					loginButtonEnabled &= checkAndUpdateBorder(tfUrl);
-					loginButtonEnabled &= checkAndUpdateBorder(tfUserLogin);
-					loginButtonEnabled &= checkAndUpdateBorder(pfUserPassword);					
+					loginButtonEnabled &= checkAndUpdateBorder(pAPIkey);					
 					
 					checkLoginButton.setEnabled(loginButtonEnabled);
 				}
@@ -596,8 +410,7 @@ public class DataversePublisherWizard {
 
 			// Check any update:
 			tfUrl.getDocument().addDocumentListener(adapter);
-			tfUserLogin.getDocument().addDocumentListener(adapter);
-			pfUserPassword.getDocument().addDocumentListener(adapter);
+			pAPIkey.getDocument().addDocumentListener(adapter);
 
 
 			// Login button
@@ -607,33 +420,24 @@ public class DataversePublisherWizard {
 				public void actionPerformed(ActionEvent e) {
 
 					// Exit if some fields are empty
-					if((tfUrl.getText().equals("")) || (tfUserLogin.getText().equals(""))
-							|| (pfUserPassword.getPassword().length == 0)){
+					if((tfUrl.getText().equals("")) || (pAPIkey.getPassword().length == 0)){
 						return;
 					}
 
-					restURL = createRestURL(tfUrl.getText());
 					serviceDocumentURL = createServiceDocumentURL(tfUrl.getText());
-
-					publicationRepository = new DSpace_v6(serviceDocumentURL,
-															restURL,
-															tfUserLogin.getText(),
-															pfUserPassword.getPassword()
-															);
+					publicationRepository = new DataverseRepository_v4(serviceDocumentURL, pAPIkey.getPassword());
 					// Prepare GUI for the repository requests
 					checkLoginButton.setEnabled(false);
 					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.waitMessage"));
-					restOK = false;
 					loginOK = false;
 
 					// Start repository requests
 					SwingUtilities.invokeLater(new Runnable() {
 				        @Override
 						public void run() {
-				        	checkAndCorrectRestURL((DataVerseRepository_v4)publicationRepository);
-				        	if(restOK) {
-				        		checkUserRegistrationAndGetCollections(publicationRepository, tfUserLogin.getText());
-				        		if(loginOK) {
+				        	if (publicationRepository.isSwordAccessible()) {
+				        		if(publicationRepository.getUserAvailableCollectionsWithTitle() != null) {
+				        			availableCollections=publicationRepository.getUserAvailableCollectionsWithTitle();
 				        			statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.successMessage"));
 									setNextEnabled(true);
 								} else {
@@ -667,12 +471,10 @@ public class DataversePublisherWizard {
 					.padding(Paddings.DLU4)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.urlLabel"))).xy(1, 1)
 					.add(tfUrl).xy(3, 1)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.loginLabel"))).xy(1, 3)
-					.add(tfUserLogin).xy(3, 3)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.passwordLabel"))).xy(1, 5)
-					.add(pfUserPassword).xy(3, 5)
-					.add(checkLoginButton).xy(3, 7)
-					.add(openRepositoryButton).xy(3, 9)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.apikey"))).xy(1, 3)
+					.add(pAPIkey).xy(3, 3)
+					.add(checkLoginButton).xy(3, 5)
+					.add(openRepositoryButton).xy(3, 7)
 					.add(statusMessage).xyw(1, 11, 3)
 					.build();
 		}
@@ -684,7 +486,7 @@ public class DataversePublisherWizard {
 	/**
 	 * 2nd. page - choose collection, where to publish
 	 */
-	private static final DSpacePublisherStep CHOOSE_COLLECTION = new DSpacePublisherStep(
+	private static final DataversePublisherStep CHOOSE_COLLECTION = new DataversePublisherStep(
 			"replaydh.wizard.dataversePublisher.chooseCollection.title",
 			"replaydh.wizard.dataversePublisher.chooseCollection.description") {
 
@@ -746,7 +548,7 @@ public class DataversePublisherWizard {
 	/**
 	 * 3rd. page - choose files for publishing
 	 */
-	private static final DSpacePublisherStep CHOOSE_FILES = new DSpacePublisherStep(
+	private static final DataversePublisherStep CHOOSE_FILES = new DataversePublisherStep(
 			"replaydh.wizard.dataversePublisher.chooseFiles.title",
 			"replaydh.wizard.dataversePublisher.chooseFiles.description") {
 
@@ -915,7 +717,7 @@ public class DataversePublisherWizard {
 	/**
 	 * 4th. page - edit metadata
 	 */
-	private static final DSpacePublisherStep EDIT_METADATA = new DSpacePublisherStep(
+	private static final DataversePublisherStep EDIT_METADATA = new DataversePublisherStep(
 			"replaydh.wizard.dataversePublisher.editMetadata.title",
 			"replaydh.wizard.dataversePublisher.editMetadata.description") {
 
@@ -1101,7 +903,7 @@ public class DataversePublisherWizard {
 	/**
 	 * Last page - entry point for the publication
 	 */
-	private static final DSpacePublisherStep FINISH = new DSpacePublisherStep(
+	private static final DataversePublisherStep FINISH = new DataversePublisherStep(
 			"replaydh.wizard.dataversePublisher.finish.title",
 			"replaydh.wizard.dataversePublisher.finish.description") {
 
@@ -1119,11 +921,6 @@ public class DataversePublisherWizard {
 			// Repository URL
 			if(context.getRepositoryURL() != null) {
 				repositoryUrlArea.setText(context.getRepositoryURL());
-			}
-
-			// User login
-			if(context.getUserLogin() != null) {
-				userLoginArea.setText(context.getUserLogin());
 			}
 
 			// Chosen collection

@@ -97,7 +97,6 @@ public class DataversePublisher implements ResourcePublisher {
 			// Open user submissions page in the browser if publication process was finished successfully 
 			// and dialog was not terminated before
 			if(worker.isFinishedOK()) {
-				openUrlInBrowser(context.getUserSubmissionsURL());
 			}
 		}
 		
@@ -182,7 +181,7 @@ public class DataversePublisher implements ResourcePublisher {
 		@Override
 		protected Boolean doInBackground() throws Exception {
 			
-			DataVerseRepository repository = context.getPublicationRepository();
+			DataverseRepository repository = context.getPublicationRepository();
 			boolean result = false;
 			
 			if(!context.getFilesToPublish().isEmpty()) {
@@ -202,7 +201,7 @@ public class DataversePublisher implements ResourcePublisher {
 				}
 				
 				// Start publication process
-				result = repository.publishFileAndMetadata(context.getUserLogin(), context.getCollectionURL(), zipFile, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				result = repository.publisNewMetadataAndFile(context.getCollectionURL(), context.getFilesToPublish(), null, context.getMetadataObject().getMapDoublinCoreToMetadata());
 				
 				// Delete zip-file
 				try {
@@ -215,7 +214,12 @@ public class DataversePublisher implements ResourcePublisher {
 				
 				// Publication: metadata only
 				
-				result = repository.publishMetadata(context.getUserLogin(), context.getCollectionURL(), context.getMetadataObject().getMapDoublinCoreToMetadata());
+				String returnValue = repository.publishMetadata(context.getCollectionURL(), null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				if (returnValue != null) {
+					result = true;
+				} else {
+					result = false;
+				}
 			}
 			
 			return Boolean.valueOf(result);

@@ -25,9 +25,9 @@ import org.swordapp.client.UriRegistry;
  * @author Florian Fritze, Volodymyr Kushnarenko
  *
  */
-public abstract class DataVerseRepository {
+public abstract class DataverseRepository {
 	
-	protected static final Logger log = LoggerFactory.getLogger(DataVerseRepository.class);
+	protected static final Logger log = LoggerFactory.getLogger(DataverseRepository.class);
 	
 	// Header constants
 	public static final String APPLICATION_JSON = "application/json";
@@ -158,7 +158,7 @@ public abstract class DataVerseRepository {
 	 * @return
 	 * @throws IOException 
 	 */
-	public abstract void publishZipFile(String metadataSetHrefURL, File zipFile) throws IOException;
+	public abstract boolean publishZipFile(String metadataSetHrefURL, File zipFile) throws IOException;
 
 	/**
 	 * Publish metada only (without any file) to some collection, which is available for the user.
@@ -169,7 +169,7 @@ public abstract class DataVerseRepository {
 	 * @param metadataMap
 	 * @return
 	 */
-	public abstract String publishMetadata(String collectionURL, File fileFullPath);
+	public abstract String publishMetadata(String collectionURL, File fileFullPath, Map<String, String> metadataMap);
 
 	/**
 	 * Publish a file together with the metadata.
@@ -177,13 +177,13 @@ public abstract class DataVerseRepository {
 	 * 
 	 * @param userLogin
 	 * @param collectionURL
-	 * @param filelist
+	 * @param filesToZip
 	 * @param metadataFileXML
 	 * @return
 	 * @throws IOException 
 	 * @throws SWORDClientException 
 	 */
-	public abstract void publisNewMetadataAndFile(String collectionURL, List<File> filelist, File metadataFileXML) throws IOException, SWORDClientException;
+	public abstract boolean publisNewMetadataAndFile(String collectionURL, List<File> filesToZip, File metadataFileXML, Map<String, String> metadataMap) throws IOException, SWORDClientException;
 
 	/**
 	 * Get the entry in the Atom Feed which refers to the URL of the metadata entry in Dataverse. This entry is necessary to add files to the metadata entry in Dataverse.

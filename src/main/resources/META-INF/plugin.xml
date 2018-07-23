@@ -304,6 +304,22 @@
 		<parameter id="objectScope" value="all" />
 	</extension>
 	
+	<extension id="DataversePublisher" plugin-id="bwfdm.replaydh.core" point-id="ResourcePublisher">
+		<doc>
+			<doc-text>
+				Exporter to publish data from a workflow into a DSPACE repository.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.DataversePublisher.name" />
+		<parameter id="description" value="replaydh.plugins.DataversePublisher.description" />
+		<parameter id="class" value="bwfdm.replaydh.workflow.export.dataverse.DataversePublisher" />
+		<!-- <parameter id="icon" value="dspace-logo.png" /> -->
+		
+		<parameter id="type" value="object" />
+		<parameter id="workflowScope" value="all" />
+		<parameter id="objectScope" value="all" />
+	</extension>
+	
 	<extension id="GitArchiveExporter" plugin-id="bwfdm.replaydh.core" point-id="WorkflowExporter">
 		<doc>
 			<doc-text>

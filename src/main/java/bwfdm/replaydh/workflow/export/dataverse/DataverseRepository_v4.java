@@ -39,12 +39,12 @@ import bwfdm.replaydh.io.IOUtils;
  * @author Florian Fritze, Volodymyr Kushnarenko
  *
  */
-public class DataVerseRepository_v4 extends DataVerseRepository {
+public class DataverseRepository_v4 extends DataverseRepository {
 	
-	public DataVerseRepository_v4(String serviceDocumentURL, String apiKey) {
+	public DataverseRepository_v4(String serviceDocumentURL, char[] apiKey) {
 		this.serviceDocumentURL=serviceDocumentURL;
 		swordClient = new SWORDClient();
-		authCredentials = new AuthCredentials(apiKey, "null");
+		authCredentials = new AuthCredentials(String.valueOf(apiKey), "null");
 	}
 	
 	// For SWORD
@@ -230,14 +230,24 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 	}
 
 
-	public void publishZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
+	public boolean publishZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
 		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
-		publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
+		String returnValue = publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
 		FileUtils.delete(zipFile);
+		if (returnValue != null) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
-	public String publishMetadata(String collectionURL, File fileFullPath) {
-		String returnValue = publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
+	public String publishMetadata(String collectionURL, File fileFullPath, Map<String, String> metadataMap) {
+		String returnValue = null;
+		if ((metadataMap == null) && (fileFullPath != null)) {
+			returnValue = publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
+		} else if ((metadataMap != null) && (fileFullPath == null)) {
+			returnValue = publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+		}
 		if(returnValue != null) {
 			return returnValue;
 		} else {
@@ -246,17 +256,17 @@ public class DataVerseRepository_v4 extends DataVerseRepository {
 		}
 	}
 
-	public void publisNewMetadataAndFile(String collectionURL, List<File> filelist, File metadataFileXML) throws IOException, SWORDClientException {
+	public boolean publisNewMetadataAndFile(String collectionURL, List<File> filesToZip, File metadataFileXML, Map<String, String> metadataMap) throws IOException, SWORDClientException {
 		Entry entry = null;
 		List<File> ziplist = new ArrayList<>();
-		for (File dataFile : filelist) {
+		for (File dataFile : filesToZip) {
 			ziplist.add(dataFile);
 		}
 		File zipfile = new File("ingest.zip");
-		String doiId = this.publishMetadata(collectionURL, metadataFileXML);
+		String doiId = this.publishMetadata(collectionURL, metadataFileXML, null);
 		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials),doiId);
 		IOUtils.packFilesToZip(ziplist, zipfile, ".");
-		this.publishZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipfile);
+		return this.publishZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipfile);
 	}
 
 	public ServiceDocument getServiceDocument(String serviceDocumentURL) {
