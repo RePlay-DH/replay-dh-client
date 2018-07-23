@@ -263,7 +263,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 			ziplist.add(dataFile);
 		}
 		File zipfile = new File("ingest.zip");
-		String doiId = this.publishMetadata(collectionURL, metadataFileXML, null);
+		String doiId = this.publishMetadata(collectionURL, metadataFileXML, metadataMap);
 		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials),doiId);
 		IOUtils.packFilesToZip(ziplist, zipfile, ".");
 		return this.publishZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipfile);

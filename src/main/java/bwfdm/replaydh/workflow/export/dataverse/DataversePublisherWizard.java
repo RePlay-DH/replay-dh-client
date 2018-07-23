@@ -105,7 +105,7 @@ public class DataversePublisherWizard {
 
 		private RDHEnvironment environment;
 		private String repositoryURL;		//e.g. "http://123.11.11.11:8080/xmlui/" or "http://123.11.11.11:8080"
-									//TODO: could be also JSPUI !!!
+											//TODO: could be also JSPUI !!!
 		private String serviceDocumentURL;
 		private String collectionURL;
 		private Map<String, String> availableCollections;
@@ -202,7 +202,7 @@ public class DataversePublisherWizard {
 	 */
 	private static String getCorrectedURL(final String fullURL) {
 		requireNonNull(fullURL);
-		String url = new String(fullURL);
+		String url = new String(fullURL.trim());
 
 		// Remove last '/'
 		if(url.endsWith("/")) {
@@ -331,6 +331,7 @@ public class DataversePublisherWizard {
 		private JButton openRepositoryButton;
 
 		private String serviceDocumentURL;
+		private String repositoryURL;
 
 		private boolean loginOK;
 
@@ -347,6 +348,7 @@ public class DataversePublisherWizard {
 			context.serviceDocumentURL = createServiceDocumentURL(tfUrl.getText());
 			context.availableCollections = availableCollections;
 			context.publicationRepository = publicationRepository;
+			context.repositoryURL = getCorrectedURL(tfUrl.getText());
 
 			return CHOOSE_COLLECTION;
 		}
@@ -515,7 +517,7 @@ public class DataversePublisherWizard {
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 			// Store collection url
 			context.collectionURL = ((CollectionEntry)collectionsComboBox.getSelectedItem()).getEntry().getKey();
-
+			
 			return CHOOSE_FILES;
 		}
 
@@ -985,14 +987,12 @@ public class DataversePublisherWizard {
 					.padding(Paddings.DLU4)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.urlLabel"))).xy(1, 1)
 					.add(repositoryUrlArea).xy(3, 1)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.loginLabel"))).xy(1, 3)
-					.add(userLoginArea).xy(3, 3)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseCollection.collectionLabel"))).xy(1, 5)
-					.add(choosenCollectionArea).xy(3, 5)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseFiles.filesLabel"))).xy(1, 7)
-					.add(choosenFilesArea).xy(3, 7)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.finish.metadataLabel"))).xy(1, 9)
-					.add(metadataArea).xy(3, 9)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseCollection.collectionLabel"))).xy(1, 3)
+					.add(choosenCollectionArea).xy(3, 3)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseFiles.filesLabel"))).xy(1, 5)
+					.add(choosenFilesArea).xy(3, 5)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.finish.metadataLabel"))).xy(1, 7)
+					.add(metadataArea).xy(3, 7)
 					.add(messageArea).xyw(1, 11, 3)
 					.build();
 		}

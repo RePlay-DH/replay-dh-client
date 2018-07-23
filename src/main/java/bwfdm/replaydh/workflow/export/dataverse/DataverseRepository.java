@@ -60,7 +60,7 @@ public abstract class DataverseRepository {
 			for(SWORDWorkspace workspace : serviceDocument.getWorkspaces()) {
 				for (SWORDCollection collection : workspace.getCollections()) {
 					// key = Title, value = full URL
-					collections.put(collection.getTitle(), collection.getHref().toString());
+					collections.put(collection.getHref().toString(), collection.getTitle());
 				}
 			}
 		}
