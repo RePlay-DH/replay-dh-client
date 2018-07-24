@@ -81,7 +81,6 @@ public class DataversePublisher implements ResourcePublisher {
 
 		RDHEnvironment environment = exportInfo.getEnvironment();
 		DataversePublisherContext context = new DataversePublisherContext(exportInfo);
-		Window activeWindow = javax.swing.FocusManager.getCurrentManager().getActiveWindow();
 
 		log.info("Dataverse publication, calling wizard");
 
@@ -92,7 +91,7 @@ public class DataversePublisher implements ResourcePublisher {
 				return;
 			}
 
-	       
+			Window activeWindow = javax.swing.FocusManager.getCurrentManager().getActiveWindow();
 			DataversePublisherWorker worker = new DataversePublisherWorker(activeWindow, context);
 			worker.start();
 			

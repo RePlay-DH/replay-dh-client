@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -42,6 +43,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
@@ -68,6 +70,7 @@ import org.slf4j.LoggerFactory;
 
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
+import com.jgoodies.forms.layout.FormLayout;
 
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHProperty;
@@ -92,7 +95,7 @@ public class DataversePublisherWizard {
 		@SuppressWarnings("unchecked")
 		Wizard<DataversePublisherContext> wizard = new Wizard<>(
 				parent, ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.title"),
-				environment/*, FINISH /*<-- TEST*/ , CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
+				environment, CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
 
@@ -531,8 +534,8 @@ public class DataversePublisherWizard {
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.apikey"))).xy(1, 3)
 					.add(pAPIkey).xy(3, 3)
 					.add(checkLoginButton).xy(3, 5)
-					.add(openRepositoryButton).xy(3, 7)
-					.add(statusMessage).xyw(1, 11, 3)
+					//.add(openRepositoryButton).xy(3, 7)
+					.add(statusMessage).xyw(1, 9, 3)
 					.build();
 		}
 
@@ -791,6 +794,13 @@ public class DataversePublisherWizard {
 		private JTextArea messageArea;
 
 		private DateFormat format;
+		
+		private JPanel multiSubjects = new JPanel();
+		private JPanel oneSubject = new JPanel();
+		
+		private String columns = "fill:pref:grow, 6dlu, pref, 6dlu, pref";
+		private String rows = "pref";
+		private FormLayout layout = new FormLayout(columns,rows);
 
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
@@ -870,9 +880,9 @@ public class DataversePublisherWizard {
 			nextEnabled &= checkAndUpdateBorder(tfPublicationYear);
 			
 			// Not used metadata fields
-			nextEnabled &= checkAndUpdateBorder(tfIdentifier);
+			/*nextEnabled &= checkAndUpdateBorder(tfIdentifier);
 			nextEnabled &= checkAndUpdateBorder(tfPublisher);
-			nextEnabled &= checkAndUpdateBorder(tfResourceType);
+			nextEnabled &= checkAndUpdateBorder(tfResourceType);*/
 
 			setNextEnabled(nextEnabled);
 		}
@@ -906,10 +916,19 @@ public class DataversePublisherWizard {
 			tfPublisher = new JTextField();
 			tfResourceType = new JTextField();
 			//
-			GuiUtils.prepareChangeableBorder(tfIdentifier);
+			/*GuiUtils.prepareChangeableBorder(tfIdentifier);
 			GuiUtils.prepareChangeableBorder(tfPublisher);
-			GuiUtils.prepareChangeableBorder(tfResourceType);
-
+			GuiUtils.prepareChangeableBorder(tfResourceType);*/
+			
+			/*oneSubject.setLayout(layout);
+			
+			multiSubjects.setLayout(new BoxLayout(multiSubjects, BoxLayout.PAGE_AXIS));
+			
+			multiSubjects.add(oneSubject);
+			
+			JTextField subject = new JTextField();
+			
+			oneSubject.add(subject);*/
 			
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
 
@@ -933,7 +952,7 @@ public class DataversePublisherWizard {
 
 			return FormBuilder.create()
 					.columns("pref, 6dlu, fill:pref:grow")
-					.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref")
+					.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref")
 					.padding(Paddings.DLU4)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"))).xy(1, 1)
 					.add(tfTitle).xy(3, 1)
@@ -949,6 +968,8 @@ public class DataversePublisherWizard {
 					.add(tfIdentifier).xy(3, 11)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"))).xy(1, 13)
 					.add(tfPublisher).xy(3, 13)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"))).xy(1, 15)
+					//.add(multiSubjects).xy(3, 15)
 					.add(messageArea).xyw(1, 15, 3)
 					.build();
 		}
