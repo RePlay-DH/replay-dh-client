@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +30,6 @@ import org.swordapp.client.SWORDError;
 import org.swordapp.client.ServiceDocument;
 import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
-
-import bwfdm.replaydh.io.IOUtils;
 
 /**
  * 
@@ -256,17 +253,11 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		}
 	}
 
-	public boolean publisNewMetadataAndFile(String collectionURL, List<File> filesToZip, File metadataFileXML, Map<String, String> metadataMap) throws IOException, SWORDClientException {
+	public boolean publisNewMetadataAndFile(String collectionURL, File zipFile, File metadataFileXML, Map<String, String> metadataMap) throws IOException, SWORDClientException {
 		Entry entry = null;
-		List<File> ziplist = new ArrayList<>();
-		for (File dataFile : filesToZip) {
-			ziplist.add(dataFile);
-		}
-		File zipfile = new File("ingest.zip");
 		String doiId = this.publishMetadata(collectionURL, metadataFileXML, metadataMap);
 		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials),doiId);
-		IOUtils.packFilesToZip(ziplist, zipfile, ".");
-		return this.publishZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipfile);
+		return this.publishZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}
 
 	public ServiceDocument getServiceDocument(String serviceDocumentURL) {

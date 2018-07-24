@@ -307,7 +307,7 @@
 	<extension id="DataversePublisher" plugin-id="bwfdm.replaydh.core" point-id="ResourcePublisher">
 		<doc>
 			<doc-text>
-				Exporter to publish data from a workflow into a DSPACE repository.
+				Exporter to publish data from a workflow into a Dataverse repository.
 			</doc-text>
 		</doc>
 		<parameter id="name" value="replaydh.plugins.DataversePublisher.name" />

@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.awt.Component;
 import java.awt.Desktop;
+import java.awt.KeyboardFocusManager;
 import java.awt.Window;
 import java.io.File;
 import java.io.IOException;
@@ -80,6 +81,7 @@ public class DataversePublisher implements ResourcePublisher {
 
 		RDHEnvironment environment = exportInfo.getEnvironment();
 		DataversePublisherContext context = new DataversePublisherContext(exportInfo);
+		Window activeWindow = javax.swing.FocusManager.getCurrentManager().getActiveWindow();
 
 		log.info("Dataverse publication, calling wizard");
 
@@ -90,7 +92,7 @@ public class DataversePublisher implements ResourcePublisher {
 				return;
 			}
 
-			Window activeWindow = javax.swing.FocusManager.getCurrentManager().getActiveWindow();
+	       
 			DataversePublisherWorker worker = new DataversePublisherWorker(activeWindow, context);
 			worker.start();
 			
@@ -145,7 +147,7 @@ public class DataversePublisher implements ResourcePublisher {
 		private boolean finishOK;
 
 		public DataversePublisherWorker(Window owner, DataversePublisherContext context) {
-			super(owner, ResourceManager.getInstance().get("replaydh.dialogs.dspacePublication.title"),
+			super(owner, ResourceManager.getInstance().get("replaydh.dialogs.dataversePublication.title"),
 					CancellationPolicy.CANCEL_INTERRUPT);
 
 			this.context = requireNonNull(context);
@@ -201,7 +203,7 @@ public class DataversePublisher implements ResourcePublisher {
 				}
 				
 				// Start publication process
-				result = repository.publisNewMetadataAndFile(context.getCollectionURL(), context.getFilesToPublish(), null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				result = repository.publisNewMetadataAndFile(context.getCollectionURL(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
 				
 				// Delete zip-file
 				try {

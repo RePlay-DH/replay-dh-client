@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.abdera.Abdera;
@@ -183,7 +182,7 @@ public abstract class DataverseRepository {
 	 * @throws IOException 
 	 * @throws SWORDClientException 
 	 */
-	public abstract boolean publisNewMetadataAndFile(String collectionURL, List<File> filesToZip, File metadataFileXML, Map<String, String> metadataMap) throws IOException, SWORDClientException;
+	public abstract boolean publisNewMetadataAndFile(String collectionURL, File zipFile, File metadataFileXML, Map<String, String> metadataMap) throws IOException, SWORDClientException;
 
 	/**
 	 * Get the entry in the Atom Feed which refers to the URL of the metadata entry in Dataverse. This entry is necessary to add files to the metadata entry in Dataverse.

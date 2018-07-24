@@ -331,14 +331,67 @@ public class DataversePublisherWizard {
 		private JButton openRepositoryButton;
 
 		private String serviceDocumentURL;
-		private String repositoryURL;
-
 		private boolean loginOK;
+		
+		private boolean swordOK;
+		private boolean collectionsAvailable;
+		
+		private long timeOut = 2; //in seconds
 
 		private Map<String, String> availableCollections;
 		private DataverseRepository_v4 publicationRepository;
 
+		/**
+		 * Check the connection via REST-interface.
+		 * Sets the global flag {@code restOK=true} if connection is working, and {@code restOK=false} otherwise
+		 * @param publicationRepository
+		 */
+		private void checkSWORDURL() {
 
+			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+
+				@Override
+				protected Boolean doInBackground() throws Exception {
+
+					if(serviceDocumentURL == null) {
+						return false;
+					}
+
+					//Exchange "http://" and "https://" if REST is not accessible
+					if(!publicationRepository.isSwordAccessible()) {
+						// If the exchange did not help, move to the previous condition
+						swordOK = false;
+						return swordOK;
+					} else if (publicationRepository.getUserAvailableCollectionsWithTitle() != null) {
+						collectionsAvailable = true;
+					}
+
+					swordOK = true;
+					return swordOK;
+				}
+
+				@Override
+				protected void done() {
+					if(!isCancelled()) {
+						if(swordOK) {
+							//no-op
+						} else {
+							if(tfUrl.isEnabled() && tfUrl.isEditable()) {
+								GuiUtils.toggleChangeableBorder(tfUrl, true); //set red border as a sign of wrong URL
+							}
+							statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.wrongUrlMessage"));
+							checkLoginButton.setEnabled(true); //in case of the Internet problem user have to click it again
+						}
+					} else {
+						swordOK = false;
+						statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.terminationMessage"));
+						checkLoginButton.setEnabled(true); //in case of the Internet problem user have to click it again
+						setNextEnabled(false);
+					}
+				}
+			};
+			executeWorkerWithTimeout(worker, timeOut, "Exception by exchanging http/https");
+		}
 
 
 		@Override
@@ -349,7 +402,7 @@ public class DataversePublisherWizard {
 			context.availableCollections = availableCollections;
 			context.publicationRepository = publicationRepository;
 			context.repositoryURL = getCorrectedURL(tfUrl.getText());
-
+			
 			return CHOOSE_COLLECTION;
 		}
 
@@ -417,19 +470,20 @@ public class DataversePublisherWizard {
 
 			// Login button
 			checkLoginButton = new JButton(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.loginButton"));
+			checkLoginButton.setEnabled(false);
 			checkLoginButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 
 					// Exit if some fields are empty
 					if((tfUrl.getText().equals("")) || (pAPIkey.getPassword().length == 0)){
+						checkLoginButton.setEnabled(false);
 						return;
 					}
 
 					serviceDocumentURL = createServiceDocumentURL(tfUrl.getText());
 					publicationRepository = new DataverseRepository_v4(serviceDocumentURL, pAPIkey.getPassword());
 					// Prepare GUI for the repository requests
-					checkLoginButton.setEnabled(false);
 					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.waitMessage"));
 					loginOK = false;
 
@@ -437,8 +491,9 @@ public class DataversePublisherWizard {
 					SwingUtilities.invokeLater(new Runnable() {
 				        @Override
 						public void run() {
-				        	if (publicationRepository.isSwordAccessible()) {
-				        		if(publicationRepository.getUserAvailableCollectionsWithTitle() != null) {
+				        	checkSWORDURL();
+				        	if (swordOK) {
+				        		if(collectionsAvailable) {
 				        			availableCollections=publicationRepository.getUserAvailableCollectionsWithTitle();
 				        			statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.successMessage"));
 									setNextEnabled(true);
@@ -729,9 +784,9 @@ public class DataversePublisherWizard {
 		private JFormattedTextField tfPublicationYear;
 		
 		//Not used metadata fields
-		//private JTextField tfIdentifier;
-		//private JTextField tfPublisher;
-		//private JTextField tfResourceType;
+		private JTextField tfIdentifier;
+		private JTextField tfPublisher;
+		private JTextField tfResourceType;
 
 		private JTextArea messageArea;
 
@@ -795,13 +850,13 @@ public class DataversePublisherWizard {
 			context.metadataObject.mapDoublinCoreToMetadata.put("issued", tfPublicationYear.getText());
 			context.metadataObject.mapDoublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));
 
-//			// Not used (reserved) metadata fields
-//			context.metadataObject.mapDoublinCoreToMetadata.put("identifier", tfIdentifier.getText());
-//			context.metadataObject.mapDoublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
-//			context.metadataObject.mapDoublinCoreToMetadata.put("publisher", tfPublisher.getText());
-//			context.metadataObject.mapDoublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
-//			context.metadataObject.mapDoublinCoreToMetadata.put("type", tfResourceType.getText());
-//			context.metadataObject.mapDoublinCoreToLabel.put("type", rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
+			// Not used (reserved) metadata fields
+			context.metadataObject.mapDoublinCoreToMetadata.put("identifier", tfIdentifier.getText());
+			context.metadataObject.mapDoublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
+			context.metadataObject.mapDoublinCoreToMetadata.put("publisher", tfPublisher.getText());
+			context.metadataObject.mapDoublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
+			context.metadataObject.mapDoublinCoreToMetadata.put("type", tfResourceType.getText());
+			context.metadataObject.mapDoublinCoreToLabel.put("type", rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
 
 			return FINISH;
 		}
@@ -815,9 +870,9 @@ public class DataversePublisherWizard {
 			nextEnabled &= checkAndUpdateBorder(tfPublicationYear);
 			
 			// Not used metadata fields
-			//nextEnabled &= checkAndUpdateBorder(tfIdentifier);
-			//nextEnabled &= checkAndUpdateBorder(tfPublisher);
-			//nextEnabled &= checkAndUpdateBorder(tfResourceType);
+			nextEnabled &= checkAndUpdateBorder(tfIdentifier);
+			nextEnabled &= checkAndUpdateBorder(tfPublisher);
+			nextEnabled &= checkAndUpdateBorder(tfResourceType);
 
 			setNextEnabled(nextEnabled);
 		}
@@ -847,13 +902,13 @@ public class DataversePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfPublicationYear);
 						
 			// Not used metadata fields
-			//tfIdentifier = new JTextField();
-			//tfPublisher = new JTextField();
-			//tfResourceType = new JTextField();
+			tfIdentifier = new JTextField();
+			tfPublisher = new JTextField();
+			tfResourceType = new JTextField();
 			//
-			//GuiUtils.prepareChangeableBorder(tfIdentifier);
-			//GuiUtils.prepareChangeableBorder(tfPublisher);
-			//GuiUtils.prepareChangeableBorder(tfResourceType);
+			GuiUtils.prepareChangeableBorder(tfIdentifier);
+			GuiUtils.prepareChangeableBorder(tfPublisher);
+			GuiUtils.prepareChangeableBorder(tfResourceType);
 
 			
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
@@ -872,9 +927,9 @@ public class DataversePublisherWizard {
 			tfPublicationYear.getDocument().addDocumentListener(adapter);
 			
 			// Not used metadata fields
-			//tfIdentifier.getDocument().addDocumentListener(adapter);
-			//tfPublisher.getDocument().addDocumentListener(adapter);
-			//tfResourceType.getDocument().addDocumentListener(adapter);
+			tfIdentifier.getDocument().addDocumentListener(adapter);
+			tfPublisher.getDocument().addDocumentListener(adapter);
+			tfResourceType.getDocument().addDocumentListener(adapter);
 
 			return FormBuilder.create()
 					.columns("pref, 6dlu, fill:pref:grow")
@@ -888,13 +943,13 @@ public class DataversePublisherWizard {
 					.add(tfCreator).xy(3, 5)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"))).xy(1, 7)
 					.add(tfPublicationYear).xy(3, 7)
-//					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"))).xy(1, 9)
-//					.add(tfResourceType).xy(3, 9)
-//					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"))).xy(1, 11)
-//					.add(tfIdentifier).xy(3, 11)
-//					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"))).xy(1, 13)
-//					.add(tfPublisher).xy(3, 13)
-					.add(messageArea).xyw(1, 9, 3)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"))).xy(1, 9)
+					.add(tfResourceType).xy(3, 9)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"))).xy(1, 11)
+					.add(tfIdentifier).xy(3, 11)
+					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"))).xy(1, 13)
+					.add(tfPublisher).xy(3, 13)
+					.add(messageArea).xyw(1, 15, 3)
 					.build();
 		}
 	};
@@ -910,7 +965,6 @@ public class DataversePublisherWizard {
 			"replaydh.wizard.dataversePublisher.finish.description") {
 
 		private JTextArea repositoryUrlArea;
-		private JTextArea userLoginArea;
 		private JTextArea choosenCollectionArea;
 		private JTextArea choosenFilesArea;
 		private JTextArea metadataArea;
@@ -974,7 +1028,7 @@ public class DataversePublisherWizard {
 			ResourceManager rm = ResourceManager.getInstance();
 
 			repositoryUrlArea = GuiUtils.createTextArea("");
-			userLoginArea = GuiUtils.createTextArea("");
+			GuiUtils.createTextArea("");
 			choosenCollectionArea = GuiUtils.createTextArea("");
 			choosenFilesArea = GuiUtils.createTextArea("");
 			metadataArea = GuiUtils.createTextArea("");
