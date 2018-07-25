@@ -783,30 +783,14 @@ public class DataversePublisherWizard {
 	private static final DataversePublisherStep EDIT_METADATA = new DataversePublisherStep(
 			"replaydh.wizard.dataversePublisher.editMetadata.title",
 			"replaydh.wizard.dataversePublisher.editMetadata.description") {
-
-		private JTextField tfCreator;
-		private JTextField tfTitle;
-		private JTextField tfDescription;
 		private JFormattedTextField tfPublicationYear;
-		
-		//Not used metadata fields
 		private JTextField tfIdentifier;
 		private JTextField tfPublisher;
 		private JTextField tfResourceType;
+		private GUIElement eCreator;
+		private GUIElement eTitle;
+		private GUIElement eDescription;
 
-		private JTextArea messageArea;
-
-		private DateFormat format;
-		
-		private JPanel multiSubjects = new JPanel();
-		private JPanel oneSubject = new JPanel();
-		
-		private String columns = "fill:pref:grow, 6dlu, pref, 6dlu, pref";
-		private String rows = "pref";
-		private FormLayout layout = new FormLayout(columns,rows);
-		
-		private FormBuilder propertybuilder = FormBuilder.create();
-		
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
@@ -819,15 +803,15 @@ public class DataversePublisherWizard {
 			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
 				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
 			}
-			tfCreator.setText(creator);
+			eCreator.getTextfield().setText(creator);
 
 			//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
 			
 			// Title
-			tfTitle.setText(context.exportInfo.getWorkflow().getTitle());
+			eTitle.getTextfield().setText(context.exportInfo.getWorkflow().getTitle());
 
 			// Description
-			tfDescription.setText(context.exportInfo.getWorkflow().getDescription());
+			eDescription.getTextfield().setText(context.exportInfo.getWorkflow().getDescription());
 						
 			// Publication year
 			int year = Calendar.getInstance().get(Calendar.YEAR);
@@ -850,15 +834,15 @@ public class DataversePublisherWizard {
 			context.metadataObject.mapDoublinCoreToLabel = new HashMap<>();
 
 			// Title
-			context.metadataObject.mapDoublinCoreToMetadata.put("title", tfTitle.getText());
+			context.metadataObject.mapDoublinCoreToMetadata.put("title", eTitle.getTextfield().getText());
 			context.metadataObject.mapDoublinCoreToLabel.put("title", rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"));
 
 			// Description
-			context.metadataObject.mapDoublinCoreToMetadata.put("description", tfDescription.getText());
+			context.metadataObject.mapDoublinCoreToMetadata.put("description", eDescription.getTextfield().getText());
 			context.metadataObject.mapDoublinCoreToLabel.put("description", rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
 
 			// Creator
-			context.metadataObject.mapDoublinCoreToMetadata.put("creator", tfCreator.getText());
+			context.metadataObject.mapDoublinCoreToMetadata.put("creator", eCreator.getTextfield().getText());
 			context.metadataObject.mapDoublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
 
 			// Publication year
@@ -879,9 +863,9 @@ public class DataversePublisherWizard {
 		private void refreshNextEnabled() {
 			boolean nextEnabled = true;
 
-			nextEnabled &= checkAndUpdateBorder(tfCreator);
-			nextEnabled &= checkAndUpdateBorder(tfTitle);
-			nextEnabled &= checkAndUpdateBorder(tfDescription);
+			nextEnabled &= checkAndUpdateBorder(eCreator.getTextfield());
+			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());
+			nextEnabled &= checkAndUpdateBorder(eDescription.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(tfPublicationYear);
 			
 			// Not used metadata fields
@@ -901,12 +885,32 @@ public class DataversePublisherWizard {
 
 		@Override
 		protected JPanel createPanel() {
+			
+			//Not used metadata fields
+			JTextArea messageArea;
+
+			DateFormat format;
+			
+			JPanel multiSubjects = new JPanel();
+			JPanel oneSubject = new JPanel();
+			
+			String columns = "fill:pref:grow, 6dlu, pref, 6dlu, pref";
+			String rows = "pref";
+			FormLayout layout = new FormLayout(columns,rows);
+			
+			FormBuilder propertybuilder = FormBuilder.create();
 
 			ResourceManager rm = ResourceManager.getInstance();
 
-			tfCreator = new JTextField();
-			tfTitle = new JTextField();
-			tfDescription = new JTextField();
+			JTextField tfCreator = new JTextField();
+			eCreator = new GUIElement();
+			eCreator.setTextfield(tfCreator);
+			JTextField tfTitle = new JTextField();
+			eTitle = new GUIElement();
+			eTitle.setTextfield(tfTitle);
+			JTextField tfDescription = new JTextField();
+			eDescription = new GUIElement();
+			eDescription.setTextfield(tfDescription);
 			format = new SimpleDateFormat("YYYY");
 			tfPublicationYear = new JFormattedTextField(format);
 			tfPublicationYear.setToolTipText("YYYY");
@@ -965,11 +969,11 @@ public class DataversePublisherWizard {
 					.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref")
 					.padding(Paddings.DLU4)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"))).xy(1, 1)
-					.add(tfTitle).xy(3, 1)
+					.add(eTitle.getPanel()).xy(3, 1)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"))).xy(1, 3)
-					.add(tfDescription).xy(3, 3)
+					.add(eDescription.getPanel()).xy(3, 3)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"))).xy(1, 5)
-					.add(tfCreator).xy(3, 5)
+					.add(eCreator.getPanel()).xy(3, 5)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"))).xy(1, 7)
 					.add(tfPublicationYear).xy(3, 7)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"))).xy(1, 9)
