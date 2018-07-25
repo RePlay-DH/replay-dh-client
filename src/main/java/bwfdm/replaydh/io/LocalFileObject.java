@@ -81,7 +81,7 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 	 * specified file object if needed.
 	 *
 	 * @param fileObject
-	 * @return
+	 * @return {@code true} iff a fresh checksum had to be calculated
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
@@ -132,7 +132,7 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 	 *
 	 * @param fileObject
 	 * @param environment
-	 * @return
+	 * @return {@code true} iff the internal set of identifiers has been freshly loaded
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
@@ -189,7 +189,7 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 	 *
 	 * @param fileObject
 	 * @param environment
-	 * @return
+	 * @return {@code true} iff the resource associated with this file has been freshly loaded
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
@@ -249,7 +249,7 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 	 *
 	 * @param fileObject
 	 * @param environment
-	 * @return
+	 * @return {@code true} iff the associated metadata record has been freshly loaded
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */

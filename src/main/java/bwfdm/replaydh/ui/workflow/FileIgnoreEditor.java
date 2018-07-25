@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.swing.AbstractListModel;
@@ -36,6 +37,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
+import javax.swing.JTextArea;
 import javax.swing.ListModel;
 
 import com.jgoodies.forms.builder.FormBuilder;
@@ -46,8 +48,7 @@ import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.Editor;
-import bwfdm.replaydh.ui.helper.ScrollablePanel;
-import bwfdm.replaydh.ui.helper.ScrollablePanel.ScrollableSizeHint;
+import bwfdm.replaydh.ui.helper.PassiveTextArea;
 import bwfdm.replaydh.ui.list.AbstractListCellRendererPanel;
 
 /**
@@ -115,6 +116,31 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 			conf.copyFrom(this);
 			return conf;
 		}
+
+		/**
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			if(obj==this) {
+				return true;
+			} else if(obj instanceof FileIgnoreConfiguration) {
+				FileIgnoreConfiguration other = (FileIgnoreConfiguration) obj;
+				return Objects.equals(modifiedFilesToIgnore, other.modifiedFilesToIgnore)
+						&& Objects.equals(modifiedFilesToKeep, other.modifiedFilesToKeep)
+						&& Objects.equals(newFilesToIgnore, other.newFilesToIgnore)
+						&& Objects.equals(newFilesToKeep, other.newFilesToKeep);
+			}
+			return false;
+		}
+
+		/**
+		 * @see java.lang.Object#hashCode()
+		 */
+		@Override
+		public int hashCode() {
+			return Objects.hash(modifiedFilesToIgnore, modifiedFilesToKeep, newFilesToIgnore, newFilesToKeep);
+		}
 	}
 
 	public static FileIgnoreConfiguration newConfiguration(Set<LocalFileObject> newFilesToIgnore,
@@ -130,6 +156,8 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 
 	private final FileIgnoreConfiguration backupConf = new FileIgnoreConfiguration();
 	private FileIgnoreConfiguration workConf;
+
+	private final JComponent newFilesPanel, modifiedFilesPanel;
 
 	private final MouseListener toggleAdapter = new MouseAdapter() {
 		/**
@@ -152,10 +180,18 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 		newFilesModel = new FileIgnoreListModel();
 		modifiedFilesModel = new FileIgnoreListModel();
 
-		JComponent newFilesPanel = createListSection(newFilesModel, true);
-		JComponent modifiedFilesPanel = createListSection(modifiedFilesModel, false);
+		ResourceManager rm = ResourceManager.getInstance();
 
-		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, newFilesPanel, modifiedFilesPanel);
+		newFilesPanel = createListSection(newFilesModel, true);
+		modifiedFilesPanel = createListSection(modifiedFilesModel, false);
+
+		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
+				newFilesPanel, modifiedFilesPanel);
+		GuiUtils.defaultHideSplitPaneDecoration(splitPane);
+		splitPane.setOneTouchExpandable(true);
+		splitPane.setResizeWeight(0.5);
+
+		JTextArea header = new PassiveTextArea(rm.get("replaydh.ui.editor.ignoreFiles.header"));
 
 		/**
 		 * <pre>
@@ -177,10 +213,11 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 		 * </pre>
 		 */
 
-		//TODO assemble the actual UI
 		panel = FormBuilder.create()
-				.columns("")
-				.rows("")
+				.columns("fill:pref:grow")
+				.rows("pref, 6dlu, fill:pref:grow")
+				.add(header).xy(1, 1)
+				.add(splitPane).xy(1, 3)
 				.padding(Paddings.DLU4)
 				.build();
 	}
@@ -195,8 +232,8 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 		checkBox.setToolTipText(rm.get("replaydh.ui.editor.ignoreFiles.toggleAll"));
 		checkBox.addItemListener(ie -> model.setAll(checkBox.isSelected()));
 
-		ScrollablePanel panel = new ScrollablePanel();
-		panel.setScrollableHeight(ScrollableSizeHint.FIT);
+//		ScrollablePanel panel = new ScrollablePanel();
+//		panel.setScrollableHeight(ScrollableSizeHint.STRETCH);
 
 		String header = isNewFilesPanel ?
 				rm.get("replaydh.ui.editor.ignoreFiles.newFiles")
@@ -215,19 +252,18 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 		 */
 
 		return FormBuilder.create()
-				.panel(panel)
-				.columns("pref, 6dlu, pref, 2dllu")
+				.columns("fill:pref:grow, 6dlu, pref, 2dlu")
 				.rows("pref, 4dlu, fill:pref:grow")
-				.addSeparator(header).xy(2, 1, "fill, center")
+				.addSeparator(header).xy(1, 1)
 				.add(checkBox).xy(3, 1)
-				.addScrolled(list).xyw(1, 3, 3, "fill, fill")
+				.addScrolled(list).xyw(1, 3, 4, "fill, fill")
 				.build();
 	}
 
 	private JList<FileIgnoreInfo> createList(FileIgnoreListModel model) {
 		JList<FileIgnoreInfo> list = new JList<>(model);
 		list.setCellRenderer(new FileIgnoreListCellRenderer());
-		list.setVisibleRowCount(8);
+		list.setVisibleRowCount(3);
 		list.addMouseListener(toggleAdapter);
 		return list;
 	}
@@ -251,8 +287,19 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 		updateUI();
 	}
 
-	private void updateUI() {
+	private static final FileIgnoreConfiguration EMPTY_CONF = new FileIgnoreConfiguration();
 
+	private void updateUI() {
+		FileIgnoreConfiguration conf = workConf;
+		if(conf==null) {
+			conf = EMPTY_CONF;
+		}
+
+		modifiedFilesModel.update(conf.modifiedFilesToIgnore, conf.modifiedFilesToKeep);
+		newFilesModel.update(conf.newFilesToIgnore, conf.newFilesToKeep);
+
+		modifiedFilesPanel.setVisible(!modifiedFilesModel.isEmpty());
+		newFilesPanel.setVisible(!newFilesModel.isEmpty());
 	}
 
 	/**
@@ -286,9 +333,7 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 			return;
 		}
 
-		workConf.clear();
-		filterModel(modifiedFilesModel, workConf.modifiedFilesToIgnore, workConf.modifiedFilesToKeep);
-		filterModel(newFilesModel, workConf.newFilesToIgnore, workConf.newFilesToKeep);
+		viewToModel(workConf);
 	}
 
 	/**
@@ -296,8 +341,9 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 	 */
 	@Override
 	public boolean hasChanges() {
-		// TODO Auto-generated method stub
-		return false;
+		FileIgnoreConfiguration tmp = new FileIgnoreConfiguration();
+		viewToModel(tmp);
+		return tmp.equals(backupConf);
 	}
 
 	/**
@@ -306,6 +352,12 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 	@Override
 	public void close() {
 		// nothing to do
+	}
+
+	private void viewToModel(FileIgnoreConfiguration conf) {
+		conf.clear();
+		filterModel(modifiedFilesModel, conf.modifiedFilesToIgnore, conf.modifiedFilesToKeep);
+		filterModel(newFilesModel, conf.newFilesToIgnore, conf.newFilesToKeep);
 	}
 
 	private void filterModel(ListModel<FileIgnoreInfo> model,
@@ -336,16 +388,24 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 	}
 
 	private static class FileIgnoreListModel extends AbstractListModel<FileIgnoreInfo> {
+
+		private static final long serialVersionUID = -982812892460223524L;
+
 		private final List<FileIgnoreInfo> entries = new ArrayList<>();
+
+		public void clear() {
+			int oldSize = entries.size();
+
+			if(oldSize>0) {
+				entries.clear();
+				fireIntervalRemoved(this, 0, oldSize-1);
+			}
+		}
 
 		public void update(Set<LocalFileObject> ignore,
 			Set<LocalFileObject> keep) {
-			int oldSize = entries.size();
-			entries.clear();
 
-			if(oldSize>0) {
-				fireIntervalRemoved(this, 0, oldSize-1);
-			}
+			clear();
 
 			for(LocalFileObject file : ignore) {
 				entries.add(new FileIgnoreInfo(file));
@@ -397,6 +457,10 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 
 			fireContentsChanged(this, 0, getSize()-1);
 		}
+
+		public boolean isEmpty() {
+			return entries.isEmpty();
+		}
 	}
 
 	private static class FileIgnoreListCellRenderer extends AbstractListCellRendererPanel<FileIgnoreInfo> {
@@ -415,14 +479,16 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 			lMetadata = new JLabel();
 
 			cbIgnore = new JCheckBox();
+			cbIgnore.setOpaque(false);
 
 			FormBuilder.create()
-				.columns("1dlu, pref, 4dlu, pref, 4dlu, pref, 1dlu")
+				.columns("2dlu, 8dlu, pref, 4dlu, fill:pref:grow, 4dlu, pref, 1dlu")
 				.rows("1dlu, pref, $lg, pref, 1dlu")
-				.add(lPath).xyw(2, 2, 3, "fill, center")
-				.add(lSize).xy(2, 4)
-				.add(lMetadata).xy(4, 4)
-				.add(cbIgnore).xywh(6, 2, 1, 3)
+				.panel(this)
+				.add(lPath).xyw(2, 2, 4, "fill, center")
+				.add(lSize).xy(3, 4)
+				.add(lMetadata).xy(5, 4)
+				.add(cbIgnore).xywh(7, 2, 1, 3)
 				.build();
 		}
 
@@ -434,7 +500,7 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 				boolean isSelected, boolean cellHasFocus) {
 			Path path = info.fileObject.getFile();
 			lPath.setText(path.getFileName().toString());
-			lPath.setToolTipText(path.toString());
+			setToolTipText(path.toString());
 
 			lSize.setText(IOUtils.readableSize(path));
 
