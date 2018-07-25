@@ -446,6 +446,9 @@ public class DataversePublisherWizard {
 			
 			GuiUtils.prepareChangeableBorder(tfUrl);
 			GuiUtils.prepareChangeableBorder(pAPIkey);
+			
+			GuiUtils.toggleChangeableBorder(tfUrl, true);
+			GuiUtils.toggleChangeableBorder(pAPIkey, true);
 
 			statusMessage = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.pleaseLoginMessage"));
 
@@ -801,7 +804,9 @@ public class DataversePublisherWizard {
 		private String columns = "fill:pref:grow, 6dlu, pref, 6dlu, pref";
 		private String rows = "pref";
 		private FormLayout layout = new FormLayout(columns,rows);
-
+		
+		private FormBuilder propertybuilder = FormBuilder.create();
+		
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
@@ -827,7 +832,7 @@ public class DataversePublisherWizard {
 			// Publication year
 			int year = Calendar.getInstance().get(Calendar.YEAR);
 			tfPublicationYear.setText(String.valueOf(year));
-
+			
 			refreshNextEnabled();
 
 			//TODO: remove previous metadata when the page is opened again. Now previous metadata is kept. Se todo with mdObject above
@@ -920,16 +925,6 @@ public class DataversePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfPublisher);
 			GuiUtils.prepareChangeableBorder(tfResourceType);*/
 			
-			/*oneSubject.setLayout(layout);
-			
-			multiSubjects.setLayout(new BoxLayout(multiSubjects, BoxLayout.PAGE_AXIS));
-			
-			multiSubjects.add(oneSubject);
-			
-			JTextField subject = new JTextField();
-			
-			oneSubject.add(subject);*/
-			
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
 
 
@@ -949,7 +944,22 @@ public class DataversePublisherWizard {
 			tfIdentifier.getDocument().addDocumentListener(adapter);
 			tfPublisher.getDocument().addDocumentListener(adapter);
 			tfResourceType.getDocument().addDocumentListener(adapter);
-
+			
+			multiSubjects.setLayout(new BoxLayout(multiSubjects, BoxLayout.PAGE_AXIS));
+			
+			multiSubjects.add(oneSubject);
+			
+			propertybuilder.columns(columns);
+			propertybuilder.rows(rows);
+			
+			propertybuilder.panel(oneSubject);
+			
+			oneSubject.setLayout(layout);
+			
+			propertybuilder.add(new JTextField()).xy(1, 1);
+			
+			propertybuilder.build();
+			
 			return FormBuilder.create()
 					.columns("pref, 6dlu, fill:pref:grow")
 					.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref")
@@ -969,8 +979,8 @@ public class DataversePublisherWizard {
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"))).xy(1, 13)
 					.add(tfPublisher).xy(3, 13)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"))).xy(1, 15)
-					//.add(multiSubjects).xy(3, 15)
-					.add(messageArea).xyw(1, 15, 3)
+					.add(multiSubjects).xy(3, 15)
+					.add(messageArea).xyw(1, 17, 3)
 					.build();
 		}
 	};
