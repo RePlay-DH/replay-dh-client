@@ -1,31 +1,61 @@
 package bwfdm.replaydh.workflow.export.dataverse;
 
+import java.awt.Dimension;
+
+import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.layout.FormLayout;
 
+import bwfdm.replaydh.ui.icons.IconRegistry;
+
 public class GUIElement {
+	
 	private FormBuilder propertybuilder = FormBuilder.create();
-	private String columns = "fill:pref:grow, 6dlu, pref, 6dlu, pref";
-	private String rows = "pref";
+	private static final String columns = "fill:pref:grow, 3dlu, pref, 3dlu, pref";
+	private static final String rows = "pref";
 	private JTextField textfield = new JTextField();
-	private JButton button = new JButton();
-	private JButton minusbutton = new JButton();
+	private JButton button = null;
+	private JButton minusbutton = null;
 	private JPanel panel = new JPanel();
-	private FormLayout layout = new FormLayout(columns,rows);
+	private static final FormLayout layout = new FormLayout(columns,rows);
+	private static final JLabel shadowlabelfirst = new JLabel();
+	private static final JLabel shadowlabelsecond = new JLabel();
+	private static final Dimension preferredSize = new Dimension(17,17);
+	
+	private final static IconRegistry ir = IconRegistry.getGlobalRegistry();
+	
+	private final static Icon iidel = ir.getIcon("list-remove-5.png");
+	private final static Icon iiadd = ir.getIcon("list-add.png");
 	
 	
-	
-	public JPanel getPanel() {
+	public void create() {
 		propertybuilder.columns(columns);
 		propertybuilder.rows(rows);
 		propertybuilder.panel(panel);
 		panel.setLayout(layout);
 		propertybuilder.add(textfield).xy(1, 1);
+		if(minusbutton != null) {
+			minusbutton.setName("minus");
+			propertybuilder.add(minusbutton).xy(3, 1);
+		} else {
+			shadowlabelfirst.setPreferredSize(preferredSize);
+			propertybuilder.add(shadowlabelfirst).xy(3, 1);
+		}
+		if(button != null) {
+			button.setName("plus");
+			propertybuilder.add(button).xy(5, 1);
+		} else {
+			shadowlabelsecond.setPreferredSize(preferredSize);
+			propertybuilder.add(shadowlabelsecond).xy(5, 1);
+		}
 		propertybuilder.build();
+	}
+	public JPanel getPanel() {
 		return panel;
 	}
 	public void setPanel(JPanel panel) {
@@ -42,11 +72,15 @@ public class GUIElement {
 	}
 	public void setButton(JButton button) {
 		this.button = button;
+		this.button.setIcon(iiadd);
+		this.button.setPreferredSize(preferredSize);
 	}
 	public JButton getMinusbutton() {
 		return minusbutton;
 	}
 	public void setMinusbutton(JButton minusbutton) {
 		this.minusbutton = minusbutton;
+		this.minusbutton.setIcon(iidel);
+		this.minusbutton.setPreferredSize(preferredSize);
 	}
 }

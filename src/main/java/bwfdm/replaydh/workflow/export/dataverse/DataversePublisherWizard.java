@@ -23,7 +23,6 @@ import static java.util.Objects.requireNonNull;
 import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -43,7 +42,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.swing.BoxLayout;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
@@ -80,6 +79,8 @@ import bwfdm.replaydh.ui.helper.AbstractWizardStep;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
+import bwfdm.replaydh.ui.icons.IconRegistry;
+import bwfdm.replaydh.workflow.export.dataverse.GUIElement;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
 
 /**
@@ -314,9 +315,23 @@ public class DataversePublisherWizard {
 	 * Abstract class for the wizard page
 	 * @author Volodymyr Kushnarenko
 	 */
-	private static abstract class DataversePublisherStep extends AbstractWizardStep<DataversePublisherContext> {
+	private static abstract class DataversePublisherStep extends AbstractWizardStep<DataversePublisherContext> implements ActionListener {
 		protected DataversePublisherStep(String titleKey, String descriptionKey) {
 			super(titleKey, descriptionKey);
+		}
+		protected static List<String> listofkeys = null;
+		protected static Map<String, JPanel> propertypanels = null;
+		protected static Map<String, List<GUIElement>> elementsofproperty = null;
+		protected static FormBuilder builder = null;
+		protected static Map<String, Integer> panelRow = null; 
+		
+		
+		static {
+			listofkeys = new ArrayList<>();
+			propertypanels = new HashMap<>();
+			elementsofproperty = new HashMap<>();
+			builder = FormBuilder.create();
+			panelRow = new HashMap<>();
 		}
 	}
 
@@ -542,6 +557,13 @@ public class DataversePublisherWizard {
 					.build();
 		}
 
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
 	};
 
 
@@ -604,6 +626,12 @@ public class DataversePublisherWizard {
 					.add(collectionsComboBox).xy(1, 3)
 					.add(noAvailableCollectionsMessage).xy(1, 5)
 					.build();
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
 		}
 	};
 
@@ -774,6 +802,12 @@ public class DataversePublisherWizard {
 					.add(messageArea).xyw(1, 5, 3)
 					.build();
 		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 	};
 
 
@@ -783,21 +817,27 @@ public class DataversePublisherWizard {
 	private static final DataversePublisherStep EDIT_METADATA = new DataversePublisherStep(
 			"replaydh.wizard.dataversePublisher.editMetadata.title",
 			"replaydh.wizard.dataversePublisher.editMetadata.description") {
-		private JFormattedTextField tfPublicationYear;
-		private JTextField tfIdentifier;
-		private JTextField tfPublisher;
-		private JTextField tfResourceType;
+		private GUIElement ePublicationYear;
+		private GUIElement eIdentifier;
+		private GUIElement ePublisher;
+		private GUIElement eResourceType;
 		private GUIElement eCreator;
 		private GUIElement eTitle;
 		private GUIElement eDescription;
+		private GUIElement eSubjects;
+		private IconRegistry ir = IconRegistry.getGlobalRegistry();;
+		
+		private final Dimension preferredSize = new Dimension(17,17);
+		private final Icon iidelcomplete = ir.getIcon("edit-clear-2.png");
+		private final Icon iidel = ir.getIcon("list-remove-5.png");
+		private final Icon iiadd = ir.getIcon("list-add.png");
+		private final Icon justremove = ir.getIcon("application-exit-4.png");
+		private final Dimension shadowsize = new Dimension(17,17);
 
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 			
-			//TODO: use it to fill in the text fields with not null values. Should be used later, when we use some metadata-schema
-			MetadataObject mdObject = context.metadataObject;
-
 			// Creator
 			String creator = null; 
 			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
@@ -815,7 +855,7 @@ public class DataversePublisherWizard {
 						
 			// Publication year
 			int year = Calendar.getInstance().get(Calendar.YEAR);
-			tfPublicationYear.setText(String.valueOf(year));
+			ePublicationYear.getTextfield().setText(String.valueOf(year));
 			
 			refreshNextEnabled();
 
@@ -846,15 +886,15 @@ public class DataversePublisherWizard {
 			context.metadataObject.mapDoublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
 
 			// Publication year
-			context.metadataObject.mapDoublinCoreToMetadata.put("issued", tfPublicationYear.getText());
+			context.metadataObject.mapDoublinCoreToMetadata.put("issued", ePublicationYear.getTextfield().getText());
 			context.metadataObject.mapDoublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));
 
 			// Not used (reserved) metadata fields
-			context.metadataObject.mapDoublinCoreToMetadata.put("identifier", tfIdentifier.getText());
+			context.metadataObject.mapDoublinCoreToMetadata.put("identifier", eIdentifier.getTextfield().getText());
 			context.metadataObject.mapDoublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
-			context.metadataObject.mapDoublinCoreToMetadata.put("publisher", tfPublisher.getText());
+			context.metadataObject.mapDoublinCoreToMetadata.put("publisher", ePublisher.getTextfield().getText());
 			context.metadataObject.mapDoublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
-			context.metadataObject.mapDoublinCoreToMetadata.put("type", tfResourceType.getText());
+			context.metadataObject.mapDoublinCoreToMetadata.put("type", eResourceType.getTextfield().getText());
 			context.metadataObject.mapDoublinCoreToLabel.put("type", rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
 
 			return FINISH;
@@ -866,13 +906,8 @@ public class DataversePublisherWizard {
 			nextEnabled &= checkAndUpdateBorder(eCreator.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDescription.getTextfield());
-			nextEnabled &= checkAndUpdateBorder(tfPublicationYear);
+			nextEnabled &= checkAndUpdateBorder(ePublicationYear.getTextfield());
 			
-			// Not used metadata fields
-			/*nextEnabled &= checkAndUpdateBorder(tfIdentifier);
-			nextEnabled &= checkAndUpdateBorder(tfPublisher);
-			nextEnabled &= checkAndUpdateBorder(tfResourceType);*/
-
 			setNextEnabled(nextEnabled);
 		}
 
@@ -885,49 +920,83 @@ public class DataversePublisherWizard {
 
 		@Override
 		protected JPanel createPanel() {
-			
-			//Not used metadata fields
 			JTextArea messageArea;
 
 			DateFormat format;
-			
-			JPanel multiSubjects = new JPanel();
-			JPanel oneSubject = new JPanel();
-			
-			String columns = "fill:pref:grow, 6dlu, pref, 6dlu, pref";
-			String rows = "pref";
-			FormLayout layout = new FormLayout(columns,rows);
-			
-			FormBuilder propertybuilder = FormBuilder.create();
 
 			ResourceManager rm = ResourceManager.getInstance();
-
-			JTextField tfCreator = new JTextField();
-			eCreator = new GUIElement();
-			eCreator.setTextfield(tfCreator);
+			
 			JTextField tfTitle = new JTextField();
 			eTitle = new GUIElement();
 			eTitle.setTextfield(tfTitle);
+			eTitle.create();
+			listofkeys.add("title");
+			
 			JTextField tfDescription = new JTextField();
 			eDescription = new GUIElement();
 			eDescription.setTextfield(tfDescription);
+			eDescription.create();
+			listofkeys.add("description");
+			
+			JTextField tfCreator = new JTextField();
+			eCreator = new GUIElement();
+			eCreator.setTextfield(tfCreator);
+			eCreator.setButton(new JButton());
+			eCreator.getButton().addActionListener(this);
+			eCreator.create();
+			listofkeys.add("creator");
+			List<GUIElement> elementslist = new ArrayList<>();
+			elementslist.add(eCreator);
+			elementsofproperty.put("creator", elementslist);
+			propertypanels.put("creator", elementsofproperty.get("creator").get(0).getPanel());
+			
 			format = new SimpleDateFormat("YYYY");
-			tfPublicationYear = new JFormattedTextField(format);
+			JFormattedTextField tfPublicationYear = new JFormattedTextField(format);
+			ePublicationYear = new GUIElement();
+			ePublicationYear.setTextfield(tfPublicationYear);
 			tfPublicationYear.setToolTipText("YYYY");
+			ePublicationYear.create();
+			listofkeys.add("year");
+			
+			JTextField tfResourceType = new JTextField();
+			eResourceType = new GUIElement();
+			eResourceType.setTextfield(tfResourceType);
+			eResourceType.create();
+			listofkeys.add("resourceType");
+			
+			JTextField tfIdentifier = new JTextField();
+			eIdentifier = new GUIElement();
+			eIdentifier.setTextfield(tfIdentifier);
+			eIdentifier.create();
+			listofkeys.add("identifier");
+			
+			JTextField tfPublisher = new JTextField();
+			ePublisher = new GUIElement();
+			ePublisher.setTextfield(tfPublisher);
+			ePublisher.setButton(new JButton());
+			ePublisher.getButton().addActionListener(this);
+			ePublisher.create();
+			listofkeys.add("publisher");
+			elementslist = new ArrayList<>();
+			elementslist.add(ePublisher);
+			elementsofproperty.put("publisher", elementslist);
+			propertypanels.put("publisher", elementsofproperty.get("publisher").get(0).getPanel());
+			
+			eSubjects = new GUIElement();
+			eSubjects.setTextfield(new JTextField());
+			eSubjects.setButton(new JButton());
+			eSubjects.getButton().addActionListener(this);
+			eSubjects.create();
+			listofkeys.add("subject");
+			elementslist = new ArrayList<>();
+			elementslist.add(eSubjects);
+			elementsofproperty.put("subject", elementslist);
+			propertypanels.put("subject", elementsofproperty.get("subject").get(0).getPanel());
 			
 			GuiUtils.prepareChangeableBorder(tfCreator);
 			GuiUtils.prepareChangeableBorder(tfTitle);
 			GuiUtils.prepareChangeableBorder(tfDescription);
 			GuiUtils.prepareChangeableBorder(tfPublicationYear);
-						
-			// Not used metadata fields
-			tfIdentifier = new JTextField();
-			tfPublisher = new JTextField();
-			tfResourceType = new JTextField();
-			//
-			/*GuiUtils.prepareChangeableBorder(tfIdentifier);
-			GuiUtils.prepareChangeableBorder(tfPublisher);
-			GuiUtils.prepareChangeableBorder(tfResourceType);*/
 			
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
 
@@ -944,48 +1013,224 @@ public class DataversePublisherWizard {
 			tfDescription.getDocument().addDocumentListener(adapter);
 			tfPublicationYear.getDocument().addDocumentListener(adapter);
 			
-			// Not used metadata fields
 			tfIdentifier.getDocument().addDocumentListener(adapter);
 			tfPublisher.getDocument().addDocumentListener(adapter);
 			tfResourceType.getDocument().addDocumentListener(adapter);
 			
-			multiSubjects.setLayout(new BoxLayout(multiSubjects, BoxLayout.PAGE_AXIS));
 			
-			multiSubjects.add(oneSubject);
 			
+			builder.columns("pref, 6dlu, fill:pref:grow");
+			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+			builder.padding(Paddings.DLU4);
+			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"))).xy(1, 1);
+			builder.add(eTitle.getPanel()).xy(3, 1);
+			panelRow.put("title", 1);
+			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"))).xy(1, 3);
+			builder.add(eDescription.getPanel()).xy(3, 3);
+			panelRow.put("description", 3);
+			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"))).xy(1, 5);
+			builder.add(propertypanels.get("creator")).xy(3, 5);
+			panelRow.put("creator", 5);
+			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"))).xy(1, 7);
+			builder.add(ePublicationYear.getPanel()).xy(3, 7);
+			panelRow.put("year", 7);
+			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"))).xy(1, 9);
+			builder.add(eResourceType.getPanel()).xy(3, 9);
+			panelRow.put("resourceType", 9);
+			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"))).xy(1, 11);
+			builder.add(eIdentifier.getPanel()).xy(3, 11);
+			panelRow.put("identifier", 11);
+			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"))).xy(1, 13);
+			builder.add(propertypanels.get("publisher")).xy(3, 13);
+			panelRow.put("publisher", 13);
+			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"))).xy(1, 15);
+			builder.add(propertypanels.get("subject")).xy(3, 15);
+			panelRow.put("subject", 15);
+			//builder.add(messageArea).xyw(1, 17, 3);
+			return builder.build();
+		}
+		
+		public GUIElement createGUIElement() {
+			GUIElement elementToAdd = new GUIElement();
+			JTextField textfield = new JTextField();
+			elementToAdd.setTextfield(textfield);
+			JButton button = new JButton();
+			elementToAdd.setButton(button);
+			JButton minusbutton = new JButton();
+			elementToAdd.setMinusbutton(minusbutton);
+			elementToAdd.create();
+			return elementToAdd;
+		}
+		
+		/**
+		 * Refreshes one JPanel according to the specified metadata property and its position (index) in the main
+		 * panelbuilder (builder)
+		 * @param metadatapropertyname
+		 */
+		public void refreshOnePanel(String metadatapropertyname) {
+			//int index=0;
+
+			String columns="pref";
+			String rows="pref";
+
+
+			FormLayout layout = new FormLayout(columns,rows);
+
+
+			JPanel onepropertypanel = propertypanels.get(metadatapropertyname);
+
+			for(int z=0; z < onepropertypanel.getComponentCount(); z++) {
+				if(onepropertypanel.getComponent(z).getClass().getTypeName().equals("javax.swing.JButton")) {
+					((JButton)onepropertypanel.getComponent(z)).removeActionListener(this);
+				}
+			}
+
+			onepropertypanel.removeAll();
+
+			onepropertypanel.setLayout(layout);
+
+
+
+			JPanel newpropertypanel = new JPanel();
+
+
+			FormBuilder propertybuilder = FormBuilder.create();
 			propertybuilder.columns(columns);
 			propertybuilder.rows(rows);
+
+
+
+			propertybuilder.panel(newpropertypanel);
+
+			propertypanels.put(metadatapropertyname, newpropertypanel);
+			onepropertypanel.removeAll();
+			onepropertypanel.setLayout(layout);
+
+
+
+			int z=0;
 			
-			propertybuilder.panel(oneSubject);
-			
-			oneSubject.setLayout(layout);
-			
-			propertybuilder.add(new JTextField()).xy(1, 1);
-			
+
+
+
+			for(GUIElement oneguielement : elementsofproperty.get(metadatapropertyname)) {
+				
+				propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
+				
+				propertybuilder.appendRows("$lg, pref");
+				
+				z++;
+
+
+				/*JTextField textfield=oneguielement.getTextfield();
+
+
+				propertybuilder.add(textfield).xy(1, (z*2)+1);
+
+				JButton minusbutton=oneguielement.getMinusbutton();
+
+				/*JButton button=oneguielement.getButton();
+
+
+				//if (index == 0) {
+
+					if((elementsofproperty.get(metadatapropertyname).size() == 1) ){
+						JLabel shadowlabelfirst = new JLabel();
+
+						shadowlabelfirst.setPreferredSize(shadowsize);
+
+						button.setName("plus");
+
+						button.setIcon(iiadd);
+
+						propertybuilder.add(shadowlabelfirst).xy(3, (z*2)+1);
+
+						propertybuilder.add(button).xy(5, (z*2)+1);
+
+						button.addActionListener(this);
+					}
+					else if ((elementsofproperty.get(metadatapropertyname).size()) > 1){
+						minusbutton.setPreferredSize(preferredSize);
+						minusbutton.setName("minus");
+
+						minusbutton.setIcon(iidel);
+						minusbutton.setVisible(true);
+						minusbutton.addActionListener(this);
+						propertybuilder.add(minusbutton).xy(3, (z*2)+1);
+
+						button.setPreferredSize(preferredSize);
+						button.setName("plus");
+
+						button.setIcon(iiadd);
+						button.addActionListener(this);
+						
+						propertybuilder.add(button).xy(5, (z*2)+1);
+						button.addActionListener(this);
+
+					}*/
+
+					
+
+
+				/*} else if (index > 0) {
+					minusbutton.setPreferredSize(preferredSize);
+					minusbutton.setName("minus");
+
+					minusbutton.setIcon(iidel);
+					minusbutton.addActionListener(this);
+					propertybuilder.add(minusbutton).xy(5, (z*2)+1);
+
+
+				}*/
+				/*if((index+1) == elementsofproperty.get(metadatapropertyname).size()) {
+					button.setPreferredSize(preferredSize);
+					button.setName("plus");
+
+					button.setIcon(iiadd);
+					button.addActionListener(this);
+
+					propertybuilder.add(button).xy(7, (z*2)+1);
+				}
+
+				index++;
+
+				propertybuilder.appendRows("$lg, pref");
+				z++;*/
+			//}
+			//if (elementsofproperty.get(metadatapropertyname).size() > 1) {
+				//propertybuilder.addSeparator("").xyw(1, ((z*2)+1), 7);
+				//propertybuilder.appendRows("$lg, pref");
+			}
+			//this.setPropertypanels(propertypanels);
+			//this.setElementsofproperty(elementsofproperty);
 			propertybuilder.build();
+			builder.add(new JTextField("Hallo")).xy(3, panelRow.get(metadatapropertyname));
+			Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
+			parentComponent.pack();
 			
-			return FormBuilder.create()
-					.columns("pref, 6dlu, fill:pref:grow")
-					.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref")
-					.padding(Paddings.DLU4)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"))).xy(1, 1)
-					.add(eTitle.getPanel()).xy(3, 1)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"))).xy(1, 3)
-					.add(eDescription.getPanel()).xy(3, 3)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"))).xy(1, 5)
-					.add(eCreator.getPanel()).xy(3, 5)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"))).xy(1, 7)
-					.add(tfPublicationYear).xy(3, 7)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"))).xy(1, 9)
-					.add(tfResourceType).xy(3, 9)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"))).xy(1, 11)
-					.add(tfIdentifier).xy(3, 11)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"))).xy(1, 13)
-					.add(tfPublisher).xy(3, 13)
-					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"))).xy(1, 15)
-					.add(multiSubjects).xy(3, 15)
-					.add(messageArea).xyw(1, 17, 3)
-					.build();
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			Object source = e.getSource();
+			JButton buttonpressed = null;
+			JButton minusbuttonpressed = null;
+			int lastindex;
+			for (String propertyname : listofkeys) {
+				if (elementsofproperty.get(propertyname) != null) {
+					lastindex=elementsofproperty.get(propertyname).size()-1;
+					buttonpressed=elementsofproperty.get(propertyname).get(lastindex).getButton();
+					minusbuttonpressed=elementsofproperty.get(propertyname).get(0).getMinusbutton();
+					if (source == buttonpressed) {
+						if(buttonpressed.getName().toString().equals("plus")) {
+							GUIElement element = createGUIElement();
+							elementsofproperty.get(propertyname).add(element);
+							refreshOnePanel(propertyname);
+						}
+					}
+				}
+			}
 		}
 	};
 
@@ -1085,6 +1330,12 @@ public class DataversePublisherWizard {
 					.add(messageArea).xyw(1, 11, 3)
 					.build();
 		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 	};
 
 
@@ -1100,10 +1351,6 @@ public class DataversePublisherWizard {
 
 	    DirectoryRestrictedFileSystemView(File rootDirectory) {
 	        this.rootDirectories = new File[] {rootDirectory};
-	    }
-
-	    DirectoryRestrictedFileSystemView(File[] rootDirectories) {
-	        this.rootDirectories = rootDirectories;
 	    }
 
 	    @Override
@@ -1146,6 +1393,11 @@ public class DataversePublisherWizard {
 	 * @author Volodymyr Kushnarenko
 	 */
 	private static class PathCellRenderer extends DefaultTableCellRenderer {
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
 
 		@Override
 		public Component getTableCellRendererComponent(
