@@ -42,7 +42,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
@@ -825,15 +824,7 @@ public class DataversePublisherWizard {
 		private GUIElement eTitle;
 		private GUIElement eDescription;
 		private GUIElement eSubjects;
-		private IconRegistry ir = IconRegistry.getGlobalRegistry();;
 		
-		private final Dimension preferredSize = new Dimension(17,17);
-		private final Icon iidelcomplete = ir.getIcon("edit-clear-2.png");
-		private final Icon iidel = ir.getIcon("list-remove-5.png");
-		private final Icon iiadd = ir.getIcon("list-add.png");
-		private final Icon justremove = ir.getIcon("application-exit-4.png");
-		private final Dimension shadowsize = new Dimension(17,17);
-
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
@@ -1036,33 +1027,25 @@ public class DataversePublisherWizard {
 			
 			
 			builder.columns("pref:grow");
-			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 			builder.padding(Paddings.DLU4);
-			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"))).xy(1, 1);
 			builder.add(eTitle.getPanel()).xy(1, 1);
 			panelRow.put("title", 1);
-			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"))).xy(1, 3);
 			builder.add(eDescription.getPanel()).xy(1, 3);
 			panelRow.put("description", 3);
-			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"))).xy(1, 5);
 			builder.add(propertypanels.get("creator")).xy(1, 5);
 			panelRow.put("creator", 5);
-			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"))).xy(1, 7);
 			builder.add(ePublicationYear.getPanel()).xy(1, 7);
 			panelRow.put("year", 7);
-			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"))).xy(1, 9);
 			builder.add(eResourceType.getPanel()).xy(1, 9);
 			panelRow.put("resourceType", 9);
-			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"))).xy(1, 11);
 			builder.add(eIdentifier.getPanel()).xy(1, 11);
 			panelRow.put("identifier", 11);
-			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"))).xy(1, 13);
 			builder.add(propertypanels.get("publisher")).xy(1, 13);
 			panelRow.put("publisher", 13);
-			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"))).xy(1, 15);
 			builder.add(propertypanels.get("subject")).xy(1, 15);
 			panelRow.put("subject", 15);
-			//builder.add(messageArea).xyw(1, 17, 3);
+			builder.add(messageArea).xyw(1, 17, 1);
 			return builder.build();
 		}
 		
@@ -1083,23 +1066,23 @@ public class DataversePublisherWizard {
 		 * panelbuilder (builder)
 		 * @param metadatapropertyname
 		 */
-		public void refreshOnePanel(String metadatapropertyname) {
+		public void addElementToPanel(String metadatapropertyname) {
 			//int index=0;
 
 			String columns="pref:grow";
 			String rows="pref";
+			
+			for(GUIElement oneguielement : elementsofproperty.get(metadatapropertyname)) {
+				oneguielement.getButton().removeActionListener(this);
+			}
 
+			GUIElement element = createGUIElement(metadatapropertyname);
+			elementsofproperty.get(metadatapropertyname).add(element);
 
 			FormLayout layout = new FormLayout(columns,rows);
 
 
 			JPanel onepropertypanel = propertypanels.get(metadatapropertyname);
-
-			for(int z=0; z < onepropertypanel.getComponentCount(); z++) {
-				if(onepropertypanel.getComponent(z).getClass().getTypeName().equals("javax.swing.JButton")) {
-					((JButton)onepropertypanel.getComponent(z)).removeActionListener(this);
-				}
-			}
 
 			onepropertypanel.removeAll();
 
@@ -1125,17 +1108,13 @@ public class DataversePublisherWizard {
 
 
 			int z=0;
-			
-
-
 
 			for(GUIElement oneguielement : elementsofproperty.get(metadatapropertyname)) {
 				
-				oneguielement.getButton().addActionListener(this);
-
 				if (z == 0) {
 					oneguielement.create();
 				}
+				oneguielement.getButton().addActionListener(this);
 				
 				propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
 				
@@ -1144,88 +1123,12 @@ public class DataversePublisherWizard {
 				z++;
 
 
-				/*JTextField textfield=oneguielement.getTextfield();
-
-
-				propertybuilder.add(textfield).xy(1, (z*2)+1);
-
-				JButton minusbutton=oneguielement.getMinusbutton();
-
-				/*JButton button=oneguielement.getButton();
-
-
-				//if (index == 0) {
-
-					if((elementsofproperty.get(metadatapropertyname).size() == 1) ){
-						JLabel shadowlabelfirst = new JLabel();
-
-						shadowlabelfirst.setPreferredSize(shadowsize);
-
-						button.setName("plus");
-
-						button.setIcon(iiadd);
-
-						propertybuilder.add(shadowlabelfirst).xy(3, (z*2)+1);
-
-						propertybuilder.add(button).xy(5, (z*2)+1);
-
-						button.addActionListener(this);
-					}
-					else if ((elementsofproperty.get(metadatapropertyname).size()) > 1){
-						minusbutton.setPreferredSize(preferredSize);
-						minusbutton.setName("minus");
-
-						minusbutton.setIcon(iidel);
-						minusbutton.setVisible(true);
-						minusbutton.addActionListener(this);
-						propertybuilder.add(minusbutton).xy(3, (z*2)+1);
-
-						button.setPreferredSize(preferredSize);
-						button.setName("plus");
-
-						button.setIcon(iiadd);
-						button.addActionListener(this);
-						
-						propertybuilder.add(button).xy(5, (z*2)+1);
-						button.addActionListener(this);
-
-					}*/
-
-					
-
-
-				/*} else if (index > 0) {
-					minusbutton.setPreferredSize(preferredSize);
-					minusbutton.setName("minus");
-
-					minusbutton.setIcon(iidel);
-					minusbutton.addActionListener(this);
-					propertybuilder.add(minusbutton).xy(5, (z*2)+1);
-
-
-				}*/
-				/*if((index+1) == elementsofproperty.get(metadatapropertyname).size()) {
-					button.setPreferredSize(preferredSize);
-					button.setName("plus");
-
-					button.setIcon(iiadd);
-					button.addActionListener(this);
-
-					propertybuilder.add(button).xy(7, (z*2)+1);
-				}
-
-				index++;
-
-				propertybuilder.appendRows("$lg, pref");
-				z++;*/
-			//}
-			//if (elementsofproperty.get(metadatapropertyname).size() > 1) {
-				//propertybuilder.addSeparator("").xyw(1, ((z*2)+1), 7);
-				//propertybuilder.appendRows("$lg, pref");
 			}
-			//this.setPropertypanels(propertypanels);
-			//this.setElementsofproperty(elementsofproperty);
-			//propertybuilder.build();
+			if (elementsofproperty.get(metadatapropertyname).size() > 1) {
+				propertybuilder.addSeparator("").xyw(1, ((z*2)+1), 1);
+				propertybuilder.appendRows("$lg, pref");
+				z++;
+			}
 			builder.add(propertybuilder.build()).xy(1, panelRow.get(metadatapropertyname));
 			Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
 			parentComponent.pack();
@@ -1241,14 +1144,14 @@ public class DataversePublisherWizard {
 			int lastindex;
 			for (String propertyname : listofkeys) {
 				if (elementsofproperty.get(propertyname) != null) {
-					lastindex=elementsofproperty.get(propertyname).size()-1;
-					buttonpressed=elementsofproperty.get(propertyname).get(lastindex).getButton();
-					minusbuttonpressed=elementsofproperty.get(propertyname).get(0).getMinusbutton();
-					if (source == buttonpressed) {
-						if(buttonpressed.getName().toString().equals("plus")) {
-							GUIElement element = createGUIElement(propertyname);
-							elementsofproperty.get(propertyname).add(element);
-							refreshOnePanel(propertyname);
+					for (int buttonNumber = 0; buttonNumber < elementsofproperty.get(propertyname).size(); buttonNumber++) {
+						buttonpressed=elementsofproperty.get(propertyname).get(buttonNumber).getButton();
+						minusbuttonpressed=elementsofproperty.get(propertyname).get(0).getMinusbutton();
+						if (source == buttonpressed) {
+							if(buttonpressed.getName().toString().equals("plus")) {
+								addElementToPanel(propertyname);
+							}
+							break;
 						}
 					}
 				}
