@@ -94,7 +94,7 @@ public class DataversePublisherWizard {
 		@SuppressWarnings("unchecked")
 		Wizard<DataversePublisherContext> wizard = new Wizard<>(
 				parent, ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.title"),
-				environment, /*CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES,*/ EDIT_METADATA, FINISH);
+				environment, CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
 
@@ -828,7 +828,6 @@ public class DataversePublisherWizard {
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
-			
 			// Creator
 			String creator = null; 
 			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
@@ -873,8 +872,10 @@ public class DataversePublisherWizard {
 			context.metadataObject.mapDoublinCoreToLabel.put("description", rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
 
 			// Creator
-			context.metadataObject.mapDoublinCoreToMetadata.put("creator", eCreator.getTextfield().getText());
-			context.metadataObject.mapDoublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
+			for (String property : getValuesOfProperty("creator")) {
+				context.metadataObject.mapDoublinCoreToMetadata.put("creator", property);
+				context.metadataObject.mapDoublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
+			}
 
 			// Publication year
 			context.metadataObject.mapDoublinCoreToMetadata.put("issued", ePublicationYear.getTextfield().getText());
@@ -883,10 +884,18 @@ public class DataversePublisherWizard {
 			// Not used (reserved) metadata fields
 			context.metadataObject.mapDoublinCoreToMetadata.put("identifier", eIdentifier.getTextfield().getText());
 			context.metadataObject.mapDoublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
-			context.metadataObject.mapDoublinCoreToMetadata.put("publisher", ePublisher.getTextfield().getText());
-			context.metadataObject.mapDoublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
+			for (String property : getValuesOfProperty("publisher")) {
+				context.metadataObject.mapDoublinCoreToMetadata.put("publisher", property);
+				context.metadataObject.mapDoublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
+			}
+			
 			context.metadataObject.mapDoublinCoreToMetadata.put("type", eResourceType.getTextfield().getText());
 			context.metadataObject.mapDoublinCoreToLabel.put("type", rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
+			
+			for (String property : getValuesOfProperty("subject")) {
+				context.metadataObject.mapDoublinCoreToMetadata.put("subject", property);
+				context.metadataObject.mapDoublinCoreToLabel.put("subject", rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
+			}
 
 			return FINISH;
 		}
@@ -1130,7 +1139,6 @@ public class DataversePublisherWizard {
 			}
 			if (elementsofproperty.get(metadatapropertyname).size() > 1) {
 				propertybuilder.addSeparator("").xyw(1, ((z*2)+1), 1);
-				propertybuilder.appendRows("$nlg, pref");
 				z++;
 			}
 			builder.add(propertybuilder.build()).xy(1, panelRow.get(metadatapropertyname));
@@ -1143,6 +1151,16 @@ public class DataversePublisherWizard {
 			int lastindex=elementsofproperty.get(metadatapropertyname).size()-1;
 			elementsofproperty.get(metadatapropertyname).remove(lastindex);
 			refreshPanel(metadatapropertyname);
+		}
+		
+		public List<String> getValuesOfProperty(String metadatapropertyname) {
+			List<String> propertyValues = new ArrayList<>();
+			for(GUIElement oneguielement: elementsofproperty.get(metadatapropertyname)) {
+				if (!(oneguielement.getTextfield().getText().equals(""))) {
+					propertyValues.add(oneguielement.getTextfield().getText());
+				}
+			}
+			return propertyValues;
 		}
 
 		@Override
