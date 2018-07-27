@@ -147,7 +147,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 	 *  	   "StatusCode" parameter from the response in case of {@code SwordRequestType.REPLACE} request,
 	 *  	   or {@code null} in case of error
 	 */
-	protected String publishElement(String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, String> metadataMap) {
+	protected String publishElement(String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, List<String>> metadataMap) {
 		
 		// Check if only 1 parameter is used (metadata OR file). 
 		// Multipart is not supported.
@@ -165,8 +165,10 @@ public class DataverseRepository_v4 extends DataverseRepository {
 			// Check if "metadata as a Map"
 			if(metadataMap != null) {
 				EntryPart ep = new EntryPart();
-				for(Map.Entry<String, String> metadataEntry : metadataMap.entrySet()) {
-					ep.addDublinCore(metadataEntry.getKey(), metadataEntry.getValue());
+				for(Map.Entry<String, List<String>> metadataEntry : metadataMap.entrySet()) {
+					for (String property: metadataEntry.getValue()) {
+						ep.addDublinCore(metadataEntry.getKey(), property);
+					}
 				}
 				deposit.setEntryPart(ep);
 			}
@@ -238,7 +240,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		}
 	}
 
-	public String publishMetadata(String collectionURL, File fileFullPath, Map<String, String> metadataMap) {
+	public String publishMetadata(String collectionURL, File fileFullPath, Map<String, List<String>> metadataMap) {
 		String returnValue = null;
 		if ((metadataMap == null) && (fileFullPath != null)) {
 			returnValue = publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
@@ -253,7 +255,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		}
 	}
 
-	public boolean publisNewMetadataAndFile(String collectionURL, File zipFile, File metadataFileXML, Map<String, String> metadataMap) throws IOException, SWORDClientException {
+	public boolean publisNewMetadataAndFile(String collectionURL, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
 		Entry entry = null;
 		String doiId = this.publishMetadata(collectionURL, metadataFileXML, metadataMap);
 		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials),doiId);

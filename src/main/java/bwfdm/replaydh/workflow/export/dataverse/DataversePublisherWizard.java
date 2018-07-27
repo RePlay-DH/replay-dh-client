@@ -153,17 +153,17 @@ public class DataversePublisherWizard {
 
 	public static final class MetadataObject{
 
-		Map<String, String> mapDoublinCoreToMetadata;
-		Map<String, String> mapDoublinCoreToLabel;
+		Map<String, List<String>> mapDublinCoreToMetadata;
+		Map<String, String> mapDublinCoreToLabel;
 
 		/**
 		 * Get map with key=doublin.core, value=metadata.
 		 * <p>
 		 * Should be used for the publication to the repository.
 		 */
-		public Map<String, String> getMapDoublinCoreToMetadata(){
-			if(mapDoublinCoreToMetadata != null){
-				return mapDoublinCoreToMetadata;
+		public Map<String, List<String>> getMapDoublinCoreToMetadata(){
+			if(mapDublinCoreToMetadata != null){
+				return mapDublinCoreToMetadata;
 			} else {
 				return new HashMap<>();
 			}
@@ -174,12 +174,12 @@ public class DataversePublisherWizard {
 		 * <p> 
 		 * Should be used ONLY for the representation of the metadata.
 		 */
-		public Map<String, String> getMapLabelToMetadata(){
+		public Map<String, List<String>> getMapLabelToMetadata(){
 			
-			Map<String, String> metadataMap = new HashMap<>();
-			if((mapDoublinCoreToMetadata != null) && (mapDoublinCoreToLabel != null)) {
-				for(Map.Entry<String, String> entryDoublinCoreToMetadata: mapDoublinCoreToMetadata.entrySet()) {
-					for(Map.Entry<String, String> entryDoublinCoreToLabel: mapDoublinCoreToLabel.entrySet()) {
+			Map<String, List<String>> metadataMap = new HashMap<>();
+			if((mapDublinCoreToMetadata != null) && (mapDublinCoreToLabel != null)) {
+				for(Map.Entry<String, List<String>> entryDoublinCoreToMetadata: mapDublinCoreToMetadata.entrySet()) {
+					for(Map.Entry<String, String> entryDoublinCoreToLabel: mapDublinCoreToLabel.entrySet()) {
 						if(entryDoublinCoreToLabel.getKey().equals(entryDoublinCoreToMetadata.getKey())) {
 							metadataMap.put(entryDoublinCoreToLabel.getValue(), entryDoublinCoreToMetadata.getValue());
 							break;
@@ -857,45 +857,63 @@ public class DataversePublisherWizard {
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 
 			ResourceManager rm = ResourceManager.getInstance();
+			List<String> elements = null;
 
 			// Store metadata
 			context.metadataObject = new MetadataObject();
-			context.metadataObject.mapDoublinCoreToMetadata = new HashMap<>();
-			context.metadataObject.mapDoublinCoreToLabel = new HashMap<>();
+			context.metadataObject.mapDublinCoreToMetadata = new HashMap<>();
+			context.metadataObject.mapDublinCoreToLabel = new HashMap<>();
 
 			// Title
-			context.metadataObject.mapDoublinCoreToMetadata.put("title", eTitle.getTextfield().getText());
-			context.metadataObject.mapDoublinCoreToLabel.put("title", rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"));
+			elements = new ArrayList<>();
+			elements.add(eTitle.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("title", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("title", rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"));
 
 			// Description
-			context.metadataObject.mapDoublinCoreToMetadata.put("description", eDescription.getTextfield().getText());
-			context.metadataObject.mapDoublinCoreToLabel.put("description", rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
+			elements = new ArrayList<>();
+			elements.add(eDescription.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("description", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("description", rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
 
 			// Creator
+			elements = new ArrayList<>();
 			for (String property : getValuesOfProperty("creator")) {
-				context.metadataObject.mapDoublinCoreToMetadata.put("creator", property);
-				context.metadataObject.mapDoublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
+				elements.add(property);
 			}
+			context.metadataObject.mapDublinCoreToMetadata.put("creator", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
 
 			// Publication year
-			context.metadataObject.mapDoublinCoreToMetadata.put("issued", ePublicationYear.getTextfield().getText());
-			context.metadataObject.mapDoublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));
+			elements = new ArrayList<>();
+			elements.add(ePublicationYear.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("issued", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));
 
 			// Not used (reserved) metadata fields
-			context.metadataObject.mapDoublinCoreToMetadata.put("identifier", eIdentifier.getTextfield().getText());
-			context.metadataObject.mapDoublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
+			elements = new ArrayList<>();
+			elements.add(eIdentifier.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("identifier", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
+			
+			elements = new ArrayList<>();
 			for (String property : getValuesOfProperty("publisher")) {
-				context.metadataObject.mapDoublinCoreToMetadata.put("publisher", property);
-				context.metadataObject.mapDoublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
+				elements.add(property);
 			}
+			context.metadataObject.mapDublinCoreToMetadata.put("publisher", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
 			
-			context.metadataObject.mapDoublinCoreToMetadata.put("type", eResourceType.getTextfield().getText());
-			context.metadataObject.mapDoublinCoreToLabel.put("type", rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
+			elements = new ArrayList<>();
+			elements.add(eResourceType.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("type", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("type", rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
 			
+			elements = new ArrayList<>();
 			for (String property : getValuesOfProperty("subject")) {
-				context.metadataObject.mapDoublinCoreToMetadata.put("subject", property);
-				context.metadataObject.mapDoublinCoreToLabel.put("subject", rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
+				elements.add(property);
 			}
+			context.metadataObject.mapDublinCoreToMetadata.put("subject", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("subject", rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
 
 			return FINISH;
 		}
@@ -1246,8 +1264,10 @@ public class DataversePublisherWizard {
 			// Metadata
 			String strMetadata = "";
 			if(context.getMetadataObject() != null) {
-				for(Map.Entry<String, String> entry: context.getMetadataObject().getMapLabelToMetadata().entrySet()) {
-					strMetadata += entry.getKey() + ": " + entry.getValue() + "\n";
+				for(Map.Entry<String, List<String>> entry: context.getMetadataObject().getMapLabelToMetadata().entrySet()) {
+					for (String property : entry.getValue()) {
+						strMetadata += entry.getKey() + ": " + property + "\n";
+					}
 				}
 			}
 			if(!strMetadata.equals("")) {
