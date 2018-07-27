@@ -78,7 +78,6 @@ import bwfdm.replaydh.ui.helper.AbstractWizardStep;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
-import bwfdm.replaydh.ui.icons.IconRegistry;
 import bwfdm.replaydh.workflow.export.dataverse.GUIElement;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
 
@@ -313,6 +312,7 @@ public class DataversePublisherWizard {
 	/**
 	 * Abstract class for the wizard page
 	 * @author Volodymyr Kushnarenko
+	 * @author Florian Fritze
 	 */
 	private static abstract class DataversePublisherStep extends AbstractWizardStep<DataversePublisherContext> implements ActionListener {
 		protected DataversePublisherStep(String titleKey, String descriptionKey) {
@@ -1066,18 +1066,18 @@ public class DataversePublisherWizard {
 		 * panelbuilder (builder)
 		 * @param metadatapropertyname
 		 */
-		public void addElementToPanel(String metadatapropertyname) {
-			//int index=0;
-
+		public void refreshPanel(String metadatapropertyname) {
 			String columns="pref:grow";
 			String rows="pref";
 			
+			int counter=0;
 			for(GUIElement oneguielement : elementsofproperty.get(metadatapropertyname)) {
 				oneguielement.getButton().removeActionListener(this);
+				if (counter > 0) {
+					oneguielement.getMinusbutton().removeActionListener(this);
+				}
+				counter++;
 			}
-
-			GUIElement element = createGUIElement(metadatapropertyname);
-			elementsofproperty.get(metadatapropertyname).add(element);
 
 			FormLayout layout = new FormLayout(columns,rows);
 
@@ -1116,6 +1116,10 @@ public class DataversePublisherWizard {
 				}
 				oneguielement.getButton().addActionListener(this);
 				
+				if (z > 0) {
+					oneguielement.getMinusbutton().addActionListener(this);
+				}
+				
 				propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
 				
 				propertybuilder.appendRows("$nlg, pref");
@@ -1126,13 +1130,19 @@ public class DataversePublisherWizard {
 			}
 			if (elementsofproperty.get(metadatapropertyname).size() > 1) {
 				propertybuilder.addSeparator("").xyw(1, ((z*2)+1), 1);
-				propertybuilder.appendRows("$lg, pref");
+				propertybuilder.appendRows("$nlg, pref");
 				z++;
 			}
 			builder.add(propertybuilder.build()).xy(1, panelRow.get(metadatapropertyname));
 			Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
 			parentComponent.pack();
 			
+		}
+		
+		public void removeElementFromPanel(String metadatapropertyname) {
+			int lastindex=elementsofproperty.get(metadatapropertyname).size()-1;
+			elementsofproperty.get(metadatapropertyname).remove(lastindex);
+			refreshPanel(metadatapropertyname);
 		}
 
 		@Override
@@ -1141,18 +1151,29 @@ public class DataversePublisherWizard {
 			Object source = e.getSource();
 			JButton buttonpressed = null;
 			JButton minusbuttonpressed = null;
-			int lastindex;
+			boolean done=false;
 			for (String propertyname : listofkeys) {
 				if (elementsofproperty.get(propertyname) != null) {
 					for (int buttonNumber = 0; buttonNumber < elementsofproperty.get(propertyname).size(); buttonNumber++) {
 						buttonpressed=elementsofproperty.get(propertyname).get(buttonNumber).getButton();
-						minusbuttonpressed=elementsofproperty.get(propertyname).get(0).getMinusbutton();
+						if (buttonNumber > 0) {
+							minusbuttonpressed=elementsofproperty.get(propertyname).get(buttonNumber).getMinusbutton();
+						}
 						if (source == buttonpressed) {
-							if(buttonpressed.getName().toString().equals("plus")) {
-								addElementToPanel(propertyname);
-							}
+							GUIElement element = createGUIElement(propertyname);
+							elementsofproperty.get(propertyname).add(element);
+							refreshPanel(propertyname);
+							done=true;
 							break;
 						}
+						if (source == minusbuttonpressed) {
+							removeElementFromPanel(propertyname);
+							done=true;
+							break;
+						}
+					}
+					if (done == true) {
+						break;
 					}
 				}
 			}
