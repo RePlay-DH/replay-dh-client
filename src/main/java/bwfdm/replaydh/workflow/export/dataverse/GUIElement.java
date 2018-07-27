@@ -16,9 +16,10 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
 public class GUIElement {
 	
 	private FormBuilder propertybuilder = FormBuilder.create();
-	private static final String columns = "fill:pref:grow, 3dlu, pref, 3dlu, pref";
+	private static final String columns = "pref, 6dlu, pref:grow, 3dlu, pref, 3dlu, pref";
 	private static final String rows = "pref";
 	private JTextField textfield = new JTextField();
+	private JLabel label = new JLabel();
 	private JButton button = null;
 	private JButton minusbutton = null;
 	private JPanel panel = new JPanel();
@@ -38,22 +39,22 @@ public class GUIElement {
 		propertybuilder.rows(rows);
 		propertybuilder.panel(panel);
 		panel.setLayout(layout);
-		propertybuilder.add(textfield).xy(1, 1);
+		propertybuilder.add(label).xy(1, 1);
+		propertybuilder.add(textfield).xy(3, 1);
 		if(minusbutton != null) {
 			minusbutton.setName("minus");
-			propertybuilder.add(minusbutton).xy(3, 1);
+			propertybuilder.add(minusbutton).xy(5, 1);
 		} else {
 			shadowlabelfirst.setPreferredSize(preferredSize);
-			propertybuilder.add(shadowlabelfirst).xy(3, 1);
+			propertybuilder.add(shadowlabelfirst).xy(5, 1);
 		}
 		if(button != null) {
 			button.setName("plus");
-			propertybuilder.add(button).xy(5, 1);
+			propertybuilder.add(button).xy(7, 1);
 		} else {
 			shadowlabelsecond.setPreferredSize(preferredSize);
-			propertybuilder.add(shadowlabelsecond).xy(5, 1);
+			propertybuilder.add(shadowlabelsecond).xy(7, 1);
 		}
-		propertybuilder.build();
 	}
 	public JPanel getPanel() {
 		return panel;
@@ -82,5 +83,11 @@ public class GUIElement {
 		this.minusbutton = minusbutton;
 		this.minusbutton.setIcon(iidel);
 		this.minusbutton.setPreferredSize(preferredSize);
+	}
+	public JLabel getLabel() {
+		return label;
+	}
+	public void setLabel(JLabel label) {
+		this.label = label;
 	}
 }

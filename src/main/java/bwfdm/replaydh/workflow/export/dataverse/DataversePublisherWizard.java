@@ -96,7 +96,7 @@ public class DataversePublisherWizard {
 		@SuppressWarnings("unchecked")
 		Wizard<DataversePublisherContext> wizard = new Wizard<>(
 				parent, ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.title"),
-				environment, CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
+				environment, /*CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES,*/ EDIT_METADATA, FINISH);
 		return wizard;
 	}
 
@@ -927,20 +927,26 @@ public class DataversePublisherWizard {
 			ResourceManager rm = ResourceManager.getInstance();
 			
 			JTextField tfTitle = new JTextField();
+			JLabel lTitle = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"));
 			eTitle = new GUIElement();
 			eTitle.setTextfield(tfTitle);
+			eTitle.setLabel(lTitle);
 			eTitle.create();
 			listofkeys.add("title");
 			
 			JTextField tfDescription = new JTextField();
+			JLabel lDescription = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
 			eDescription = new GUIElement();
 			eDescription.setTextfield(tfDescription);
+			eDescription.setLabel(lDescription);
 			eDescription.create();
 			listofkeys.add("description");
 			
 			JTextField tfCreator = new JTextField();
+			JLabel lCreator = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
 			eCreator = new GUIElement();
 			eCreator.setTextfield(tfCreator);
+			eCreator.setLabel(lCreator);
 			eCreator.setButton(new JButton());
 			eCreator.getButton().addActionListener(this);
 			eCreator.create();
@@ -952,27 +958,35 @@ public class DataversePublisherWizard {
 			
 			format = new SimpleDateFormat("YYYY");
 			JFormattedTextField tfPublicationYear = new JFormattedTextField(format);
+			JLabel lPubYear = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));
 			ePublicationYear = new GUIElement();
 			ePublicationYear.setTextfield(tfPublicationYear);
+			ePublicationYear.setLabel(lPubYear);
 			tfPublicationYear.setToolTipText("YYYY");
 			ePublicationYear.create();
 			listofkeys.add("year");
 			
 			JTextField tfResourceType = new JTextField();
+			JLabel lResourceType = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
 			eResourceType = new GUIElement();
 			eResourceType.setTextfield(tfResourceType);
+			eResourceType.setLabel(lResourceType);
 			eResourceType.create();
 			listofkeys.add("resourceType");
 			
 			JTextField tfIdentifier = new JTextField();
+			JLabel lIdentifier = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
 			eIdentifier = new GUIElement();
 			eIdentifier.setTextfield(tfIdentifier);
+			eIdentifier.setLabel(lIdentifier);
 			eIdentifier.create();
 			listofkeys.add("identifier");
 			
 			JTextField tfPublisher = new JTextField();
+			JLabel lPublisher = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
 			ePublisher = new GUIElement();
 			ePublisher.setTextfield(tfPublisher);
+			ePublisher.setLabel(lPublisher);
 			ePublisher.setButton(new JButton());
 			ePublisher.getButton().addActionListener(this);
 			ePublisher.create();
@@ -982,8 +996,10 @@ public class DataversePublisherWizard {
 			elementsofproperty.put("publisher", elementslist);
 			propertypanels.put("publisher", elementsofproperty.get("publisher").get(0).getPanel());
 			
+			JLabel lSubjects = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
 			eSubjects = new GUIElement();
 			eSubjects.setTextfield(new JTextField());
+			eSubjects.setLabel(lSubjects);
 			eSubjects.setButton(new JButton());
 			eSubjects.getButton().addActionListener(this);
 			eSubjects.create();
@@ -1019,38 +1035,38 @@ public class DataversePublisherWizard {
 			
 			
 			
-			builder.columns("pref, 6dlu, fill:pref:grow");
-			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+			builder.columns("pref:grow");
+			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 			builder.padding(Paddings.DLU4);
-			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"))).xy(1, 1);
-			builder.add(eTitle.getPanel()).xy(3, 1);
+			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"))).xy(1, 1);
+			builder.add(eTitle.getPanel()).xy(1, 1);
 			panelRow.put("title", 1);
-			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"))).xy(1, 3);
-			builder.add(eDescription.getPanel()).xy(3, 3);
+			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"))).xy(1, 3);
+			builder.add(eDescription.getPanel()).xy(1, 3);
 			panelRow.put("description", 3);
-			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"))).xy(1, 5);
-			builder.add(propertypanels.get("creator")).xy(3, 5);
+			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"))).xy(1, 5);
+			builder.add(propertypanels.get("creator")).xy(1, 5);
 			panelRow.put("creator", 5);
-			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"))).xy(1, 7);
-			builder.add(ePublicationYear.getPanel()).xy(3, 7);
+			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"))).xy(1, 7);
+			builder.add(ePublicationYear.getPanel()).xy(1, 7);
 			panelRow.put("year", 7);
-			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"))).xy(1, 9);
-			builder.add(eResourceType.getPanel()).xy(3, 9);
+			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"))).xy(1, 9);
+			builder.add(eResourceType.getPanel()).xy(1, 9);
 			panelRow.put("resourceType", 9);
-			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"))).xy(1, 11);
-			builder.add(eIdentifier.getPanel()).xy(3, 11);
+			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"))).xy(1, 11);
+			builder.add(eIdentifier.getPanel()).xy(1, 11);
 			panelRow.put("identifier", 11);
-			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"))).xy(1, 13);
-			builder.add(propertypanels.get("publisher")).xy(3, 13);
+			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"))).xy(1, 13);
+			builder.add(propertypanels.get("publisher")).xy(1, 13);
 			panelRow.put("publisher", 13);
-			builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"))).xy(1, 15);
-			builder.add(propertypanels.get("subject")).xy(3, 15);
+			//builder.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"))).xy(1, 15);
+			builder.add(propertypanels.get("subject")).xy(1, 15);
 			panelRow.put("subject", 15);
 			//builder.add(messageArea).xyw(1, 17, 3);
 			return builder.build();
 		}
 		
-		public GUIElement createGUIElement() {
+		public GUIElement createGUIElement(String metadataproperty) {
 			GUIElement elementToAdd = new GUIElement();
 			JTextField textfield = new JTextField();
 			elementToAdd.setTextfield(textfield);
@@ -1070,7 +1086,7 @@ public class DataversePublisherWizard {
 		public void refreshOnePanel(String metadatapropertyname) {
 			//int index=0;
 
-			String columns="pref";
+			String columns="pref:grow";
 			String rows="pref";
 
 
@@ -1115,9 +1131,15 @@ public class DataversePublisherWizard {
 
 			for(GUIElement oneguielement : elementsofproperty.get(metadatapropertyname)) {
 				
+				oneguielement.getButton().addActionListener(this);
+
+				if (z == 0) {
+					oneguielement.create();
+				}
+				
 				propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
 				
-				propertybuilder.appendRows("$lg, pref");
+				propertybuilder.appendRows("$nlg, pref");
 				
 				z++;
 
@@ -1203,8 +1225,8 @@ public class DataversePublisherWizard {
 			}
 			//this.setPropertypanels(propertypanels);
 			//this.setElementsofproperty(elementsofproperty);
-			propertybuilder.build();
-			builder.add(new JTextField("Hallo")).xy(3, panelRow.get(metadatapropertyname));
+			//propertybuilder.build();
+			builder.add(propertybuilder.build()).xy(1, panelRow.get(metadatapropertyname));
 			Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
 			parentComponent.pack();
 			
@@ -1224,7 +1246,7 @@ public class DataversePublisherWizard {
 					minusbuttonpressed=elementsofproperty.get(propertyname).get(0).getMinusbutton();
 					if (source == buttonpressed) {
 						if(buttonpressed.getName().toString().equals("plus")) {
-							GUIElement element = createGUIElement();
+							GUIElement element = createGUIElement(propertyname);
 							elementsofproperty.get(propertyname).add(element);
 							refreshOnePanel(propertyname);
 						}
