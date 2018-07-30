@@ -824,6 +824,11 @@ public class DataversePublisherWizard {
 		private GUIElement eTitle;
 		private GUIElement eDescription;
 		private GUIElement eSubjects;
+		private GUIElement eVersion;
+		private GUIElement eReference;
+		//private GUIElement eLanguage;
+		//private GUIElement eLicense;
+		private GUIElement eRights;
 		
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
@@ -914,6 +919,31 @@ public class DataversePublisherWizard {
 			}
 			context.metadataObject.mapDublinCoreToMetadata.put("subject", elements);
 			context.metadataObject.mapDublinCoreToLabel.put("subject", rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
+			
+			elements = new ArrayList<>();
+			elements.add(eVersion.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("hasVersion", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("hasVersion", rm.get("replaydh.wizard.dataversePublisher.editMetadata.versionLabel"));
+			
+			elements = new ArrayList<>();
+			elements.add(eReference.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("isReferencedBy", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("isReferencedBy", rm.get("replaydh.wizard.dataversePublisher.editMetadata.isReferencedByLabel"));
+			
+			/*elements = new ArrayList<>();
+			elements.add(eLanguage.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("language", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("language", rm.get("replaydh.wizard.dataversePublisher.editMetadata.LanguageLabel"));
+			
+			elements = new ArrayList<>();
+			elements.add(eLicense.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("license", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("license", rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));*/
+			
+			elements = new ArrayList<>();
+			elements.add(eRights.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("rights", elements);
+			context.metadataObject.mapDublinCoreToLabel.put("rights", rm.get("replaydh.wizard.dataversePublisher.editMetadata.RightsLabel"));
 
 			return FINISH;
 		}
@@ -1014,9 +1044,10 @@ public class DataversePublisherWizard {
 			elementsofproperty.put("publisher", elementslist);
 			propertypanels.put("publisher", elementsofproperty.get("publisher").get(0).getPanel());
 			
+			JTextField tfSubjects = new JTextField();
 			JLabel lSubjects = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
 			eSubjects = new GUIElement();
-			eSubjects.setTextfield(new JTextField());
+			eSubjects.setTextfield(tfSubjects);
 			eSubjects.setLabel(lSubjects);
 			eSubjects.setButton(new JButton());
 			eSubjects.getButton().addActionListener(this);
@@ -1026,6 +1057,46 @@ public class DataversePublisherWizard {
 			elementslist.add(eSubjects);
 			elementsofproperty.put("subject", elementslist);
 			propertypanels.put("subject", elementsofproperty.get("subject").get(0).getPanel());
+			
+			JTextField tfVersion = new JTextField();
+			JLabel lversion = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.versionLabel"));
+			eVersion = new GUIElement();
+			eVersion.setTextfield(tfVersion);
+			eVersion.setLabel(lversion);
+			eVersion.create();
+			listofkeys.add("version");
+			
+			JTextField tfReference = new JTextField();
+			JLabel lreference = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.isReferencedByLabel"));
+			eReference = new GUIElement();
+			eReference.setTextfield(tfReference);
+			eReference.setLabel(lreference);
+			eReference.create();
+			listofkeys.add("reference");
+			
+			/*JTextField tfLanguage = new JTextField();
+			JLabel lLanguage = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.LanguageLabel"));
+			eLanguage = new GUIElement();
+			eLanguage.setTextfield(tfLanguage);
+			eLanguage.setLabel(lLanguage);
+			eLanguage.create();
+			listofkeys.add("language");
+			
+			JTextField tfLicense = new JTextField();
+			JLabel lLicense = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));
+			eLicense = new GUIElement();
+			eLicense.setTextfield(tfLicense);
+			eLicense.setLabel(lLicense);
+			eLicense.create();
+			listofkeys.add("license");*/
+			
+			JTextField tfRights = new JTextField();
+			JLabel lRights = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.RightsLabel"));
+			eRights = new GUIElement();
+			eRights.setTextfield(tfRights);
+			eRights.setLabel(lRights);
+			eRights.create();
+			listofkeys.add("rights");
 			
 			GuiUtils.prepareChangeableBorder(tfCreator);
 			GuiUtils.prepareChangeableBorder(tfTitle);
@@ -1054,7 +1125,7 @@ public class DataversePublisherWizard {
 			
 			
 			builder.columns("pref:grow");
-			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 			builder.padding(Paddings.DLU4);
 			builder.add(eTitle.getPanel()).xy(1, 1);
 			panelRow.put("title", 1);
@@ -1072,7 +1143,17 @@ public class DataversePublisherWizard {
 			panelRow.put("publisher", 13);
 			builder.add(propertypanels.get("subject")).xy(1, 15);
 			panelRow.put("subject", 15);
-			builder.add(messageArea).xyw(1, 17, 1);
+			builder.add(eVersion.getPanel()).xy(1, 17);
+			panelRow.put("version", 17);
+			builder.add(eReference.getPanel()).xy(1, 19);
+			panelRow.put("reference", 19);
+			/*builder.add(eLanguage.getPanel()).xy(1, 21);
+			panelRow.put("reference", 21);
+			builder.add(eLicense.getPanel()).xy(1, 23);
+			panelRow.put("license", 23);*/
+			builder.add(eRights.getPanel()).xy(1, 21);
+			panelRow.put("rights", 21);
+			builder.add(messageArea).xyw(1, 23, 1);
 			return builder.build();
 		}
 		
@@ -1265,9 +1346,14 @@ public class DataversePublisherWizard {
 			String strMetadata = "";
 			if(context.getMetadataObject() != null) {
 				for(Map.Entry<String, List<String>> entry: context.getMetadataObject().getMapLabelToMetadata().entrySet()) {
+					strMetadata += entry.getKey() + ": ";
 					for (String property : entry.getValue()) {
-						strMetadata += entry.getKey() + ": " + property + "\n";
+						strMetadata += property + ", ";
 					}
+					if (strMetadata.substring(strMetadata.length()-2, strMetadata.length()).equals(", ")) {
+						strMetadata=strMetadata.substring(0, strMetadata.length()-2);
+					}
+					strMetadata += "\n";
 				}
 			}
 			if(!strMetadata.equals("")) {
