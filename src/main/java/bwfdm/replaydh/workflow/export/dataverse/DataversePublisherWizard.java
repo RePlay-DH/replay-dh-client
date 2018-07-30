@@ -94,7 +94,7 @@ public class DataversePublisherWizard {
 		@SuppressWarnings("unchecked")
 		Wizard<DataversePublisherContext> wizard = new Wizard<>(
 				parent, ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.title"),
-				environment, /*CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES,*/ EDIT_METADATA, FINISH);
+				environment, CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
 
