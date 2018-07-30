@@ -1300,7 +1300,10 @@ public class DataversePublisherWizard {
 				}
 			}
 			if (source == resetButton.getResetButton()) {
-				
+				builder.getPanel().removeAll();
+				createPanel();
+				Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
+				parentComponent.pack();
 			}
 		}
 	};
