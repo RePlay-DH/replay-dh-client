@@ -22,11 +22,13 @@ public class GUIElement {
 	private JLabel label = new JLabel();
 	private JButton button = null;
 	private JButton minusbutton = null;
+	private JButton resetButton = null;
 	private JPanel panel = new JPanel();
 	private static final FormLayout layout = new FormLayout(columns,rows);
 	private static final JLabel shadowlabelfirst = new JLabel();
 	private static final JLabel shadowlabelsecond = new JLabel();
 	private static final Dimension preferredSize = new Dimension(17,17);
+	private Dimension buttonSize = textfield.getPreferredSize();
 	
 	private final static IconRegistry ir = IconRegistry.getGlobalRegistry();
 	
@@ -55,6 +57,22 @@ public class GUIElement {
 			shadowlabelsecond.setPreferredSize(preferredSize);
 			propertybuilder.add(shadowlabelsecond).xy(7, 1);
 		}
+	}
+	
+	public void createResetButton(String resetLabel) {
+		propertybuilder.columns(columns);
+		propertybuilder.rows(rows);
+		propertybuilder.panel(panel);
+		panel.setLayout(layout);
+		label.setVisible(false);
+		resetButton = new JButton(resetLabel);
+		resetButton.setPreferredSize(buttonSize);
+		propertybuilder.add(label).xy(1, 1);
+		propertybuilder.add(resetButton).xy(3, 1);
+		shadowlabelfirst.setPreferredSize(preferredSize);
+		propertybuilder.add(shadowlabelfirst).xy(5, 1);
+		shadowlabelsecond.setPreferredSize(preferredSize);
+		propertybuilder.add(shadowlabelsecond).xy(7, 1);
 	}
 	public JPanel getPanel() {
 		return panel;
@@ -89,5 +107,12 @@ public class GUIElement {
 	}
 	public void setLabel(JLabel label) {
 		this.label = label;
+	}
+	public JButton getResetButton() {
+		return resetButton;
+	}
+
+	public void setResetButton(JButton resetButton) {
+		this.resetButton = resetButton;
 	}
 }

@@ -94,7 +94,7 @@ public class DataversePublisherWizard {
 		@SuppressWarnings("unchecked")
 		Wizard<DataversePublisherContext> wizard = new Wizard<>(
 				parent, ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.title"),
-				environment, CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
+				environment, /*CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES,*/ EDIT_METADATA, FINISH);
 		return wizard;
 	}
 
@@ -829,6 +829,7 @@ public class DataversePublisherWizard {
 		//private GUIElement eLanguage;
 		//private GUIElement eLicense;
 		private GUIElement eRights;
+		private GUIElement resetButton;
 		
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
@@ -1098,6 +1099,10 @@ public class DataversePublisherWizard {
 			eRights.create();
 			listofkeys.add("rights");
 			
+			resetButton = new GUIElement();
+			resetButton.createResetButton(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
+			resetButton.getResetButton().addActionListener(this);
+			
 			GuiUtils.prepareChangeableBorder(tfCreator);
 			GuiUtils.prepareChangeableBorder(tfTitle);
 			GuiUtils.prepareChangeableBorder(tfDescription);
@@ -1125,7 +1130,7 @@ public class DataversePublisherWizard {
 			
 			
 			builder.columns("pref:grow");
-			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 			builder.padding(Paddings.DLU4);
 			builder.add(eTitle.getPanel()).xy(1, 1);
 			panelRow.put("title", 1);
@@ -1153,7 +1158,8 @@ public class DataversePublisherWizard {
 			panelRow.put("license", 23);*/
 			builder.add(eRights.getPanel()).xy(1, 21);
 			panelRow.put("rights", 21);
-			builder.add(messageArea).xyw(1, 23, 1);
+			builder.add(resetButton.getPanel()).xy(1, 23);
+			builder.add(messageArea).xyw(1, 25, 1);
 			return builder.build();
 		}
 		
@@ -1246,9 +1252,8 @@ public class DataversePublisherWizard {
 			
 		}
 		
-		public void removeElementFromPanel(String metadatapropertyname) {
-			int lastindex=elementsofproperty.get(metadatapropertyname).size()-1;
-			elementsofproperty.get(metadatapropertyname).remove(lastindex);
+		public void removeElementFromPanel(String metadatapropertyname, int buttonNumber) {
+			elementsofproperty.get(metadatapropertyname).remove(buttonNumber);
 			refreshPanel(metadatapropertyname);
 		}
 		
@@ -1284,7 +1289,7 @@ public class DataversePublisherWizard {
 							break;
 						}
 						if (source == minusbuttonpressed) {
-							removeElementFromPanel(propertyname);
+							removeElementFromPanel(propertyname,buttonNumber);
 							done=true;
 							break;
 						}
@@ -1293,6 +1298,9 @@ public class DataversePublisherWizard {
 						break;
 					}
 				}
+			}
+			if (source == resetButton.getResetButton()) {
+				
 			}
 		}
 	};
