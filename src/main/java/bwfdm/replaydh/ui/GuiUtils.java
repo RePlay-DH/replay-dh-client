@@ -52,6 +52,7 @@ import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -100,6 +101,7 @@ import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Editor;
 import bwfdm.replaydh.ui.helper.EditorControl;
 import bwfdm.replaydh.ui.icons.Resolution;
+import bwfdm.replaydh.utils.Mutable;
 import bwfdm.replaydh.utils.xml.HtmlUtils;
 
 /**
@@ -187,6 +189,29 @@ public class GuiUtils {
 				throw new RDHException("Failed to switch execution to EDT", t);
 			}
 		}
+	}
+
+	public static <T extends Object> T invokeEDTAndWait(Supplier<T> task) {
+		if(SwingUtilities.isEventDispatchThread()) {
+			return task.get();
+		} else {
+			try {
+				final Mutable<T> result = new Mutable.MutableObject<>();
+				SwingUtilities.invokeAndWait(() -> result.set(task.get()));
+				return result.get();
+			} catch (InvocationTargetException | InterruptedException e) {
+				Throwable t = e;
+				if(t instanceof InvocationTargetException) {
+					t = e.getCause();
+				}
+				throw new RDHException("Failed to switch execution to EDT", t);
+			}
+		}
+	}
+
+	public static <T extends Object, R extends Object> R invokeEDTAndWait(Function<T,R> task, T input) {
+		Supplier<R> wrapper = () -> task.apply(input);
+		return invokeEDTAndWait(wrapper);
 	}
 
 	/**

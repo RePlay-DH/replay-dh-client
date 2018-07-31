@@ -188,7 +188,7 @@ public class RDHGui extends AbstractRDHTool {
 		RDHEnvironment environment = getEnvironment();
 
 		return environment.getProperty(RDHProperty.CLIENT_USERNAME)==null
-				|| environment.getBoolean(RDHProperty.INTERN_FORCE_WELCOME_DIALOG, false);
+				|| environment.getBoolean(RDHProperty.INTERN_FORCE_WELCOME_DIALOG);
 	}
 
 	private void rebuildPreviousWorkspace() {
