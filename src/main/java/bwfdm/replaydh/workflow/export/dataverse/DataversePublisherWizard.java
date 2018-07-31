@@ -1219,7 +1219,7 @@ public class DataversePublisherWizard {
 			onepropertypanel.removeAll();
 			onepropertypanel.setLayout(layout);
 
-
+			int numberOfElements=elementsofproperty.get(metadatapropertyname).size();
 
 			int z=0;
 
@@ -1236,7 +1236,9 @@ public class DataversePublisherWizard {
 				
 				propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
 				
-				propertybuilder.appendRows("$nlg, pref");
+				if (numberOfElements > 1) {
+					propertybuilder.appendRows("$nlg, pref");
+				}
 				
 				z++;
 
