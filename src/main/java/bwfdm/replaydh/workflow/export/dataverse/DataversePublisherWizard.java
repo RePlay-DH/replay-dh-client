@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.workflow.export.dataverse;
@@ -78,7 +78,6 @@ import bwfdm.replaydh.ui.helper.AbstractWizardStep;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
-import bwfdm.replaydh.workflow.export.dataverse.GUIElement;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
 
 /**
@@ -111,7 +110,7 @@ public class DataversePublisherWizard {
 		private String serviceDocumentURL;
 		private String collectionURL;
 		private Map<String, String> availableCollections;
-		
+
 		private List<File> filesToPublish;
 		private DataverseRepository_v4 publicationRepository;
 		private MetadataObject metadataObject;
@@ -168,14 +167,14 @@ public class DataversePublisherWizard {
 				return new HashMap<>();
 			}
 		}
-		
+
 		/**
 		 * Get map with key=label, value=metadata.
-		 * <p> 
+		 * <p>
 		 * Should be used ONLY for the representation of the metadata.
 		 */
 		public Map<String, List<String>> getMapLabelToMetadata(){
-			
+
 			Map<String, List<String>> metadataMap = new HashMap<>();
 			if((mapDublinCoreToMetadata != null) && (mapDublinCoreToLabel != null)) {
 				for(Map.Entry<String, List<String>> entryDoublinCoreToMetadata: mapDublinCoreToMetadata.entrySet()) {
@@ -259,7 +258,7 @@ public class DataversePublisherWizard {
 //	 * e.g.:
 //	 * worker.execute();
 //	 * new Thread(new BackgroundTimer<Boolean, Object>(worker, timeOut)).start();
-//   *	
+//   *
 //	 * @author vk
 //	 *
 //	 * @param <T> the first parameter of SwingWorker
@@ -335,10 +334,10 @@ public class DataversePublisherWizard {
 
 		private String serviceDocumentURL;
 		private boolean loginOK;
-		
+
 		private boolean swordOK;
 		private boolean collectionsAvailable;
-		
+
 		private long timeOut = 2; //in seconds
 
 		private Map<String, String> availableCollections;
@@ -405,7 +404,7 @@ public class DataversePublisherWizard {
 			context.availableCollections = availableCollections;
 			context.publicationRepository = publicationRepository;
 			context.repositoryURL = getCorrectedURL(tfUrl.getText());
-			
+
 			return CHOOSE_COLLECTION;
 		}
 
@@ -422,7 +421,7 @@ public class DataversePublisherWizard {
 				setNextEnabled(false); 		//disable "next" button
 			}
 		};
-				
+
 		private boolean checkAndUpdateBorder(JTextField tf) {
 			boolean isValid = (tf.getText().trim()!=null) && (!tf.getText().trim().isEmpty()); // do not store "getText()" result in extra variable because of the password
 			GuiUtils.toggleChangeableBorder(tf, !isValid);
@@ -441,19 +440,19 @@ public class DataversePublisherWizard {
 			tfUrl.setEditable(true);	//make the URL not editable for test reasons.
 										//But wizard is already available to check the URL automatically
 										//and provide messages in case of error
-			
+
 			pAPIkey = new JPasswordField();
-			
+
 			GuiUtils.prepareChangeableBorder(tfUrl);
 			GuiUtils.prepareChangeableBorder(pAPIkey);
-			
+
 			GuiUtils.toggleChangeableBorder(tfUrl, true);
 			GuiUtils.toggleChangeableBorder(pAPIkey, true);
 
 			statusMessage = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.pleaseLoginMessage"));
 
 			DocumentAdapter adapter = new DocumentAdapter() {
-				
+
 				@Override
 				public void anyUpdate(DocumentEvent e) {
 
@@ -461,10 +460,10 @@ public class DataversePublisherWizard {
 					setNextEnabled(false);
 					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.pleaseLoginMessage"));
 
-					boolean loginButtonEnabled = true;					
+					boolean loginButtonEnabled = true;
 					loginButtonEnabled &= checkAndUpdateBorder(tfUrl);
-					loginButtonEnabled &= checkAndUpdateBorder(pAPIkey);					
-					
+					loginButtonEnabled &= checkAndUpdateBorder(pAPIkey);
+
 					checkLoginButton.setEnabled(loginButtonEnabled);
 				}
 			};
@@ -546,7 +545,7 @@ public class DataversePublisherWizard {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			// TODO Auto-generated method stub
-			
+
 		}
 
 	};
@@ -585,7 +584,7 @@ public class DataversePublisherWizard {
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 			// Store collection url
 			context.collectionURL = ((CollectionEntry)collectionsComboBox.getSelectedItem()).getEntry().getKey();
-			
+
 			return CHOOSE_FILES;
 		}
 
@@ -616,7 +615,7 @@ public class DataversePublisherWizard {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			// TODO Auto-generated method stub
-			
+
 		}
 	};
 
@@ -791,7 +790,7 @@ public class DataversePublisherWizard {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			// TODO Auto-generated method stub
-			
+
 		}
 	};
 
@@ -816,35 +815,35 @@ public class DataversePublisherWizard {
 		//private GUIElement eLicense;
 		private GUIElement eRights;
 		private GUIElement resetButton;
-		
-		private List<String> listofkeys = null;
-		private Map<String, JPanel> propertypanels = null;
-		private Map<String, List<GUIElement>> elementsofproperty = null;
-		private FormBuilder builder = null;
-		private Map<String, Integer> panelRow = null; 
-		
+
+		private List<String> listofkeys;
+		private Map<String, JPanel> propertypanels;
+		private Map<String, List<GUIElement>> elementsofproperty;
+		private FormBuilder builder;
+		private Map<String, Integer> panelRow;
+
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 			// Creator
-			String creator = null; 
+			String creator = null;
 			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
 				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
 			}
 			eCreator.getTextfield().setText(creator);
 
 			//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
-			
+
 			// Title
 			eTitle.getTextfield().setText(context.exportInfo.getWorkflow().getTitle());
 
 			// Description
 			eDescription.getTextfield().setText(context.exportInfo.getWorkflow().getDescription());
-						
+
 			// Publication year
 			int year = Calendar.getInstance().get(Calendar.YEAR);
 			ePublicationYear.getTextfield().setText(String.valueOf(year));
-			
+
 			refreshNextEnabled();
 
 			//TODO: remove previous metadata when the page is opened again. Now previous metadata is kept. Se todo with mdObject above
@@ -893,46 +892,46 @@ public class DataversePublisherWizard {
 			elements.add(eIdentifier.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("identifier", elements);
 			context.metadataObject.mapDublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
-			
+
 			elements = new ArrayList<>();
 			for (String property : getValuesOfProperty("publisher")) {
 				elements.add(property);
 			}
 			context.metadataObject.mapDublinCoreToMetadata.put("publisher", elements);
 			context.metadataObject.mapDublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
-			
+
 			elements = new ArrayList<>();
 			elements.add(eResourceType.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("type", elements);
 			context.metadataObject.mapDublinCoreToLabel.put("type", rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
-			
+
 			elements = new ArrayList<>();
 			for (String property : getValuesOfProperty("subject")) {
 				elements.add(property);
 			}
 			context.metadataObject.mapDublinCoreToMetadata.put("subject", elements);
 			context.metadataObject.mapDublinCoreToLabel.put("subject", rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
-			
+
 			elements = new ArrayList<>();
 			elements.add(eVersion.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("hasVersion", elements);
 			context.metadataObject.mapDublinCoreToLabel.put("hasVersion", rm.get("replaydh.wizard.dataversePublisher.editMetadata.versionLabel"));
-			
+
 			elements = new ArrayList<>();
 			elements.add(eReference.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("isReferencedBy", elements);
 			context.metadataObject.mapDublinCoreToLabel.put("isReferencedBy", rm.get("replaydh.wizard.dataversePublisher.editMetadata.isReferencedByLabel"));
-			
+
 			/*elements = new ArrayList<>();
 			elements.add(eLanguage.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("language", elements);
 			context.metadataObject.mapDublinCoreToLabel.put("language", rm.get("replaydh.wizard.dataversePublisher.editMetadata.LanguageLabel"));
-			
+
 			elements = new ArrayList<>();
 			elements.add(eLicense.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("license", elements);
 			context.metadataObject.mapDublinCoreToLabel.put("license", rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));*/
-			
+
 			elements = new ArrayList<>();
 			elements.add(eRights.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("rights", elements);
@@ -948,7 +947,7 @@ public class DataversePublisherWizard {
 			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDescription.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(ePublicationYear.getTextfield());
-			
+
 			setNextEnabled(nextEnabled);
 		}
 
@@ -966,14 +965,14 @@ public class DataversePublisherWizard {
 			elementsofproperty = new HashMap<>();
 			builder = FormBuilder.create();
 			panelRow = new HashMap<>();
-			
-			
+
+
 			JTextArea messageArea;
 
 			DateFormat format;
 
 			ResourceManager rm = ResourceManager.getInstance();
-			
+
 			JTextField tfTitle = new JTextField();
 			JLabel lTitle = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"));
 			eTitle = new GUIElement();
@@ -981,7 +980,7 @@ public class DataversePublisherWizard {
 			eTitle.setLabel(lTitle);
 			eTitle.create();
 			listofkeys.add("title");
-			
+
 			JTextField tfDescription = new JTextField();
 			JLabel lDescription = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
 			eDescription = new GUIElement();
@@ -989,7 +988,7 @@ public class DataversePublisherWizard {
 			eDescription.setLabel(lDescription);
 			eDescription.create();
 			listofkeys.add("description");
-			
+
 			JTextField tfCreator = new JTextField();
 			JLabel lCreator = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
 			eCreator = new GUIElement();
@@ -1003,7 +1002,7 @@ public class DataversePublisherWizard {
 			elementslist.add(eCreator);
 			elementsofproperty.put("creator", elementslist);
 			propertypanels.put("creator", elementsofproperty.get("creator").get(0).getPanel());
-			
+
 			format = new SimpleDateFormat("YYYY");
 			JFormattedTextField tfPublicationYear = new JFormattedTextField(format);
 			JLabel lPubYear = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));
@@ -1013,7 +1012,7 @@ public class DataversePublisherWizard {
 			tfPublicationYear.setToolTipText("YYYY");
 			ePublicationYear.create();
 			listofkeys.add("year");
-			
+
 			JTextField tfResourceType = new JTextField();
 			JLabel lResourceType = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
 			eResourceType = new GUIElement();
@@ -1021,7 +1020,7 @@ public class DataversePublisherWizard {
 			eResourceType.setLabel(lResourceType);
 			eResourceType.create();
 			listofkeys.add("resourceType");
-			
+
 			JTextField tfIdentifier = new JTextField();
 			JLabel lIdentifier = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
 			eIdentifier = new GUIElement();
@@ -1029,7 +1028,7 @@ public class DataversePublisherWizard {
 			eIdentifier.setLabel(lIdentifier);
 			eIdentifier.create();
 			listofkeys.add("identifier");
-			
+
 			JTextField tfPublisher = new JTextField();
 			JLabel lPublisher = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
 			ePublisher = new GUIElement();
@@ -1043,7 +1042,7 @@ public class DataversePublisherWizard {
 			elementslist.add(ePublisher);
 			elementsofproperty.put("publisher", elementslist);
 			propertypanels.put("publisher", elementsofproperty.get("publisher").get(0).getPanel());
-			
+
 			JTextField tfSubjects = new JTextField();
 			JLabel lSubjects = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
 			eSubjects = new GUIElement();
@@ -1057,7 +1056,7 @@ public class DataversePublisherWizard {
 			elementslist.add(eSubjects);
 			elementsofproperty.put("subject", elementslist);
 			propertypanels.put("subject", elementsofproperty.get("subject").get(0).getPanel());
-			
+
 			JTextField tfVersion = new JTextField();
 			JLabel lversion = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.versionLabel"));
 			eVersion = new GUIElement();
@@ -1065,7 +1064,7 @@ public class DataversePublisherWizard {
 			eVersion.setLabel(lversion);
 			eVersion.create();
 			listofkeys.add("version");
-			
+
 			JTextField tfReference = new JTextField();
 			JLabel lreference = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.isReferencedByLabel"));
 			eReference = new GUIElement();
@@ -1073,7 +1072,7 @@ public class DataversePublisherWizard {
 			eReference.setLabel(lreference);
 			eReference.create();
 			listofkeys.add("reference");
-			
+
 			/*JTextField tfLanguage = new JTextField();
 			JLabel lLanguage = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.LanguageLabel"));
 			eLanguage = new GUIElement();
@@ -1081,7 +1080,7 @@ public class DataversePublisherWizard {
 			eLanguage.setLabel(lLanguage);
 			eLanguage.create();
 			listofkeys.add("language");
-			
+
 			JTextField tfLicense = new JTextField();
 			JLabel lLicense = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));
 			eLicense = new GUIElement();
@@ -1089,7 +1088,7 @@ public class DataversePublisherWizard {
 			eLicense.setLabel(lLicense);
 			eLicense.create();
 			listofkeys.add("license");*/
-			
+
 			JTextField tfRights = new JTextField();
 			JLabel lRights = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.RightsLabel"));
 			eRights = new GUIElement();
@@ -1097,16 +1096,16 @@ public class DataversePublisherWizard {
 			eRights.setLabel(lRights);
 			eRights.create();
 			listofkeys.add("rights");
-			
+
 			resetButton = new GUIElement();
 			resetButton.createResetButton(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
 			resetButton.getResetButton().addActionListener(this);
-			
+
 			GuiUtils.prepareChangeableBorder(tfCreator);
 			GuiUtils.prepareChangeableBorder(tfTitle);
 			GuiUtils.prepareChangeableBorder(tfDescription);
 			GuiUtils.prepareChangeableBorder(tfPublicationYear);
-			
+
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
 
 
@@ -1121,13 +1120,13 @@ public class DataversePublisherWizard {
 			tfTitle.getDocument().addDocumentListener(adapter);
 			tfDescription.getDocument().addDocumentListener(adapter);
 			tfPublicationYear.getDocument().addDocumentListener(adapter);
-			
+
 			tfIdentifier.getDocument().addDocumentListener(adapter);
 			tfPublisher.getDocument().addDocumentListener(adapter);
 			tfResourceType.getDocument().addDocumentListener(adapter);
-			
-			
-			
+
+
+
 			builder.columns("pref:grow");
 			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 			builder.padding(Paddings.DLU4);
@@ -1161,7 +1160,7 @@ public class DataversePublisherWizard {
 			builder.add(messageArea).xyw(1, 25, 1);
 			return builder.build();
 		}
-		
+
 		public GUIElement createGUIElement(String metadataproperty) {
 			GUIElement elementToAdd = new GUIElement();
 			JTextField textfield = new JTextField();
@@ -1173,7 +1172,7 @@ public class DataversePublisherWizard {
 			elementToAdd.create();
 			return elementToAdd;
 		}
-		
+
 		/**
 		 * Refreshes one JPanel according to the specified metadata property and its position (index) in the main
 		 * panelbuilder (builder)
@@ -1182,7 +1181,7 @@ public class DataversePublisherWizard {
 		public void refreshPanel(String metadatapropertyname) {
 			String columns="pref:grow";
 			String rows="pref";
-			
+
 			int counter=0;
 			for(GUIElement oneguielement : elementsofproperty.get(metadatapropertyname)) {
 				oneguielement.getButton().removeActionListener(this);
@@ -1223,22 +1222,22 @@ public class DataversePublisherWizard {
 			int z=0;
 
 			for(GUIElement oneguielement : elementsofproperty.get(metadatapropertyname)) {
-				
+
 				if (z == 0) {
 					oneguielement.create();
 				}
 				oneguielement.getButton().addActionListener(this);
-				
+
 				if (z > 0) {
 					oneguielement.getMinusbutton().addActionListener(this);
 				}
-				
+
 				propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
-				
+
 				if (numberOfElements > 1) {
 					propertybuilder.appendRows("$nlg, pref");
 				}
-				
+
 				z++;
 
 
@@ -1250,14 +1249,14 @@ public class DataversePublisherWizard {
 			builder.add(propertybuilder.build()).xy(1, panelRow.get(metadatapropertyname));
 			Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
 			parentComponent.pack();
-			
+
 		}
-		
+
 		public void removeElementFromPanel(String metadatapropertyname, int buttonNumber) {
 			elementsofproperty.get(metadatapropertyname).remove(buttonNumber);
 			refreshPanel(metadatapropertyname);
 		}
-		
+
 		public List<String> getValuesOfProperty(String metadatapropertyname) {
 			List<String> propertyValues = new ArrayList<>();
 			for(GUIElement oneguielement: elementsofproperty.get(metadatapropertyname)) {
@@ -1416,7 +1415,7 @@ public class DataversePublisherWizard {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			// TODO Auto-generated method stub
-			
+
 		}
 	};
 
@@ -1477,7 +1476,7 @@ public class DataversePublisherWizard {
 	private static class PathCellRenderer extends DefaultTableCellRenderer {
 
 		/**
-		 * 
+		 *
 		 */
 		private static final long serialVersionUID = 1L;
 
@@ -1497,7 +1496,7 @@ public class DataversePublisherWizard {
 	    		//fileName = fileName.substring(workspacePath.length() + 1); // "+1" to remove the separator ('/')
 	    		Path pathAbsolute = Paths.get(fileName);
 	    		Path pathBase = Paths.get(workspacePath);
-	    		fileName = pathBase.relativize(pathAbsolute).toString();	    		
+	    		fileName = pathBase.relativize(pathAbsolute).toString();
 	    	}
 
 	    	label.setText(fileName);
