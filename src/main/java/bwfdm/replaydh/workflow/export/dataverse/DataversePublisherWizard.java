@@ -1183,6 +1183,21 @@ public class DataversePublisherWizard {
 			return builder.build();
 		}
 		
+		public void clearGUI() {
+			ePublicationYear.getTextfield().setText("");
+			eIdentifier.getTextfield().setText("");
+			ePublisher.getTextfield().setText("");
+			eResourceType.getTextfield().setText("");
+			eCreator.getTextfield().setText("");
+			eTitle.getTextfield().setText("");
+			eDescription.getTextfield().setText("");
+			eSubjects.getTextfield().setText("");
+			eVersion.getTextfield().setText("");
+			eReference.getTextfield().setText("");
+			eLicense.getTextfield().setText("");
+			eRights.getTextfield().setText("");
+		}
+		
 		public void createGUI() {
 			
 			if (publisherslist == null) {
@@ -1386,6 +1401,7 @@ public class DataversePublisherWizard {
 			if (source == resetButton.getResetButton()) {
 				builder.getPanel().removeAll();
 				createGUI();
+				clearGUI();
 				Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
 				parentComponent.pack();
 			}
