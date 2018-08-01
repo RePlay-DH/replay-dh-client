@@ -94,7 +94,7 @@ public class DataversePublisherWizard {
 		@SuppressWarnings("unchecked")
 		Wizard<DataversePublisherContext> wizard = new Wizard<>(
 				parent, ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.title"),
-				environment, CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
+				environment, /*CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES,*/ EDIT_METADATA, FINISH);
 		return wizard;
 	}
 
@@ -317,20 +317,6 @@ public class DataversePublisherWizard {
 	private static abstract class DataversePublisherStep extends AbstractWizardStep<DataversePublisherContext> implements ActionListener {
 		protected DataversePublisherStep(String titleKey, String descriptionKey) {
 			super(titleKey, descriptionKey);
-		}
-		protected static List<String> listofkeys = null;
-		protected static Map<String, JPanel> propertypanels = null;
-		protected static Map<String, List<GUIElement>> elementsofproperty = null;
-		protected static FormBuilder builder = null;
-		protected static Map<String, Integer> panelRow = null; 
-		
-		
-		static {
-			listofkeys = new ArrayList<>();
-			propertypanels = new HashMap<>();
-			elementsofproperty = new HashMap<>();
-			builder = FormBuilder.create();
-			panelRow = new HashMap<>();
 		}
 	}
 
@@ -831,6 +817,12 @@ public class DataversePublisherWizard {
 		private GUIElement eRights;
 		private GUIElement resetButton;
 		
+		private List<String> listofkeys = null;
+		private Map<String, JPanel> propertypanels = null;
+		private Map<String, List<GUIElement>> elementsofproperty = null;
+		private FormBuilder builder = null;
+		private Map<String, Integer> panelRow = null; 
+		
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
@@ -969,6 +961,13 @@ public class DataversePublisherWizard {
 
 		@Override
 		protected JPanel createPanel() {
+			listofkeys = new ArrayList<>();
+			propertypanels = new HashMap<>();
+			elementsofproperty = new HashMap<>();
+			builder = FormBuilder.create();
+			panelRow = new HashMap<>();
+			
+			
 			JTextArea messageArea;
 
 			DateFormat format;
