@@ -141,8 +141,9 @@ public class DataversePublisher implements ResourcePublisher {
 	}
 	
 	/**
-	 * Dialog with the worker to publish "files+metadata" or only "metadata" to DSpace
+	 * Dialog with the worker to publish "files+metadata" or only "metadata" to Dataverse
 	 * @author Volodymyr Kushnarenko
+	 * @author Florian Fritze
 	 */
 	public class DataversePublisherWorker extends AbstractDialogWorker<Boolean, Object> {
 		
