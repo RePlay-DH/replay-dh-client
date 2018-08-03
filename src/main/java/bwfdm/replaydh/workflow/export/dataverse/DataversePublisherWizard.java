@@ -48,7 +48,6 @@ import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTable;
@@ -343,6 +342,7 @@ public class DataversePublisherWizard {
 		private JButton checkLoginButton;
 		private JTextArea statusMessage;
 		private JButton openRepositoryButton;
+		private JButton resetButton;
 
 		private String serviceDocumentURL;
 		private boolean loginOK;
@@ -416,6 +416,7 @@ public class DataversePublisherWizard {
 			context.availableCollections = availableCollections;
 			context.publicationRepository = publicationRepository;
 			context.repositoryURL = getCorrectedURL(tfUrl.getText());
+			environment.setProperty(RDHProperty.DATAVERSE_REPOSITORY_URL, context.repositoryURL);
 
 			return CHOOSE_COLLECTION;
 		}
@@ -483,7 +484,10 @@ public class DataversePublisherWizard {
 			// Check any update:
 			tfUrl.getDocument().addDocumentListener(adapter);
 			pAPIkey.getDocument().addDocumentListener(adapter);
-
+			
+			// Reset Button
+			resetButton = new JButton(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.ResetButton"));
+			resetButton.addActionListener(this);
 
 			// Login button
 			checkLoginButton = new JButton(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.loginButton"));
@@ -548,8 +552,9 @@ public class DataversePublisherWizard {
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.apikey"))).xy(1, 3)
 					.add(pAPIkey).xy(3, 3)
 					.add(checkLoginButton).xy(3, 5)
+					.add(resetButton).xy(3, 7)
 					//.add(openRepositoryButton).xy(3, 7)
-					.add(statusMessage).xyw(1, 9, 3)
+					.add(statusMessage).xyw(1, 11, 3)
 					.build();
 		}
 
@@ -557,7 +562,11 @@ public class DataversePublisherWizard {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			// TODO Auto-generated method stub
-
+			Object source = e.getSource();
+			if (source == resetButton) {
+				tfUrl.setText("");
+				pAPIkey.setText("");
+			}
 		}
 
 	};
@@ -823,7 +832,6 @@ public class DataversePublisherWizard {
 		private GUIElement eSubjects;
 		private GUIElement eVersion;
 		private GUIElement eReference;
-		//private GUIElement eLanguage;
 		private GUIElement eLicense;
 		private GUIElement eRights;
 		private GUIElement eDate;
@@ -1221,6 +1229,7 @@ public class DataversePublisherWizard {
 			tfResourceType.getDocument().addDocumentListener(adapter);
 
 			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
+			processMetadata.setSelected(true);
 
 			builder.columns("pref:grow");
 			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
@@ -1483,7 +1492,10 @@ public class DataversePublisherWizard {
 		private JTextArea choosenCollectionArea;
 		private JTextArea choosenFilesArea;
 		private JTextArea metadataArea;
+		private JTextArea metadataNotice;
 		private JTextArea messageArea;
+		
+		private ResourceManager rm = ResourceManager.getInstance();
 
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
@@ -1534,6 +1546,12 @@ public class DataversePublisherWizard {
 				strMetadata = ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.finish.noDataMessage");
 			}
 			metadataArea.setText(strMetadata);
+			
+			if (context.isExportProcessMetadataAllowed()) {
+				metadataNotice.setText(rm.get("replaydh.wizard.dataversePublisher.finish.processMetadata"));
+			} else {
+				metadataNotice.setText("");
+			}
 
 			// Info message
 			messageArea.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.finish.infoMessage"));
@@ -1550,16 +1568,16 @@ public class DataversePublisherWizard {
 			ResourceManager rm = ResourceManager.getInstance();
 
 			repositoryUrlArea = GuiUtils.createTextArea("");
-			GuiUtils.createTextArea("");
 			choosenCollectionArea = GuiUtils.createTextArea("");
 			choosenFilesArea = GuiUtils.createTextArea("");
 			metadataArea = GuiUtils.createTextArea("");
+			metadataNotice = GuiUtils.createTextArea("");
 			messageArea = GuiUtils.createTextArea("");
 
 			//TODO: add separators
 			return FormBuilder.create()
 					.columns("pref, 6dlu, fill:pref:grow")
-					.rows("top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref")
+					.rows("top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref")
 					.padding(Paddings.DLU4)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.urlLabel"))).xy(1, 1)
 					.add(repositoryUrlArea).xy(3, 1)
@@ -1569,7 +1587,8 @@ public class DataversePublisherWizard {
 					.add(choosenFilesArea).xy(3, 5)
 					.add(new JLabel(rm.get("replaydh.wizard.dataversePublisher.finish.metadataLabel"))).xy(1, 7)
 					.add(metadataArea).xy(3, 7)
-					.add(messageArea).xyw(1, 11, 3)
+					.add(metadataNotice).xy(3, 9)
+					.add(messageArea).xyw(1, 13, 3)
 					.build();
 		}
 
