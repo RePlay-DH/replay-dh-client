@@ -159,16 +159,16 @@ public class DataversePublisher implements ResourcePublisher {
 			switch (messageType) {
 			case RUNNING:
 				log.info("DataversePublisherWorker: running");
-				return rm.get("replaydh.dialogs.dspacePublication.message");
+				return rm.get("replaydh.dialogs.dataversePublication.message");
 			case CANCELLED:
 				log.info("DataversePublisherWorker: cancelled");
-				return rm.get("replaydh.dialogs.dspacePublication.publicationCancelled");
+				return rm.get("replaydh.dialogs.dataversePublication.publicationCancelled");
 			case FAILED:
 				log.error("DataversePublisherWorker: failed", t);
-				return rm.get("replaydh.dialogs.dspacePublication.publicationFailed", t.getMessage());
+				return rm.get("replaydh.dialogs.dataversePublication.publicationFailed", t.getMessage());
 			case FINISHED:
 				log.info("DataversePublisherWorker: finished OK");
-				return rm.get("replaydh.dialogs.dspacePublication.publicationDone");
+				return rm.get("replaydh.dialogs.dataversePublication.publicationDone");
 
 			default:
 				throw new IllegalArgumentException("Unknown message type: " + messageType);

@@ -825,6 +825,8 @@ public class DataversePublisherWizard {
 		//private GUIElement eLanguage;
 		private GUIElement eLicense;
 		private GUIElement eRights;
+		private GUIElement eDate;
+		private GUIElement eSources;
 		private GUIElement resetButton;
 		private JTextArea messageArea;
 		private JCheckBox processMetadata;
@@ -832,6 +834,7 @@ public class DataversePublisherWizard {
 		private List<GUIElement> creatorslist;
 		private List<GUIElement> publisherslist;
 		private List<GUIElement> subjectslist;
+		private List<GUIElement> sourceslist;
 		private List<String> listofkeys;
 		private Map<String, JPanel> propertypanels;
 		private Map<String, List<GUIElement>> elementsofproperty;
@@ -851,6 +854,8 @@ public class DataversePublisherWizard {
 		private List<String> referenceElements;
 		private List<String> licenseElements;
 		private List<String> rightsElements;
+		private List<String> dateElements;
+		private List<String> sourcesElements;
 		
 
 		@Override
@@ -1003,6 +1008,15 @@ public class DataversePublisherWizard {
 			licenseElements.add(eLicense.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("license", licenseElements);
 			context.metadataObject.mapDublinCoreToLabel.put("license", rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));
+			
+			if (dateElements == null) {
+				dateElements = new ArrayList<>();
+			} else {
+				dateElements.clear();
+			}
+			dateElements.add(eDate.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("date", dateElements);
+			context.metadataObject.mapDublinCoreToLabel.put("date", rm.get("replaydh.wizard.dataversePublisher.editMetadata.dateLabel"));
 
 			if (rightsElements == null) {
 				rightsElements = new ArrayList<>();
@@ -1012,6 +1026,18 @@ public class DataversePublisherWizard {
 			rightsElements.add(eRights.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("rights", rightsElements);
 			context.metadataObject.mapDublinCoreToLabel.put("rights", rm.get("replaydh.wizard.dataversePublisher.editMetadata.RightsLabel"));
+			
+			if (sourcesElements == null) {
+				sourcesElements = new ArrayList<>();
+			} else {
+				sourcesElements.clear();
+			}
+			for (String property : getValuesOfProperty("sources")) {
+				sourcesElements.add(property);
+			}
+			sourcesElements.add(eSources.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("sources", sourcesElements);
+			context.metadataObject.mapDublinCoreToLabel.put("sources", rm.get("replaydh.wizard.dataversePublisher.editMetadata.sourcesLabel"));
 			
 			context.setExportProcessMetadataAllowed(processMetadata.isSelected());
 
@@ -1083,6 +1109,14 @@ public class DataversePublisherWizard {
 			tfPublicationYear.setToolTipText("YYYY");
 			ePublicationYear.create();
 			listofkeys.add("year");
+			
+			JTextField tfDate = new JTextField();
+			JLabel lDate = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.dateLabel"));
+			eDate = new GUIElement();
+			eDate.setTextfield(tfDate);
+			eDate.setLabel(lDate);
+			eDate.create();
+			listofkeys.add("date");
 
 			JTextField tfResourceType = new JTextField();
 			JLabel lResourceType = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
@@ -1159,6 +1193,16 @@ public class DataversePublisherWizard {
 			eRights.setLabel(lRights);
 			eRights.create();
 			listofkeys.add("rights");
+			
+			JTextField tfSource = new JTextField();
+			JLabel lSource = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.sourcesLabel"));
+			eSources = new GUIElement();
+			eSources.setTextfield(tfSource);
+			eSources.setLabel(lSource);
+			eSources.setButton(new JButton());
+			eSources.getButton().addActionListener(this);
+			eSources.create();
+			listofkeys.add("sources");
 
 			resetButton = new GUIElement();
 			resetButton.createResetButton(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
@@ -1191,7 +1235,7 @@ public class DataversePublisherWizard {
 			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
 
 			builder.columns("pref:grow");
-			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 			builder.padding(Paddings.DLU4);
 			createGUI();
 			return builder.build();
@@ -1210,6 +1254,8 @@ public class DataversePublisherWizard {
 			eReference.getTextfield().setText("");
 			eLicense.getTextfield().setText("");
 			eRights.getTextfield().setText("");
+			eDate.getTextfield().setText("");
+			eSources.getTextfield().setText("");
 		}
 		
 		public void createGUI() {
@@ -1244,6 +1290,16 @@ public class DataversePublisherWizard {
 			elementsofproperty.put("creator", creatorslist);
 			propertypanels.put("creator", elementsofproperty.get("creator").get(0).getPanel());
 			
+			if (sourceslist == null) {
+				sourceslist = new ArrayList<>();
+			} else {
+				sourceslist.clear();
+			}
+			
+			sourceslist.add(eSources);
+			elementsofproperty.put("sources", sourceslist);
+			propertypanels.put("sources", elementsofproperty.get("sources").get(0).getPanel());
+			
 			builder.add(eTitle.getPanel()).xy(1, 1);
 			panelRow.put("title", 1);
 			builder.add(eDescription.getPanel()).xy(1, 3);
@@ -1252,27 +1308,29 @@ public class DataversePublisherWizard {
 			panelRow.put("creator", 5);
 			builder.add(ePublicationYear.getPanel()).xy(1, 7);
 			panelRow.put("year", 7);
-			builder.add(eResourceType.getPanel()).xy(1, 9);
-			panelRow.put("resourceType", 9);
-			builder.add(eIdentifier.getPanel()).xy(1, 11);
-			panelRow.put("identifier", 11);
-			builder.add(propertypanels.get("publisher")).xy(1, 13);
-			panelRow.put("publisher", 13);
-			builder.add(propertypanels.get("subject")).xy(1, 15);
-			panelRow.put("subject", 15);
-			builder.add(eVersion.getPanel()).xy(1, 17);
-			panelRow.put("version", 17);
-			builder.add(eReference.getPanel()).xy(1, 19);
-			panelRow.put("reference", 19);
-			/*builder.add(eLanguage.getPanel()).xy(1, 21);
-			panelRow.put("reference", 21);*/
-			builder.add(eLicense.getPanel()).xy(1, 21);
-			panelRow.put("license", 21);
-			builder.add(eRights.getPanel()).xy(1, 23);
-			panelRow.put("rights", 23);
-			builder.add(resetButton.getPanel()).xy(1, 25);
-			builder.add(processMetadata).xy(1, 27);
-			builder.add(messageArea).xyw(1, 29, 1);
+			builder.add(eDate.getPanel()).xy(1, 9);
+			panelRow.put("date", 9);
+			builder.add(eResourceType.getPanel()).xy(1, 11);
+			panelRow.put("resourceType", 11);
+			builder.add(eIdentifier.getPanel()).xy(1, 13);
+			panelRow.put("identifier", 13);
+			builder.add(propertypanels.get("publisher")).xy(1, 15);
+			panelRow.put("publisher", 15);
+			builder.add(propertypanels.get("subject")).xy(1, 17);
+			panelRow.put("subject", 17);
+			builder.add(eVersion.getPanel()).xy(1, 19);
+			panelRow.put("version", 19);
+			builder.add(eReference.getPanel()).xy(1, 21);
+			panelRow.put("reference", 21);
+			builder.add(eLicense.getPanel()).xy(1, 23);
+			panelRow.put("license", 23);
+			builder.add(eRights.getPanel()).xy(1, 25);
+			panelRow.put("rights", 25);
+			builder.add(eSources.getPanel()).xy(1, 27);
+			panelRow.put("sources", 27);
+			builder.add(resetButton.getPanel()).xy(1, 29);
+			builder.add(processMetadata).xy(1, 31);
+			builder.add(messageArea).xyw(1, 33, 1);
 		}
 
 		public GUIElement createGUIElement(String metadataproperty) {
