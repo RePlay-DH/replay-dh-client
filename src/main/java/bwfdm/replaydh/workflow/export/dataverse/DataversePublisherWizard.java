@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
@@ -114,6 +115,16 @@ public class DataversePublisherWizard {
 		private List<File> filesToPublish;
 		private DataverseRepository_v4 publicationRepository;
 		private MetadataObject metadataObject;
+		
+		private boolean exportProcessMetadataAllowed;
+
+		public boolean isExportProcessMetadataAllowed() {
+			return exportProcessMetadataAllowed;
+		}
+
+		public void setExportProcessMetadataAllowed(boolean exportProcessMetadata) {
+			this.exportProcessMetadataAllowed = exportProcessMetadata;
+		}
 
 		public DataversePublisherContext(WorkflowExportInfo exportInfo) {
 			this.exportInfo = requireNonNull(exportInfo);
@@ -816,6 +827,7 @@ public class DataversePublisherWizard {
 		private GUIElement eRights;
 		private GUIElement resetButton;
 		private JTextArea messageArea;
+		private JCheckBox processMetadata;
 
 		private List<GUIElement> creatorslist;
 		private List<GUIElement> publisherslist;
@@ -1000,6 +1012,8 @@ public class DataversePublisherWizard {
 			rightsElements.add(eRights.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("rights", rightsElements);
 			context.metadataObject.mapDublinCoreToLabel.put("rights", rm.get("replaydh.wizard.dataversePublisher.editMetadata.RightsLabel"));
+			
+			context.setExportProcessMetadataAllowed(processMetadata.isSelected());
 
 			return FINISH;
 		}
@@ -1174,10 +1188,10 @@ public class DataversePublisherWizard {
 			tfPublisher.getDocument().addDocumentListener(adapter);
 			tfResourceType.getDocument().addDocumentListener(adapter);
 
-
+			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
 
 			builder.columns("pref:grow");
-			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 			builder.padding(Paddings.DLU4);
 			createGUI();
 			return builder.build();
@@ -1257,7 +1271,8 @@ public class DataversePublisherWizard {
 			builder.add(eRights.getPanel()).xy(1, 23);
 			panelRow.put("rights", 23);
 			builder.add(resetButton.getPanel()).xy(1, 25);
-			builder.add(messageArea).xyw(1, 27, 1);
+			builder.add(processMetadata).xy(1, 27);
+			builder.add(messageArea).xyw(1, 29, 1);
 		}
 
 		public GUIElement createGUIElement(String metadataproperty) {

@@ -143,7 +143,7 @@ public class DataversePublisher implements ResourcePublisher {
 		private final DataversePublisherContext context;
 		private final String rdhPrefix = "RePlay-DH_publication_"; //TODO: as property?
 		private boolean finishOK;
-
+		
 		public DataversePublisherWorker(Window owner, DataversePublisherContext context) {
 			super(owner, ResourceManager.getInstance().get("replaydh.dialogs.dataversePublication.title"),
 					CancellationPolicy.CANCEL_INTERRUPT);
@@ -183,6 +183,10 @@ public class DataversePublisher implements ResourcePublisher {
 			
 			DataverseRepository repository = context.getPublicationRepository();
 			boolean result = false;
+			
+			if (context.isExportProcessMetadataAllowed()) {
+				
+			}
 			
 			if(!context.getFilesToPublish().isEmpty()) {
 				
