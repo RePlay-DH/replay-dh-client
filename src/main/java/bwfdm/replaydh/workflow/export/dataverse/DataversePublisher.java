@@ -26,9 +26,13 @@ import java.awt.Window;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 import javax.swing.SwingUtilities;
 
@@ -39,6 +43,8 @@ import org.slf4j.LoggerFactory;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.UserFolder;
 import bwfdm.replaydh.io.IOUtils;
+import bwfdm.replaydh.io.resources.FileResource;
+import bwfdm.replaydh.io.resources.IOResource;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.core.RDHMainPanel;
@@ -46,7 +52,9 @@ import bwfdm.replaydh.ui.helper.AbstractDialogWorker;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.workflow.export.ResourcePublisher;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
+import bwfdm.replaydh.workflow.export.WorkflowExportInfo.Mode;
 import bwfdm.replaydh.workflow.export.dataverse.DataversePublisherWizard.DataversePublisherContext;
+import bwfdm.replaydh.workflow.export.raw.RawMetadataExporter;
 
 /**
  * @author Markus Gärtner
@@ -184,8 +192,21 @@ public class DataversePublisher implements ResourcePublisher {
 			DataverseRepository repository = context.getPublicationRepository();
 			boolean result = false;
 			
+			File tempFile = null;
+			
 			if (context.isExportProcessMetadataAllowed()) {
+				RawMetadataExporter exporter = new RawMetadataExporter();
+				WorkflowExportInfo exportInfo = context.exportInfo;
+				exportInfo.setMode(Mode.FILE);
+				exportInfo.setEncoding(StandardCharsets.UTF_8);
 				
+				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS).toString();//use log folder to store temporary zip-file
+				String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+				tempFile = new File(logFolder + FileSystems.getDefault().getSeparator() +  rdhPrefix + timeStamp + "_ProcessMetadata.json");
+				IOResource outputResource = new FileResource(Paths.get(tempFile.getPath()));
+				
+				exportInfo.setOutputResource(outputResource);
+				exporter.export(exportInfo);
 			}
 			
 			if(!context.getFilesToPublish().isEmpty()) {
@@ -198,8 +219,13 @@ public class DataversePublisher implements ResourcePublisher {
 				String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
 				File zipFile = new File(logFolder + FileSystems.getDefault().getSeparator() +  rdhPrefix + timeStamp + ".zip");
 								
+				List<File> filesList = context.getFilesToPublish();
+				if (context.isExportProcessMetadataAllowed()) {
+					filesList.add(tempFile);
+				}
+				
 				try {
-					IOUtils.packFilesToZip(context.getFilesToPublish(), zipFile, workspacePath);
+					IOUtils.packFilesToZip(filesList, zipFile, workspacePath);
 				} catch (IOException ex) {
 					log.error("Exception by addition of file to zip: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
 				}
@@ -209,12 +235,42 @@ public class DataversePublisher implements ResourcePublisher {
 				
 				// Delete zip-file
 				try {
-					FileUtils.delete(zipFile); 				
+					FileUtils.delete(zipFile); 
+					if (context.isExportProcessMetadataAllowed()) {
+						FileUtils.delete(tempFile);
+					}
 				} catch (Exception ex) {
 					log.error("Exception by deleting the file: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
 				}				
 				
-			} else {
+			} else if (context.isExportProcessMetadataAllowed()) {
+				String workspacePath = context.exportInfo.getEnvironment().getWorkspacePath().toString();
+				//TODO: store tmp zip archive in logs or somewhere else?
+				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS).toString();//use log folder to store temporary zip-file
+				String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+				File zipFile = new File(logFolder + FileSystems.getDefault().getSeparator() +  rdhPrefix + timeStamp + ".zip");
+								
+				List<File> filesList = new ArrayList<>();
+				filesList.add(tempFile);
+				
+				try {
+					IOUtils.packFilesToZip(filesList, zipFile, workspacePath);
+				} catch (IOException ex) {
+					log.error("Exception by addition of file to zip: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
+				}
+				
+				// Start publication process
+				result = repository.publisNewMetadataAndFile(context.getCollectionURL(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				
+				// Delete zip-file
+				try {
+					FileUtils.delete(zipFile); 
+					FileUtils.delete(tempFile);
+				} catch (Exception ex) {
+					log.error("Exception by deleting the file: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
+				}
+			}
+				else {
 				
 				// Publication: metadata only
 				

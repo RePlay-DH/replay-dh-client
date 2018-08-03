@@ -1221,7 +1221,6 @@ public class DataversePublisherWizard {
 			tfResourceType.getDocument().addDocumentListener(adapter);
 
 			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
-			processMetadata.addActionListener(this);
 
 			builder.columns("pref:grow");
 			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
@@ -1466,10 +1465,6 @@ public class DataversePublisherWizard {
 				clearGUI();
 				Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
 				parentComponent.pack();
-			}
-			if ((source == processMetadata) && (processMetadata.isSelected())) {
-				JOptionPane.showMessageDialog(this.getPageComponent(), "This feature is currently not implemented.");
-				processMetadata.setSelected(false);
 			}
 		}
 	};

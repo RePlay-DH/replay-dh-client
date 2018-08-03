@@ -62,6 +62,10 @@ public class WorkflowExportInfo {
 	private WorkflowScope workflowScope;
 	private ObjectScope objectScope;
 	private Mode mode;
+	public void setMode(Mode mode) {
+		this.mode = mode;
+	}
+
 	private Type type;
 
 	private Workflow workflow;
@@ -71,9 +75,17 @@ public class WorkflowExportInfo {
 	private ResourceProvider resourceProvider;
 	private IOResource outputResource;
 
+	public void setOutputResource(IOResource outputResource) {
+		this.outputResource = outputResource;
+	}
+
 	private Set<Resource> resources;
 
 	private Charset encoding;
+
+	public void setEncoding(Charset encoding) {
+		this.encoding = encoding;
+	}
 
 	private final Options options = new Options();
 
