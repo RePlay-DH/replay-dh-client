@@ -48,6 +48,7 @@ import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTable;
@@ -995,11 +996,6 @@ public class DataversePublisherWizard {
 			context.metadataObject.mapDublinCoreToMetadata.put("isReferencedBy", referenceElements);
 			context.metadataObject.mapDublinCoreToLabel.put("isReferencedBy", rm.get("replaydh.wizard.dataversePublisher.editMetadata.isReferencedByLabel"));
 
-			/*elements = new ArrayList<>();
-			elements.add(eLanguage.getTextfield().getText());
-			context.metadataObject.mapDublinCoreToMetadata.put("language", elements);
-			context.metadataObject.mapDublinCoreToLabel.put("language", rm.get("replaydh.wizard.dataversePublisher.editMetadata.LanguageLabel"));*/
-
 			if (licenseElements == null) {
 				licenseElements = new ArrayList<>();
 			} else {
@@ -1170,14 +1166,6 @@ public class DataversePublisherWizard {
 			eReference.create();
 			listofkeys.add("reference");
 
-			/*JTextField tfLanguage = new JTextField();
-			JLabel lLanguage = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.LanguageLabel"));
-			eLanguage = new GUIElement();
-			eLanguage.setTextfield(tfLanguage);
-			eLanguage.setLabel(lLanguage);
-			eLanguage.create();
-			listofkeys.add("language");*/
-
 			JTextField tfLicense = new JTextField("NONE");
 			JLabel lLicense = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));
 			eLicense = new GUIElement();
@@ -1233,6 +1221,7 @@ public class DataversePublisherWizard {
 			tfResourceType.getDocument().addDocumentListener(adapter);
 
 			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
+			processMetadata.addActionListener(this);
 
 			builder.columns("pref:grow");
 			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
@@ -1477,6 +1466,10 @@ public class DataversePublisherWizard {
 				clearGUI();
 				Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
 				parentComponent.pack();
+			}
+			if ((source == processMetadata) && (processMetadata.isSelected())) {
+				JOptionPane.showMessageDialog(this.getPageComponent(), "This feature is currently not implemented.");
+				processMetadata.setSelected(false);
 			}
 		}
 	};
