@@ -38,8 +38,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -96,7 +94,7 @@ public class DataversePublisherWizard {
 		@SuppressWarnings("unchecked")
 		Wizard<DataversePublisherContext> wizard = new Wizard<>(
 				parent, ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.title"),
-				environment, CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_DATASET_FOR_METADATA_REPLACEMENT, CHOOSE_FILES, EDIT_METADATA, FINISH);
+				environment, CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_DATASET, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
 
@@ -123,6 +121,10 @@ public class DataversePublisherWizard {
 		private boolean exportProcessMetadataAllowed;
 		
 		private String chosenDataset;
+
+		public String getChosenDataset() {
+			return chosenDataset;
+		}
 
 		public boolean isExportProcessMetadataAllowed() {
 			return exportProcessMetadataAllowed;
@@ -303,27 +305,6 @@ public class DataversePublisherWizard {
 //			}
 //		}
 //	}
-
-	/**
-	 * Representation of the collection of <String, String> in the ComboBox
-	 * @author vk
-	 */
-	private static class CollectionEntry{
-
-		private Map.Entry<String, String> entry;
-		protected CollectionEntry(Map.Entry<String, String> entry) {
-			this.entry = entry;
-		}
-
-		public Map.Entry<String, String> getEntry() {
-			return entry;
-		}
-
-		@Override
-		public String toString() {
-			return entry.getValue();
-		}
-	}
 
 	/**
 	 * Abstract class for the wizard page
@@ -586,8 +567,9 @@ public class DataversePublisherWizard {
 			"replaydh.wizard.dataversePublisher.chooseCollection.title",
 			"replaydh.wizard.dataversePublisher.chooseCollection.description") {
 
-		private JComboBox<CollectionEntry> collectionsComboBox;
+		private JComboBox<String> collectionsComboBox;
 		private JTextArea noAvailableCollectionsMessage;
+		private CollectionEntry collectionEntries;
 
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
@@ -595,8 +577,10 @@ public class DataversePublisherWizard {
 
 			// Update combobox with collections
 			collectionsComboBox.removeAllItems();
-			for(Map.Entry<String, String> entry: context.getAvailableCollections().entrySet()) {
-				collectionsComboBox.addItem(new CollectionEntry(entry));
+			collectionEntries = new CollectionEntry(context.getAvailableCollections().entrySet());
+			
+			for(String value: collectionEntries.getValues()) {
+				collectionsComboBox.addItem(value);
 			}
 
 			// Display the error message if there are no collections available
@@ -610,15 +594,15 @@ public class DataversePublisherWizard {
 		@Override
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 			// Store collection url
-			context.collectionURL = ((CollectionEntry)collectionsComboBox.getSelectedItem()).getEntry().getKey();
+			context.collectionURL = collectionEntries.getKey(collectionsComboBox.getSelectedItem().toString());
 
-			return CHOOSE_DATASET_FOR_METADATA_REPLACEMENT;
+			return CHOOSE_DATASET;
 		}
 
 		@Override
 		protected JPanel createPanel() {
 
-			collectionsComboBox = new JComboBox<CollectionEntry>();
+			collectionsComboBox = new JComboBox<String>();
 			collectionsComboBox.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -650,19 +634,19 @@ public class DataversePublisherWizard {
 	/**
 	 * Showing all the files in a chosen collection
 	 */
-	private static final DataversePublisherStep CHOOSE_DATASET_FOR_METADATA_REPLACEMENT = new DataversePublisherStep(
+	private static final DataversePublisherStep CHOOSE_DATASET = new DataversePublisherStep(
 			"replaydh.wizard.dataversePublisher.chooseDataset.title",
 			"replaydh.wizard.dataversePublisher.chooseDataset.description") {
 
 		private JComboBox<String> collectionsComboBox;
 		private JTextArea noAvailableCollectionsMessage;
 		
+		private CollectionEntry collectionEntries;
+		
 		private long timeOut = 2; //in seconds
 		
 		private ResourceManager rm = ResourceManager.getInstance();
 		
-		private Set<Entry<String, String>> entries;
-
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
@@ -674,10 +658,10 @@ public class DataversePublisherWizard {
 			
 			collectionsComboBox.addItem(rm.get("replaydh.wizard.dataversePublisher.chooseDataset.create"));
 			
-			entries = context.availableDatasetsInCollection.entrySet();
+			collectionEntries = new CollectionEntry(context.getAvailableCollections().entrySet());
 			
-			for(Map.Entry<String, String> entry: entries) {
-				collectionsComboBox.addItem(new CollectionEntry(entry).getEntry().getValue());
+			for(String value: collectionEntries.getValues()) {
+				collectionsComboBox.addItem(value);
 			}
 
 			// Display the error message if there are no collections available
@@ -708,15 +692,8 @@ public class DataversePublisherWizard {
 
 		@Override
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
-			for (Entry<String, String> entry : entries) {
-				if (entry.getValue().equals(collectionsComboBox.getSelectedItem())) {
-					context.chosenDataset = entry.getKey();
-					break;
-				} else {
-					context.chosenDataset=null;
-				}
-			}
-
+			context.chosenDataset = collectionEntries.getKey(collectionsComboBox.getSelectedItem().toString());
+			System.out.println(context.chosenDataset);
 			return CHOOSE_FILES;
 		}
 
