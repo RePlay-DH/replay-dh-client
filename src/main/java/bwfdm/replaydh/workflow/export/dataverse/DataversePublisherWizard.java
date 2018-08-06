@@ -106,8 +106,8 @@ public class DataversePublisherWizard {
 		final WorkflowExportInfo exportInfo;
 
 		private RDHEnvironment environment;
-		private String repositoryURL;		//e.g. "http://123.11.11.11:8080/xmlui/" or "http://123.11.11.11:8080"
-											//TODO: could be also JSPUI !!!
+		private String repositoryURL;		
+		
 		private String serviceDocumentURL;
 		private String collectionURL;
 		private Map<String, String> availableCollections;
@@ -659,9 +659,11 @@ public class DataversePublisherWizard {
 			collectionsComboBox.addItem(rm.get("replaydh.wizard.dataversePublisher.chooseDataset.create"));
 			
 			collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
-			
-			for(String value: collectionEntries.getValues()) {
-				collectionsComboBox.addItem(value);
+
+			String doiEnding;
+			for(String key: collectionEntries.getKeys()) {
+				doiEnding=key.substring(key.indexOf("doi:"), key.length()-1);
+				collectionsComboBox.addItem(collectionEntries.getValue(key)+" - "+doiEnding);
 			}
 
 			// Display the error message if there are no collections available
@@ -693,6 +695,7 @@ public class DataversePublisherWizard {
 		@Override
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 			context.chosenDataset = collectionEntries.getKey(collectionsComboBox.getSelectedItem().toString());
+			System.out.println(context.chosenDataset);
 			return CHOOSE_FILES;
 		}
 

@@ -41,4 +41,15 @@ public class CollectionEntry {
 		}
 		return key;
 	}
+	
+	public String getValue(String key) {
+		String value = null;
+		for(Entry<String, String> entry : entries) {
+			if(entry.getKey().equals(key)) {
+				value=entry.getValue();
+				break;
+			}
+		}
+		return value;
+	}
 }
