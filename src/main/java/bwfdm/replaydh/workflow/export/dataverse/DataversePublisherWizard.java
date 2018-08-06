@@ -658,7 +658,7 @@ public class DataversePublisherWizard {
 			
 			collectionsComboBox.addItem(rm.get("replaydh.wizard.dataversePublisher.chooseDataset.create"));
 			
-			collectionEntries = new CollectionEntry(context.getAvailableCollections().entrySet());
+			collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
 			
 			for(String value: collectionEntries.getValues()) {
 				collectionsComboBox.addItem(value);
@@ -693,7 +693,6 @@ public class DataversePublisherWizard {
 		@Override
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 			context.chosenDataset = collectionEntries.getKey(collectionsComboBox.getSelectedItem().toString());
-			System.out.println(context.chosenDataset);
 			return CHOOSE_FILES;
 		}
 
