@@ -660,10 +660,8 @@ public class DataversePublisherWizard {
 			
 			collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
 
-			String doiEnding;
-			for(String key: collectionEntries.getKeys()) {
-				doiEnding=key.substring(key.indexOf("doi:"), key.length()-1);
-				collectionsComboBox.addItem(collectionEntries.getValue(key)+" - "+doiEnding);
+			for(String value: collectionEntries.getValuesForDatasets()) {
+				collectionsComboBox.addItem(value);
 			}
 
 			// Display the error message if there are no collections available
@@ -694,7 +692,7 @@ public class DataversePublisherWizard {
 
 		@Override
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
-			context.chosenDataset = collectionEntries.getKey(collectionsComboBox.getSelectedItem().toString());
+			context.chosenDataset = collectionEntries.getKeyForDatasets(collectionsComboBox.getSelectedItem().toString());
 			System.out.println(context.chosenDataset);
 			return CHOOSE_FILES;
 		}
