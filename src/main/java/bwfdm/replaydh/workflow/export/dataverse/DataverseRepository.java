@@ -198,5 +198,14 @@ public abstract class DataverseRepository {
 	 * @return
 	 */
 	public abstract Map<String, String> getMetadataSetsWithId(Feed feed);
+	
+	/**
+	 * Returns a Map of all files in a dataverse collection
+	 * @param chosenCollection
+	 * @return
+	 * @throws SWORDClientException 
+	 * @throws MalformedURLException 
+	 */
+	public abstract Map<String, String> getDatasetsInDataverseCollection(String chosenCollection) throws MalformedURLException, SWORDClientException;
 
 }

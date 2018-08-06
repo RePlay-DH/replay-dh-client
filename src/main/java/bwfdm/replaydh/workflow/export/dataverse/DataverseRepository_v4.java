@@ -299,4 +299,9 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		}
 		return entries;
 	}
+
+	@Override
+	public Map<String, String> getDatasetsInDataverseCollection(String chosenCollection) throws MalformedURLException, SWORDClientException {
+		return getMetadataSetsWithId(getAtomFeed(chosenCollection, authCredentials));
+	}
 }

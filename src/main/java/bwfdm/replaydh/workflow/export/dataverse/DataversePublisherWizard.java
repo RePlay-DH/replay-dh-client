@@ -38,6 +38,8 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -94,7 +96,7 @@ public class DataversePublisherWizard {
 		@SuppressWarnings("unchecked")
 		Wizard<DataversePublisherContext> wizard = new Wizard<>(
 				parent, ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.title"),
-				environment, CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
+				environment, CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_DATASET_FOR_METADATA_REPLACEMENT, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
 
@@ -111,12 +113,16 @@ public class DataversePublisherWizard {
 		private String serviceDocumentURL;
 		private String collectionURL;
 		private Map<String, String> availableCollections;
+		
+		private Map<String, String> availableDatasetsInCollection;
 
 		private List<File> filesToPublish;
 		private DataverseRepository_v4 publicationRepository;
 		private MetadataObject metadataObject;
 		
 		private boolean exportProcessMetadataAllowed;
+		
+		private String chosenDataset;
 
 		public boolean isExportProcessMetadataAllowed() {
 			return exportProcessMetadataAllowed;
@@ -377,6 +383,7 @@ public class DataversePublisherWizard {
 						swordOK = false;
 						return swordOK;
 					} else if (publicationRepository.getUserAvailableCollectionsWithTitle() != null) {
+						availableCollections=publicationRepository.getUserAvailableCollectionsWithTitle();
 						collectionsAvailable = true;
 					}
 
@@ -515,7 +522,6 @@ public class DataversePublisherWizard {
 				        	checkSWORDURL();
 				        	if (swordOK) {
 				        		if(collectionsAvailable) {
-				        			availableCollections=publicationRepository.getUserAvailableCollectionsWithTitle();
 				        			statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.successMessage"));
 									setNextEnabled(true);
 								} else {
@@ -606,7 +612,7 @@ public class DataversePublisherWizard {
 			// Store collection url
 			context.collectionURL = ((CollectionEntry)collectionsComboBox.getSelectedItem()).getEntry().getKey();
 
-			return CHOOSE_FILES;
+			return CHOOSE_DATASET_FOR_METADATA_REPLACEMENT;
 		}
 
 		@Override
@@ -628,6 +634,111 @@ public class DataversePublisherWizard {
 					.rows("pref, $nlg, pref, $nlg, pref")
 					.padding(Paddings.DLU4)
 					.add(new JLabel(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseCollection.collectionLabel"))).xy(1, 1)
+					.add(collectionsComboBox).xy(1, 3)
+					.add(noAvailableCollectionsMessage).xy(1, 5)
+					.build();
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+
+		}
+	};
+	
+	
+	/**
+	 * Showing all the files in a chosen collection
+	 */
+	private static final DataversePublisherStep CHOOSE_DATASET_FOR_METADATA_REPLACEMENT = new DataversePublisherStep(
+			"replaydh.wizard.dataversePublisher.chooseDataset.title",
+			"replaydh.wizard.dataversePublisher.chooseDataset.description") {
+
+		private JComboBox<String> collectionsComboBox;
+		private JTextArea noAvailableCollectionsMessage;
+		
+		private long timeOut = 2; //in seconds
+		
+		private ResourceManager rm = ResourceManager.getInstance();
+		
+		private Set<Entry<String, String>> entries;
+
+		@Override
+		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
+			super.refresh(environment, context); //call parent "refresh"
+
+			checkFilesAvailable(context);
+			
+			// Update combobox with collections
+			collectionsComboBox.removeAllItems();
+			
+			collectionsComboBox.addItem(rm.get("replaydh.wizard.dataversePublisher.chooseDataset.create"));
+			
+			entries = context.availableDatasetsInCollection.entrySet();
+			
+			for(Map.Entry<String, String> entry: entries) {
+				collectionsComboBox.addItem(new CollectionEntry(entry).getEntry().getValue());
+			}
+
+			// Display the error message if there are no collections available
+			noAvailableCollectionsMessage.setVisible(context.availableDatasetsInCollection.isEmpty());
+
+			// Remove selection and disable "next" button
+			collectionsComboBox.setSelectedIndex(-1);
+			setNextEnabled(false);
+		};
+		
+		private void checkFilesAvailable(DataversePublisherContext context) {
+
+			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+
+				@Override
+				protected Boolean doInBackground() throws Exception {
+					boolean filesAvailable = false;
+					if (context.getPublicationRepository().getDatasetsInDataverseCollection(context.collectionURL) != null) {
+						context.availableDatasetsInCollection=context.getPublicationRepository().getDatasetsInDataverseCollection(context.collectionURL);
+						filesAvailable=true;
+					}
+					return filesAvailable;
+				}
+				
+			};
+			executeWorkerWithTimeout(worker, timeOut, "Exception by exchanging http/https");
+		}
+
+		@Override
+		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
+			for (Entry<String, String> entry : entries) {
+				if (entry.getValue().equals(collectionsComboBox.getSelectedItem())) {
+					context.chosenDataset = entry.getKey();
+					break;
+				} else {
+					context.chosenDataset=null;
+				}
+			}
+
+			return CHOOSE_FILES;
+		}
+
+		@Override
+		protected JPanel createPanel() {
+
+			collectionsComboBox = new JComboBox<String>();
+			collectionsComboBox.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					setNextEnabled(true);
+				}
+			});
+
+			noAvailableCollectionsMessage = GuiUtils.createTextArea(ResourceManager.getInstance()
+					.get("replaydh.wizard.dataversePublisher.chooseCollection.noCollectionsMessage"));
+
+			return FormBuilder.create()
+					.columns("fill:pref:grow")
+					.rows("pref, $nlg, pref, $nlg, pref")
+					.padding(Paddings.DLU4)
+					.add(new JLabel(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseDataset.collectionLabel"))).xy(1, 1)
 					.add(collectionsComboBox).xy(1, 3)
 					.add(noAvailableCollectionsMessage).xy(1, 5)
 					.build();
