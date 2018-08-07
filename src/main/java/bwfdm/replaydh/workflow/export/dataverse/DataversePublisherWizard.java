@@ -434,10 +434,10 @@ public class DataversePublisherWizard {
 				setNextEnabled(false); 		//disable "next" button
 			}
 			SwingUtilities.invokeLater(new Runnable() {
-			    public void run() {
-			        pAPIkey.requestFocusInWindow();
-			    }
-			});
+	            public void run() {
+	                pAPIkey.requestFocusInWindow();
+	            }
+	        });
 		};
 
 		private boolean checkAndUpdateBorder(JTextField tf) {
@@ -971,12 +971,6 @@ public class DataversePublisherWizard {
 		private List<String> sourcesElements;
 		
 		private long timeOut = 2; //in seconds
-		private final DocumentAdapter adapter = new DocumentAdapter() {
-			@Override
-			public void anyUpdate(DocumentEvent e) {
-				refreshNextEnabled();
-			}
-		};
 
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
@@ -984,13 +978,8 @@ public class DataversePublisherWizard {
 			// Creator
 			getJSONObject(environment, context);
 			
-			clearGUI();
 			if (context.chosenDataset == null) {
-				eCreator.getTextfield().getDocument().addDocumentListener(adapter);
-				eTitle.getTextfield().getDocument().addDocumentListener(adapter);
-				eDescription.getTextfield().getDocument().addDocumentListener(adapter);
-				ePublicationYear.getTextfield().getDocument().addDocumentListener(adapter);
-				
+				clearGUI();
 				String creator = null;
 				if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
 					creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
@@ -1008,14 +997,10 @@ public class DataversePublisherWizard {
 				// Publication year
 				int year = Calendar.getInstance().get(Calendar.YEAR);
 				ePublicationYear.getTextfield().setText(String.valueOf(year));
-				refreshNextEnabled();
-			} else {
-				eCreator.getTextfield().getDocument().removeDocumentListener(adapter);
-				eTitle.getTextfield().getDocument().removeDocumentListener(adapter);
-				eDescription.getTextfield().getDocument().removeDocumentListener(adapter);
-				ePublicationYear.getTextfield().getDocument().removeDocumentListener(adapter);
 			}
-			
+
+			refreshNextEnabled();
+
 			//TODO: remove previous metadata when the page is opened again. Now previous metadata is kept. Se todo with mdObject above
 
 		};
@@ -1037,7 +1022,6 @@ public class DataversePublisherWizard {
 					}
 					return metadataAvailable;
 				}
-				
 				protected void done() {
 					if (context.chosenDataset != null) {
 						clearGUI();
@@ -1049,6 +1033,7 @@ public class DataversePublisherWizard {
 						eRights.getTextfield().setText(rights);
 					}
 				}
+
 				
 			};
 			executeWorkerWithTimeout(worker, timeOut, "Exception by exchanging http/https");
@@ -1369,6 +1354,23 @@ public class DataversePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfPublicationYear);
 
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
+
+
+			final DocumentAdapter adapter = new DocumentAdapter() {
+				@Override
+				public void anyUpdate(DocumentEvent e) {
+					refreshNextEnabled();
+				}
+			};
+
+			tfCreator.getDocument().addDocumentListener(adapter);
+			tfTitle.getDocument().addDocumentListener(adapter);
+			tfDescription.getDocument().addDocumentListener(adapter);
+			tfPublicationYear.getDocument().addDocumentListener(adapter);
+
+			tfIdentifier.getDocument().addDocumentListener(adapter);
+			tfPublisher.getDocument().addDocumentListener(adapter);
+			tfResourceType.getDocument().addDocumentListener(adapter);
 
 			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
 			processMetadata.setSelected(true);
