@@ -67,6 +67,7 @@ import javax.swing.table.TableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.jayway.jsonpath.JsonPath;
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.FormLayout;
@@ -432,6 +433,11 @@ public class DataversePublisherWizard {
 				pAPIkey.setText(""); //clear password field
 				setNextEnabled(false); 		//disable "next" button
 			}
+			SwingUtilities.invokeLater(new Runnable() {
+			    public void run() {
+			        pAPIkey.requestFocusInWindow();
+			    }
+			});
 		};
 
 		private boolean checkAndUpdateBorder(JTextField tf) {
@@ -965,6 +971,12 @@ public class DataversePublisherWizard {
 		private List<String> sourcesElements;
 		
 		private long timeOut = 2; //in seconds
+		private final DocumentAdapter adapter = new DocumentAdapter() {
+			@Override
+			public void anyUpdate(DocumentEvent e) {
+				refreshNextEnabled();
+			}
+		};
 
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
@@ -972,26 +984,38 @@ public class DataversePublisherWizard {
 			// Creator
 			getJSONObject(environment, context);
 			
-			String creator = null;
-			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
-				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
+			clearGUI();
+			if (context.chosenDataset == null) {
+				eCreator.getTextfield().getDocument().addDocumentListener(adapter);
+				eTitle.getTextfield().getDocument().addDocumentListener(adapter);
+				eDescription.getTextfield().getDocument().addDocumentListener(adapter);
+				ePublicationYear.getTextfield().getDocument().addDocumentListener(adapter);
+				
+				String creator = null;
+				if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
+					creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
+				}
+				eCreator.getTextfield().setText(creator);
+
+				//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
+
+				// Title
+				eTitle.getTextfield().setText(context.exportInfo.getWorkflow().getTitle());
+
+				// Description
+				eDescription.getTextfield().setText(context.exportInfo.getWorkflow().getDescription());
+
+				// Publication year
+				int year = Calendar.getInstance().get(Calendar.YEAR);
+				ePublicationYear.getTextfield().setText(String.valueOf(year));
+				refreshNextEnabled();
+			} else {
+				eCreator.getTextfield().getDocument().removeDocumentListener(adapter);
+				eTitle.getTextfield().getDocument().removeDocumentListener(adapter);
+				eDescription.getTextfield().getDocument().removeDocumentListener(adapter);
+				ePublicationYear.getTextfield().getDocument().removeDocumentListener(adapter);
 			}
-			eCreator.getTextfield().setText(creator);
-
-			//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
-
-			// Title
-			eTitle.getTextfield().setText(context.exportInfo.getWorkflow().getTitle());
-
-			// Description
-			eDescription.getTextfield().setText(context.exportInfo.getWorkflow().getDescription());
-
-			// Publication year
-			int year = Calendar.getInstance().get(Calendar.YEAR);
-			ePublicationYear.getTextfield().setText(String.valueOf(year));
-
-			refreshNextEnabled();
-
+			
 			//TODO: remove previous metadata when the page is opened again. Now previous metadata is kept. Se todo with mdObject above
 
 		};
@@ -1012,6 +1036,18 @@ public class DataversePublisherWizard {
 						}
 					}
 					return metadataAvailable;
+				}
+				
+				protected void done() {
+					if (context.chosenDataset != null) {
+						clearGUI();
+						JsonPath licensePath = JsonPath.compile("$.data.latestVersion.license");
+						String license = licensePath.read(context.jsonObjectWithMetadata);
+						eLicense.getTextfield().setText(license);
+						JsonPath rightsPath = JsonPath.compile("$.data.latestVersion.termsOfUse");
+						String rights = rightsPath.read(context.jsonObjectWithMetadata);
+						eRights.getTextfield().setText(rights);
+					}
 				}
 				
 			};
@@ -1333,23 +1369,6 @@ public class DataversePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfPublicationYear);
 
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
-
-
-			final DocumentAdapter adapter = new DocumentAdapter() {
-				@Override
-				public void anyUpdate(DocumentEvent e) {
-					refreshNextEnabled();
-				}
-			};
-
-			tfCreator.getDocument().addDocumentListener(adapter);
-			tfTitle.getDocument().addDocumentListener(adapter);
-			tfDescription.getDocument().addDocumentListener(adapter);
-			tfPublicationYear.getDocument().addDocumentListener(adapter);
-
-			tfIdentifier.getDocument().addDocumentListener(adapter);
-			tfPublisher.getDocument().addDocumentListener(adapter);
-			tfResourceType.getDocument().addDocumentListener(adapter);
 
 			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
 			processMetadata.setSelected(true);

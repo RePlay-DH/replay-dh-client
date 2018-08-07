@@ -857,7 +857,7 @@ public class GuiUtils {
     public static final String DEFAULT_BORDER_PROPERTY = "defaultBorder";
     public static final String ERROR_BORDER_PROPERTY = "errorBorder";
 
-    private static final Border defaultErrorBorder = BorderFactory.createLineBorder(Color.red);
+    private static final Border defaultErrorBorder = BorderFactory.createLineBorder(Color.RED,2);
 
     public static void prepareChangeableBorder(JComponent comp) {
     	Border defaultBorder = comp.getBorder();
@@ -865,7 +865,7 @@ public class GuiUtils {
     		defaultBorder = BorderFactory.createEmptyBorder();
     	}
 
-    	Border errorBorder = BorderFactory.createCompoundBorder(defaultErrorBorder, defaultBorder);
+    	Border errorBorder = defaultErrorBorder;
 
     	prepareChangeableBorder(comp, defaultBorder, errorBorder);
     }
