@@ -121,6 +121,11 @@ public class DataversePublisherWizard {
 		private boolean exportProcessMetadataAllowed;
 		
 		private String chosenDataset;
+		private String jsonObjectWithMetadata;
+
+		public String getJsonObjectWithMetadata() {
+			return jsonObjectWithMetadata;
+		}
 
 		public String getChosenDataset() {
 			return chosenDataset;
@@ -251,6 +256,12 @@ public class DataversePublisherWizard {
 		return url;
 	}
 
+	private static String createMetadataUrl(String url, String doi) {
+		url = getCorrectedURL(url);
+		url += "/api/datasets/:persistentId?persistentId="+doi;
+
+		return url;
+	}
 
 	/**
 	 * Wait until worker is finished, make error message visible in case of timeout or exception
@@ -693,7 +704,6 @@ public class DataversePublisherWizard {
 		@Override
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
 			context.chosenDataset = collectionEntries.getKeyForDatasets(collectionsComboBox.getSelectedItem().toString());
-			System.out.println(context.chosenDataset);
 			return CHOOSE_FILES;
 		}
 
@@ -954,11 +964,14 @@ public class DataversePublisherWizard {
 		private List<String> dateElements;
 		private List<String> sourcesElements;
 		
+		private long timeOut = 2; //in seconds
 
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 			// Creator
+			getJSONObject(environment, context);
+			
 			String creator = null;
 			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
 				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
@@ -982,6 +995,28 @@ public class DataversePublisherWizard {
 			//TODO: remove previous metadata when the page is opened again. Now previous metadata is kept. Se todo with mdObject above
 
 		};
+		
+		private void getJSONObject(RDHEnvironment environment, DataversePublisherContext context) {
+
+			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+
+				@Override
+				protected Boolean doInBackground() throws Exception {
+					boolean metadataAvailable = false;
+					if (context.chosenDataset != null) {
+						String doi=context.chosenDataset.substring(context.chosenDataset.indexOf("doi:"), context.chosenDataset.length());
+						String metadataUrl = createMetadataUrl(environment.getProperty(RDHProperty.DATAVERSE_REPOSITORY_URL),doi);
+						if (context.getPublicationRepository().getJSONMetadata(metadataUrl) != null) {
+							context.jsonObjectWithMetadata=context.getPublicationRepository().getJSONMetadata(metadataUrl);
+							metadataAvailable=true;
+						}
+					}
+					return metadataAvailable;
+				}
+				
+			};
+			executeWorkerWithTimeout(worker, timeOut, "Exception by exchanging http/https");
+		}
 
 		@Override
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
