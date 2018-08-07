@@ -208,4 +208,14 @@ public abstract class DataverseRepository {
 	 */
 	public abstract Map<String, String> getDatasetsInDataverseCollection(String chosenCollection) throws MalformedURLException, SWORDClientException;
 
+	/**
+	 * Copied from class SWORDClient but modified for the Dataverse REST API
+	 * @param doiUrl
+	 * @param apiKey
+	 * @return TODO
+	 * @throws SWORDClientException 
+	 * @throws IOException 
+	 */
+	public abstract String getJSONMetadata(String doiUrl) throws SWORDClientException, IOException;
+	
 }

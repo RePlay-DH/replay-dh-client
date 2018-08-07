@@ -1,9 +1,12 @@
 package bwfdm.replaydh.workflow.export.dataverse;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -17,6 +20,7 @@ import org.apache.abdera.model.Feed;
 import org.apache.abdera.protocol.Response;
 import org.apache.abdera.protocol.client.AbderaClient;
 import org.apache.abdera.protocol.client.ClientResponse;
+import org.apache.abdera.protocol.client.RequestOptions;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.eclipse.jgit.util.FileUtils;
 import org.swordapp.client.AuthCredentials;
@@ -42,12 +46,15 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		this.serviceDocumentURL=serviceDocumentURL;
 		swordClient = new SWORDClient();
 		authCredentials = new AuthCredentials(String.valueOf(apiKey), "null");
+		this.apiKey=String.valueOf(apiKey);
 	}
 	
 	// For SWORD
 	private String serviceDocumentURL;
 			
 	private AuthCredentials authCredentials = null;
+	
+	private String apiKey;
 	
 	/**
 	 * Check if SWORDv2-protocol is accessible
@@ -303,5 +310,111 @@ public class DataverseRepository_v4 extends DataverseRepository {
 	@Override
 	public Map<String, String> getDatasetsInDataverseCollection(String chosenCollection) throws MalformedURLException, SWORDClientException {
 		return getMetadataSetsWithId(getAtomFeed(chosenCollection, authCredentials));
+	}
+
+	@Override
+	public String getJSONMetadata(String doiUrl) throws SWORDClientException, IOException {
+		if (doiUrl == null)
+        {
+            log.error("Null doiUrl passed in to getJSONMetadata; returning null");
+            return null;
+        }
+        if (log.isDebugEnabled())
+        {
+            log.debug("Showing JSON object contents from " + doiUrl);
+        }
+
+        AbderaClient client = new AbderaClient(this.abdera);
+        RequestOptions options = new RequestOptions();
+        options.setHeader("X-Dataverse-key", apiKey);
+
+        // ensure that the URL is valid
+        URL url = this.formaliseURL(doiUrl);
+        if (log.isDebugEnabled())
+        {
+            log.debug("Formalised Collection URL to " + url.toString());
+        }
+
+        // make the request for the service document
+        if (log.isDebugEnabled())
+        {
+           log.debug("Connecting to Server to get JSON Object " + url.toString() + " ...");
+        }
+        ClientResponse resp = client.get(url.toString(), options);
+        if (log.isDebugEnabled())
+        {
+            log.debug("Successfully retrieved JSON Object from " + url.toString());
+        }
+
+        // if the response is successful, get the JSON object out of the response,
+        // and return it as String
+        if (resp.getType() == Response.ResponseType.SUCCESS)
+        {
+            log.info("Successfully retrieved JSON Object from " + url.toString());
+            return this.getStringFromInputStream(resp.getInputStream());
+        }
+
+        // if we don't get anything respond with null
+        log.warn("Unable to retrieve JSON Object from " + url.toString() + "; responded with " + resp.getStatus()
+                + ". Possible problem with Dataverse API, or URL");
+        return null;		
+	}
+	
+	/**
+	 * Copied from class SWORDClient
+	 * @param url
+	 * @return
+	 * @throws SWORDClientException
+	 */
+	private URL formaliseURL(String url)
+            throws SWORDClientException
+    {
+        try
+        {
+            URL nurl = new URL(url);
+            return nurl;
+        }
+        catch (MalformedURLException e)
+        {
+            // No dice, can't even form base URL...
+            throw new SWORDClientException(url + " is not a valid URL ("
+                    + e.getMessage()
+                    + ")");
+        }
+    }
+	
+	
+	/**
+	 * Copied from https://www.mkyong.com/java/how-to-convert-inputstream-to-string-in-java/
+	 * @param is
+	 * @return
+	 */
+	private String getStringFromInputStream(InputStream is) {
+
+		BufferedReader br = null;
+		StringBuilder sb = new StringBuilder();
+
+		String line;
+		try {
+
+			br = new BufferedReader(new InputStreamReader(is));
+			while ((line = br.readLine()) != null) {
+				sb.append(line);
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (br != null) {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		return sb.toString();
+
 	}
 }
