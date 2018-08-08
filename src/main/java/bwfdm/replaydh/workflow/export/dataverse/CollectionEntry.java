@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Representation of the collection of <String, String> in the ComboBox
+ * Useful to fill a ComboBox
  * @author Florian Fritze
  */
 public class CollectionEntry {

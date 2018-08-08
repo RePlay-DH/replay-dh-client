@@ -971,6 +971,7 @@ public class DataversePublisherWizard {
 		private List<String> sourcesElements;
 		
 		private long timeOut = 2; //in seconds
+		private DocumentAdapter adapter;
 
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
@@ -1025,11 +1026,12 @@ public class DataversePublisherWizard {
 				protected void done() {
 					if (context.chosenDataset != null) {
 						clearGUI();
-						JsonPath licensePath = JsonPath.compile("$.data.latestVersion.license");
-						String license = licensePath.read(context.jsonObjectWithMetadata);
+						JsonPath jsonPath = null;
+						jsonPath = JsonPath.compile("$.data.latestVersion.license");
+						String license = jsonPath.read(context.jsonObjectWithMetadata);
 						eLicense.getTextfield().setText(license);
-						JsonPath rightsPath = JsonPath.compile("$.data.latestVersion.termsOfUse");
-						String rights = rightsPath.read(context.jsonObjectWithMetadata);
+						jsonPath = JsonPath.compile("$.data.latestVersion.termsOfUse");
+						String rights = jsonPath.read(context.jsonObjectWithMetadata);
 						eRights.getTextfield().setText(rights);
 					}
 				}
@@ -1195,7 +1197,8 @@ public class DataversePublisherWizard {
 		private void refreshNextEnabled() {
 			boolean nextEnabled = true;
 
-			nextEnabled &= checkAndUpdateBorder(eCreator.getTextfield());
+			
+			nextEnabled = refreshBorder(elementsofproperty.get("creator"));
 			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDescription.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(ePublicationYear.getTextfield());
@@ -1354,16 +1357,15 @@ public class DataversePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfPublicationYear);
 
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
-
-
-			final DocumentAdapter adapter = new DocumentAdapter() {
+			
+			adapter = new DocumentAdapter() {
 				@Override
 				public void anyUpdate(DocumentEvent e) {
 					refreshNextEnabled();
 				}
 			};
 
-			tfCreator.getDocument().addDocumentListener(adapter);
+			eCreator.getTextfield().getDocument().addDocumentListener(adapter);
 			tfTitle.getDocument().addDocumentListener(adapter);
 			tfDescription.getDocument().addDocumentListener(adapter);
 			tfPublicationYear.getDocument().addDocumentListener(adapter);
@@ -1597,11 +1599,18 @@ public class DataversePublisherWizard {
 						if (source == buttonpressed) {
 							GUIElement element = createGUIElement(propertyname);
 							elementsofproperty.get(propertyname).add(element);
+							if (propertyname.equals("creator")) {
+								element.getTextfield().getDocument().addDocumentListener(adapter);
+							}
+							refreshBorder(elementsofproperty.get(propertyname));
 							refreshPanel(propertyname);
 							done=true;
 							break;
 						}
 						if (source == minusbuttonpressed) {
+							if (propertyname.equals("creator")) {
+								elementsofproperty.get(propertyname).get(buttonNumber).getTextfield().getDocument().removeDocumentListener(adapter);
+							}
 							removeElementFromPanel(propertyname,buttonNumber);
 							done=true;
 							break;
@@ -1619,6 +1628,26 @@ public class DataversePublisherWizard {
 				Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
 				parentComponent.pack();
 			}
+		}
+		
+		public boolean refreshBorder(List<GUIElement> propertylist) {
+			boolean allEmpty=true;
+			for (GUIElement checkElement : propertylist) {
+				if (!(checkElement.getTextfield().getText().equals(""))) {
+					allEmpty=false;
+					break;
+				}
+			}
+			if (!(allEmpty)) {
+				for (GUIElement changeElement : propertylist) {
+					changeElement.getTextfield().setBorder(GuiUtils.getStandardBorder());
+				}
+			} else {
+				for (GUIElement changeElement : propertylist) {
+					changeElement.getTextfield().setBorder(GuiUtils.getDefaulterrorborder());
+				}
+			}
+			return !allEmpty;
 		}
 	};
 

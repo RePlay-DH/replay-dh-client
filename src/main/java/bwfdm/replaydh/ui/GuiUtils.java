@@ -858,14 +858,25 @@ public class GuiUtils {
     public static final String ERROR_BORDER_PROPERTY = "errorBorder";
 
     private static final Border defaultErrorBorder = BorderFactory.createLineBorder(Color.RED,2);
+    public static Border getDefaulterrorborder() {
+		return defaultErrorBorder;
+	}
 
-    public static void prepareChangeableBorder(JComponent comp) {
+	private static Border standardBorder = null;
+
+    public static Border getStandardBorder() {
+		return standardBorder;
+	}
+
+
+	public static void prepareChangeableBorder(JComponent comp) {
     	Border defaultBorder = comp.getBorder();
     	if(defaultBorder==null) {
     		defaultBorder = BorderFactory.createEmptyBorder();
     	}
 
     	Border errorBorder = defaultErrorBorder;
+    	standardBorder = comp.getBorder();
 
     	prepareChangeableBorder(comp, defaultBorder, errorBorder);
     }
@@ -879,9 +890,9 @@ public class GuiUtils {
     	Border border = null;
 
     	if(isError) {
-    		border = (Border) comp.getClientProperty(ERROR_BORDER_PROPERTY);
+    		border = defaultErrorBorder;
     	} else {
-    		border = (Border) comp.getClientProperty(DEFAULT_BORDER_PROPERTY);
+    		border = standardBorder;
     	}
 
     	comp.setBorder(border);
