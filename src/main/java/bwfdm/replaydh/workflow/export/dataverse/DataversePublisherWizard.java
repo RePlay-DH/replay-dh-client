@@ -981,12 +981,24 @@ public class DataversePublisherWizard {
 		private List<Object> subjects;
 		private List<Object> keywords;
 		private List<Object> publisher;
+		
+		private RDHEnvironment myEnvironment;
+		private DataversePublisherContext myContext;
 
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 			// Creator
-			getJSONObject(environment, context);
+			if (myChosenDataset == null) {
+				getJSONObject(environment, context);
+			} else if (!(context.chosenDataset.equals(myChosenDataset))) {
+				clearGUI();
+				resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
+				getJSONObject(environment, context);
+			}
+			
+			myEnvironment=environment;
+			myContext=context;
 			
 			if (context.chosenDataset == null) {
 				clearGUI();
@@ -1498,20 +1510,29 @@ public class DataversePublisherWizard {
 		}
 		
 		public void clearGUI() {
+			for (String propertyname : listofkeys) {
+				if(elementsofproperty.get(propertyname) != null) {
+					int size = elementsofproperty.get(propertyname).size();
+					for (int i=size-1; i > 0; i--) {
+						elementsofproperty.get(propertyname).remove(i);
+					}
+					elementsofproperty.get(propertyname).get(0).getTextfield().setText("");
+				}
+			}
+			subjects=null;
+			authors=null;
+			keywords=null;
+			publisher=null;
 			ePublicationYear.getTextfield().setText("");
 			eIdentifier.getTextfield().setText("");
-			ePublisher.getTextfield().setText("");
 			eResourceType.getTextfield().setText("");
-			eCreator.getTextfield().setText("");
 			eTitle.getTextfield().setText("");
 			eDescription.getTextfield().setText("");
-			eSubjects.getTextfield().setText("");
 			eVersion.getTextfield().setText("");
 			eReference.getTextfield().setText("");
 			eLicense.getTextfield().setText("");
 			eRights.getTextfield().setText("");
 			eDate.getTextfield().setText("");
-			eSources.getTextfield().setText("");
 		}
 		
 		public void createGUI() {
@@ -1714,8 +1735,8 @@ public class DataversePublisherWizard {
 							elementsofproperty.get(propertyname).add(element);
 							if (propertyname.equals("creator")) {
 								element.getTextfield().getDocument().addDocumentListener(adapter);
+								refreshBorder(elementsofproperty.get(propertyname));
 							}
-							refreshBorder(elementsofproperty.get(propertyname));
 							refreshPanel(propertyname);
 							done=true;
 							break;
@@ -1735,11 +1756,18 @@ public class DataversePublisherWizard {
 				}
 			}
 			if (source == resetButton.getResetButton()) {
-				builder.getPanel().removeAll();
-				createGUI();
-				clearGUI();
-				Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
-				parentComponent.pack();
+				if (resetButton.getResetButton().getText().equals(rm.get("replaydh.wizard.dataversePublisher.editMetadata.RestoreButton"))) {
+					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
+					clearGUI();
+					getJSONObject(myEnvironment, myContext);
+				} else {
+					builder.getPanel().removeAll();
+					createGUI();
+					clearGUI();
+					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.RestoreButton"));
+					Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
+					parentComponent.pack();
+				}
 			}
 		}
 		
