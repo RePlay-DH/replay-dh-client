@@ -926,7 +926,7 @@ public class DataversePublisherWizard {
 	private static final DataversePublisherStep EDIT_METADATA = new DataversePublisherStep(
 			"replaydh.wizard.dataversePublisher.editMetadata.title",
 			"replaydh.wizard.dataversePublisher.editMetadata.description") {
-		private GUIElement ePublicationYear;
+		//private GUIElement ePublicationYear;
 		private GUIElement eIdentifier;
 		private GUIElement ePublisher;
 		private GUIElement eResourceType;
@@ -958,7 +958,7 @@ public class DataversePublisherWizard {
 		private List<String> titleElements;
 		private List<String> descriptionElements;
 		private List<String> creatorElements;
-		private List<String> issuedElements;
+		//private List<String> issuedElements;
 		private List<String> identifierElements;
 		private List<String> publisherElements;
 		private List<String> typeElements;
@@ -1018,7 +1018,7 @@ public class DataversePublisherWizard {
 
 				// Publication year
 				int year = Calendar.getInstance().get(Calendar.YEAR);
-				ePublicationYear.getTextfield().setText(String.valueOf(year));
+				eDate.getTextfield().setText(String.valueOf(year));
 			}
 
 			refreshNextEnabled();
@@ -1207,14 +1207,14 @@ public class DataversePublisherWizard {
 			context.metadataObject.mapDublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
 
 			// Publication year
-			if (issuedElements == null) {
+			/*if (issuedElements == null) {
 				issuedElements = new ArrayList<>();
 			} else {
 				issuedElements.clear();
 			}
 			issuedElements.add(ePublicationYear.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("issued", issuedElements);
-			context.metadataObject.mapDublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));*/
 
 			// Not used (reserved) metadata fields
 			if (identifierElements == null) {
@@ -1326,7 +1326,7 @@ public class DataversePublisherWizard {
 			nextEnabled = refreshBorder(elementsofproperty.get("creator"));
 			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDescription.getTextfield());
-			nextEnabled &= checkAndUpdateBorder(ePublicationYear.getTextfield());
+			nextEnabled &= checkAndUpdateBorder(eDate.getTextfield());
 
 			setNextEnabled(nextEnabled);
 		}
@@ -1376,7 +1376,7 @@ public class DataversePublisherWizard {
 			eCreator.create();
 			listofkeys.add("creator");
 
-			format = new SimpleDateFormat("YYYY");
+			/*format = new SimpleDateFormat("YYYY");
 			JFormattedTextField tfPublicationYear = new JFormattedTextField(format);
 			JLabel lPubYear = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));
 			ePublicationYear = new GUIElement();
@@ -1384,9 +1384,11 @@ public class DataversePublisherWizard {
 			ePublicationYear.setLabel(lPubYear);
 			tfPublicationYear.setToolTipText("YYYY");
 			ePublicationYear.create();
-			listofkeys.add("year");
+			listofkeys.add("year");*/
 			
-			JTextField tfDate = new JTextField();
+			//JTextField tfDate = new JTextField();
+			format = new SimpleDateFormat("YYYY");
+			JFormattedTextField tfDate = new JFormattedTextField(format);
 			JLabel lDate = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.dateLabel"));
 			eDate = new GUIElement();
 			eDate.setTextfield(tfDate);
@@ -1479,7 +1481,7 @@ public class DataversePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfCreator);
 			GuiUtils.prepareChangeableBorder(tfTitle);
 			GuiUtils.prepareChangeableBorder(tfDescription);
-			GuiUtils.prepareChangeableBorder(tfPublicationYear);
+			GuiUtils.prepareChangeableBorder(tfDate);
 
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
 			
@@ -1493,17 +1495,13 @@ public class DataversePublisherWizard {
 			eCreator.getTextfield().getDocument().addDocumentListener(adapter);
 			tfTitle.getDocument().addDocumentListener(adapter);
 			tfDescription.getDocument().addDocumentListener(adapter);
-			tfPublicationYear.getDocument().addDocumentListener(adapter);
-
-			tfIdentifier.getDocument().addDocumentListener(adapter);
-			tfPublisher.getDocument().addDocumentListener(adapter);
-			tfResourceType.getDocument().addDocumentListener(adapter);
+			tfDate.getDocument().addDocumentListener(adapter);
 
 			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
 			processMetadata.setSelected(true);
 
 			builder.columns("pref:grow");
-			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 			builder.padding(Paddings.DLU4);
 			createGUI();
 			return builder.build();
@@ -1523,7 +1521,7 @@ public class DataversePublisherWizard {
 			authors=null;
 			keywords=null;
 			publisher=null;
-			ePublicationYear.getTextfield().setText("");
+			//ePublicationYear.getTextfield().setText("");
 			eIdentifier.getTextfield().setText("");
 			eResourceType.getTextfield().setText("");
 			eTitle.getTextfield().setText("");
@@ -1583,31 +1581,31 @@ public class DataversePublisherWizard {
 			panelRow.put("description", 3);
 			builder.add(propertypanels.get("creator")).xy(1, 5);
 			panelRow.put("creator", 5);
-			builder.add(ePublicationYear.getPanel()).xy(1, 7);
-			panelRow.put("year", 7);
-			builder.add(eDate.getPanel()).xy(1, 9);
-			panelRow.put("date", 9);
-			builder.add(eResourceType.getPanel()).xy(1, 11);
-			panelRow.put("resourceType", 11);
-			builder.add(eIdentifier.getPanel()).xy(1, 13);
-			panelRow.put("identifier", 13);
-			builder.add(propertypanels.get("publisher")).xy(1, 15);
-			panelRow.put("publisher", 15);
-			builder.add(propertypanels.get("subject")).xy(1, 17);
-			panelRow.put("subject", 17);
-			builder.add(eVersion.getPanel()).xy(1, 19);
-			panelRow.put("version", 19);
-			builder.add(eReference.getPanel()).xy(1, 21);
-			panelRow.put("reference", 21);
-			builder.add(eLicense.getPanel()).xy(1, 23);
-			panelRow.put("license", 23);
-			builder.add(eRights.getPanel()).xy(1, 25);
-			panelRow.put("rights", 25);
-			builder.add(eSources.getPanel()).xy(1, 27);
-			panelRow.put("sources", 27);
-			builder.add(resetButton.getPanel()).xy(1, 29);
-			builder.add(processMetadata).xy(1, 31);
-			builder.add(messageArea).xyw(1, 33, 1);
+			//builder.add(ePublicationYear.getPanel()).xy(1, 7);
+			//panelRow.put("year", 7);
+			builder.add(eDate.getPanel()).xy(1, 7);
+			panelRow.put("date", 7);
+			builder.add(eResourceType.getPanel()).xy(1, 9);
+			panelRow.put("resourceType", 9);
+			builder.add(eIdentifier.getPanel()).xy(1, 11);
+			panelRow.put("identifier", 11);
+			builder.add(propertypanels.get("publisher")).xy(1, 13);
+			panelRow.put("publisher", 13);
+			builder.add(propertypanels.get("subject")).xy(1, 15);
+			panelRow.put("subject", 15);
+			builder.add(eVersion.getPanel()).xy(1, 17);
+			panelRow.put("version", 17);
+			builder.add(eReference.getPanel()).xy(1, 19);
+			panelRow.put("reference", 19);
+			builder.add(eLicense.getPanel()).xy(1, 21);
+			panelRow.put("license", 21);
+			builder.add(eRights.getPanel()).xy(1, 23);
+			panelRow.put("rights", 23);
+			builder.add(eSources.getPanel()).xy(1, 25);
+			panelRow.put("sources", 25);
+			builder.add(resetButton.getPanel()).xy(1, 27);
+			builder.add(processMetadata).xy(1, 29);
+			builder.add(messageArea).xyw(1, 31, 1);
 		}
 
 		public GUIElement createGUIElement(String metadataproperty) {
