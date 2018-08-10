@@ -1404,6 +1404,8 @@ public class DataversePublisherWizard {
 			eCreator.setLabel(lCreator);
 			eCreator.setButton(new JButton());
 			eCreator.getButton().addActionListener(this);
+			eCreator.setMinusbutton(new JButton());
+			eCreator.getMinusbutton().addActionListener(this);
 			eCreator.create();
 			listofkeys.add("creator");
 
@@ -1450,6 +1452,8 @@ public class DataversePublisherWizard {
 			ePublisher.setLabel(lPublisher);
 			ePublisher.setButton(new JButton());
 			ePublisher.getButton().addActionListener(this);
+			ePublisher.setMinusbutton(new JButton());
+			ePublisher.getMinusbutton().addActionListener(this);
 			ePublisher.create();
 			listofkeys.add("publisher");
 
@@ -1460,6 +1464,8 @@ public class DataversePublisherWizard {
 			eSubjects.setLabel(lSubjects);
 			eSubjects.setButton(new JButton());
 			eSubjects.getButton().addActionListener(this);
+			eSubjects.setMinusbutton(new JButton());
+			eSubjects.getMinusbutton().addActionListener(this);
 			eSubjects.create();
 			listofkeys.add("subject");
 
@@ -1502,6 +1508,8 @@ public class DataversePublisherWizard {
 			eSources.setLabel(lSource);
 			eSources.setButton(new JButton());
 			eSources.getButton().addActionListener(this);
+			eSources.setMinusbutton(new JButton());
+			eSources.getMinusbutton().addActionListener(this);
 			eSources.create();
 			listofkeys.add("sources");
 
@@ -1637,7 +1645,7 @@ public class DataversePublisherWizard {
 			panelRow.put("license", 21);
 			builder.add(eRights.getPanel()).xy(1, 23);
 			panelRow.put("rights", 23);
-			builder.add(eSources.getPanel()).xy(1, 25);
+			builder.add(propertypanels.get("sources")).xy(1, 25);
 			panelRow.put("sources", 25);
 			builder.add(resetButton.getPanel()).xy(1, 27);
 			builder.add(processMetadata).xy(1, 29);
@@ -1709,12 +1717,26 @@ public class DataversePublisherWizard {
 
 				if (z == 0) {
 					oneguielement.create();
+					if (oneguielement.getLabel().getText().equals("")) {
+						switch (metadatapropertyname) {
+						case "creator":
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
+							break;
+						case "publisher":
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
+							break;
+						case "subject":
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
+							break;
+						case "sources":
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.sourcesLabel"));
+							break;
+						}
+					}
 				}
 				oneguielement.getButton().addActionListener(this);
 
-				if (z > 0) {
-					oneguielement.getMinusbutton().addActionListener(this);
-				}
+				oneguielement.getMinusbutton().addActionListener(this);
 
 				propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
 
@@ -1767,9 +1789,7 @@ public class DataversePublisherWizard {
 				if (elementsofproperty.get(propertyname) != null) {
 					for (int buttonNumber = 0; buttonNumber < elementsofproperty.get(propertyname).size(); buttonNumber++) {
 						buttonpressed=elementsofproperty.get(propertyname).get(buttonNumber).getButton();
-						if (buttonNumber > 0) {
-							minusbuttonpressed=elementsofproperty.get(propertyname).get(buttonNumber).getMinusbutton();
-						}
+						minusbuttonpressed=elementsofproperty.get(propertyname).get(buttonNumber).getMinusbutton();
 						if (source == buttonpressed) {
 							GUIElement element = createGUIElement(propertyname);
 							elementsofproperty.get(propertyname).add(element);
@@ -1782,10 +1802,17 @@ public class DataversePublisherWizard {
 							break;
 						}
 						if (source == minusbuttonpressed) {
-							if (propertyname.equals("creator")) {
-								elementsofproperty.get(propertyname).get(buttonNumber).getTextfield().getDocument().removeDocumentListener(adapter);
+							if (elementsofproperty.get(propertyname).size() > 1) {
+								if (propertyname.equals("creator")) {
+									elementsofproperty.get(propertyname).get(buttonNumber).getTextfield().getDocument().removeDocumentListener(adapter);
+								}
+								removeElementFromPanel(propertyname,buttonNumber);
+							} else {
+								elementsofproperty.get(propertyname).get(0).getTextfield().setText("");
 							}
-							removeElementFromPanel(propertyname,buttonNumber);
+							if (propertyname.equals("creator")) {
+								refreshBorder(elementsofproperty.get(propertyname));
+							}
 							done=true;
 							break;
 						}
