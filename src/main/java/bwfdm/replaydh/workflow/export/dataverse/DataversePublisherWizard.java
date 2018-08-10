@@ -1012,6 +1012,9 @@ public class DataversePublisherWizard {
 				}
 				createNewDataset(environment, context);
 			} else if (myChosenDataset == null) {
+				if (savedParentComponent != null) {
+					clearGUI();
+				}
 				getJSONObject(environment, context);
 			} else if (!(context.chosenDataset.equals(myChosenDataset))) {
 				clearGUI();
@@ -1047,6 +1050,8 @@ public class DataversePublisherWizard {
 			// Publication year
 			int year = Calendar.getInstance().get(Calendar.YEAR);
 			eDate.getTextfield().setText(String.valueOf(year));
+			
+			eLicense.getTextfield().setText("NONE");
 		}
 		
 		private void getJSONObject(RDHEnvironment environment, DataversePublisherContext context) {
@@ -1309,6 +1314,9 @@ public class DataversePublisherWizard {
 			} else {
 				licenseElements.clear();
 			}
+			if (!((eLicense.getTextfield().getText().equals("CC0")) || (eLicense.getTextfield().getText().equals("NONE")))) {
+				licenseElements.add("NONE");
+			}
 			licenseElements.add(eLicense.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("license", licenseElements);
 			context.metadataObject.mapDublinCoreToLabel.put("license", rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));
@@ -1354,10 +1362,18 @@ public class DataversePublisherWizard {
 			boolean nextEnabled = true;
 
 			
-			nextEnabled = refreshBorder(elementsofproperty.get("creator"));
+			nextEnabled &= refreshBorder(elementsofproperty.get("creator"));
 			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDescription.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDate.getTextfield());
+			
+			if (!((eLicense.getTextfield().getText().equals("CC0")) || (eLicense.getTextfield().getText().equals("NONE")))) {
+				eLicense.getTextfield().setBorder(GuiUtils.getDefaulterrorborder());
+				nextEnabled &=false;
+			} else {
+				eLicense.getTextfield().setBorder(GuiUtils.getStandardBorder());
+				nextEnabled &=true;
+			}
 
 			setNextEnabled(nextEnabled);
 		}
@@ -1489,6 +1505,7 @@ public class DataversePublisherWizard {
 			JLabel lLicense = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));
 			eLicense = new GUIElement();
 			eLicense.setTextfield(tfLicense);
+			eLicense.getTextfield().setToolTipText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.licenseToolTip"));
 			eLicense.setLabel(lLicense);
 			eLicense.create();
 			listofkeys.add("license");
@@ -1532,6 +1549,7 @@ public class DataversePublisherWizard {
 			};
 
 			eCreator.getTextfield().getDocument().addDocumentListener(adapter);
+			eLicense.getTextfield().getDocument().addDocumentListener(adapter);
 			tfTitle.getDocument().addDocumentListener(adapter);
 			tfDescription.getDocument().addDocumentListener(adapter);
 			tfDate.getDocument().addDocumentListener(adapter);
