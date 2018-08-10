@@ -67,7 +67,9 @@ import javax.swing.table.TableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.FormLayout;
@@ -926,6 +928,8 @@ public class DataversePublisherWizard {
 	private static final DataversePublisherStep EDIT_METADATA = new DataversePublisherStep(
 			"replaydh.wizard.dataversePublisher.editMetadata.title",
 			"replaydh.wizard.dataversePublisher.editMetadata.description") {
+		
+		private JPanel mainPanel;
 		//private GUIElement ePublicationYear;
 		private GUIElement eIdentifier;
 		private GUIElement ePublisher;
@@ -984,48 +988,55 @@ public class DataversePublisherWizard {
 		
 		private RDHEnvironment myEnvironment;
 		private DataversePublisherContext myContext;
+		
+		private Window savedParentComponent;
 
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 			// Creator
-			if (myChosenDataset == null) {
+			if (context.chosenDataset == null) {
+				if (savedParentComponent != null) {
+					clearGUI();
+				}
+				createNewDataset(environment, context);
+			} else if (myChosenDataset == null) {
 				getJSONObject(environment, context);
 			} else if (!(context.chosenDataset.equals(myChosenDataset))) {
 				clearGUI();
 				resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
 				getJSONObject(environment, context);
 			}
+				
 			
 			myEnvironment=environment;
 			myContext=context;
 			
-			if (context.chosenDataset == null) {
-				clearGUI();
-				String creator = null;
-				if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
-					creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
-				}
-				eCreator.getTextfield().setText(creator);
-
-				//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
-
-				// Title
-				eTitle.getTextfield().setText(context.exportInfo.getWorkflow().getTitle());
-
-				// Description
-				eDescription.getTextfield().setText(context.exportInfo.getWorkflow().getDescription());
-
-				// Publication year
-				int year = Calendar.getInstance().get(Calendar.YEAR);
-				eDate.getTextfield().setText(String.valueOf(year));
-			}
-
 			refreshNextEnabled();
 
 			//TODO: remove previous metadata when the page is opened again. Now previous metadata is kept. Se todo with mdObject above
 
 		};
+		
+		public void createNewDataset(RDHEnvironment environment, DataversePublisherContext context) {
+			String creator = null;
+			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
+				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
+			}
+			eCreator.getTextfield().setText(creator);
+
+			//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
+
+			// Title
+			eTitle.getTextfield().setText(context.exportInfo.getWorkflow().getTitle());
+
+			// Description
+			eDescription.getTextfield().setText(context.exportInfo.getWorkflow().getDescription());
+
+			// Publication year
+			int year = Calendar.getInstance().get(Calendar.YEAR);
+			eDate.getTextfield().setText(String.valueOf(year));
+		}
 		
 		private void getJSONObject(RDHEnvironment environment, DataversePublisherContext context) {
 
@@ -1046,18 +1057,25 @@ public class DataversePublisherWizard {
 				}
 				protected void done() {
 					if (context.chosenDataset != null) {
+						Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
 						myChosenDataset=context.chosenDataset;
-						String license = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.license");
+						String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
 						if (license != null) {
 							eLicense.getTextfield().setText(license);
 						} else {
-							eLicense.getTextfield().setText("");
+							license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.license");
+							if (license != null) {
+								eLicense.getTextfield().setText("");
+							}
 						}
-						String rights = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.termsOfUse");
+						String rights = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.termsOfUse");
 						if (rights != null) {
 							eRights.getTextfield().setText(rights);
 						} else {
-							eRights.getTextfield().setText("");
+							rights = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.termsOfUse");
+							if (rights != null) {
+								eRights.getTextfield().setText("");
+							}
 						}
 						jsonObjects = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields[*].typeName");
 						for (int i=0; i < jsonObjects.size(); i++) {
@@ -1504,6 +1522,7 @@ public class DataversePublisherWizard {
 			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 			builder.padding(Paddings.DLU4);
 			createGUI();
+			mainPanel=builder.getPanel();
 			return builder.build();
 		}
 		
@@ -1515,6 +1534,7 @@ public class DataversePublisherWizard {
 						elementsofproperty.get(propertyname).remove(i);
 					}
 					elementsofproperty.get(propertyname).get(0).getTextfield().setText("");
+					refreshPanel(propertyname);
 				}
 			}
 			subjects=null;
@@ -1694,7 +1714,12 @@ public class DataversePublisherWizard {
 				z++;
 			}
 			builder.add(propertybuilder.build()).xy(1, panelRow.get(metadatapropertyname));
-			Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
+			Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, mainPanel);
+			if (parentComponent != null) {
+				savedParentComponent=parentComponent;
+			} else {
+				parentComponent=savedParentComponent;
+			}
 			parentComponent.pack();
 
 		}
@@ -1756,8 +1781,12 @@ public class DataversePublisherWizard {
 			if (source == resetButton.getResetButton()) {
 				if (resetButton.getResetButton().getText().equals(rm.get("replaydh.wizard.dataversePublisher.editMetadata.RestoreButton"))) {
 					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
-					clearGUI();
-					getJSONObject(myEnvironment, myContext);
+					if (myContext.chosenDataset == null) {
+						createNewDataset(myEnvironment, myContext);
+					} else {
+						clearGUI();
+						getJSONObject(myEnvironment, myContext);
+					}
 				} else {
 					builder.getPanel().removeAll();
 					createGUI();
