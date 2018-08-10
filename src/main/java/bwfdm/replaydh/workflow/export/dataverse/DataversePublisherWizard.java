@@ -123,8 +123,18 @@ public class DataversePublisherWizard {
 		
 		private boolean exportProcessMetadataAllowed;
 		
+		private boolean replaceMetadataAllowed;
+		
 		private String chosenDataset;
 		private String jsonObjectWithMetadata;
+		
+		public boolean isReplaceMetadataAllowed() {
+			return replaceMetadataAllowed;
+		}
+
+		public void setReplaceMetadataAllowed(boolean replaceMetadataAllowed) {
+			this.replaceMetadataAllowed = replaceMetadataAllowed;
+		}
 
 		public String getJsonObjectWithMetadata() {
 			return jsonObjectWithMetadata;
@@ -947,6 +957,7 @@ public class DataversePublisherWizard {
 		private GUIElement resetButton;
 		private JTextArea messageArea;
 		private JCheckBox processMetadata;
+		private JCheckBox replaceMetadata;
 
 		private List<GUIElement> creatorslist;
 		private List<GUIElement> publisherslist;
@@ -1334,6 +1345,8 @@ public class DataversePublisherWizard {
 			
 			context.setExportProcessMetadataAllowed(processMetadata.isSelected());
 
+			context.setReplaceMetadataAllowed(replaceMetadata.isSelected());
+			
 			return FINISH;
 		}
 
@@ -1517,9 +1530,12 @@ public class DataversePublisherWizard {
 
 			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
 			processMetadata.setSelected(true);
+			
+			replaceMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.replaceMetadata"));
+			replaceMetadata.setSelected(false);
 
 			builder.columns("pref:grow");
-			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 			builder.padding(Paddings.DLU4);
 			createGUI();
 			mainPanel=builder.getPanel();
@@ -1625,7 +1641,8 @@ public class DataversePublisherWizard {
 			panelRow.put("sources", 25);
 			builder.add(resetButton.getPanel()).xy(1, 27);
 			builder.add(processMetadata).xy(1, 29);
-			builder.add(messageArea).xyw(1, 31, 1);
+			builder.add(replaceMetadata).xy(1, 31);
+			builder.add(messageArea).xyw(1, 33, 1);
 		}
 
 		public GUIElement createGUIElement(String metadataproperty) {

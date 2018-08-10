@@ -116,7 +116,6 @@ public class DataverseRepository_v4 extends DataverseRepository {
            log.debug("Connecting to Server to Atom Feed Document from " + url.toString() + " ...");
         }
         ClientResponse resp = client.get(url.toString());
-        System.out.println("Output: "+resp);
         if (log.isDebugEnabled())
         {
             log.debug("Successfully retrieved Atom Feed from " + url.toString());
@@ -236,7 +235,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 	}
 
 
-	public boolean publishZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
+	public boolean uploadZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
 		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
 		String returnValue = publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
 		FileUtils.delete(zipFile);
@@ -247,7 +246,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		}
 	}
 
-	public String publishMetadata(String collectionURL, File fileFullPath, Map<String, List<String>> metadataMap) {
+	public String uploadMetadata(String collectionURL, File fileFullPath, Map<String, List<String>> metadataMap) {
 		String returnValue = null;
 		if ((metadataMap == null) && (fileFullPath != null)) {
 			returnValue = publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
@@ -262,11 +261,13 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		}
 	}
 
-	public boolean publisNewMetadataAndFile(String collectionURL, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
+	public boolean uploadNewMetadataAndFile(String collectionURL, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
 		Entry entry = null;
-		String doiId = this.publishMetadata(collectionURL, metadataFileXML, metadataMap);
-		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials),doiId);
-		return this.publishZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
+		String doiId = this.uploadMetadata(collectionURL, metadataFileXML, metadataMap);
+		int beginDOI=doiId.indexOf("doi:");
+		int end=doiId.length();
+		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials),doiId.substring(beginDOI, end));
+		return this.uploadZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}
 
 	public ServiceDocument getServiceDocument(String serviceDocumentURL) {
@@ -285,7 +286,9 @@ public class DataverseRepository_v4 extends DataverseRepository {
 			List<Entry> entries = feed.getEntries();
 			Entry chosenEntry = null;
 			for (Entry entry : entries) {
-				if (doiId.equals(entry.getEditMediaLinkResolvedHref().toString())) {
+				int beginDOI=entry.getEditMediaLinkResolvedHref().toString().indexOf("doi:");
+				int end=entry.getEditMediaLinkResolvedHref().toString().length();
+				if (doiId.equals(entry.getEditMediaLinkResolvedHref().toString().substring(beginDOI, end))) {
 					chosenEntry=entry;
 				}
 			}
@@ -416,5 +419,29 @@ public class DataverseRepository_v4 extends DataverseRepository {
 
 		return sb.toString();
 
+	}
+
+	@Override
+	public boolean replaceMetadata(String doiUrl, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
+		String returnValue = null;
+		if (metadataMap != null)  {
+			returnValue = publishElement(doiUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+		}
+		if(returnValue != null) {
+			return true;
+		} else {
+			log.error("No return value from publishElement method");
+			return false;
+		}
+	}
+
+	@Override
+	public boolean replaceMetadataAndAddFile(String collectionURL, String doiUrl, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
+		Entry entry = null;
+		int beginDOI=doiUrl.indexOf("doi:");
+		int end=doiUrl.length();
+		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials),doiUrl.substring(beginDOI, end));
+		replaceMetadata(doiUrl, null, null, metadataMap);
+		return uploadZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}
 }

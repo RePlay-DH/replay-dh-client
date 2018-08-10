@@ -232,7 +232,11 @@ public class DataversePublisher implements ResourcePublisher {
 				}
 				
 				// Start publication process
-				result = repository.publisNewMetadataAndFile(context.getCollectionURL(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				if (context.isReplaceMetadataAllowed()) {
+					result = repository.replaceMetadataAndAddFile(context.getCollectionURL(), context.getChosenDataset(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				} else {
+					result = repository.uploadNewMetadataAndFile(context.getCollectionURL(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				}
 				
 				// Delete zip-file
 				try {
@@ -261,7 +265,11 @@ public class DataversePublisher implements ResourcePublisher {
 				}
 				
 				// Start publication process
-				result = repository.publisNewMetadataAndFile(context.getCollectionURL(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				if (context.isReplaceMetadataAllowed()) {
+					result = repository.replaceMetadataAndAddFile(context.getCollectionURL(), context.getChosenDataset(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				} else {
+					result = repository.uploadNewMetadataAndFile(context.getCollectionURL(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				}
 				
 				// Delete zip-file
 				try {
@@ -274,12 +282,16 @@ public class DataversePublisher implements ResourcePublisher {
 				else {
 				
 				// Publication: metadata only
-				
-				String returnValue = repository.publishMetadata(context.getCollectionURL(), null, context.getMetadataObject().getMapDoublinCoreToMetadata());
-				if (returnValue != null) {
-					result = true;
-				} else {
-					result = false;
+				String returnValue = null;
+				if (context.isReplaceMetadataAllowed()) {
+					result = repository.replaceMetadata(context.getChosenDataset(), null, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				} else {				
+					returnValue = repository.uploadMetadata(context.getCollectionURL(), null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+					if (returnValue != null) {
+						result = true;
+					} else {
+						result = false;
+					}
 				}
 			}
 			

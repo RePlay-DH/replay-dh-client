@@ -158,7 +158,7 @@ public abstract class DataverseRepository {
 	 * @return
 	 * @throws IOException 
 	 */
-	public abstract boolean publishZipFile(String metadataSetHrefURL, File zipFile) throws IOException;
+	public abstract boolean uploadZipFile(String metadataSetHrefURL, File zipFile) throws IOException;
 
 	/**
 	 * Publish metada only (without any file) to some collection, which is available for the user.
@@ -169,7 +169,7 @@ public abstract class DataverseRepository {
 	 * @param metadataMap
 	 * @return
 	 */
-	public abstract String publishMetadata(String collectionURL, File fileFullPath, Map<String, List<String>> metadataMap);
+	public abstract String uploadMetadata(String collectionURL, File fileFullPath, Map<String, List<String>> metadataMap);
 
 	/**
 	 * Publish a file together with the metadata.
@@ -183,7 +183,32 @@ public abstract class DataverseRepository {
 	 * @throws IOException 
 	 * @throws SWORDClientException 
 	 */
-	public abstract boolean publisNewMetadataAndFile(String collectionURL, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
+	public abstract boolean uploadNewMetadataAndFile(String collectionURL, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
+	
+	/**
+	 * Replaces a metadata entry
+	 * @param doiUrl
+	 * @param zipFile
+	 * @param metadataFileXML
+	 * @param metadataMap
+	 * @return
+	 * @throws IOException
+	 * @throws SWORDClientException
+	 */
+	public abstract boolean replaceMetadata(String doiUrl, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
+	
+	/**
+	 * Replace metadata entry and add file
+	 * @param collectionURL TODO
+	 * @param doiUrl
+	 * @param zipFile
+	 * @param metadataFileXML
+	 * @param metadataMap
+	 * @return
+	 * @throws IOException
+	 * @throws SWORDClientException
+	 */
+	public abstract boolean replaceMetadataAndAddFile(String collectionURL, String doiUrl, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
 
 	/**
 	 * Get the entry in the Atom Feed which refers to the URL of the metadata entry in Dataverse. This entry is necessary to add files to the metadata entry in Dataverse.

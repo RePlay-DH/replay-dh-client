@@ -40,7 +40,7 @@ public class CollectionEntry {
 		String doiEnding;
 		valuesForDatasets = new TreeSet<>();
 		for(Entry<String, String> entry : entries) {
-			doiEnding=entry.getKey().substring(entry.getKey().indexOf("doi:"), entry.getKey().length()-1);
+			doiEnding=entry.getKey().substring(entry.getKey().indexOf("doi:"), entry.getKey().length());
 			valuesForDatasets.add(entry.getValue()+" - "+doiEnding);
 			keysForDatasets.put(entry.getValue()+" - "+doiEnding, entry.getKey());
 		}

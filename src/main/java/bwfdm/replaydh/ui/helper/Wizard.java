@@ -244,7 +244,7 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 
 		getContentPane().add(mainPanel);
 		pack();
-		setMinimumSize(new Dimension(700, 530));
+		setMinimumSize(new Dimension(700, 550));
 	}
 
 	private JLabel createLabel(int fontSize, boolean bold, int hAlign, int vAlign) {
