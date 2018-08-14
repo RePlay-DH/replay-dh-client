@@ -1000,21 +1000,15 @@ public class DataversePublisherWizard {
 		private RDHEnvironment myEnvironment;
 		private DataversePublisherContext myContext;
 		
-		private Window savedParentComponent;
-
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 			// Creator
 			if (context.chosenDataset == null) {
-				if (savedParentComponent != null) {
-					clearGUI();
-				}
+				clearGUI();
 				createNewDataset(environment, context);
 			} else if (myChosenDataset == null) {
-				if (savedParentComponent != null) {
-					clearGUI();
-				}
+				clearGUI();
 				getJSONObject(environment, context);
 			} else if (!(context.chosenDataset.equals(myChosenDataset))) {
 				clearGUI();
@@ -1773,12 +1767,8 @@ public class DataversePublisherWizard {
 			builder.add(propertybuilder.build()).xy(1, panelRow.get(metadatapropertyname));
 			Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, mainPanel);
 			if (parentComponent != null) {
-				savedParentComponent=parentComponent;
-			} else {
-				parentComponent=savedParentComponent;
+				parentComponent.pack();
 			}
-			parentComponent.pack();
-
 		}
 
 		public void removeElementFromPanel(String metadatapropertyname, int buttonNumber) {
