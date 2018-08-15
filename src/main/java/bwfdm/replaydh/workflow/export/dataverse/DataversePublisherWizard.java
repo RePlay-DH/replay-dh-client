@@ -988,7 +988,6 @@ public class DataversePublisherWizard {
 		private long timeOut = 2; //in seconds
 		private DocumentAdapter adapter;
 		
-		private String myChosenDataset;
 		private List<Object> jsonObjects;
 		private String propertyForSwitch;
 		private String propertyvalue;
@@ -1007,13 +1006,12 @@ public class DataversePublisherWizard {
 			if (context.chosenDataset == null) {
 				clearGUI();
 				createNewDataset(environment, context);
-			} else if (myChosenDataset == null) {
-				clearGUI();
-				getJSONObject(environment, context);
-			} else if (!(context.chosenDataset.equals(myChosenDataset))) {
+				replaceMetadata.setSelected(false);
+			} else {
 				clearGUI();
 				resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
 				getJSONObject(environment, context);
+				replaceMetadata.setSelected(true);
 			}
 				
 			
@@ -1068,7 +1066,6 @@ public class DataversePublisherWizard {
 				protected void done() {
 					if (context.chosenDataset != null) {
 						Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
-						myChosenDataset=context.chosenDataset;
 						String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
 						if (license != null) {
 							eLicense.getTextfield().setText(license);
