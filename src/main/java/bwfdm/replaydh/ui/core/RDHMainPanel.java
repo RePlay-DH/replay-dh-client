@@ -1173,6 +1173,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 			if((e.getChangeFlags() & HierarchyEvent.PARENT_CHANGED) != 0) {
 				boolean alwaysOnTop = environment.getBoolean(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP);
+				actionManager.setSelected(alwaysOnTop, "replaydh.ui.core.mainPanel.toggleAlwaysOnTop");
 				setAlwaysOnTop(alwaysOnTop);
 			}
 		}
