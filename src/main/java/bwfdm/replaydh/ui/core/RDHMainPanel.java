@@ -31,6 +31,8 @@ import java.awt.Frame;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Window;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
@@ -195,6 +197,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 	private final Handler handler;
 
+	private final PropertyChangeListener fileTrackerChangeListener;
+	private final PropertyChangeListener environmentChangeListener;
+
 	/**
 	 * Link to current background updater task.
 	 * Access needs to be synchronized externally.
@@ -223,10 +228,14 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		RDHClient client = environment.getClient();
 
 		handler = new Handler();
+		fileTrackerChangeListener = handler::onFileTrackerPropertyChange;
+		environmentChangeListener = handler::onEnvironmentPropertyChange;
 
 		workflowSource = client.getWorkflowSource();
 		fileTracker = client.getFileTracker();
-		fileTracker.addPropertyChangeListener(JGitAdapter.NAME_WORKFLOW, handler);
+		fileTracker.addPropertyChangeListener(JGitAdapter.NAME_WORKFLOW, fileTrackerChangeListener);
+
+		environment.addPropertyChangeListener(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, environmentChangeListener);
 
 		resourceCache = client.getResourceCache();
 
@@ -347,6 +356,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 			handler.schedulePeriodicFileTrackerUpdate();
 		}
+
+		addHierarchyListener(handler);
 
 		showInitialOutline();
 	}
@@ -513,6 +524,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.updateStatus", handler::scheduleSingleFileTrackerUpdate);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.cancelUpdate", handler::cancelFileTrackerUpdate);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.toggleDetails", handler::toggleDetails);
+		actionMapper.mapToggle("replaydh.ui.core.mainPanel.toggleAlwaysOnTop", handler::toggleAlwaysOnTop);
 		actionMapper.mapToggle("replaydh.ui.core.mainPanel.toggleTrackerActive", handler::toggleTrackerStatus);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.changeWorkspace", handler::changeWorkspace);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.importWorkflowSchema", handler::importWorkflowSchema);
@@ -578,6 +590,15 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		refreshActions();
 	}
 
+	private boolean setAlwaysOnTop(boolean alwaysOnTop) {
+		Window window = SwingUtilities.getWindowAncestor(RDHMainPanel.this);
+		if(window!=null) {
+			window.setAlwaysOnTop(alwaysOnTop);
+		}
+
+		return window!=null;
+	}
+
 	/**
 	 * @see bwfdm.replaydh.ui.helper.CloseableUI#close()
 	 */
@@ -587,7 +608,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		CloseableUI.tryClose(workflowGraph, workspaceTrackerPanel, fileTrackerPanel, fileCachePanel);
 		actionMapper.dispose();
 
-		fileTracker.removePropertyChangeListener(JGitAdapter.NAME_WORKFLOW, handler);
+		removeHierarchyListener(handler);
+		fileTracker.removePropertyChangeListener(JGitAdapter.NAME_WORKFLOW, fileTrackerChangeListener);
+		environment.removePropertyChangeListener(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, environmentChangeListener);
 
 		// Finally make sure our background task gets canceled
 		handler.cancelFileTrackerUpdate();
@@ -1137,13 +1160,24 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 	}
 
-	private class Handler implements PropertyChangeListener {
+	private class Handler implements HierarchyListener {
 
 		/**
-		 * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
+		 * @see java.awt.event.HierarchyListener#hierarchyChanged(java.awt.event.HierarchyEvent)
 		 */
 		@Override
-		public void propertyChange(PropertyChangeEvent evt) {
+		public void hierarchyChanged(HierarchyEvent e) {
+			if(e.getID()!=HierarchyEvent.HIERARCHY_CHANGED) {
+				return;
+			}
+
+			if((e.getChangeFlags() & HierarchyEvent.PARENT_CHANGED) != 0) {
+				boolean alwaysOnTop = environment.getBoolean(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP);
+				setAlwaysOnTop(alwaysOnTop);
+			}
+		}
+
+		private void onFileTrackerPropertyChange(PropertyChangeEvent evt) {
 
 			switch (evt.getPropertyName()) {
 			case JGitAdapter.NAME_WORKFLOW:
@@ -1152,6 +1186,15 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 			default:
 				break;
+			}
+		}
+
+		private void onEnvironmentPropertyChange(PropertyChangeEvent evt) {
+			String propertyName = RDHEnvironment.unpackPropertyName(evt.getPropertyName());
+
+			if(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP.getKey().equals(propertyName)) {
+				boolean newAlwaysOnTop = Boolean.parseBoolean((String) evt.getNewValue());
+				setAlwaysOnTop(newAlwaysOnTop);
 			}
 		}
 
@@ -1263,6 +1306,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		private void toggleDetails() {
 			toggleSize(!isExpanded);
+		}
+
+		private void toggleAlwaysOnTop(boolean alwaysOnTop) {
+			environment.setProperty(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, Boolean.toString(alwaysOnTop));
 		}
 
 		private void changeWorkspace() {

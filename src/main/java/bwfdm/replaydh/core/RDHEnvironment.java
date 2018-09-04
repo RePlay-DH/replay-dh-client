@@ -445,6 +445,14 @@ public class RDHEnvironment implements PropertyChangeSource {
 		changeSupport.removePropertyChangeListener(propertyName, listener);
 	}
 
+	public void addPropertyChangeListener(RDHProperty property, PropertyChangeListener listener) {
+		changeSupport.addPropertyChangeListener(prefixedPropertyKey(property.getKey()), listener);
+	}
+
+	public void removePropertyChangeListener(RDHProperty property, PropertyChangeListener listener) {
+		changeSupport.removePropertyChangeListener(prefixedPropertyKey(property.getKey()), listener);
+	}
+
 	/**
 	 * Clears the list of registered listeners and empties the current properties map
 	 */

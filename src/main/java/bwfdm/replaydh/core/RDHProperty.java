@@ -65,6 +65,12 @@ public enum RDHProperty {
 	CLIENT_UI_TRAY_DISABLED("client.ui.trayDisabled", false),
 
 	/**
+	 * Flag to indicate that the client's main window should
+	 * always stay o ntop of other windows when not minimized.
+	 */
+	CLIENT_UI_ALWAYS_ON_TOP("client.ui.alwaysOnTop", false),
+
+	/**
 	 * Language setting for the client
 	 */
 	CLIENT_LOCALE("client.locale", "en"),
