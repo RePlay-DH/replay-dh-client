@@ -58,6 +58,9 @@ public abstract class PreferencesDelegate<O extends Object, C extends JComponent
 		this.environment = requireNonNull(environment);
 		this.property = requireNonNull(property);
 		this.component = requireNonNull(component);
+		if(defaultValue==null) {
+			defaultValue = property.getDefaultValue();
+		}
 		this.defaultValue = requireNonNull(defaultValue);
 	}
 

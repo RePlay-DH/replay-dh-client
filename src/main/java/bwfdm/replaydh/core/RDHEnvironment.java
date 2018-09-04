@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.core;
@@ -211,7 +211,7 @@ public class RDHEnvironment implements PropertyChangeSource {
 	}
 
 	public synchronized String getProperty(RDHProperty property) {
-		return getProperty(property.getKey(), null);
+		return getProperty(property.getKey(), property.getDefaultValue());
 	}
 
 	public synchronized String getProperty(RDHProperty property, String defaultValue) {
@@ -220,6 +220,11 @@ public class RDHEnvironment implements PropertyChangeSource {
 
 	public synchronized boolean getBoolean(RDHProperty property, boolean defaultValue) {
 		return getBoolean(property.getKey(), defaultValue);
+	}
+
+	public synchronized boolean getBoolean(RDHProperty property) {
+		Object defaultValue = property.getDefaultValue();
+		return getBoolean(property.getKey(), defaultValue==null ? false : (boolean)defaultValue);
 	}
 
 	public synchronized boolean getBoolean(String key, boolean defaultValue) {
@@ -231,6 +236,11 @@ public class RDHEnvironment implements PropertyChangeSource {
 		return getInteger(property.getKey(), defaultValue);
 	}
 
+	public synchronized int getInteger(RDHProperty property) {
+		Object defaultValue = property.getDefaultValue();
+		return getInteger(property.getKey(), defaultValue==null ? 0 : (int)defaultValue);
+	}
+
 	public synchronized int getInteger(String key, int defaultValue) {
 		String value = getProperty(key);
 		return value!=null ? Integer.parseInt(value) : defaultValue;
@@ -238,6 +248,11 @@ public class RDHEnvironment implements PropertyChangeSource {
 
 	public synchronized double getDouble(RDHProperty property, double defaultValue) {
 		return getDouble(property.getKey(), defaultValue);
+	}
+
+	public synchronized double getDouble(RDHProperty property) {
+		Object defaultValue = property.getDefaultValue();
+		return getDouble(property.getKey(), defaultValue==null ? 0D : (double)defaultValue);
 	}
 
 	public synchronized double getDouble(String key, double defaultValue) {
@@ -428,6 +443,14 @@ public class RDHEnvironment implements PropertyChangeSource {
 	@Override
 	public void removePropertyChangeListener(String propertyName, PropertyChangeListener listener) {
 		changeSupport.removePropertyChangeListener(propertyName, listener);
+	}
+
+	public void addPropertyChangeListener(RDHProperty property, PropertyChangeListener listener) {
+		changeSupport.addPropertyChangeListener(prefixedPropertyKey(property.getKey()), listener);
+	}
+
+	public void removePropertyChangeListener(RDHProperty property, PropertyChangeListener listener) {
+		changeSupport.removePropertyChangeListener(prefixedPropertyKey(property.getKey()), listener);
 	}
 
 	/**

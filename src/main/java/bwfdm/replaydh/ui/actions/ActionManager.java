@@ -1948,8 +1948,13 @@ public class ActionManager {
 		 */
 		@Override
 		public Component feedAction(Component container, Action a, String groupId) {
-			// not supported by menu bars
-			return null;
+			JMenuBar menuBar = (JMenuBar) container;
+
+			AbstractButton button = createButton(a, groupId, container);
+			button.setHorizontalTextPosition(SwingConstants.CENTER);
+	        button.setVerticalTextPosition(SwingConstants.BOTTOM);
+
+			return menuBar.add(button);
 		}
 
 		/**
@@ -1984,8 +1989,8 @@ public class ActionManager {
 		 */
 		@Override
 		public Component feedGlue(Component container) {
-			// not supported
-			return null;
+			JMenuBar menuBar = (JMenuBar) container;
+			return menuBar.add(Box.createHorizontalGlue());
 		}
 
 	}

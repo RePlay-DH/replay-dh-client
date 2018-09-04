@@ -192,8 +192,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 	private final List<TrackerListener> trackerListeners = new CopyOnWriteArrayList<>();
 
-	private boolean attachInternalInfoToSteps;
-
 	/**
 	 * Package-private so that the {@link GitArchiveExporter}
 	 * can use it for interaction with git.
@@ -219,7 +217,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			return false;
 		}
 
-		attachInternalInfoToSteps = environment.getBoolean(RDHProperty.GIT_ATTACH_INFO_TO_STEPS, false);
+		//TODO setup internals?
 
 		return true;
 	}
@@ -337,11 +335,11 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Currently we report the .git metadata folder, but in the future
 	 * we might want to change that to the working directory?
 	 */
-	private static File reportLocation(Repository repo) {
+	private File reportLocation(Repository repo) {
 		return repo.getDirectory();
 	}
 
-	private static void verifyGit(final Git git, final Workspace workspace, boolean createSource)
+	private void verifyGit(final Git git, final Workspace workspace, boolean createSource)
 			throws IOException, GitException {
 
 		final Repository repo = git.getRepository();
@@ -389,6 +387,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 				// The serialized info to be used as git commit message
 				final String message = serializeInfo(currentInfo);
+
+				// If required, include an empty .gitignore file in the initial commit
+				ensureGitignoreFile();
 
 				RevCommit commit;
 
@@ -779,6 +780,47 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	}
 
 	/**
+	 * Checks whether the default .gitignore file is already present in the
+	 * repository, creating it if necessary.
+	 * @return {@code true} iff the .gitignore file had to be created.
+	 * @throws IOException in case any of the underlying file operations fail
+	 * @throws GitException
+	 */
+	private void ensureGitignoreFile() throws IOException, GitException {
+		Path ignoreFile = getGitignoreFile();
+		boolean shouldCreate = Files.notExists(ignoreFile, LinkOption.NOFOLLOW_LINKS);
+
+		if(shouldCreate) {
+			Files.createFile(ignoreFile);
+			try(Writer writer = Files.newBufferedWriter(ignoreFile, StandardCharsets.UTF_8))  {
+				writer.write("########################################################");
+				writer.write("# This file contains ignore rules for the underlying   #");
+				writer.write("# Git repository. Entries are managed by the RePlay-DH #");
+				writer.write("# client automatically depending on user actions via   #");
+				writer.write("# the graphical interface.                             #");
+				writer.write("#                                                      #");
+				writer.write("#   Do NOT modify this file manually unless you know   #");
+				writer.write("#              EXACTLY what you're doing!              #");
+				writer.write("########################################################");
+			}
+		}
+
+		final Repository repo = git.getRepository();
+
+		try {
+			git.add()
+				.addFilepattern(ignoreFile.toString())
+				.call();
+
+			log.info("Created default ignore file {} in repo {}", ignoreFile, reportLocation(repo));
+		} catch(GitAPIException e) {
+			throw new GitException(String.format(
+					"Failed to create default ignore file %s for repo %s",
+					ignoreFile, reportLocation(repo)), e);
+		}
+	}
+
+	/**
 	 * @see bwfdm.replaydh.io.FileTracker#addTrackerListener(bwfdm.replaydh.io.TrackerListener)
 	 */
 	@Override
@@ -1142,6 +1184,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		case IGNORE:
 			return ignoreFiles(files);
 
+		case NONE:
+			return resetFileTracking(files);
+
 		default:
 			throw new TrackerException("Unknown or unsupported tracking action: "+action);
 		}
@@ -1181,6 +1226,11 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			return systemToGitPath(relativeFile.toString());
 		}
 
+	}
+
+	private Set<Path> resetFileTracking(Set<Path> files) {
+		//TODO implement: remove tracking or revoke ignore status for the given files
+		throw new UnsupportedOperationException();
 	}
 
 	private Set<Path> startTrackingFiles(Set<Path> files) {
@@ -1263,9 +1313,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			stopTrackingFiles(filesToRemove, false);
 		}
 
-		// From here on we'll only interact with .gitignore
+		// From here on we'll only interact with the ignore file
 
-		// We're assuming one global .gitignore file that only our client is manipulating
+		// We're assuming one global ignore file that only our client is manipulating
 		IgnoreNode ignoreNode;
 		try {
 			ignoreNode = getDefaultIgnoreRules();

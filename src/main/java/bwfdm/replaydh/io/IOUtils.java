@@ -33,6 +33,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -65,6 +66,18 @@ public class IOUtils {
 	 */
 	public static final long GB = MB*KB;
 
+	/**
+	 * Creates a human readable textual representation of the given
+	 * file size. The result will be of the following format:<br>
+	 * {@code xxx <unit>}
+	 * where {@code xxx} is the shortened size value as an integer
+	 * according to the {@code unit} (KB,MB,GB,...). Note that we use
+	 * the decimal convention for calculating the shortened size values,
+	 * so {@code 1KB} is equal to {@code 1000} bytes and not {@code 1024}.
+	 *
+	 * @param size
+	 * @return
+	 */
 	public static String readableSize(long size) {
 
 		if(size<KB) {
@@ -75,6 +88,15 @@ public class IOUtils {
 			return size/MB+" MB";
 		} else {
 			return size/GB+" GB";
+		}
+	}
+
+	public static String readableSize(Path file) {
+		try {
+			long size = Files.size(file);
+			return readableSize(size);
+		} catch (IOException e) {
+			return "-";
 		}
 	}
 

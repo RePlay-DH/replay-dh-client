@@ -224,6 +224,11 @@ public class RDHClient {
 
 	private volatile boolean active = false;
 
+	/**
+	 * Flag indicating a requested restart.
+	 * Note that this value can only ever change from
+	 * {@code false} to {@code true}!
+	 */
 	private volatile boolean doRestart = false;
 
 	private final String configFilename;
@@ -1099,7 +1104,7 @@ public class RDHClient {
 		synchronized (lock) {
 			checkState("Client already shut down", active);
 
-			log.info("Client shutdown initiated. Restart requested: ", doRestart ? "yes" : "no");
+			log.info("Client shutdown initiated. Restart requested: {}", doRestart ? "yes" : "no");
 
 			List<ErrorDescription> errors = new ArrayList<>();
 

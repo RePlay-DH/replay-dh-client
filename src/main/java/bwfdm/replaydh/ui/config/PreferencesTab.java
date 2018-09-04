@@ -26,7 +26,7 @@ import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.utils.ChangeSource;
 
 /**
- * Implementations of this class muust have a constructor that takes
+ * Implementations of this class must have a constructor that takes
  * as its sole argument an instance of {@link RDHEnvironment}!
  *
  * @author Markus Gärtner
