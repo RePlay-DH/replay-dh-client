@@ -42,6 +42,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import bwfdm.replaydh.io.resources.IOResource;
+import bwfdm.replaydh.utils.RDHUtils;
 
 /**
  * @author Markus Gärtner
@@ -206,7 +207,7 @@ public class IOUtils {
 			for(File file: filesList) {
 				
 				String zipEntryName = IOUtils.getRelativizedPath(file.getPath(), basePath); 
-				zipEntryName = IOUtils.replaceNotAllowedCharacters(zipEntryName);
+				zipEntryName = RDHUtils.replaceNotAllowedCharacters(zipEntryName);
 								
 				try(FileInputStream fileInputStream = new FileInputStream(file)) { //fileInputStream will be closed automatically
 				
@@ -242,15 +243,5 @@ public class IOUtils {
 	    Path pathBase = Paths.get(basePath);
 	    Path pathRelative = pathBase.relativize(pathAbsolute);
 	    return pathRelative.toString();
-	}
-
-	public static String replaceNotAllowedCharacters(final String str) {
-		String output = new String(str);
-	
-		// Needed for Apache server!
-		output = output.replace("\\", "/");
-		output = output.replace(" ", "_"); //TODO: replace with "%20" ??
-		
-		return output;
 	}
 }

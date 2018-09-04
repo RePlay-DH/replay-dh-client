@@ -275,6 +275,16 @@ public class RDHUtils {
 
     	return sb.toString();
     }
+
+	public static String replaceNotAllowedCharacters(final String str) {
+		String output = new String(str);
+	
+		// Needed for Apache server!
+		output = output.replace("\\", "/");
+		output = output.replace(" ", "_"); //TODO: replace with "%20" ??
+		
+		return output;
+	}
 }
 
 
