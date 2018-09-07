@@ -19,6 +19,7 @@
 package bwfdm.replaydh.io;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -41,6 +42,9 @@ import java.security.CodeSource;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import bwfdm.replaydh.io.resources.IOResource;
 import bwfdm.replaydh.utils.RDHUtils;
@@ -65,6 +69,8 @@ public class IOUtils {
 	 * Gigabyte notation in decimal form
 	 */
 	public static final long GB = MB*KB;
+
+	private static final Logger log = LoggerFactory.getLogger(IOUtils.class);
 
 	/**
 	 * Creates a human readable textual representation of the given
@@ -212,39 +218,39 @@ public class IOUtils {
     }
 
 	/**
-	 * Pack a List of files to the zip-file. The basePath should be equal to the workspace directory.  
+	 * Pack a List of files to the zip-file. The basePath should be equal to the workspace directory.
 	 * <p>
 	 * The method uses FileOutputStream, ZipOutputStream and FileInputStream inside, which will be closed automatically at the end.
-	 * 
+	 *
 	 * @param filesList
 	 * @param zipFile
 	 * @param basePath
 	 * @throws IOException
 	 */
 	public static void packFilesToZip(List<File> filesList, File zipFile, String basePath) throws IOException {
-		
-		try(	FileOutputStream fos = new FileOutputStream(zipFile); //fos and zos will be closed automatically 
-				ZipOutputStream zos = new ZipOutputStream(fos)	
+
+		try(	FileOutputStream fos = new FileOutputStream(zipFile); //fos and zos will be closed automatically
+				ZipOutputStream zos = new ZipOutputStream(fos)
 		) {
 			for(File file: filesList) {
-				
-				String zipEntryName = IOUtils.getRelativizedPath(file.getPath(), basePath); 
+
+				String zipEntryName = IOUtils.getRelativizedPath(file.getPath(), basePath);
 				zipEntryName = RDHUtils.replaceNotAllowedCharacters(zipEntryName);
-								
+
 				try(FileInputStream fileInputStream = new FileInputStream(file)) { //fileInputStream will be closed automatically
-				
+
 					ZipEntry entry = new ZipEntry(zipEntryName);
 					zos.putNextEntry(entry);
-					
+
 					byte[] buffer = new byte[1024];
 					int length;
 					while ((length = fileInputStream.read(buffer)) >= 0) {
 						zos.write(buffer, 0, length);
-					}		
+					}
 					zos.closeEntry();
 				} // end of try. fileInputStream will be closed automatically
-			}								
-		} // end of try. fos and zos will be closed automatically. "Finally" do not needed. 
+			}
+		} // end of try. fos and zos will be closed automatically. "Finally" do not needed.
 	}
 
 	/**
@@ -254,8 +260,8 @@ public class IOUtils {
 	 * - absolutePath: /folder1/folder2/folder3/file.txt
 	 * - basePath: /folrder1/folder2/
 	 * - relativizedPath: folder3/file.txt
-	 * 
-	 * </pre>  
+	 *
+	 * </pre>
 	 * @param absolutePath
 	 * @param basePath
 	 * @return
@@ -265,5 +271,13 @@ public class IOUtils {
 	    Path pathBase = Paths.get(basePath);
 	    Path pathRelative = pathBase.relativize(pathAbsolute);
 	    return pathRelative.toString();
+	}
+
+	public static void closeQuietly(Closeable closeable) {
+		try {
+			closeable.close();
+		} catch (IOException e) {
+			log.error("Failed to close resource", e);
+		}
 	}
 }

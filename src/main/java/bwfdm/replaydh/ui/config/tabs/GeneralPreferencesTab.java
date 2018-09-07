@@ -54,6 +54,7 @@ public class GeneralPreferencesTab extends DelegatingPreferencesTab {
 		JCheckBox cbExpertMode = new JCheckBox();
 		JCheckBox cbDisableTray = new JCheckBox();
 		JCheckBox cbAlwaysOnTop = new JCheckBox();
+		JCheckBox cbCollectStats = new JCheckBox();
 
 		JComboBox<Locale> cbLocale = new JComboBox<>(new Locale[] {Locale.GERMAN, Locale.ENGLISH});
 		cbLocale.setEditable(false);
@@ -61,7 +62,7 @@ public class GeneralPreferencesTab extends DelegatingPreferencesTab {
 
 		FormBuilder.create()
 				.columns("left:pref, 15dlu, left:pref, fill:pref:grow")
-				.rows("pref, $nlg, pref, $lg, pref, 10dlu, pref, $nlg, pref, $lg, pref, $lg, pref, $lg, pref")
+				.rows("pref, $nlg, pref, $lg, pref, 10dlu, pref, $nlg, pref, $lg, pref, $lg, pref, $lg, pref, $lg, pref")
 				.panel(getPanel())
 
 				.addSeparator(rm.get("replaydh.plugins.generalPreferencesTab.user")).xyw(1, 1, 4)
@@ -70,17 +71,19 @@ public class GeneralPreferencesTab extends DelegatingPreferencesTab {
 
 				.addSeparator(rm.get("replaydh.plugins.generalPreferencesTab.client")).xyw(1, 7, 4)
 				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.locale")).xy(1, 9).add(cbLocale).xy(3, 9)
-				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.trayDisabled")).xy(1, 11).add(cbDisableTray).xy(3, 11)
-				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.alwaysOnTop")).xy(1, 13).add(cbAlwaysOnTop).xy(3, 13)
-				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.expertMode")).xy(1, 15).add(cbExpertMode).xy(3, 15)
+				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.collectStats")).xy(1, 11).add(cbCollectStats).xy(3, 11)
+				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.trayDisabled")).xy(1, 11).add(cbDisableTray).xy(3, 13)
+				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.alwaysOnTop")).xy(1, 13).add(cbAlwaysOnTop).xy(3, 15)
+				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.expertMode")).xy(1, 15).add(cbExpertMode).xy(3, 17)
 
 				.build();
 
 		addDelegate(new PreferencesDelegate.TextComponentDelegate(environment, RDHProperty.CLIENT_USERNAME, tfUsername, ""));
 		addDelegate(new PreferencesDelegate.TextComponentDelegate(environment, RDHProperty.CLIENT_ORGANIZATION, tfOrganization, ""));
 		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.CLIENT_EXPERT_MODE, cbExpertMode, false));
+		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.CLIENT_COLLECT_STATS, cbCollectStats, false));
 		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.CLIENT_UI_TRAY_DISABLED, cbDisableTray, false));
-		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, cbDisableTray, false));
+		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, cbAlwaysOnTop, false));
 
 		StringConverter<Locale> localeConverter = StringConverter.fromFunctions(
 				l -> l.toString(), s -> Locale.forLanguageTag(s));

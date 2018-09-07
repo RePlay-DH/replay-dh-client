@@ -99,6 +99,12 @@ public enum RDHProperty {
 	 */
 	CLIENT_USERNAME("client.username"),
 
+	/**
+	 * Flag to indicate that the client should collect usage statistics
+	 * and log them at a default location.
+	 */
+	CLIENT_COLLECT_STATS("client.collectStats", false),
+
 	// Internal properties used to setup localization, logging, etc...
 
 	INTERN_RESOURCES_REPORT_MISSING("intern.resources.reportMissing", true),
@@ -194,7 +200,7 @@ public enum RDHProperty {
 
 	DSPACE_REPOSITORY_URL("dspace.repository.url"),
 	DSPACE_REPOSITORY_NAME("dspace.repository.name"),
-	
+
 	DATAVERSE_REPOSITORY_URL("dataverse.repository.url"),
 	DATAVERSE_REPOSITORY_NAME("dataverse.repository.name"),
 	;

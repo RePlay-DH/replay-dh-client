@@ -16,26 +16,62 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.core;
+package bwfdm.replaydh.stats;
 
+import static bwfdm.replaydh.utils.RDHUtils.checkArgument;
 import static java.util.Objects.requireNonNull;
+
+import java.time.LocalDateTime;
 
 /**
  * @author Markus Gärtner
  *
  */
-public enum UserFolder {
+public class StatEntry {
 
-	LOGS("logs"),
-	STATS("stats"),
-	METADATA("metadata"),
-	IDENTIFIERS("identifiers"),
-	SCHEMAS("schemas"),
-	;
+	private final LocalDateTime dateTime;
 
-	final String folderName;
+	private final StatType type;
 
-	private UserFolder(String folderName) {
-		this.folderName = requireNonNull(folderName);
+	private final String label;
+
+	private final String[] data;
+
+	private static final String[] NO_DATA = {};
+
+	private static LocalDateTime now() {
+		return LocalDateTime.now();
+	}
+
+	public static StatEntry ofType(StatType type, String label) {
+		return new StatEntry(now(), type, label, NO_DATA);
+	}
+
+	public static StatEntry withData(StatType type, String label, String...data) {
+		checkArgument("Must have at least 1 data point", data.length>0);
+		return new StatEntry(now(), type, label, data);
+	}
+
+	private StatEntry(LocalDateTime dateTime, StatType type, String label, String[] data) {
+		this.dateTime = LocalDateTime.now();
+		this.type = requireNonNull(type);
+		this.label = requireNonNull(label);
+		this.data = data;
+	}
+
+	public LocalDateTime getDateTime() {
+		return dateTime;
+	}
+
+	public StatType getType() {
+		return type;
+	}
+
+	public String getLabel() {
+		return label;
+	}
+
+	public String[] getData() {
+		return data;
 	}
 }

@@ -16,26 +16,10 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.core;
-
-import static java.util.Objects.requireNonNull;
-
 /**
+ * Utility classes for the collection and processing of usage statistics.
+ *
  * @author Markus Gärtner
  *
  */
-public enum UserFolder {
-
-	LOGS("logs"),
-	STATS("stats"),
-	METADATA("metadata"),
-	IDENTIFIERS("identifiers"),
-	SCHEMAS("schemas"),
-	;
-
-	final String folderName;
-
-	private UserFolder(String folderName) {
-		this.folderName = requireNonNull(folderName);
-	}
-}
+package bwfdm.replaydh.stats;

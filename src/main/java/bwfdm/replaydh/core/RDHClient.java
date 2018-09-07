@@ -42,6 +42,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -74,12 +75,14 @@ import bwfdm.replaydh.git.JGitAdapter;
 import bwfdm.replaydh.git.RDHInfoProperty;
 import bwfdm.replaydh.io.FileTracker;
 import bwfdm.replaydh.io.IOUtils;
+import bwfdm.replaydh.io.resources.FileResource;
 import bwfdm.replaydh.io.resources.FileResourceProvider;
 import bwfdm.replaydh.metadata.MetadataBuilder;
 import bwfdm.replaydh.metadata.MetadataRecord;
 import bwfdm.replaydh.metadata.MetadataRepository;
 import bwfdm.replaydh.metadata.basic.file.FileMetadataRepository;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.stats.StatLog;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.core.RDHGui;
 import bwfdm.replaydh.utils.Label;
@@ -205,6 +208,8 @@ public class RDHClient {
 	private final Lazy<ResourceCache> resourceCache = Lazy.create(this::createResourceCache, true);
 
 	private final Lazy<PluginEngine> pluginEngine = Lazy.create(this::createPluginEngine, true);
+
+	private final Lazy<StatLog> statLog = Lazy.create(this::createStatLog, true);
 
 	private final boolean verbose;
 
@@ -514,6 +519,10 @@ public class RDHClient {
 
 	public SchemaManager getSchemaManager() {
 		return schemaManager.value();
+	}
+
+	public StatLog getStatLog() {
+		return statLog.value();
 	}
 
 	/**
@@ -860,7 +869,7 @@ public class RDHClient {
 			LocalSchemaManager.Builder builder = LocalSchemaManager.newBuilder();
 			builder.setIncludeSharedDefaultSchema(true);
 
-			// We try to ensure user folder related lookup first, sicne that one can fail
+			// We try to ensure user folder related lookup first, since that one can fail
 			try {
 				builder.addFolder(ensureUserFolder(UserFolder.SCHEMAS));
 			} catch (IOException e) {
@@ -892,6 +901,21 @@ public class RDHClient {
 				throw new RDHException("Plugins folder must point to a directory: "+pluginFolder);
 
 			return addAndStartTool(new PluginEngine(pluginFolder, FileResourceProvider.getSharedInstance()));
+		}
+	}
+
+	private StatLog createStatLog() {
+		synchronized (lock) {
+			Path folder;
+			try {
+				folder = ensureUserFolder(UserFolder.STATS);
+			} catch (IOException e) {
+				throw new RDHException("Unable to create default directory for usage statistics", e);
+			}
+			String baseName = "userstats-"+LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+			Path logFile = folder.resolve(baseName);
+
+			return addAndStartTool(new StatLog(new FileResource(logFile)));
 		}
 	}
 

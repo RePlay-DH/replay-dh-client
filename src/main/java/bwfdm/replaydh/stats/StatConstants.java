@@ -16,26 +16,40 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.core;
-
-import static java.util.Objects.requireNonNull;
+package bwfdm.replaydh.stats;
 
 /**
  * @author Markus Gärtner
  *
  */
-public enum UserFolder {
+class StatConstants {
 
-	LOGS("logs"),
-	STATS("stats"),
-	METADATA("metadata"),
-	IDENTIFIERS("identifiers"),
-	SCHEMAS("schemas"),
-	;
+	// META TYPES
 
-	final String folderName;
+	/**
+	 * Anything UI related
+	 */
+	static final int UI = (1<<0);
 
-	private UserFolder(String folderName) {
-		this.folderName = requireNonNull(folderName);
-	}
+	/**
+	 * Stats related to internal components
+	 */
+	static final int INTERNAL = (1<<1);
+
+	/**
+	 * Stats related to general timing during client runtime
+	 */
+	static final int RUNTIME = (1<<2);
+
+	// STRUCTURAL INFORMATION
+
+	/**
+	 * Signals the beginning of a logged interval
+	 */
+	static final int BEGIN = (1<<15);
+
+	/**
+	 * Signals the end of a logged interval
+	 */
+	static final int END = (1<<16);
 }
