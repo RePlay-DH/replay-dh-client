@@ -81,7 +81,8 @@ public class GeneralPreferencesTab extends DelegatingPreferencesTab {
 		addDelegate(new PreferencesDelegate.TextComponentDelegate(environment, RDHProperty.CLIENT_USERNAME, tfUsername, ""));
 		addDelegate(new PreferencesDelegate.TextComponentDelegate(environment, RDHProperty.CLIENT_ORGANIZATION, tfOrganization, ""));
 		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.CLIENT_EXPERT_MODE, cbExpertMode, false));
-		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.CLIENT_COLLECT_STATS, cbCollectStats, false));
+		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.CLIENT_COLLECT_STATS, cbCollectStats, false)
+				.setPolicy(Policy.REQUIRES_RESTART));
 		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.CLIENT_UI_TRAY_DISABLED, cbDisableTray, false));
 		addDelegate(new PreferencesDelegate.CheckboxDelegate(environment, RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, cbAlwaysOnTop, false));
 
