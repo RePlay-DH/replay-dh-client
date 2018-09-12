@@ -35,6 +35,7 @@ import java.awt.event.HierarchyEvent;
 import java.awt.event.HierarchyListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -54,6 +55,7 @@ import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
@@ -89,6 +91,7 @@ import bwfdm.replaydh.io.TrackerException;
 import bwfdm.replaydh.io.TrackerListener;
 import bwfdm.replaydh.io.TrackingAction;
 import bwfdm.replaydh.io.TrackingStatus;
+import bwfdm.replaydh.io.resources.FileResource;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.stats.Interval;
 import bwfdm.replaydh.stats.StatEntry;
@@ -242,6 +245,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		environment.addPropertyChangeListener(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, environmentChangeListener);
 
 		resourceCache = client.getResourceCache();
+		resourceCache.addCacheListener(handler);
 
 		// Load our basic actions
 		actionManager = getSharedActionManager().derive();
@@ -405,8 +409,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			if(isRDHFrame) {
 				needPacking = !((RDHFrame)window).restoreSize();
 			}
-
-			logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.WINDOW_EXPAND));
 		} else {
 			// Shrink down to control panel
 
@@ -421,8 +423,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 
 			add(controlPanel, BorderLayout.CENTER);
-
-			logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.WINDOW_COLLAPSE));
 		}
 
 		// Refresh internal (visual) states
@@ -533,6 +533,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.openWorkspaceFolder", handler::openWorkspaceFolder);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.clearResourceCache", handler::clearResourceCache);
+
+		actionMapper.mapTask("replaydh.ui.core.mainPanel.exportStatistics", handler::exportStatistics);
+		actionMapper.mapTask("replaydh.ui.core.mainPanel.resetStatistics", handler::resetStatistics);
 
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.updateStatus", handler::scheduleSingleFileTrackerUpdate);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.cancelUpdate", handler::cancelFileTrackerUpdate);
@@ -1179,7 +1182,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 	}
 
-	private class Handler implements HierarchyListener {
+	private class Handler implements HierarchyListener, CacheListener {
 
 		private final Interval fileTrackerUptime = new Interval();
 
@@ -1271,9 +1274,105 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		private void clearResourceCache() {
 
-			logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.CLEAR_CACHE));
+			if(resourceCache.isEmpty()) {
+				return;
+			}
 
-			//TODO ask user for confirmation and then clear cache
+			ResourceManager rm = ResourceManager.getInstance();
+			Collection<CacheEntry> entries = resourceCache.getCacheEntries();
+
+			String message = rm.get("replaydh.ui.core.mainPanel.clearCache.message", entries.size());
+			String title = rm.get("replaydh.ui.core.mainPanel.clearCache.title");
+			if(JOptionPane.showConfirmDialog(getRootPane(), message, title,
+					JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION) {
+
+				logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.CLEAR_CACHE));
+
+				resourceCache.clear();
+			}
+		}
+
+		private void exportStatistics() {
+
+			ResourceManager rm = ResourceManager.getInstance();
+
+			JFileChooser fileChooser = new JFileChooser();
+			fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+			fileChooser.setAcceptAllFileFilterUsed(true);
+			fileChooser.setDialogType(JFileChooser.SAVE_DIALOG);
+
+			if(fileChooser.showDialog(getRootPane(), rm.get("replaydh.labels.select"))
+					==JFileChooser.APPROVE_OPTION) {
+
+				final File desto = fileChooser.getSelectedFile();
+				if(desto==null) {
+					return;
+				}
+
+				new SwingWorker<Object, Object>() {
+
+					@Override
+					protected Object doInBackground() throws Exception {
+						environment.getClient().getStatLog().export(new FileResource(desto.toPath()));
+						return null;
+					}
+
+					@Override
+					protected void done() {
+						boolean success = false;
+
+						try {
+							get();
+							success = true;
+						} catch (InterruptedException e) {
+							// ignore
+						} catch (ExecutionException e) {
+							GuiUtils.beep();
+							GuiUtils.showErrorDialog(getRootPane(), e.getCause());
+						}
+
+						if(success) {
+							JOptionPane.showMessageDialog(getRootPane(),
+									rm.get("replaydh.ui.core.mainPanel.exportStatistics.success",
+											RDHUtils.toPathString(desto.toPath(), 45)),
+									rm.get("replaydh.ui.core.mainPanel.exportStatistics.title"),
+									JOptionPane.INFORMATION_MESSAGE);
+						}
+					};
+				}.execute();
+			}
+		}
+
+		private void resetStatistics() {
+
+			ResourceManager rm = ResourceManager.getInstance();
+
+			String message = rm.get("replaydh.ui.core.mainPanel.resetStatistics.message");
+			String title = rm.get("replaydh.ui.core.mainPanel.resetStatistics.title");
+			if(JOptionPane.showConfirmDialog(getRootPane(), message, title,
+					JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION) {
+
+				new SwingWorker<Object, Object>() {
+
+					@Override
+					protected Object doInBackground() throws Exception {
+						environment.getClient().getStatLog().reset();
+						return null;
+					}
+
+					@Override
+					protected void done() {
+						try {
+							get();
+						} catch (InterruptedException e) {
+							// ignore
+						} catch (ExecutionException e) {
+							GuiUtils.beep();
+							GuiUtils.showErrorDialog(getRootPane(), e.getCause());
+						}
+					};
+				}.execute();
+			}
 		}
 
 		private void addWorkflowStep() {
@@ -1339,6 +1438,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 
 		private void toggleDetails() {
+			logStat(StatEntry.ofType(StatType.UI_ACTION,
+					isExpanded ? GuiStats.WINDOW_COLLAPSE : GuiStats.WINDOW_EXPAND));
 			toggleSize(!isExpanded);
 		}
 
@@ -1534,6 +1635,34 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				// And switch to EDT for UI related notifications
 				GuiUtils.invokeEDT(RDHMainPanel.this::refreshActions);
 			}
+		}
+
+		private void anyCacheChange() {
+			GuiUtils.invokeEDT(RDHMainPanel.this::refreshActions);
+		}
+
+		/**
+		 * @see bwfdm.replaydh.workflow.ResourceCache.CacheListener#entryAdded(bwfdm.replaydh.workflow.ResourceCache.CacheEntry)
+		 */
+		@Override
+		public void entryAdded(CacheEntry entry) {
+			anyCacheChange();
+		}
+
+		/**
+		 * @see bwfdm.replaydh.workflow.ResourceCache.CacheListener#entryRemoved(bwfdm.replaydh.workflow.ResourceCache.CacheEntry)
+		 */
+		@Override
+		public void entryRemoved(CacheEntry entry) {
+			anyCacheChange();
+		}
+
+		/**
+		 * @see bwfdm.replaydh.workflow.ResourceCache.CacheListener#cacheCleared()
+		 */
+		@Override
+		public void cacheCleared() {
+			anyCacheChange();
 		}
 	}
 

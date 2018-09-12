@@ -55,6 +55,14 @@
 	<!-- Show Preferences Dialog -->
 	<action id="replaydh.ui.core.mainPanel.preferences"
 		name="${id}.name" desc="${id}.description" />
+		
+	<!-- Export Statistics -->
+	<action id="replaydh.ui.core.mainPanel.exportStatistics"
+		name="${id}.name" desc="${id}.description" />
+		
+	<!-- Reset Statistics -->
+	<action id="replaydh.ui.core.mainPanel.resetStatistics"
+		name="${id}.name" desc="${id}.description" />
 	
 	<!-- Exit Client -->
 	<action id="replaydh.ui.core.mainPanel.exit"
@@ -74,6 +82,10 @@
 			<separator />
 			<item type="action" value="replaydh.ui.core.mainPanel.restart" />
 			<item type="action" value="replaydh.ui.core.mainPanel.exit" />
+		</action-list>
+		<action-list id="replaydh.ui.core.mainPanel.menuBarList.tools" name="${id}.name">
+			<item type="action" value="replaydh.ui.core.mainPanel.exportStatistics" />
+			<item type="action" value="replaydh.ui.core.mainPanel.resetStatistics" />
 		</action-list>
 		<action-list id="replaydh.ui.core.mainPanel.menuBarList.window" name="${id}.name">
 			<item type="action" value="replaydh.ui.core.mainPanel.preferences" />

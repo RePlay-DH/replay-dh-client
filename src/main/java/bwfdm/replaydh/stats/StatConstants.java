@@ -52,4 +52,8 @@ class StatConstants {
 	 * Signals the end of a logged interval
 	 */
 	static final int END = (1<<16);
+
+	// Special internal log content
+
+	static final String EXPORT = "export_stats";
 }
