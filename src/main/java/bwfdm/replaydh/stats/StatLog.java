@@ -21,12 +21,15 @@ package bwfdm.replaydh.stats;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import javax.swing.SwingUtilities;
@@ -41,6 +44,7 @@ import bwfdm.replaydh.core.RDHLifecycleException;
 import bwfdm.replaydh.core.RDHProperty;
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.io.resources.IOResource;
+import bwfdm.replaydh.ui.GuiUtils;
 
 /**
  * @author Markus Gärtner
@@ -91,14 +95,17 @@ public class StatLog extends AbstractRDHTool {
 
 		synchronized(lock) {
 			active = false;
-
-			if(writer!=null) {
-				IOUtils.closeQuietly(writer);
-				writer = null;
-			}
+			closeWriter();
 		}
 
 		super.stop(environment);
+	}
+
+	private void closeWriter() {
+		if(writer!=null) {
+			IOUtils.closeQuietly(writer);
+			writer = null;
+		}
 	}
 
 	public void log(StatEntry entry) {
@@ -114,6 +121,33 @@ public class StatLog extends AbstractRDHTool {
 
 		if(active) {
 			logImpl(source.get());
+		}
+	}
+
+	public boolean export(IOResource destination) throws IOException {
+		GuiUtils.checkNotEDT();
+
+		synchronized (lock) {
+
+			// Create a unique marker entry for later assembly of incremental exports
+			logImpl(StatEntry.withData(StatType.INTERNAL_ACTION,
+					StatConstants.EXPORT, UUID.randomUUID().toString()));
+
+			// Kind of a double-wrapping, but simplier to write it that way
+			try(InputStream in = Channels.newInputStream(logFile.getReadChannel());
+					OutputStream out = Channels.newOutputStream(destination.getWriteChannel(true))) {
+				IOUtils.copyStream(in, out);
+			}
+
+			return true;
+		}
+	}
+
+	public void reset() throws IOException {
+		synchronized (lock) {
+			closeWriter();
+
+			logFile.delete();
 		}
 	}
 

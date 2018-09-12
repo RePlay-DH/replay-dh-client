@@ -24,7 +24,10 @@ package bwfdm.replaydh.stats;
  */
 public enum StatType {
 
-	STATS_EXPORT(StatConstants.INTERNAL),
+	/**
+	 * Singular internal event.
+	 */
+	INTERNAL_ACTION(StatConstants.INTERNAL),
 
 	/**
 	 * User opened a certain UI component or started a dialog.
