@@ -2282,6 +2282,14 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		}
 
 		/**
+		 * @see bwfdm.replaydh.workflow.impl.DefaultWorkflow#addWorkflowStep(bwfdm.replaydh.workflow.WorkflowStep, bwfdm.replaydh.workflow.WorkflowStep)
+		 */
+		@Override
+		public boolean addWorkflowStep(WorkflowStep source, WorkflowStep target) {
+			throw new UnsupportedOperationException();
+		}
+
+		/**
 		 * @see bwfdm.replaydh.workflow.impl.DefaultWorkflow#addWorkflowStepImpl(bwfdm.replaydh.workflow.WorkflowStep, bwfdm.replaydh.workflow.WorkflowStep)
 		 */
 		@Override

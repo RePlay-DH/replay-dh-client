@@ -572,7 +572,6 @@ public class DefaultWorkflow implements Workflow {
 	/**
 	 * @see bwfdm.replaydh.workflow.Workflow#addWorkflowStep(bwfdm.replaydh.workflow.WorkflowStep)
 	 */
-	@Deprecated
 	@Override
 	public boolean addWorkflowStep(WorkflowStep source, WorkflowStep target) {
 		requireNonNull(source);
@@ -630,23 +629,28 @@ public class DefaultWorkflow implements Workflow {
 
 		setHead(source, false);
 
+//		boolean isTargetKnown = node(target, false, false)!=null;
+
 		// Now link the two nodes in our lookup
 		addLink(source, target);
-		target.addNotify();
 
-		setHead(target, getNextStepCount(target)==0);
+//		if(!isTargetKnown) {
+			target.addNotify();
 
-		String id = target.getId();
+			setHead(target, getNextStepCount(target)==0);
 
-		// Id not initialized yet -> create a fresh one
-		if(id==null || UNSET_ID.equals(id)) {
-			id = acceptOrCreateNewId(null);
-			target.setId(id);
-		} else {
-			// If id has been set already, we expect it to be unique!
-			checkUniqueId(id);
-			idChanged(target, null, id);
-		}
+			String id = target.getId();
+
+			// Id not initialized yet -> create a fresh one
+			if(id==null || UNSET_ID.equals(id)) {
+				id = acceptOrCreateNewId(null);
+				target.setId(id);
+			} else {
+				// If id has been set already, we expect it to be unique!
+				checkUniqueId(id);
+				idChanged(target, null, id);
+			}
+//		}
 
 		return true;
 	}
