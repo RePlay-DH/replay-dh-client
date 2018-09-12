@@ -60,6 +60,10 @@ import bwfdm.replaydh.io.TrackerAdapter;
 import bwfdm.replaydh.io.TrackerException;
 import bwfdm.replaydh.io.TrackingStatus;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.stats.Interval;
+import bwfdm.replaydh.stats.StatEntry;
+import bwfdm.replaydh.stats.StatType;
+import bwfdm.replaydh.ui.GuiStats;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.actions.ActionManager;
 import bwfdm.replaydh.ui.actions.ConditionResolver;
@@ -77,6 +81,8 @@ public class RDHGui extends AbstractRDHTool {
 	private static final Logger log = LoggerFactory.getLogger(RDHGui.class);
 
 	private static final Dimension MIN_WINDOW_SIZE = new Dimension(450, 300);
+
+	private static final String UPTIME_PROPERTY = "uptime";
 
 	/**
 	 * Storage of windows that are currently showing and have been
@@ -106,6 +112,8 @@ public class RDHGui extends AbstractRDHTool {
 	 * a client shutdown once the last window closes.
 	 */
 	private final ShutdownHandler shutdownHandler = new ShutdownHandler();
+
+	private final Interval trayUptime = new Interval();
 
 	/**
 	 * @throws RDHLifecycleException
@@ -309,6 +317,11 @@ public class RDHGui extends AbstractRDHTool {
 
 		frame.addWindowListener(shutdownHandler);
 
+		Interval uptime = new Interval().start();
+		frame.putClientProperty(UPTIME_PROPERTY, uptime);
+
+		logStat(StatEntry.ofType(StatType.UI_OPEN, GuiStats.WINDOW));
+
 		frame.setVisible(true);
 	}
 
@@ -464,6 +477,9 @@ public class RDHGui extends AbstractRDHTool {
 
 		// Inform user about tray icon functionality
 		showDefaultTrayInfo();
+
+		trayUptime.start();
+		logStat(StatEntry.ofType(StatType.UI_OPEN, GuiStats.TRAY));
 	}
 
 	private void showDefaultTrayInfo() {
@@ -493,6 +509,11 @@ public class RDHGui extends AbstractRDHTool {
 			SystemTray.getSystemTray().remove(trayIcon);
 
 			trayIcon = null;
+
+			logStat(StatEntry.withData(StatType.UI_CLOSE, GuiStats.TRAY,
+					trayUptime.stop().asDurationString()));
+
+			trayUptime.reset();
 		}
 	}
 
@@ -509,6 +530,19 @@ public class RDHGui extends AbstractRDHTool {
 		if(isCanUseSystemTray()) {
 			lastHiddenWindow = window;
 			window.setVisible(false);
+
+			Interval uptime = null;
+			if(window instanceof RDHFrame) {
+				uptime = ((RDHFrame)window).getClientProperty(UPTIME_PROPERTY);
+			}
+
+			logStat(StatEntry.withData(StatType.UI_CLOSE, GuiStats.WINDOW,
+					uptime==null ? "0" : uptime.stop().asDurationString()));
+
+			// Make sure we can use the same interval instance again if the frame gets re-shown
+			if(uptime!=null) {
+				uptime.reset();
+			}
 
 			if(openWindows.isEmpty()) {
 				showTrayIcon();
@@ -554,6 +588,8 @@ public class RDHGui extends AbstractRDHTool {
 		} else {
 			//TODO find some other non-invasive way of displaying the info
 		}
+
+		//TODO log stat
 	}
 
 	private class Handler extends TrackerAdapter {

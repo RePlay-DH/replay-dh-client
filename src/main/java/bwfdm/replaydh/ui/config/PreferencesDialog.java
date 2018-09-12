@@ -53,6 +53,10 @@ import com.jgoodies.forms.factories.Forms;
 import bwfdm.replaydh.core.PluginEngine;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.stats.Interval;
+import bwfdm.replaydh.stats.StatEntry;
+import bwfdm.replaydh.stats.StatType;
+import bwfdm.replaydh.ui.GuiStats;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.config.PreferencesTab.TabResult;
 import bwfdm.replaydh.ui.config.PreferencesTab.UiOptions;
@@ -65,12 +69,22 @@ import bwfdm.replaydh.ui.config.PreferencesTreeModel.Node;
 public class PreferencesDialog extends JDialog {
 
 	public static void showDialog(RDHEnvironment environment, Component owner) {
-		PreferencesDialog dialog = new PreferencesDialog(environment);
+		Interval uptime = new Interval();
+		uptime.start();
+		environment.getClient().getStatLog().log(StatEntry.ofType(StatType.UI_OPEN, GuiStats.DIALOG_PREFERENCES));
 
-		dialog.setLocationRelativeTo(owner);
-		dialog.setVisible(true);
+		try {
+			PreferencesDialog dialog = new PreferencesDialog(environment);
 
-		dialog.dispose();
+			dialog.setLocationRelativeTo(owner);
+			dialog.setVisible(true);
+
+			dialog.dispose();
+		} finally {
+			uptime.stop();
+			environment.getClient().getStatLog().log(StatEntry.withData(StatType.UI_CLOSE,
+					GuiStats.DIALOG_PREFERENCES, uptime.asDurationString()));
+		}
 	}
 
 	private static final long serialVersionUID = -1343410647244513683L;

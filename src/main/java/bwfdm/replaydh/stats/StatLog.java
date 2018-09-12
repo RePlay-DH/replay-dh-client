@@ -21,12 +21,15 @@ package bwfdm.replaydh.stats;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
+import java.util.Locale;
 import java.util.function.Supplier;
+
+import javax.swing.SwingUtilities;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +52,7 @@ public class StatLog extends AbstractRDHTool {
 
 	private final IOResource logFile;
 
-	private final DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL);
+	private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu.MM.dd HH:mm:ss.SSS", Locale.GERMAN);
 
 	private Writer writer;
 
@@ -118,14 +121,31 @@ public class StatLog extends AbstractRDHTool {
 	 * Will only ever be called if {@link #active} is {@code true}.
 	 * @param entry
 	 */
-	private void logImpl(StatEntry entry) {
+	private void logImpl(final StatEntry entry) {
+		// Pass execution over to background thread in case we're on the EDT
+		if(SwingUtilities.isEventDispatchThread()) {
+			//TODO this might cause issues with mixed up chronological order?
+			getEnvironment().execute(() -> logImpl(entry));
+			return;
+		}
+
 		synchronized (lock) {
 			ensureWriter();
 
+			boolean failed = false;
+
 			try {
-				writeEntry(entry);
+				writeEntry(entry, writer);
+				writer.flush();
 			} catch (IOException e) {
+				failed = true;
 				throw new RDHException("Failed to write to stats file: "+logFile.getPath(), e);
+			} finally {
+				if(log.isDebugEnabled()) {
+					log.debug("Logging usage stat - write {}: [{}]",
+							failed ? "failed" : "successful",
+							entryToString(entry));
+				}
 			}
 		}
 	}
@@ -146,8 +166,8 @@ public class StatLog extends AbstractRDHTool {
 	private static final String LB = "\r\n";
 	private static final String SEP = ",";
 
-	private void writeEntry(StatEntry entry) throws IOException {
-		writer.append(LB)
+	private void writeEntry(StatEntry entry, Appendable out) throws IOException {
+		out.append(LB)
 			.append(formatter.format(entry.getDateTime()))
 			.append(SEP)
 			.append(entry.getType().name())
@@ -155,7 +175,17 @@ public class StatLog extends AbstractRDHTool {
 			.append(entry.getLabel());
 
 		for(String item : entry.getData()) {
-			writer.append(SEP).append(item);
+			out.append(SEP).append(item);
 		}
+	}
+
+	private String entryToString(StatEntry entry) {
+		StringWriter writer = new StringWriter();
+		try {
+			writeEntry(entry, writer);
+		} catch (IOException e) {
+			throw new InternalError("Impossible I/O issue", e);
+		}
+		return writer.toString();
 	}
 }

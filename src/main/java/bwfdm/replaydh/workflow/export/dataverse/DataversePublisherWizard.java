@@ -96,7 +96,7 @@ public class DataversePublisherWizard {
 	public static Wizard<DataversePublisherContext> getWizard(Window parent, RDHEnvironment environment) {
 		@SuppressWarnings("unchecked")
 		Wizard<DataversePublisherContext> wizard = new Wizard<>(
-				parent, ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.title"),
+				parent, "dataversePublisher", ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.title"),
 				environment, CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_DATASET, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
@@ -109,25 +109,25 @@ public class DataversePublisherWizard {
 		final WorkflowExportInfo exportInfo;
 
 		private RDHEnvironment environment;
-		private String repositoryURL;		
-		
+		private String repositoryURL;
+
 		private String serviceDocumentURL;
 		private String collectionURL;
 		private Map<String, String> availableCollections;
-		
+
 		private Map<String, String> availableDatasetsInCollection;
 
 		private List<File> filesToPublish;
 		private DataverseRepository_v4 publicationRepository;
 		private MetadataObject metadataObject;
-		
+
 		private boolean exportProcessMetadataAllowed;
-		
+
 		private boolean replaceMetadataAllowed;
-		
+
 		private String chosenDataset;
 		private String jsonObjectWithMetadata;
-		
+
 		public boolean isReplaceMetadataAllowed() {
 			return replaceMetadataAllowed;
 		}
@@ -336,8 +336,8 @@ public class DataversePublisherWizard {
 	 * @author Florian Fritze
 	 */
 	private static abstract class DataversePublisherStep extends AbstractWizardStep<DataversePublisherContext> implements ActionListener {
-		protected DataversePublisherStep(String titleKey, String descriptionKey) {
-			super(titleKey, descriptionKey);
+		protected DataversePublisherStep(String id, String titleKey, String descriptionKey) {
+			super(id, titleKey, descriptionKey);
 		}
 	}
 
@@ -345,6 +345,7 @@ public class DataversePublisherWizard {
 	 * 1st. page - choose repository and check the user registration
 	 */
 	private static final DataversePublisherStep CHOOSE_REPOSITORY = new DataversePublisherStep(
+			"chooseRepository",
 			"replaydh.wizard.dataversePublisher.chooseRepository.title",
 			"replaydh.wizard.dataversePublisher.chooseRepository.description") {
 
@@ -446,7 +447,8 @@ public class DataversePublisherWizard {
 				setNextEnabled(false); 		//disable "next" button
 			}
 			SwingUtilities.invokeLater(new Runnable() {
-	            public void run() {
+	            @Override
+				public void run() {
 	                pAPIkey.requestFocusInWindow();
 	            }
 	        });
@@ -501,7 +503,7 @@ public class DataversePublisherWizard {
 			// Check any update:
 			tfUrl.getDocument().addDocumentListener(adapter);
 			pAPIkey.getDocument().addDocumentListener(adapter);
-			
+
 			// Reset Button
 			resetButton = new JButton(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.ResetButton"));
 			resetButton.addActionListener(this);
@@ -593,6 +595,7 @@ public class DataversePublisherWizard {
 	 * 2nd. page - choose collection, where to publish
 	 */
 	private static final DataversePublisherStep CHOOSE_COLLECTION = new DataversePublisherStep(
+			"chooseCollection",
 			"replaydh.wizard.dataversePublisher.chooseCollection.title",
 			"replaydh.wizard.dataversePublisher.chooseCollection.description") {
 
@@ -607,7 +610,7 @@ public class DataversePublisherWizard {
 			// Update combobox with collections
 			collectionsComboBox.removeAllItems();
 			collectionEntries = new CollectionEntry(context.getAvailableCollections().entrySet());
-			
+
 			for(String value: collectionEntries.getValues()) {
 				collectionsComboBox.addItem(value);
 			}
@@ -658,35 +661,36 @@ public class DataversePublisherWizard {
 
 		}
 	};
-	
-	
+
+
 	/**
 	 * Showing all the files in a chosen collection
 	 */
 	private static final DataversePublisherStep CHOOSE_DATASET = new DataversePublisherStep(
+			"chooseDataset",
 			"replaydh.wizard.dataversePublisher.chooseDataset.title",
 			"replaydh.wizard.dataversePublisher.chooseDataset.description") {
 
 		private JComboBox<String> collectionsComboBox;
 		private JTextArea noAvailableCollectionsMessage;
-		
+
 		private CollectionEntry collectionEntries;
-		
+
 		private long timeOut = 2; //in seconds
-		
+
 		private ResourceManager rm = ResourceManager.getInstance();
-		
+
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 
 			checkFilesAvailable(context);
-			
+
 			// Update combobox with collections
 			collectionsComboBox.removeAllItems();
-			
+
 			collectionsComboBox.addItem(rm.get("replaydh.wizard.dataversePublisher.chooseDataset.create"));
-			
+
 			collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
 
 			for(String value: collectionEntries.getValuesForDatasets()) {
@@ -700,7 +704,7 @@ public class DataversePublisherWizard {
 			collectionsComboBox.setSelectedIndex(-1);
 			setNextEnabled(false);
 		};
-		
+
 		private void checkFilesAvailable(DataversePublisherContext context) {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
@@ -714,7 +718,7 @@ public class DataversePublisherWizard {
 					}
 					return filesAvailable;
 				}
-				
+
 			};
 			executeWorkerWithTimeout(worker, timeOut, "Exception by exchanging http/https");
 		}
@@ -761,6 +765,7 @@ public class DataversePublisherWizard {
 	 * 3rd. page - choose files for publishing
 	 */
 	private static final DataversePublisherStep CHOOSE_FILES = new DataversePublisherStep(
+			"chooseFiles",
 			"replaydh.wizard.dataversePublisher.chooseFiles.title",
 			"replaydh.wizard.dataversePublisher.chooseFiles.description") {
 
@@ -936,9 +941,10 @@ public class DataversePublisherWizard {
 	 * 4th. page - edit metadata
 	 */
 	private static final DataversePublisherStep EDIT_METADATA = new DataversePublisherStep(
+			"editMetadata",
 			"replaydh.wizard.dataversePublisher.editMetadata.title",
 			"replaydh.wizard.dataversePublisher.editMetadata.description") {
-		
+
 		private JPanel mainPanel;
 		//private GUIElement ePublicationYear;
 		private GUIElement eIdentifier;
@@ -969,7 +975,7 @@ public class DataversePublisherWizard {
 		private FormBuilder builder;
 		private Map<String, Integer> panelRow;
 		private ResourceManager rm;
-		
+
 		private List<String> titleElements;
 		private List<String> descriptionElements;
 		private List<String> creatorElements;
@@ -984,10 +990,10 @@ public class DataversePublisherWizard {
 		private List<String> rightsElements;
 		private List<String> dateElements;
 		private List<String> sourcesElements;
-		
+
 		private long timeOut = 2; //in seconds
 		private DocumentAdapter adapter;
-		
+
 		private List<Object> jsonObjects;
 		private String propertyForSwitch;
 		private String propertyvalue;
@@ -995,10 +1001,10 @@ public class DataversePublisherWizard {
 		private List<Object> subjects;
 		private List<Object> keywords;
 		private List<Object> publisher;
-		
+
 		private RDHEnvironment myEnvironment;
 		private DataversePublisherContext myContext;
-		
+
 		@Override
 		public void refresh(RDHEnvironment environment, DataversePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
@@ -1013,17 +1019,17 @@ public class DataversePublisherWizard {
 				getJSONObject(environment, context);
 				replaceMetadata.setSelected(true);
 			}
-				
-			
+
+
 			myEnvironment=environment;
 			myContext=context;
-			
+
 			refreshNextEnabled();
 
 			//TODO: remove previous metadata when the page is opened again. Now previous metadata is kept. Se todo with mdObject above
 
 		};
-		
+
 		public void createNewDataset(RDHEnvironment environment, DataversePublisherContext context) {
 			String creator = null;
 			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
@@ -1042,10 +1048,10 @@ public class DataversePublisherWizard {
 			// Publication year
 			int year = Calendar.getInstance().get(Calendar.YEAR);
 			eDate.getTextfield().setText(String.valueOf(year));
-			
+
 			eLicense.getTextfield().setText("NONE");
 		}
-		
+
 		private void getJSONObject(RDHEnvironment environment, DataversePublisherContext context) {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
@@ -1063,6 +1069,7 @@ public class DataversePublisherWizard {
 					}
 					return metadataAvailable;
 				}
+				@Override
 				protected void done() {
 					if (context.chosenDataset != null) {
 						Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
@@ -1311,7 +1318,7 @@ public class DataversePublisherWizard {
 			licenseElements.add(eLicense.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("license", licenseElements);
 			context.metadataObject.mapDublinCoreToLabel.put("license", rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));
-			
+
 			if (dateElements == null) {
 				dateElements = new ArrayList<>();
 			} else {
@@ -1329,7 +1336,7 @@ public class DataversePublisherWizard {
 			rightsElements.add(eRights.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("rights", rightsElements);
 			context.metadataObject.mapDublinCoreToLabel.put("rights", rm.get("replaydh.wizard.dataversePublisher.editMetadata.RightsLabel"));
-			
+
 			if (sourcesElements == null) {
 				sourcesElements = new ArrayList<>();
 			} else {
@@ -1341,23 +1348,23 @@ public class DataversePublisherWizard {
 			sourcesElements.add(eSources.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("sources", sourcesElements);
 			context.metadataObject.mapDublinCoreToLabel.put("sources", rm.get("replaydh.wizard.dataversePublisher.editMetadata.sourcesLabel"));
-			
+
 			context.setExportProcessMetadataAllowed(processMetadata.isSelected());
 
 			context.setReplaceMetadataAllowed(replaceMetadata.isSelected());
-			
+
 			return FINISH;
 		}
 
 		private void refreshNextEnabled() {
 			boolean nextEnabled = true;
 
-			
+
 			nextEnabled &= refreshBorder(elementsofproperty.get("creator"));
 			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDescription.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDate.getTextfield());
-			
+
 			if (!((eLicense.getTextfield().getText().equals("CC0")) || (eLicense.getTextfield().getText().equals("NONE")))) {
 				eLicense.getTextfield().setBorder(GuiUtils.getDefaulterrorborder());
 				nextEnabled &=false;
@@ -1425,7 +1432,7 @@ public class DataversePublisherWizard {
 			tfPublicationYear.setToolTipText("YYYY");
 			ePublicationYear.create();
 			listofkeys.add("year");*/
-			
+
 			//JTextField tfDate = new JTextField();
 			format = new SimpleDateFormat("YYYY");
 			JFormattedTextField tfDate = new JFormattedTextField(format);
@@ -1508,7 +1515,7 @@ public class DataversePublisherWizard {
 			eRights.setLabel(lRights);
 			eRights.create();
 			listofkeys.add("rights");
-			
+
 			JTextField tfSource = new JTextField();
 			JLabel lSource = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.sourcesLabel"));
 			eSources = new GUIElement();
@@ -1531,7 +1538,7 @@ public class DataversePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfDate);
 
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
-			
+
 			adapter = new DocumentAdapter() {
 				@Override
 				public void anyUpdate(DocumentEvent e) {
@@ -1547,7 +1554,7 @@ public class DataversePublisherWizard {
 
 			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
 			processMetadata.setSelected(true);
-			
+
 			replaceMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.replaceMetadata"));
 			replaceMetadata.setSelected(false);
 
@@ -1558,7 +1565,7 @@ public class DataversePublisherWizard {
 			mainPanel=builder.getPanel();
 			return builder.build();
 		}
-		
+
 		public void clearGUI() {
 			for (String propertyname : listofkeys) {
 				if(elementsofproperty.get(propertyname) != null) {
@@ -1585,49 +1592,49 @@ public class DataversePublisherWizard {
 			eRights.getTextfield().setText("");
 			eDate.getTextfield().setText("");
 		}
-		
+
 		public void createGUI() {
-			
+
 			if (publisherslist == null) {
 				publisherslist = new ArrayList<>();
 			} else {
 				publisherslist.clear();
 			}
-			
+
 			publisherslist.add(ePublisher);
 			elementsofproperty.put("publisher", publisherslist);
 			propertypanels.put("publisher", elementsofproperty.get("publisher").get(0).getPanel());
-			
+
 			if (subjectslist == null) {
 				subjectslist = new ArrayList<>();
 			} else {
 				subjectslist.clear();
 			}
-			
+
 			subjectslist.add(eSubjects);
 			elementsofproperty.put("subject", subjectslist);
 			propertypanels.put("subject", elementsofproperty.get("subject").get(0).getPanel());
-			
+
 			if (creatorslist == null) {
 				creatorslist = new ArrayList<>();
 			} else {
 				creatorslist.clear();
 			}
-			
+
 			creatorslist.add(eCreator);
 			elementsofproperty.put("creator", creatorslist);
 			propertypanels.put("creator", elementsofproperty.get("creator").get(0).getPanel());
-			
+
 			if (sourceslist == null) {
 				sourceslist = new ArrayList<>();
 			} else {
 				sourceslist.clear();
 			}
-			
+
 			sourceslist.add(eSources);
 			elementsofproperty.put("sources", sourceslist);
 			propertypanels.put("sources", elementsofproperty.get("sources").get(0).getPanel());
-			
+
 			builder.add(eTitle.getPanel()).xy(1, 1);
 			panelRow.put("title", 1);
 			builder.add(eDescription.getPanel()).xy(1, 3);
@@ -1846,7 +1853,7 @@ public class DataversePublisherWizard {
 				}
 			}
 		}
-		
+
 		public boolean refreshBorder(List<GUIElement> propertylist) {
 			boolean allEmpty=true;
 			for (GUIElement checkElement : propertylist) {
@@ -1875,6 +1882,7 @@ public class DataversePublisherWizard {
 	 * Last page - entry point for the publication
 	 */
 	private static final DataversePublisherStep FINISH = new DataversePublisherStep(
+			"finish",
 			"replaydh.wizard.dataversePublisher.finish.title",
 			"replaydh.wizard.dataversePublisher.finish.description") {
 
@@ -1884,7 +1892,7 @@ public class DataversePublisherWizard {
 		private JTextArea metadataArea;
 		private JTextArea metadataNotice;
 		private JTextArea messageArea;
-		
+
 		private ResourceManager rm = ResourceManager.getInstance();
 
 		@Override
@@ -1936,7 +1944,7 @@ public class DataversePublisherWizard {
 				strMetadata = ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.finish.noDataMessage");
 			}
 			metadataArea.setText(strMetadata);
-			
+
 			if (context.isExportProcessMetadataAllowed()) {
 				metadataNotice.setText(rm.get("replaydh.wizard.dataversePublisher.finish.processMetadata"));
 			} else {

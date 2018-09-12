@@ -16,67 +16,54 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.core;
+package bwfdm.replaydh.stats;
 
-import java.awt.Dimension;
-import java.util.HashMap;
-import java.util.Map;
+import static bwfdm.replaydh.utils.RDHUtils.checkState;
 
-import javax.swing.JFrame;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 /**
  * @author Markus Gärtner
  *
  */
-public class RDHFrame extends JFrame {
+public class Interval {
 
-	private static final long serialVersionUID = -8656279270742321894L;
+	private LocalDateTime begin, end;
 
-	private Dimension storedSize;
-
-	private final Map<String, Object> clientProperties = new HashMap<>();
-
-	public Dimension getStoredSize() {
-		return storedSize;
+	public Interval start() {
+		checkState("Already started", begin==null);
+		begin = LocalDateTime.now();
+		return this;
 	}
 
-	public void setStoredSize(Dimension storedSize) {
-		this.storedSize = storedSize;
+	public Interval stop() {
+		checkState("Not started", begin!=null);
+		checkState("Already finished", end==null);
+		end = LocalDateTime.now();
+		return this;
 	}
 
-	public void saveSize() {
-		storedSize = getSize();
+	public Duration getDuration() {
+		checkState("Not finished", begin!=null && end!=null);
+		return Duration.between(begin, end);
 	}
 
-	public boolean restoreSize() {
-		boolean canRestore = storedSize!=null;
-		if(canRestore) {
-			setSize(storedSize);
+	public String asDurationString() {
+		Duration duration = getDuration();
+		long sec = duration.getSeconds();
+		int nano = duration.getNano();
+
+		checkState("Negative duration", sec>=0);
+
+		if(nano>0) {
+			sec++;
 		}
-		storedSize = null;
-		return canRestore;
+
+		return String.valueOf(sec);
 	}
 
-	public final void putClientProperty(String key, Object value) {
-        Object oldValue;
-		synchronized (clientProperties) {
-            oldValue = clientProperties.get(key);
-            if (value != null) {
-                clientProperties.put(key, value);
-            } else if (oldValue != null) {
-                clientProperties.remove(key);
-            } else {
-                // old == new == null
-                return;
-            }
-		}
-        firePropertyChange(key, oldValue, value);
-	}
-
-	@SuppressWarnings("unchecked")
-	public final <T extends Object> T getClientProperty(String key) {
-		synchronized (clientProperties) {
-			return (T) clientProperties.get(key);
-		}
+	public void reset() {
+		begin = end = null;
 	}
 }

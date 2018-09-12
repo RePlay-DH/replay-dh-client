@@ -72,9 +72,9 @@ public class GeneralPreferencesTab extends DelegatingPreferencesTab {
 				.addSeparator(rm.get("replaydh.plugins.generalPreferencesTab.client")).xyw(1, 7, 4)
 				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.locale")).xy(1, 9).add(cbLocale).xy(3, 9)
 				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.collectStats")).xy(1, 11).add(cbCollectStats).xy(3, 11)
-				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.trayDisabled")).xy(1, 11).add(cbDisableTray).xy(3, 13)
-				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.alwaysOnTop")).xy(1, 13).add(cbAlwaysOnTop).xy(3, 15)
-				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.expertMode")).xy(1, 15).add(cbExpertMode).xy(3, 17)
+				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.trayDisabled")).xy(1, 13).add(cbDisableTray).xy(3, 13)
+				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.alwaysOnTop")).xy(1, 15).add(cbAlwaysOnTop).xy(3, 15)
+				.addLabel(rm.get("replaydh.plugins.generalPreferencesTab.expertMode")).xy(1, 17).add(cbExpertMode).xy(3, 17)
 
 				.build();
 

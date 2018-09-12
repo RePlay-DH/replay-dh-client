@@ -90,6 +90,10 @@ import bwfdm.replaydh.io.TrackerListener;
 import bwfdm.replaydh.io.TrackingAction;
 import bwfdm.replaydh.io.TrackingStatus;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.stats.Interval;
+import bwfdm.replaydh.stats.StatEntry;
+import bwfdm.replaydh.stats.StatType;
+import bwfdm.replaydh.ui.GuiStats;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.actions.ActionManager;
 import bwfdm.replaydh.ui.config.PreferencesDialog;
@@ -295,12 +299,13 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				rm.get("replaydh.ui.core.mainPanel.tabs.fileTracker.description"),
 				1);
 
-		tabbedPane.insertTab(
-				rm.get("replaydh.ui.core.mainPanel.tabs.metadataManager.name"),
-				ir.getIcon("Documents-icon.png", Resolution.forSize(32)),
-				metadataManagerPanel,
-				rm.get("replaydh.ui.core.mainPanel.tabs.metadataManager.description"),
-				2);
+		//TODO for now we keep the metadata manager hidden, as it is not really functional wrt the rest of the client
+//		tabbedPane.insertTab(
+//				rm.get("replaydh.ui.core.mainPanel.tabs.metadataManager.name"),
+//				ir.getIcon("Documents-icon.png", Resolution.forSize(32)),
+//				metadataManagerPanel,
+//				rm.get("replaydh.ui.core.mainPanel.tabs.metadataManager.description"),
+//				2);
 
 		// Not the cleanest way, but ensure we don't overgrow
 		tabbedPane.setPreferredSize(new Dimension(700, 500));
@@ -362,6 +367,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		showInitialOutline();
 	}
 
+	private void logStat(StatEntry entry) {
+		environment.getClient().getStatLog().log(entry);
+	}
+
 	private boolean isVerbose() {
 		return environment.getClient().isVerbose();
 	}
@@ -396,6 +405,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			if(isRDHFrame) {
 				needPacking = !((RDHFrame)window).restoreSize();
 			}
+
+			logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.WINDOW_EXPAND));
 		} else {
 			// Shrink down to control panel
 
@@ -410,6 +421,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 
 			add(controlPanel, BorderLayout.CENTER);
+
+			logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.WINDOW_COLLAPSE));
 		}
 
 		// Refresh internal (visual) states
@@ -694,6 +707,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		boolean opSuccess = false;
 		String title = ResourceManager.getInstance().get("replaydh.ui.core.mainPanel.addStep.name");
 
+		Interval uptime = new Interval().start();
+		logStat(StatEntry.withData(StatType.UI_OPEN, GuiStats.DIALOG_ADD_STEP, newStep.getId()));
 		try {
 			opSuccess = GuiUtils.showEditorDialogWithControl(frame, editor, title, true);
 		} catch(Exception e) {
@@ -701,6 +716,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			GuiUtils.showErrorDialog(frame,
 					"replaydh.panels.workflow.dialogs.errorTitle",
 					"replaydh.panels.workflow.dialogs.addWorkflowStepFailed", e);
+		} finally {
+			logStat(StatEntry.withData(StatType.UI_CLOSE, GuiStats.DIALOG_ADD_STEP,
+					newStep.getId(), String.valueOf(opSuccess),
+					uptime.stop().asDurationString()));
 		}
 
 		return opSuccess;
@@ -1162,6 +1181,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 	private class Handler implements HierarchyListener {
 
+		private final Interval fileTrackerUptime = new Interval();
+
 		/**
 		 * @see java.awt.event.HierarchyListener#hierarchyChanged(java.awt.event.HierarchyEvent)
 		 */
@@ -1237,6 +1258,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				return;
 			}
 
+			logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.OPEN_WORKSPACE));
+
 			try {
 				Desktop.getDesktop().open(workspace.getFolder().toFile());
 			} catch (IOException e) {
@@ -1247,6 +1270,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 
 		private void clearResourceCache() {
+
+			logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.CLEAR_CACHE));
+
 			//TODO ask user for confirmation and then clear cache
 		}
 
@@ -1273,6 +1299,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					return;
 				}
 
+				logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.UPDATE_TRACKER));
+
 				// Schedule to refresh task once
 				updateTask = environment.getClient().getExecutorService().schedule(
 						this::executeFileTrackerUpdate,
@@ -1298,6 +1326,11 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				}
 
 				log.debug("Stopping file tracker update task");
+
+				logStat(StatEntry.withData(StatType.INTERNAL_END, GuiStats.UPDATE_TRACKER,
+						fileTrackerUptime.stop().asDurationString()));
+
+				fileTrackerUptime.reset();
 
 				updateTask.cancel(true);
 			}
@@ -1462,6 +1495,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 				log.debug("Starting file tracker update task with period of {} seconds", period);
 
+				fileTrackerUptime.start();
+				logStat(StatEntry.ofType(StatType.INTERNAL_BEGIN, GuiStats.UPDATE_TRACKER));
+
 				// Schedule to refresh task to run on a non-gui thread
 				updateTask = environment.getClient().getExecutorService().scheduleAtFixedRate(
 						this::executeFileTrackerUpdate,
@@ -1516,7 +1552,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		private final Set<LocalFileObject> modifiedFilesToIgnore = new HashSet<>();
 
 		/**
-		 * THe newly created workflow step.
+		 * The newly created workflow step.
 		 * Guaranteed to be non-null if the task finishes
 		 * without errors.
 		 */
@@ -1708,69 +1744,82 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		 */
 		@Override
 		protected Boolean doInBackground() throws Exception {
-			if(!collectFiles()) {
-				return Boolean.FALSE;
-			}
-
-			filterLargeFiles();
-
-			// If necessary allow the user to revise automatically filtered files
-			if(!newFilesToIgnore.isEmpty() || !modifiedFilesToIgnore.isEmpty()) {
-				FileIgnoreConfiguration configuration = FileIgnoreEditor.newConfiguration(
-						newFilesToIgnore, modifiedFilesToIgnore);
-
-				// BEGIN EDT
-				boolean doContinue = GuiUtils.invokeEDTAndWait(
-						RDHMainPanel.this::interactiveFilterFiles, configuration);
-				// END EDT
-
-				// If user canceled here we gonna stop immediately
-				if(!doContinue) {
-					return false;
-				}
-			}
-
-
-			Workflow workflow = workflowSource.get();
 
 			// Flag signaling user confirmation
 			boolean opSuccess = false;
+			Interval runtime = new Interval().start();
 
-			workflow.beginUpdate();
 			try {
-				// Start a fresh new workflow step
-				newStep = constructStep(workflow);
+				logStat(StatEntry.ofType(StatType.INTERNAL_BEGIN, GuiStats.DIALOG_ADD_STEP));
 
-				// Add all files and collect new Identifiable instances
-				Set<Identifiable> newResources = addFilesAsOutput(newStep);
-
-				// Add all the previously cached resources
-				applyCachedResources(newStep);
-
-				/*
-				 *  Start the part where the user gets involved.
-				 *  We do this synchronously on the event dispatch thread
-				 *  and block here until the GUI part is finished.
-				 */
-				// BEGIN EDT
-				opSuccess = GuiUtils.invokeEDTAndWait(RDHMainPanel.this::interactiveCommit, newStep);
-				// END EDT
-
-				// Only if the user confirmed the dialog do we actually add the step and commit git changes!
-				if(opSuccess) {
-
-					// First perform actions that are easily undoable
-					//TODO implement a rollback of these changes in case the next steps fails
-					persistAssociatedChanges(newResources);
-
-					// If this operation goes through, the commit is persistent
-					workflow.addWorkflowStep(newStep);
+				if(!collectFiles()) {
+					return Boolean.FALSE;
 				}
-			} finally {
-				workflow.endUpdate();
-			}
 
-			return opSuccess;
+				filterLargeFiles();
+
+				// If necessary allow the user to revise automatically filtered files
+				if(!newFilesToIgnore.isEmpty() || !modifiedFilesToIgnore.isEmpty()) {
+					FileIgnoreConfiguration configuration = FileIgnoreEditor.newConfiguration(
+							newFilesToIgnore, modifiedFilesToIgnore);
+
+					// BEGIN EDT
+					boolean doContinue = GuiUtils.invokeEDTAndWait(
+							RDHMainPanel.this::interactiveFilterFiles, configuration);
+					// END EDT
+
+					// If user canceled here we gonna stop immediately
+					if(!doContinue) {
+						return false;
+					}
+				}
+
+
+				Workflow workflow = workflowSource.get();
+
+				workflow.beginUpdate();
+				try {
+					// Start a fresh new workflow step
+					newStep = constructStep(workflow);
+
+					// Add all files and collect new Identifiable instances
+					Set<Identifiable> newResources = addFilesAsOutput(newStep);
+
+					// Add all the previously cached resources
+					applyCachedResources(newStep);
+
+					/*
+					 *  Start the part where the user gets involved.
+					 *  We do this synchronously on the event dispatch thread
+					 *  and block here until the GUI part is finished.
+					 */
+					// BEGIN EDT
+					opSuccess = GuiUtils.invokeEDTAndWait(RDHMainPanel.this::interactiveCommit, newStep);
+					// END EDT
+
+					// Only if the user confirmed the dialog do we actually add the step and commit git changes!
+					if(opSuccess) {
+
+						// First perform actions that are easily undoable
+						//TODO implement a rollback of these changes in case the next steps fails
+						persistAssociatedChanges(newResources);
+
+						// If this operation goes through, the commit is persistent
+						workflow.addWorkflowStep(newStep);
+
+						//TODO remove all resources from cache that have been used here
+					}
+				} finally {
+					workflow.endUpdate();
+				}
+
+				return opSuccess;
+			} finally {
+				String label = newStep==null ? null : newStep.getId();
+				logStat(StatEntry.withData(
+						StatType.INTERNAL_END, GuiStats.DIALOG_ADD_STEP, label,
+						String.valueOf(opSuccess), runtime.stop().asDurationString()));
+			}
 		}
 
 		private void resolveFiles(TrackingStatus trackingStatus, Set<LocalFileObject> buffer) throws IOException, InterruptedException, TrackerException {

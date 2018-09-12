@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.metadata;
@@ -89,7 +89,7 @@ public class MetadataAddRecordWizard {
 	public static Wizard<AddRecordContext> getWizard(Window parent, RDHEnvironment environment) {
 		@SuppressWarnings("unchecked")
 		Wizard<AddRecordContext> wizard = new Wizard<>(
-				parent, ResourceManager.getInstance().get("replaydh.wizard.addRecord.title"),
+				parent, "addMetadata", ResourceManager.getInstance().get("replaydh.wizard.addRecord.title"),
 				environment, SELECT_TYPE, SELECT_TARGET, VERIFY_TARGET,
 				//SELECT_METHOD, IMPORT_RECORD,  //TODO include steps in final wizard
 				FINISH);
@@ -230,8 +230,8 @@ public class MetadataAddRecordWizard {
 	 *
 	 */
 	private static abstract class AddRecordStep extends AbstractWizardStep<AddRecordContext> {
-		protected AddRecordStep(String titleKey, String descriptionKey) {
-			super(titleKey, descriptionKey);
+		protected AddRecordStep(String id, String titleKey, String descriptionKey) {
+			super(id, titleKey, descriptionKey);
 		}
 	}
 
@@ -244,6 +244,7 @@ public class MetadataAddRecordWizard {
 	 * </ul>
 	 */
 	private static final AddRecordStep SELECT_TYPE = new AddRecordStep(
+			"selectType",
 			"replaydh.wizard.addRecord.selectType.title",
 			"replaydh.wizard.addRecord.selectType.description") {
 
@@ -315,6 +316,7 @@ public class MetadataAddRecordWizard {
 	 * Lets the user pick a target of the previously chosen type
 	 */
 	private static final AddRecordStep SELECT_TARGET = new AddRecordStep(
+			"selectTarget",
 			"replaydh.wizard.addRecord.selectTarget.title",
 			"replaydh.wizard.addRecord.selectTarget.description") {
 
@@ -479,6 +481,7 @@ public class MetadataAddRecordWizard {
 	};
 
 	private static final AddRecordStep VERIFY_TARGET = new AddRecordStep(
+			"verifyTarget",
 			"replaydh.wizard.addRecord.verifyTarget.title",
 			"replaydh.wizard.addRecord.verifyTarget.description") {
 		/**
@@ -759,6 +762,7 @@ public class MetadataAddRecordWizard {
 	 * or to import an existing one.
 	 */
 	private static final AddRecordStep SELECT_METHOD = new AddRecordStep(
+			"selectMethod",
 			"replaydh.wizard.addRecord.selectMethod.title",
 			"replaydh.wizard.addRecord.selectMethod.description") {
 
@@ -834,6 +838,7 @@ public class MetadataAddRecordWizard {
 	};
 
 	private static final AddRecordStep IMPORT_RECORD = new AddRecordStep(
+			"importRecord",
 			"replaydh.wizard.addRecord.importRecord.title",
 			"replaydh.wizard.addRecord.importRecord.description") {
 
@@ -856,6 +861,7 @@ public class MetadataAddRecordWizard {
 	};
 
 	private static final AddRecordStep FINISH = new AddRecordStep(
+			"finish",
 			"replaydh.wizard.addRecord.finish.title",
 			"replaydh.wizard.addRecord.finish.description") {
 

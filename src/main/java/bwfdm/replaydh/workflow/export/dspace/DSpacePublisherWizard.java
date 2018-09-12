@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.workflow.export.dspace;
@@ -86,7 +86,7 @@ public class DSpacePublisherWizard {
 	public static Wizard<DSpacePublisherContext> getWizard(Window parent, RDHEnvironment environment) {
 		@SuppressWarnings("unchecked")
 		Wizard<DSpacePublisherContext> wizard = new Wizard<>(
-				parent, ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.title"),
+				parent, "dspacePublisher", ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.title"),
 				environment/*, FINISH /*<-- TEST*/ , CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
@@ -164,14 +164,14 @@ public class DSpacePublisherWizard {
 				return new HashMap<>();
 			}
 		}
-		
+
 		/**
 		 * Get map with key=label, value=metadata.
-		 * <p> 
+		 * <p>
 		 * Should be used ONLY for the representation of the metadata.
 		 */
 		public Map<String, String> getMapLabelToMetadata(){
-			
+
 			Map<String, String> metadataMap = new HashMap<>();
 			if((mapDoublinCoreToMetadata != null) && (mapDoublinCoreToLabel != null)) {
 				for(Map.Entry<String, String> entryDoublinCoreToMetadata: mapDoublinCoreToMetadata.entrySet()) {
@@ -300,7 +300,7 @@ public class DSpacePublisherWizard {
 //	 * e.g.:
 //	 * worker.execute();
 //	 * new Thread(new BackgroundTimer<Boolean, Object>(worker, timeOut)).start();
-//   *	
+//   *
 //	 * @author vk
 //	 *
 //	 * @param <T> the first parameter of SwingWorker
@@ -355,8 +355,8 @@ public class DSpacePublisherWizard {
 	 * @author Volodymyr Kushnarenko
 	 */
 	private static abstract class DSpacePublisherStep extends AbstractWizardStep<DSpacePublisherContext> {
-		protected DSpacePublisherStep(String titleKey, String descriptionKey) {
-			super(titleKey, descriptionKey);
+		protected DSpacePublisherStep(String id, String titleKey, String descriptionKey) {
+			super(id, titleKey, descriptionKey);
 		}
 	}
 
@@ -364,6 +364,7 @@ public class DSpacePublisherWizard {
 	 * 1st. page - choose repository and check the user registration
 	 */
 	private static final DSpacePublisherStep CHOOSE_REPOSITORY = new DSpacePublisherStep(
+			"chooseRepository",
 			"replaydh.wizard.dspacePublisher.chooseRepository.title",
 			"replaydh.wizard.dspacePublisher.chooseRepository.description") {
 
@@ -489,7 +490,7 @@ public class DSpacePublisherWizard {
 						if(loginOK) {
 							checkLoginButton.setEnabled(false);
 						} else {
-							pfUserPassword.setText(""); 
+							pfUserPassword.setText("");
 							GuiUtils.toggleChangeableBorder(pfUserPassword, true); //set red border as a sign of the wrong password
 							checkLoginButton.setEnabled(false);
 							statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.wrongLoginMessage"));
@@ -540,7 +541,7 @@ public class DSpacePublisherWizard {
 				setNextEnabled(false); 		//disable "next" button
 			}
 		};
-				
+
 		private boolean checkAndUpdateBorder(JTextField tf) {
 			boolean isValid = (tf.getText().trim()!=null) && (!tf.getText().trim().isEmpty()); // do not store "getText()" result in extra variable because of the password
 			GuiUtils.toggleChangeableBorder(tf, !isValid);
@@ -561,10 +562,10 @@ public class DSpacePublisherWizard {
 			tfUrl.setEditable(false);	//make the URL not editable for test reasons.
 										//But wizard is already available to check the URL automatically
 										//and provide messages in case of error
-			
+
 			tfUserLogin = new JTextField();
 			pfUserPassword = new JPasswordField();
-			
+
 			GuiUtils.prepareChangeableBorder(tfUrl);
 			GuiUtils.prepareChangeableBorder(tfUserLogin);
 			GuiUtils.prepareChangeableBorder(pfUserPassword);
@@ -572,7 +573,7 @@ public class DSpacePublisherWizard {
 			statusMessage = GuiUtils.createTextArea(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.pleaseLoginMessage"));
 
 			DocumentAdapter adapter = new DocumentAdapter() {
-				
+
 				@Override
 				public void anyUpdate(DocumentEvent e) {
 
@@ -580,11 +581,11 @@ public class DSpacePublisherWizard {
 					setNextEnabled(false);
 					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.pleaseLoginMessage"));
 
-					boolean loginButtonEnabled = true;					
+					boolean loginButtonEnabled = true;
 					loginButtonEnabled &= checkAndUpdateBorder(tfUrl);
 					loginButtonEnabled &= checkAndUpdateBorder(tfUserLogin);
-					loginButtonEnabled &= checkAndUpdateBorder(pfUserPassword);					
-					
+					loginButtonEnabled &= checkAndUpdateBorder(pfUserPassword);
+
 					checkLoginButton.setEnabled(loginButtonEnabled);
 				}
 			};
@@ -680,6 +681,7 @@ public class DSpacePublisherWizard {
 	 * 2nd. page - choose collection, where to publish
 	 */
 	private static final DSpacePublisherStep CHOOSE_COLLECTION = new DSpacePublisherStep(
+			"chooseCollection",
 			"replaydh.wizard.dspacePublisher.chooseCollection.title",
 			"replaydh.wizard.dspacePublisher.chooseCollection.description") {
 
@@ -742,6 +744,7 @@ public class DSpacePublisherWizard {
 	 * 3rd. page - choose files for publishing
 	 */
 	private static final DSpacePublisherStep CHOOSE_FILES = new DSpacePublisherStep(
+			"chooseFiles",
 			"replaydh.wizard.dspacePublisher.chooseFiles.title",
 			"replaydh.wizard.dspacePublisher.chooseFiles.description") {
 
@@ -911,6 +914,7 @@ public class DSpacePublisherWizard {
 	 * 4th. page - edit metadata
 	 */
 	private static final DSpacePublisherStep EDIT_METADATA = new DSpacePublisherStep(
+			"editMetadata",
 			"replaydh.wizard.dspacePublisher.editMetadata.title",
 			"replaydh.wizard.dspacePublisher.editMetadata.description") {
 
@@ -918,7 +922,7 @@ public class DSpacePublisherWizard {
 		private JTextField tfTitle;
 		private JTextField tfDescription;
 		private JFormattedTextField tfPublicationYear;
-		
+
 		//Not used metadata fields
 		//private JTextField tfIdentifier;
 		//private JTextField tfPublisher;
@@ -931,25 +935,25 @@ public class DSpacePublisherWizard {
 		@Override
 		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
 			super.refresh(environment, context); //call parent "refresh"
-			
+
 			//TODO: use it to fill in the text fields with not null values. Should be used later, when we use some metadata-schema
 			MetadataObject mdObject = context.metadataObject;
 
 			// Creator
-			String creator = null; 
+			String creator = null;
 			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
 				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
 			}
 			tfCreator.setText(creator);
 
 			//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
-			
+
 			// Title
 			tfTitle.setText(context.exportInfo.getWorkflow().getTitle());
 
 			// Description
 			tfDescription.setText(context.exportInfo.getWorkflow().getDescription());
-						
+
 			// Publication year
 			int year = Calendar.getInstance().get(Calendar.YEAR);
 			tfPublicationYear.setText(String.valueOf(year));
@@ -1004,7 +1008,7 @@ public class DSpacePublisherWizard {
 			nextEnabled &= checkAndUpdateBorder(tfTitle);
 			nextEnabled &= checkAndUpdateBorder(tfDescription);
 			nextEnabled &= checkAndUpdateBorder(tfPublicationYear);
-			
+
 			// Not used metadata fields
 			//nextEnabled &= checkAndUpdateBorder(tfIdentifier);
 			//nextEnabled &= checkAndUpdateBorder(tfPublisher);
@@ -1031,12 +1035,12 @@ public class DSpacePublisherWizard {
 			format = new SimpleDateFormat("YYYY");
 			tfPublicationYear = new JFormattedTextField(format);
 			tfPublicationYear.setToolTipText("YYYY");
-			
+
 			GuiUtils.prepareChangeableBorder(tfCreator);
 			GuiUtils.prepareChangeableBorder(tfTitle);
 			GuiUtils.prepareChangeableBorder(tfDescription);
 			GuiUtils.prepareChangeableBorder(tfPublicationYear);
-						
+
 			// Not used metadata fields
 			//tfIdentifier = new JTextField();
 			//tfPublisher = new JTextField();
@@ -1046,7 +1050,7 @@ public class DSpacePublisherWizard {
 			//GuiUtils.prepareChangeableBorder(tfPublisher);
 			//GuiUtils.prepareChangeableBorder(tfResourceType);
 
-			
+
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dspacePublisher.editMetadata.infoMessage"));
 
 
@@ -1061,7 +1065,7 @@ public class DSpacePublisherWizard {
 			tfTitle.getDocument().addDocumentListener(adapter);
 			tfDescription.getDocument().addDocumentListener(adapter);
 			tfPublicationYear.getDocument().addDocumentListener(adapter);
-			
+
 			// Not used metadata fields
 			//tfIdentifier.getDocument().addDocumentListener(adapter);
 			//tfPublisher.getDocument().addDocumentListener(adapter);
@@ -1097,6 +1101,7 @@ public class DSpacePublisherWizard {
 	 * Last page - entry point for the publication
 	 */
 	private static final DSpacePublisherStep FINISH = new DSpacePublisherStep(
+			"finish",
 			"replaydh.wizard.dspacePublisher.finish.title",
 			"replaydh.wizard.dspacePublisher.finish.description") {
 
@@ -1272,7 +1277,7 @@ public class DSpacePublisherWizard {
 	    		//fileName = fileName.substring(workspacePath.length() + 1); // "+1" to remove the separator ('/')
 	    		Path pathAbsolute = Paths.get(fileName);
 	    		Path pathBase = Paths.get(workspacePath);
-	    		fileName = pathBase.relativize(pathAbsolute).toString();	    		
+	    		fileName = pathBase.relativize(pathAbsolute).toString();
 	    	}
 
 	    	label.setText(fileName);

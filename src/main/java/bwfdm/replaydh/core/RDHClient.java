@@ -42,7 +42,6 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -82,7 +81,10 @@ import bwfdm.replaydh.metadata.MetadataRecord;
 import bwfdm.replaydh.metadata.MetadataRepository;
 import bwfdm.replaydh.metadata.basic.file.FileMetadataRepository;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.stats.Interval;
+import bwfdm.replaydh.stats.StatEntry;
 import bwfdm.replaydh.stats.StatLog;
+import bwfdm.replaydh.stats.StatType;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.core.RDHGui;
 import bwfdm.replaydh.utils.Label;
@@ -157,7 +159,7 @@ public class RDHClient {
 			// RDHLifecycleException is just a wrapper, so use its message and cause for logging
 			log.error("Error in default client lifecycle: {}", e.getMessage(), e.getCause());
 		} catch(Exception e) {
-			log.error("Unexpected error during client startup", e);
+			log.error("Unexpected error during client lifecycle", e);
 		}
 
 		//TODO show errors as dialog!
@@ -241,6 +243,8 @@ public class RDHClient {
 	private final Object terminationLock = new Object();
 
 	private final Properties appInfo;
+
+	private final Interval clientRuntime = new Interval();
 
 	/**
 	 * Creates a new  client using provided options.
@@ -609,6 +613,8 @@ public class RDHClient {
 
 		synchronized (lock) {
 
+			clientRuntime.start();
+
 			// Make sure our user folder structure is valid and existing
 			if(!Files.exists(userFolder)) {
 				if(createUserFolderIfMissing) {
@@ -651,6 +657,8 @@ public class RDHClient {
 			} catch(Exception e) {
 				throw new RDHLifecycleException("Failed to start tools", e);
 			}
+
+			getStatLog().log(StatEntry.ofType(StatType.INTERNAL_BEGIN, ClientStats.SESSION));
 
 			// Publish info about started tools (this way tools can get to know each other)
 			try {
@@ -912,7 +920,8 @@ public class RDHClient {
 			} catch (IOException e) {
 				throw new RDHException("Unable to create default directory for usage statistics", e);
 			}
-			String baseName = "userstats-"+LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+//			String baseName = "usagestats-"+LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+			String baseName = "usage_stats.txt";
 			Path logFile = folder.resolve(baseName);
 
 			return addAndStartTool(new StatLog(new FileResource(logFile)));
@@ -1130,6 +1139,9 @@ public class RDHClient {
 
 			log.info("Client shutdown initiated. Restart requested: {}", doRestart ? "yes" : "no");
 
+			getStatLog().log(StatEntry.withData(StatType.INTERNAL_END, ClientStats.SESSION,
+					clientRuntime.stop().asDurationString()));
+
 			List<ErrorDescription> errors = new ArrayList<>();
 
 			RDHEnvironment environment = getEnvironment();
@@ -1291,7 +1303,7 @@ public class RDHClient {
 
 		Process process = new ProcessBuilder(command)
 				.inheritIO()
-				.directory(jarFile.getParent().toFile())
+				.directory(jarFile.getParent().toFile()) //TODO maybe change to null to inherit the current user.dir
 				.start();
 
 		try {
