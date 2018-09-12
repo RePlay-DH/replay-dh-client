@@ -42,8 +42,6 @@ public enum RDHProperty {
 
 	/**
 	 * semicolon-separated list of previous workspace paths.
-	 *
-	 * TODO use platform-dependent path separator char!
 	 */
 	CLIENT_WORKSPACE_HISTORY("client.workspace.history"),
 

@@ -22,12 +22,14 @@ import static java.util.Objects.requireNonNull;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Locale.Category;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -350,7 +352,7 @@ public class RDHEnvironment implements PropertyChangeSource {
 		if(history!=null) {
 			if(!history.contains(newEntry)) {
 
-				newHistory = history+";"+newEntry;
+				newHistory = history+File.pathSeparator+newEntry;
 
 				if(client.isVerbose()) {
 					log.info("Added {} to workspace history", newEntry);
@@ -394,10 +396,18 @@ public class RDHEnvironment implements PropertyChangeSource {
 	}
 
 	public synchronized void setProperties(Map<String, String> properties) {
-		//TODO change this so that we only copy over "new" properties
+
+		// Detect all the properties that are actually different
+		Set<String> keys = new HashSet<>();
+		for(Entry<String, String> entry : properties.entrySet()) {
+			String currentValue = this.properties.getProperty(entry.getKey());
+			if(!Objects.equals(entry.getValue(), currentValue)) {
+				keys.add(entry.getKey());
+			}
+		}
+
 		this.properties.putAll(properties);
-		// Special case: we report the entirety of out properties to have changed
-		Set<String> keys = new HashSet<>(properties.keySet());
+
 		changeSupport.firePropertyChange(NAME_PROPERTIES, null, keys);
 	}
 

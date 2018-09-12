@@ -126,7 +126,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Note that JGit allows working directory and index to be located at different areas
 	 * of a file system.
 	 */
-	public static final String CENTRAL_GIT_FOLDER_PROPERTY = ""; //TODO
+	public static final String CENTRAL_GIT_FOLDER_PROPERTY = ""; //TODO provide proper name here
 
 	private static final String NODE_PROPERTY_COMMIT_ID = "commitID";
 
@@ -216,8 +216,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		if(!super.start(environment)) {
 			return false;
 		}
-
-		//TODO setup internals?
 
 		return true;
 	}
@@ -444,7 +442,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		properties.setProperty(RDHInfoProperty.SCHEMA_ID, workspace.getSchema().getId());
 		copyProperty(properties, workspace, RDHInfoProperty.TITLE);
 		copyProperty(properties, workspace, RDHInfoProperty.DESCRIPTION);
-		//TODO do we also want to store user and organization info here?
 
 		return properties;
 	}
@@ -732,7 +729,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 				pendingStep = null;
 				workflowLoaded = false;
-				clearStatusInfo(); //TODO do this at the end or before we clear the current workflow?
+				clearStatusInfo();
 			}
 		}
 	}
@@ -768,7 +765,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Returns the absolute path to the internal git repository
 	 */
 	private Path getRootFolder() {
-		return git.getRepository().getWorkTree().toPath().toAbsolutePath(); //TODO do we need absolute path?
+		return git.getRepository().getWorkTree().toPath().toAbsolutePath();
 	}
 
 	/**
@@ -1539,8 +1536,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		}
 	}
 
-	//TODO add checkConnected() method
-
 	public WorkflowStep getPendingStep() {
 		synchronized (gitLock) {
 			return pendingStep;
@@ -2090,45 +2085,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 							throw new GitException("Failed to read process metadata from commit message for "+commit, e);
 					}
 
-					//TODO verify
 					getEnvironment().getClient().getResourceResolver().update(step);
 				}
 
-//				// Finally add some internal info
-//				if(attachInternalInfoToSteps) {
-//					StringBuilder info = new StringBuilder();
-//
-//					try {
-//						// Load branches for commit
-//						List<Ref> branches = git.branchList().setContains(commit.name()).call();
-//						if(!branches.isEmpty()) {
-//							info.append("-- Branches ---").append(System.lineSeparator());
-//							for(Ref branch : branches) {
-//								info.append(branch.getName()).append(System.lineSeparator());
-//							}
-//						}
-//
-//						// Test
-//						Map<ObjectId, String> map = git.nameRev().addPrefix("refs/heads").add(commit).call();
-//						if(!map.isEmpty()) {
-//							info.append("--- RevNames ---").append(System.lineSeparator());
-//							for(Entry<ObjectId, String> entry : map.entrySet()) {
-//								info.append(entry.getKey()).append(" -> ")
-//									.append(entry.getValue()).append(System.lineSeparator());
-//							}
-//						}
-//					} catch(GitAPIException | MissingObjectException | JGitInternalException e) {
-//						throw new GitException("Failed to compute internal info for commit: "+commit, e);
-//					}
-//
-//					if(info.length()>0) {
-//						String oldInfo = step.getProperty(WorkflowStep.PROPERTY_INTERNAL_INFO);
-//						if(oldInfo!=null) {
-//							info.insert(0, oldInfo).append(System.lineSeparator());
-//						}
-//						step.setProperty(WorkflowStep.PROPERTY_INTERNAL_INFO, info.toString());
-//					}
-//				}
 			} finally {
 				workflow.setIgnoreEventRequests(false);
 			}

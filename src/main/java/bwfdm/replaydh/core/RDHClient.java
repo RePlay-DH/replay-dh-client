@@ -129,7 +129,7 @@ public class RDHClient {
 	static {
 		Thread.setDefaultUncaughtExceptionHandler(uncaughtExceptionHandler);
 
-		// TODO does EDT exception handling still require this workaround to catch exceptions when in modal dialog?
+		// Does EDT exception handling still require this workaround to catch exceptions when in modal dialog?
 		System.setProperty("sun.awt.exception.handler",	uncaughtExceptionHandler.getClass().getName());
 	}
 
@@ -174,8 +174,6 @@ public class RDHClient {
 	public static boolean hasClient() {
 		return client!=null;
 	}
-
-	//TODO storage for RDHTool instances
 
 	private final Map<RDHTool, ToolLifecycleState> tools = new IdentityHashMap<>();
 
@@ -324,8 +322,6 @@ public class RDHClient {
 			case "-workspace":
 				addOption(options, RDHProperty.CLIENT_WORKSPACE_PATH, args[++i]);
 				break;
-
-			//TODO
 
 			default: {
 				String arg = args[i];
@@ -629,13 +625,12 @@ public class RDHClient {
 			}
 
 			// Before anything verbose is started we need to delegate logs to custom files
-			delegateLogOutput(); //FIXME correct location/time to do this?
+			delegateLogOutput();
 
 			if(verbose) {
 				log.info("User folder: {}", userFolder);
 				log.info("Client options: {}", options);
 			}
-			//TODO use options to check what to actually do
 
 			// Load localization (until here the resource manager will default to system settings)
 			loadResourceManager();
@@ -801,7 +796,6 @@ public class RDHClient {
 
 			FileMetadataRepository.Builder builder = FileMetadataRepository.newBuilder();
 
-			//TODO configure builder
 			builder.rootFolder(rootFolder);
 			builder.useDublinCore();
 			builder.useDublinCoreNameGenerator();
@@ -947,36 +941,6 @@ public class RDHClient {
 
 		this.resourceManager = resourceManager;
 	}
-
-//	private void loadWorkflowSchema() {
-//
-//		Path schemaFile = null;
-//
-//		String savedSchemaFile = getEnvironment().getProperty(RDHProperty.WORKFLOW_SCHEMA_LOCATION);
-//		if(savedSchemaFile!=null) {
-//			schemaFile = Paths.get(savedSchemaFile);
-//		}
-//
-//		if(schemaFile==null) {
-//			schemaFile = getUserFile(DEFAULT_SCHEMA_FILE);
-//		}
-//
-//		if(Files.exists(schemaFile, LinkOption.NOFOLLOW_LINKS)) {
-//			try {
-//				IOResource resource = new FileResource(schemaFile, AccessMode.READ);
-//				resource.prepare();
-//				workflowSchema = WorkflowSchemaXml.readSchema(resource);
-//			} catch (ExecutionException | IOException e) {
-//				throw new RDHException("Failed to load workflow schema definition from file: "+schemaFile, e);
-//			}
-//		}
-//
-//		try {
-//			workflowSchema = WorkflowSchema.getDefaultSchema();
-//		} catch (ExecutionException e) {
-//			throw new RDHException("Failed to load internal default workflow schema", e.getCause());
-//		}
-//	}
 
 	private void collectTools() {
 		//TODO collect and instantiate additional tools
@@ -1303,7 +1267,7 @@ public class RDHClient {
 
 		Process process = new ProcessBuilder(command)
 				.inheritIO()
-				.directory(jarFile.getParent().toFile()) //TODO maybe change to null to inherit the current user.dir
+				.directory(null) // inherit current working directory
 				.start();
 
 		try {
@@ -1374,8 +1338,6 @@ public class RDHClient {
 
 		addTool0(tool);
 	}
-
-	//TODO maybe add methods to register tools via classname+classloader ?
 
 	private <T extends RDHTool> T addTool0(T tool) {
 		if(!trySetState(tool, ToolLifecycleState.UNKNOWN, ToolLifecycleState.INACTIVE))
@@ -1527,7 +1489,6 @@ public class RDHClient {
 
 			@Override
 			public Thread newThread(Runnable r) {
-				//TODO maybe also use a custom thread group
 				// Per default we just use a base name and append thread counter
 				Thread t = new Thread(r, "replay-dh-worker-"+threadCounter.incrementAndGet());
 				t.setUncaughtExceptionHandler(uncaughtExceptionHandler);

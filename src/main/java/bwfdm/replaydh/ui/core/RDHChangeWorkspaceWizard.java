@@ -25,6 +25,7 @@ import java.awt.Component;
 import java.awt.Font;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -97,7 +98,7 @@ public abstract class RDHChangeWorkspaceWizard {
 			requireNonNull(workspacesProperty);
 
 			// Fetch raw definitions
-			String[] paths = workspacesProperty.split(";");
+			String[] paths = workspacesProperty.split(File.pathSeparator);
 
 			// Translate into proper paths
 			Path[] workspaces = new Path[paths.length];

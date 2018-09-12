@@ -137,8 +137,10 @@ public class PreferencesDialog extends JDialog {
 
 		bApply = new JButton(rm.get("replaydh.dialogs.preferences.apply"));
 		bApply.addActionListener(ae -> {
-			if(applyTab())
+			if(applyTab()) {
+				close();
 				restart();
+			}
 		});
 
 		bApplyAndClose = new JButton(rm.get("replaydh.dialogs.preferences.applyAndClose"));
