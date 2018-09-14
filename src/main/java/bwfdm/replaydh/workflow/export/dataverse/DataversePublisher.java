@@ -52,7 +52,9 @@ import bwfdm.replaydh.ui.helper.AbstractDialogWorker;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.workflow.export.ResourcePublisher;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
+import bwfdm.replaydh.workflow.export.WorkflowExportInfo.Builder;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo.Mode;
+import bwfdm.replaydh.workflow.export.WorkflowExportInfo.Type;
 import bwfdm.replaydh.workflow.export.dataverse.DataversePublisherWizard.DataversePublisherContext;
 import bwfdm.replaydh.workflow.export.raw.RawMetadataExporter;
 
@@ -197,17 +199,25 @@ public class DataversePublisher implements ResourcePublisher {
 			
 			if (context.isExportProcessMetadataAllowed()) {
 				RawMetadataExporter exporter = new RawMetadataExporter();
-				WorkflowExportInfo exportInfo = context.exportInfo;
-				exportInfo.setMode(Mode.FILE);
-				exportInfo.setEncoding(StandardCharsets.UTF_8);
 				
 				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS).toString();//use log folder to store temporary zip-file
 				String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
 				tempFile = new File(logFolder + FileSystems.getDefault().getSeparator() +  rdhPrefix + timeStamp + "_ProcessMetadata.json");
 				IOResource outputResource = new FileResource(Paths.get(tempFile.getPath()));
 				
-				exportInfo.setOutputResource(outputResource);
-				exporter.export(exportInfo);
+				Builder exportInfo = WorkflowExportInfo.newExportBuilder()
+						.encoding(StandardCharsets.UTF_8)
+						.mode(Mode.FILE)
+						.outputResource(outputResource)
+						.environment(context.exportInfo.getEnvironment())
+						.workflowScope(context.exportInfo.getWorkflowScope())
+						.objectScope(context.exportInfo.getObjectScope())
+						.type(Type.METADATA)
+						.workflow(context.exportInfo.getWorkflow())
+						.steps(context.exportInfo.getSteps())
+						.targetStep(context.exportInfo.getTargetStep());
+				
+				exporter.export(exportInfo.build());
 			}
 			
 			if(!context.getFilesToPublish().isEmpty()) {
