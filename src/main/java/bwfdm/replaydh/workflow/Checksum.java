@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.workflow;
@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
 import java.util.Arrays;
 import java.util.Objects;
 
-import javax.xml.bind.DatatypeConverter;
+import bwfdm.replaydh.utils.RDHUtils;
 
 /**
  * Models a checksum usable for consistency checking
@@ -73,7 +73,7 @@ public final class Checksum {
 
 		this.type = type;
 		this.size = size;
-		this.payload = DatatypeConverter.parseHexBinary(payload);
+		this.payload = RDHUtils.parseHexBinary(payload);
 		checkArgument("Payload empty or too small", this.payload.length>=MIN_PAYLOAD_LENGTH);
 	}
 
@@ -97,7 +97,7 @@ public final class Checksum {
 		sb.append('#');
 		sb.append(Long.toHexString(size));
 		sb.append('#');
-		sb.append(DatatypeConverter.printHexBinary(getPayload()));
+		sb.append(RDHUtils.printHexBinary(getPayload()));
 
 		return sb.toString();
 	}
@@ -135,7 +135,7 @@ public final class Checksum {
 
 		String type = splits[0];
 		long size = Long.parseUnsignedLong(splits[1], 16);
-		byte[] payload = DatatypeConverter.parseHexBinary(splits[2]);
+		byte[] payload = RDHUtils.parseHexBinary(splits[2]);
 
 		return new Checksum(type, size, payload);
 	}
