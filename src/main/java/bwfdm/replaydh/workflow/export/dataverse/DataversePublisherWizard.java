@@ -1364,13 +1364,13 @@ public class DataversePublisherWizard {
 			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDescription.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDate.getTextfield());
-
-			if (!((eLicense.getTextfield().getText().equals("CC0")) || (eLicense.getTextfield().getText().equals("NONE")))) {
-				eLicense.getTextfield().setBorder(GuiUtils.getDefaulterrorborder());
-				nextEnabled &=false;
-			} else {
-				eLicense.getTextfield().setBorder(GuiUtils.getStandardBorder());
+			
+			if ((eLicense.getTextfield().getText().equals("CC0")) || (eLicense.getTextfield().getText().equals("NONE"))) {
+				GuiUtils.toggleChangeableBorder(eLicense.getTextfield(),false);
 				nextEnabled &=true;
+			} else {
+				GuiUtils.toggleChangeableBorder(eLicense.getTextfield(),true);
+				nextEnabled &=false;
 			}
 
 			setNextEnabled(nextEnabled);
@@ -1536,6 +1536,7 @@ public class DataversePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfTitle);
 			GuiUtils.prepareChangeableBorder(tfDescription);
 			GuiUtils.prepareChangeableBorder(tfDate);
+			GuiUtils.prepareChangeableBorder(tfLicense);
 
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
 
@@ -1864,11 +1865,11 @@ public class DataversePublisherWizard {
 			}
 			if (!(allEmpty)) {
 				for (GUIElement changeElement : propertylist) {
-					changeElement.getTextfield().setBorder(GuiUtils.getStandardBorder());
+					GuiUtils.toggleChangeableBorder(changeElement.getTextfield(),false);
 				}
 			} else {
 				for (GUIElement changeElement : propertylist) {
-					changeElement.getTextfield().setBorder(GuiUtils.getDefaulterrorborder());
+					GuiUtils.toggleChangeableBorder(changeElement.getTextfield(),true);
 				}
 			}
 			return !allEmpty;
