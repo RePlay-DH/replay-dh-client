@@ -2,8 +2,6 @@ package bwfdm.replaydh.workflow.export.dataverse;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -14,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.abdera.Abdera;
 import org.apache.abdera.model.Document;
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Feed;
@@ -24,16 +23,9 @@ import org.apache.abdera.protocol.client.RequestOptions;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.eclipse.jgit.util.FileUtils;
 import org.swordapp.client.AuthCredentials;
-import org.swordapp.client.Deposit;
 import org.swordapp.client.DepositReceipt;
-import org.swordapp.client.EntryPart;
-import org.swordapp.client.ProtocolViolationException;
-import org.swordapp.client.SWORDClient;
 import org.swordapp.client.SWORDClientException;
-import org.swordapp.client.SWORDError;
-import org.swordapp.client.ServiceDocument;
 import org.swordapp.client.SwordResponse;
-import org.swordapp.client.UriRegistry;
 
 /**
  * 
@@ -42,11 +34,10 @@ import org.swordapp.client.UriRegistry;
  */
 public class DataverseRepository_v4 extends DataverseRepository {
 	
-	public DataverseRepository_v4(String serviceDocumentURL, char[] apiKey) {
+	public DataverseRepository_v4(AuthCredentials authCredentials, String serviceDocumentURL) {
+		super(authCredentials);
 		this.serviceDocumentURL=serviceDocumentURL;
-		swordClient = new SWORDClient();
-		authCredentials = new AuthCredentials(String.valueOf(apiKey), "null");
-		this.apiKey=String.valueOf(apiKey);
+		this.authCredentials=authCredentials;
 	}
 	
 	// For SWORD
@@ -56,17 +47,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 	
 	private String apiKey;
 	
-	/**
-	 * Check if SWORDv2-protocol is accessible
-	 * @return
-	 */
-	public boolean isSwordAccessible() {
-		if(this.getServiceDocument(this.serviceDocumentURL) != null) {
-			return true;
-		} else {
-			return false;
-		}
-	}
+	private Abdera abdera = new Abdera();
 	
 	public Feed getAtomFeed(String dataverseURL, AuthCredentials auth) throws SWORDClientException, MalformedURLException
     {
@@ -136,95 +117,6 @@ public class DataverseRepository_v4 extends DataverseRepository {
         return null;
     }
 	
-	/**
-	 * Publish a file or metadata. Private method.
-	 * <p>
-	 * IMPORTANT - you can use ONLY 1 possibility in the same time (only file, or only metadata). 
-	 * "Multipart" is not supported!
-	 * 
-	 * @param userLogin
-	 * @param collectionURL - could be link to the collection (from the service document) 
-	 * 		  or a link to edit the collection ("Location" field in the response)
-	 * @param mimeFormat - use e.g. {@code "application/atom+xml"} or {@code "application/zip"}
-	 * @param packageFormat - see {@link UriRegistry.PACKAGE_SIMPLE_ZIP} or {@linkplain UriRegistry.PACKAGE_BINARY}
-	 * @param file
-	 * @param metadataMap
-	 * @return "Location" parameter from the response in case of {@code SwordRequestType.DEPOSIT} request, 
-	 *  	   "StatusCode" parameter from the response in case of {@code SwordRequestType.REPLACE} request,
-	 *  	   or {@code null} in case of error
-	 */
-	protected String publishElement(String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, List<String>> metadataMap) {
-		
-		// Check if only 1 parameter is used (metadata OR file). 
-		// Multipart is not supported.
-		if( ((file != null)&&(metadataMap != null)) || ((file == null)&&(metadataMap == null)) ) {
-			return null; 
-		}
-		
-		SWORDClient swordClient = new SWORDClient();
-		
-		FileInputStream fis = null;
-		
-		Deposit deposit = new Deposit();
-		
-		try {
-			// Check if "metadata as a Map"
-			if(metadataMap != null) {
-				EntryPart ep = new EntryPart();
-				for(Map.Entry<String, List<String>> metadataEntry : metadataMap.entrySet()) {
-					for (String property: metadataEntry.getValue()) {
-						ep.addDublinCore(metadataEntry.getKey(), property);
-					}
-				}
-				deposit.setEntryPart(ep);
-			}
-			
-			// Check if "file"
-			if(file != null) {
-				fis = new FileInputStream(file); // open FileInputStream
-				deposit.setFile(fis);				
-				deposit.setFilename(file.getName()); 	// deposit works properly ONLY with a "filename" parameter 
-														// --> in curl: -H "Content-Disposition: filename=file.zip"
-			}
-			
-			deposit.setMimeType(mimeFormat);
-			deposit.setPackaging(packageFormat);
-			deposit.setInProgress(true);
-			//deposit.setMd5("fileMD5");					//put here only as example
-			//deposit.setSuggestedIdentifier("abcdefg");	//put here only as example
-			
-			
-			switch (swordRequestType) {
-			case DEPOSIT:
-				DepositReceipt receipt = swordClient.deposit(collectionURL, deposit, authCredentials);
-				return receipt.getEntry().getEditMediaLinkResolvedHref().toString(); //"Location" parameter from the response
-			case REPLACE:
-				SwordResponse response = swordClient.replace(collectionURL, deposit, authCredentials);
-				return Integer.toString(response.getStatusCode()); //"StatusCode" parameter from the response
-			default:
-				log.error("Wrong SWORD-request type: " + swordRequestType + " : Supported here types are: " + SwordRequestType.DEPOSIT + ", " + SwordRequestType.REPLACE);
-				return null;					
-			}
-			
-		} catch (FileNotFoundException e) {
-			log.error("Exception by accessing a file: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			return null;	
-		
-		} catch (SWORDClientException | SWORDError | ProtocolViolationException e) {
-			log.error("Exception by making deposit: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			return null;
-		} finally {
-			// Close FileInputStream
-			if(fis != null) {
-				try {
-					fis.close();
-				} catch (IOException e) {
-					log.error("Exception by closing the FileInputStream: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-				}
-			}
-		}
-	}
-	
 
 	public Map<String, String> getUserAvailableCollectionsWithTitle() {
 		if(this.getServiceDocument(serviceDocumentURL) != null) {
@@ -237,7 +129,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 
 	public boolean uploadZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
 		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
-		String returnValue = publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
+		DepositReceipt returnValue = (DepositReceipt) this.publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
 		FileUtils.delete(zipFile);
 		if (returnValue != null) {
 			return true;
@@ -247,14 +139,14 @@ public class DataverseRepository_v4 extends DataverseRepository {
 	}
 
 	public String uploadMetadata(String collectionURL, File fileFullPath, Map<String, List<String>> metadataMap) {
-		String returnValue = null;
+		DepositReceipt returnValue = null;
 		if ((metadataMap == null) && (fileFullPath != null)) {
-			returnValue = publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
+			returnValue = (DepositReceipt) this.publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
 		} else if ((metadataMap != null) && (fileFullPath == null)) {
-			returnValue = publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+			returnValue = (DepositReceipt) this.publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
 		}
 		if(returnValue != null) {
-			return returnValue;
+			return returnValue.getEntry().getEditMediaLinkResolvedHref().toString();
 		} else {
 			log.error("No return value from publishElement method");
 			return null;
@@ -270,16 +162,6 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		return this.uploadZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}
 
-	public ServiceDocument getServiceDocument(String serviceDocumentURL) {
-		ServiceDocument serviceDocument = null;
-		try {
-			serviceDocument = swordClient.getServiceDocument(serviceDocumentURL, authCredentials);
-		} catch (SWORDClientException | ProtocolViolationException e) {
-			log.error("Exception by accessing service document: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			return null;
-		}
-		return serviceDocument;
-	}
 
 	public Entry getUserAvailableMetadataset(Feed feed, String doiId) {
 		if(feed != null) {
@@ -423,7 +305,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 
 	@Override
 	public boolean replaceMetadata(String doiUrl, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
-		String returnValue = null;
+		SwordResponse returnValue = null;
 		if (metadataMap != null)  {
 			returnValue = publishElement(doiUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
 		}

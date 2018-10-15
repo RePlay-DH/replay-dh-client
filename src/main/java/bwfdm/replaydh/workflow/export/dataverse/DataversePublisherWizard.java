@@ -66,6 +66,7 @@ import javax.swing.table.TableModel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.swordapp.client.AuthCredentials;
 
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
@@ -127,7 +128,7 @@ public class DataversePublisherWizard {
 
 		private String chosenDataset;
 		private String jsonObjectWithMetadata;
-
+		
 		public boolean isReplaceMetadataAllowed() {
 			return replaceMetadataAllowed;
 		}
@@ -366,7 +367,6 @@ public class DataversePublisherWizard {
 
 		private Map<String, String> availableCollections;
 		private DataverseRepository_v4 publicationRepository;
-
 		/**
 		 * Check the connection via REST-interface.
 		 * Sets the global flag {@code restOK=true} if connection is working, and {@code restOK=false} otherwise
@@ -384,7 +384,7 @@ public class DataversePublisherWizard {
 					}
 
 					//Exchange "http://" and "https://" if REST is not accessible
-					if(!publicationRepository.isSwordAccessible()) {
+					if(!publicationRepository.isSwordAccessible(serviceDocumentURL)) {
 						// If the exchange did not help, move to the previous condition
 						swordOK = false;
 						return swordOK;
@@ -474,7 +474,7 @@ public class DataversePublisherWizard {
 										//and provide messages in case of error
 
 			pAPIkey = new JPasswordField();
-
+			
 			GuiUtils.prepareChangeableBorder(tfUrl);
 			GuiUtils.prepareChangeableBorder(pAPIkey);
 
@@ -512,6 +512,7 @@ public class DataversePublisherWizard {
 			checkLoginButton = new JButton(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.loginButton"));
 			checkLoginButton.setEnabled(false);
 			checkLoginButton.addActionListener(new ActionListener() {
+
 				@Override
 				public void actionPerformed(ActionEvent e) {
 
@@ -522,7 +523,8 @@ public class DataversePublisherWizard {
 					}
 
 					serviceDocumentURL = createServiceDocumentURL(tfUrl.getText());
-					publicationRepository = new DataverseRepository_v4(serviceDocumentURL, pAPIkey.getPassword());
+					AuthCredentials authCredentials = new AuthCredentials(String.valueOf(pAPIkey.getPassword()), "null");
+					publicationRepository = new DataverseRepository_v4(authCredentials,serviceDocumentURL);
 					// Prepare GUI for the repository requests
 					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.waitMessage"));
 					loginOK = false;
