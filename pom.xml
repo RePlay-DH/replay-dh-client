@@ -4,7 +4,7 @@
 
 	<groupId>replay-dh</groupId>
 	<artifactId>replay-dh-client</artifactId>
-	<version>1.1.1-beta</version>
+	<version>1.1.2-beta</version>
 	<packaging>jar</packaging>
 
 	<name>RePlay-DH</name>
