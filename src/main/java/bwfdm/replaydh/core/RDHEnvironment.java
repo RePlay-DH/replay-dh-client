@@ -18,14 +18,18 @@
  */
 package bwfdm.replaydh.core;
 
+import static bwfdm.replaydh.utils.RDHUtils.checkState;
 import static java.util.Objects.requireNonNull;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Locale.Category;
 import java.util.Map;
@@ -329,14 +333,27 @@ public class RDHEnvironment implements PropertyChangeSource {
 //		changeSupport.firePropertyChange(NAME_WORKSPACE_PATH, oldWorkspacePath, workspacePath);
 //	}
 
+	synchronized void discardWorkspace() {
+		checkState("No workspace to reset", workspace!=null);
+
+		// Notify listeners about the general change
+		changeSupport.firePropertyChange(NAME_WORKSPACE, workspace, null);
+
+		// Now synchronize the workspace history
+		Path path = workspace.getFolder();
+		String entryToRemove = path.toString();
+
+		adjustHistory(entryToRemove, false);
+
+		this.workspace = null;
+	}
+
 	synchronized void setWorkspace(Workspace workspace) {
+		requireNonNull(workspace);
 
 		if(Objects.equals(this.workspace, workspace)) {
 			return;
 		}
-
-//		if(!Objects.equals(workspacePath, workspace.getFolder()))
-//			throw new RDHException("Cannot change workspace instance to a new location before changing the worpsace path");
 
 		Workspace oldWorkspace = this.workspace;
 		this.workspace = workspace;
@@ -347,22 +364,48 @@ public class RDHEnvironment implements PropertyChangeSource {
 		// Now synchronize the workspace history
 		Path path = workspace.getFolder();
 		String newEntry = path.toString();
+
+		adjustHistory(newEntry, true);
+	}
+
+	private void adjustHistory(String path, boolean append) {
+		requireNonNull(path);
+
 		String history = getProperty(RDHProperty.CLIENT_WORKSPACE_HISTORY);
 		String newHistory = null;
 		if(history!=null) {
-			if(!history.contains(newEntry)) {
+			List<String> entries = new ArrayList<>();
 
-				newHistory = history+File.pathSeparator+newEntry;
+			Collections.addAll(entries, history.split(File.pathSeparator));
 
-				if(client.isVerbose()) {
-					log.info("Added {} to workspace history", newEntry);
+			for(Iterator<String> it = entries.iterator(); it.hasNext();) {
+				String entry = it.next();
+				if(entry.equals(path)) {
+					if(append) {
+						return;
+					} else {
+						it.remove();
+						if(client.isVerbose()) {
+							log.info("Removed {} from workspace history", entry);
+						}
+						break;
+					}
 				}
 			}
-		} else {
-			newHistory = newEntry;
+
+			if(append) {
+				entries.add(path);
+				if(client.isVerbose()) {
+					log.info("Added {} to workspace history", path);
+				}
+			}
+
+			newHistory = String.join(File.pathSeparator, entries);
+		} else if (append){
+			newHistory = path;
 
 			if(client.isVerbose()) {
-				log.info("Initialized workspace history with path {}", newEntry);
+				log.info("Initialized workspace history with path {}", path);
 			}
 		}
 

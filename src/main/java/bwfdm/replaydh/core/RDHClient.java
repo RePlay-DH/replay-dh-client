@@ -546,6 +546,16 @@ public class RDHClient {
 		return debug;
 	}
 
+	public void resetWorkspace() {
+		JGitAdapter git = gitAdapter.value();
+
+		if(isVerbose()) {
+			log.info("Resetting workspace");
+		}
+
+		git.disconnectGit();
+	}
+
 	/**
 	 * Expects an existing workspace managed by the RePlay-DH client to
 	 * be located at the specified {@link Path}.
@@ -557,7 +567,7 @@ public class RDHClient {
 		JGitAdapter git = gitAdapter.value();
 
 		if(isVerbose()) {
-			log.info("Loading workspace at location: {}",workspacePath);
+			log.info("Loading workspace at location: {}", workspacePath);
 		}
 
 		Workspace workspace = null;
