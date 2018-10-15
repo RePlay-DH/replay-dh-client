@@ -231,6 +231,8 @@ public class RDHGui extends AbstractRDHTool {
 					"replaydh.dialogs.workspaceError.accessFailed", workspacePath);
 
 			GuiUtils.showError(null, title, message);
+
+			environment.getClient().resetWorkspace();
 		}
 	}
 
