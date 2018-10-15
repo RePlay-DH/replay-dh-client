@@ -211,7 +211,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 
         AbderaClient client = new AbderaClient(this.abdera);
         RequestOptions options = new RequestOptions();
-        options.setHeader("X-Dataverse-key", apiKey);
+        options.setHeader("X-Dataverse-key", authCredentials.getUsername());
 
         // ensure that the URL is valid
         URL url = this.formaliseURL(doiUrl);
