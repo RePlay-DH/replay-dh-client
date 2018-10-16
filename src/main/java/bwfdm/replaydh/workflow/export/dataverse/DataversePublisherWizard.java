@@ -1015,11 +1015,13 @@ public class DataversePublisherWizard {
 				clearGUI();
 				createNewDataset(environment, context);
 				replaceMetadata.setSelected(false);
+				replaceMetadata.setEnabled(false);
 			} else {
 				clearGUI();
 				resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
 				getJSONObject(environment, context);
 				replaceMetadata.setSelected(true);
+				replaceMetadata.setEnabled(true);
 			}
 
 
