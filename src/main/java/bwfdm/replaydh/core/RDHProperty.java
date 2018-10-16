@@ -101,7 +101,7 @@ public enum RDHProperty {
 	 * Flag to indicate that the client should collect usage statistics
 	 * and log them at a default location.
 	 */
-	CLIENT_COLLECT_STATS("client.collectStats", false),
+	CLIENT_COLLECT_STATS("client.collectStats", true),
 
 	// Internal properties used to setup localization, logging, etc...
 
