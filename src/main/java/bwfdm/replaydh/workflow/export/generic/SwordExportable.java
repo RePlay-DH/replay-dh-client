@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.Map;
 
 import org.swordapp.client.AuthCredentials;
-import org.swordapp.client.SWORDClient;
 import org.swordapp.client.ServiceDocument;
 import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
@@ -12,14 +11,14 @@ import org.swordapp.client.UriRegistry;
 import bwfdm.replaydh.workflow.export.dspace.DSpaceRepository.SwordRequestType;
 
 /**
- * SWORD methods, which could be common for different types of publication repositories
- * (e.g. DSpace, Dataverse)
+ * Interface with SWORD methods, which could be common for different publication repositories types
+ * (for the current moment - DSpace and Dataverse)
  * 
  * @author Volodymyr Kushnarenko
  * @author Florian Fritze
  *
  */
-public interface SwordCommons {
+public interface SwordExportable {
 
 	/**
 	 * Get new authentication credentials. 
@@ -31,18 +30,17 @@ public interface SwordCommons {
 	 * @param userLogin
 	 * @return
 	 */
-	public AuthCredentials getNewAuthCredentials(String adminUser, char[] adminPassword, String userLogin);
+	public AuthCredentials createAuthCredentials(String adminUser, char[] adminPassword, String userLogin);
 	
 	
 	/**
 	 * Get service document via SWORD v2
 	 * 
-	 * @param swordClient
 	 * @param serviceDocumentURL
 	 * @param authCredentials
 	 * @return ServiceDocument or null in case of error/exception
 	 */
-	public ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocumentURL, AuthCredentials authCredentials);
+	public ServiceDocument getServiceDocument(String serviceDocumentURL, AuthCredentials authCredentials);
 	
 	
 	/**
@@ -54,7 +52,7 @@ public interface SwordCommons {
 	
 	
 	/**
-	 * Export a file or metadata.
+	 * Export file or metadata.
 	 * <p>
 	 * IMPORTANT - you can use ONLY 1 possibility in the same time (only file, or only metadata). 
 	 * "Multipart" is not supported!
@@ -67,21 +65,29 @@ public interface SwordCommons {
 	 * @param file
 	 * @param metadataMap
 	 * 
+	 * 
 	 * TODO: what to return??
+	 * 
+	 * 
+	 * TODO: rename to "exportElement"
+	 * 
 	 * 
 	 * @return "Location" parameter from the response in case of {@code SwordRequestType.DEPOSIT} request, 
 	 *  	   "StatusCode" parameter from the response in case of {@code SwordRequestType.REPLACE} request,
 	 *  	   or {@code null} in case of error
 	 */
-	public <T extends SwordResponse> T exportElement(String userLogin, String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, String> metadataMap);
+	public SwordResponse publishElement(AuthCredentials authCredentials, String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, String> metadataMap);
 	//TODO: return DepositReceipt ???
 	
 	
 	/**
 	 * Check if SWORDv2-protocol is accessible
+	 * 
+	 * TODO: add input parameters
+	 * 
 	 * @return boolean
 	 */
-	public boolean isSwordAccessible();
+	public boolean isSwordAccessible(String serviceDocumentURL, AuthCredentials authCredentials);
 		
 	
 }
