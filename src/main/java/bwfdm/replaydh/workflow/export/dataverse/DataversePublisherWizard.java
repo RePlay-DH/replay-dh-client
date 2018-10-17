@@ -1135,15 +1135,19 @@ public class DataversePublisherWizard {
 							case "subject":
 								if (subjects == null) {
 									subjects = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
+									int numbersToAdd=elementsofproperty.get("subject").size();
+									if ((numbersToAdd == 1) && (elementsofproperty.get("subject").get(0).getTextfield().getText().equals(""))) {
+										numbersToAdd=0;
+									}
 									for (int index=0; index < subjects.size(); index++) {
 										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"]");
 										if (!(propertyvalue.equals("N/A"))) {
-											elementsofproperty.get("subject").get(index).getTextfield().setText(propertyvalue);
-											if (subjects.size() > elementsofproperty.get("subject").size()) {
+											if ((subjects.size()+numbersToAdd) > elementsofproperty.get("subject").size()) {
 												GUIElement element = createGUIElement("subject");
 												elementsofproperty.get("subject").add(element);
 												element.getTextfield().getDocument().addDocumentListener(adapter);
 											}
+											elementsofproperty.get("subject").get(index+numbersToAdd).getTextfield().setText(propertyvalue);
 										}
 									}
 								}
@@ -1159,7 +1163,7 @@ public class DataversePublisherWizard {
 									for (int index=0; index < keywords.size(); index++) {
 										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"].keywordValue.value");
 										if (!(propertyvalue.equals("N/A"))) {
-											if ((keywords.size()+numbersToAdd)> elementsofproperty.get("subject").size()) {
+											if ((keywords.size()+numbersToAdd) > elementsofproperty.get("subject").size()) {
 												GUIElement element = createGUIElement("subject");
 												elementsofproperty.get("subject").add(element);
 												element.getTextfield().getDocument().addDocumentListener(adapter);
