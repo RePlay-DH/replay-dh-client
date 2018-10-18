@@ -24,9 +24,9 @@ import org.swordapp.client.SwordResponse;
 
 import bwfdm.replaydh.workflow.export.dspace.DSpaceRepository.SwordRequestType;
 
-public class GeneralSwordExporter implements SwordExportable{
+public class SwordExporter implements SwordExportable{
 
-	private static final Logger log = LoggerFactory.getLogger(GeneralSwordExporter.class);
+	private static final Logger log = LoggerFactory.getLogger(SwordExporter.class);
 	
 	// Header constants
 	public static final String APPLICATION_JSON = "application/json";
@@ -36,6 +36,7 @@ public class GeneralSwordExporter implements SwordExportable{
 	public static final String MIME_FORMAT_ATOM_XML = "application/atom+xml";	
 	
 	
+	@Override
 	public ServiceDocument getServiceDocument(String serviceDocumentURL, AuthCredentials authCredentials) {
 		
 		SWORDClient swordClient = new SWORDClient();
@@ -50,6 +51,7 @@ public class GeneralSwordExporter implements SwordExportable{
 	}
 
 	
+	@Override
 	public Map<String, String> getAvailableCollectionsViaSWORD(ServiceDocument serviceDocument) {
 		
 		Map<String, String> collections = new HashMap<String, String>();
@@ -65,7 +67,8 @@ public class GeneralSwordExporter implements SwordExportable{
 		return collections;
 	}
 
-	
+
+	@Override
 	public SwordResponse publishElement(AuthCredentials authCredentials, String collectionURL,
 			SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file,
 			Map<String, String> metadataMap) {
@@ -141,6 +144,7 @@ public class GeneralSwordExporter implements SwordExportable{
 	}
 
 	
+	@Override
 	public boolean isSwordAccessible(String serviceDocumentURL, AuthCredentials authCredentials) {
 
 		if(getServiceDocument(serviceDocumentURL, authCredentials) != null) {
@@ -149,13 +153,9 @@ public class GeneralSwordExporter implements SwordExportable{
 			return false;
 		}
 	}
-
 	
-	//TODO: add other implemented methods from DSpace_v6 and Dataverse_v4
 	
-	/**
-	 * 
-	 */
+	@Override
 	public AuthCredentials createAuthCredentials(String adminUser, char[] adminPassword, String userLogin) {
 		
 		if(adminUser.equals(userLogin)) {

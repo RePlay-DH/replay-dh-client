@@ -2,7 +2,7 @@ package bwfdm.replaydh.workflow.export.generic;
 
 import org.swordapp.client.UriRegistry;
 
-public class GeneralExporterUtils {
+public class ExporterUtils {
 
 	/**
 	 * Get a file extension (without a dot) from the file name (e.g. "txt", "zip", ...)

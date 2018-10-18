@@ -21,9 +21,10 @@ import bwfdm.replaydh.workflow.export.dspace.DSpaceRepository.SwordRequestType;
 public interface SwordExportable {
 
 	/**
-	 * Get new authentication credentials. 
-	 * <p> To disactivate "on-behalf-of" option please use the same string for "adminUser" and "userLogin".
-	 * <p> If "adminUser" and "userLogin" are different, "on-behalf-of" option will be used.
+	 * Create new authentication credentials. 
+	 * 
+	 * <p> To use "on-behalf-of" option the "adminUser" and "userLogin" strings must be different. 
+	 * <p> To disable the "on-behalf-of" option please use the same value for "adminUser" and "userLogin" fields.
 	 * 
 	 * @param adminUser
 	 * @param adminPassword
@@ -45,6 +46,8 @@ public interface SwordExportable {
 	
 	/**
 	 * Get available collections via SWORD v2
+	 * 
+	 * TODO: rename to "getSwordAvailableCollections"
 	 * 
 	 * @return Map<String, String> where key=URL, value=Title
 	 */
@@ -83,7 +86,7 @@ public interface SwordExportable {
 	/**
 	 * Check if SWORDv2-protocol is accessible
 	 * 
-	 * TODO: add input parameters
+	 * TODO: rename to "isSwordAvailable"
 	 * 
 	 * @return boolean
 	 */
