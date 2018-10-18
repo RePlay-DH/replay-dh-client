@@ -26,6 +26,11 @@ import org.swordapp.client.ServiceDocument;
 import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
+/**
+ * 
+ * @author Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze
+ *
+ */
 public class SwordRepositoryExporter {
 
 	protected static final Logger log = LoggerFactory.getLogger(SwordRepositoryExporter.class);
@@ -96,14 +101,13 @@ public class SwordRepositoryExporter {
 	 * @return Map<String, String> where key=URL, value=Title
 	 */
 	public static Map<String, String> getAvailableCollectionsViaSWORD(ServiceDocument serviceDocument){
+		requireNonNull(serviceDocument);
 		Map<String, String> collections = new HashMap<String, String>();
 
-		if(serviceDocument != null) {
-			for(SWORDWorkspace workspace : serviceDocument.getWorkspaces()) {
-				for (SWORDCollection collection : workspace.getCollections()) {
-					// key = full URL, value = Title
-					collections.put(collection.getHref().toString(), collection.getTitle());
-				}
+		for (SWORDWorkspace workspace : serviceDocument.getWorkspaces()) {
+			for (SWORDCollection collection : workspace.getCollections()) {
+				// key = full URL, value = Title
+				collections.put(collection.getHref().toString(), collection.getTitle());
 			}
 		}
 		return collections;
@@ -164,7 +168,7 @@ public class SwordRepositoryExporter {
 	 *  	   "StatusCode" parameter from the response in case of {@code SwordRequestType.REPLACE} request,
 	 *  	   or {@code null} in case of error
 	 */
-	protected SwordResponse publishElement(String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, List<String>> metadataMap) {
+	protected SwordResponse exportElement(String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, List<String>> metadataMap) {
 
 		// Check if only 1 parameter is used (metadata OR file).
 		// Multipart is not supported.

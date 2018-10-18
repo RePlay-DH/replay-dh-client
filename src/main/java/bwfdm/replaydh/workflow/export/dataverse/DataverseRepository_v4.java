@@ -22,6 +22,8 @@ import org.apache.abdera.protocol.client.ClientResponse;
 import org.apache.abdera.protocol.client.RequestOptions;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.eclipse.jgit.util.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
 import org.swordapp.client.DepositReceipt;
 import org.swordapp.client.SWORDClientException;
@@ -37,85 +39,75 @@ public class DataverseRepository_v4 extends DataverseRepository {
 	public DataverseRepository_v4(AuthCredentials authCredentials, String serviceDocumentURL) {
 		super(authCredentials);
 		this.serviceDocumentURL=serviceDocumentURL;
-		this.authCredentials=authCredentials;
 	}
+	
+	private static final Logger log = LoggerFactory.getLogger(DataverseRepository_v4.class);
 	
 	// For SWORD
 	private String serviceDocumentURL;
 			
-	private AuthCredentials authCredentials = null;
-	
-	private String apiKey;
-	
 	private Abdera abdera = new Abdera();
 	
-	public Feed getAtomFeed(String dataverseURL, AuthCredentials auth) throws SWORDClientException, MalformedURLException
-    {
-        // do some error checking and validations
-        if (dataverseURL == null)
-        {
-            log.error("Null string passed in to getAtomFeed; returning null");
-            return null;
-        }
-        if (log.isDebugEnabled())
-        {
-            log.debug("getting Atom Feed from " + dataverseURL);
-        }
+	public Feed getAtomFeed(String dataverseURL)
+			throws SWORDClientException, MalformedURLException {
+		// do some error checking and validations
+		if (dataverseURL == null) {
+			log.error("Null string passed in to getAtomFeed; returning null");
+			return null;
+		}
+		if (log.isDebugEnabled()) {
+			log.debug("getting Atom Feed from " + dataverseURL);
+		}
 
-        AbderaClient client = new AbderaClient(this.abdera);
+		AbderaClient client = new AbderaClient(this.abdera);
+		
+		AuthCredentials auth = super.getAuthCredentials();
+		
+		if (auth != null) {
+			if (auth.getUsername() != null) {
+				if (log.isDebugEnabled()) {
+					log.debug("Setting username/password: " + auth.getUsername() + "/****password omitted *****");
+				}
+				UsernamePasswordCredentials unpw = new UsernamePasswordCredentials(auth.getUsername(),
+						auth.getPassword());
 
-        if (auth != null) {
-        	if (auth.getUsername() != null) {
-        		if (log.isDebugEnabled())
-                {
-                    log.debug("Setting username/password: " + auth.getUsername() + "/****password omitted *****");
-                }
-                UsernamePasswordCredentials unpw = new UsernamePasswordCredentials(auth.getUsername(), auth.getPassword());
+				// create the credentials - target and realm can be null (and are so by default)
+				try {
+					client.addCredentials(auth.getTarget(), auth.getRealm(), "basic", unpw);
+				} catch (URISyntaxException e) {
+					log.error("Unable to parse authentication target in AuthCredential", e);
+					throw new SWORDClientException("Unable to parse authentication target in AuthCredentials", e);
+				}
+			}
+		}
+		// ensure that the URL is valid
+		URL url = new URL(dataverseURL);
+		if (log.isDebugEnabled()) {
+			log.debug("Formalised Atom Document URL to " + url.toString());
+		}
 
-                // create the credentials - target and realm can be null (and are so by default)
-                try
-                {
-                    client.addCredentials(auth.getTarget(), auth.getRealm(), "basic", unpw);
-                }
-                catch (URISyntaxException e)
-                {
-                    log.error("Unable to parse authentication target in AuthCredential", e);
-                    throw new SWORDClientException("Unable to parse authentication target in AuthCredentials", e);
-                }
-        	}
-        }
-        // ensure that the URL is valid
-        URL url = new URL(dataverseURL);
-        if (log.isDebugEnabled())
-        {
-            log.debug("Formalised Atom Document URL to " + url.toString());
-        }
+		// make the request for atom feed
+		if (log.isDebugEnabled()) {
+			log.debug("Connecting to Server to Atom Feed Document from " + url.toString() + " ...");
+		}
+		ClientResponse resp = client.get(url.toString());
+		if (log.isDebugEnabled()) {
+			log.debug("Successfully retrieved Atom Feed from " + url.toString());
+		}
 
-        // make the request for atom feed
-        if (log.isDebugEnabled())
-        {
-           log.debug("Connecting to Server to Atom Feed Document from " + url.toString() + " ...");
-        }
-        ClientResponse resp = client.get(url.toString());
-        if (log.isDebugEnabled())
-        {
-            log.debug("Successfully retrieved Atom Feed from " + url.toString());
-        }
+		// if the response is successful, get the Atom Feed out of the response
+		if (resp.getType() == Response.ResponseType.SUCCESS) {
+			log.info("Retrieved Atom Feed from " + url.toString() + " with HTTP success code");
+			Document<Feed> doc = resp.getDocument();
+			Feed sd = doc.getRoot();
+			return sd;
+		}
 
-        // if the response is successful, get the Atom Feed out of the response
-        if (resp.getType() == Response.ResponseType.SUCCESS)
-        {
-            log.info("Retrieved Atom Feed from " + url.toString() + " with HTTP success code");
-            Document<Feed> doc = resp.getDocument();
-            Feed sd = doc.getRoot();
-            return sd;
-        }
-
-        // if we don't get anything respond with null
-        log.warn("Unable to retrieve Atom Feed from " + url.toString() + "; responded with " + resp.getStatus()
-                + ". Possible problem with SWORD server, or URL");
-        return null;
-    }
+		// if we don't get anything respond with null
+		log.warn("Unable to retrieve Atom Feed from " + url.toString() + "; responded with " + resp.getStatus()
+				+ ". Possible problem with SWORD server, or URL");
+		return null;
+	}
 	
 
 	public Map<String, String> getUserAvailableCollectionsWithTitle() {
@@ -129,7 +121,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 
 	public boolean uploadZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
 		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
-		DepositReceipt returnValue = (DepositReceipt) this.publishElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
+		DepositReceipt returnValue = (DepositReceipt) this.exportElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
 		FileUtils.delete(zipFile);
 		if (returnValue != null) {
 			return true;
@@ -141,9 +133,9 @@ public class DataverseRepository_v4 extends DataverseRepository {
 	public String uploadMetadata(String collectionURL, File fileFullPath, Map<String, List<String>> metadataMap) {
 		DepositReceipt returnValue = null;
 		if ((metadataMap == null) && (fileFullPath != null)) {
-			returnValue = (DepositReceipt) this.publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
+			returnValue = (DepositReceipt) this.exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
 		} else if ((metadataMap != null) && (fileFullPath == null)) {
-			returnValue = (DepositReceipt) this.publishElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+			returnValue = (DepositReceipt) this.exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
 		}
 		if(returnValue != null) {
 			return returnValue.getEntry().getEditMediaLinkResolvedHref().toString();
@@ -158,7 +150,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		String doiId = this.uploadMetadata(collectionURL, metadataFileXML, metadataMap);
 		int beginDOI=doiId.indexOf("doi:");
 		int end=doiId.length();
-		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials),doiId.substring(beginDOI, end));
+		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),doiId.substring(beginDOI, end));
 		return this.uploadZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}
 
@@ -194,7 +186,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 
 	@Override
 	public Map<String, String> getDatasetsInDataverseCollection(String chosenCollection) throws MalformedURLException, SWORDClientException {
-		return getMetadataSetsWithId(getAtomFeed(chosenCollection, authCredentials));
+		return getMetadataSetsWithId(getAtomFeed(chosenCollection));
 	}
 
 	@Override
@@ -211,7 +203,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 
         AbderaClient client = new AbderaClient(this.abdera);
         RequestOptions options = new RequestOptions();
-        options.setHeader("X-Dataverse-key", authCredentials.getUsername());
+        options.setHeader("X-Dataverse-key", super.getAuthCredentials().getUsername());
 
         // ensure that the URL is valid
         URL url = this.formaliseURL(doiUrl);
@@ -307,7 +299,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 	public boolean replaceMetadata(String doiUrl, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
 		SwordResponse returnValue = null;
 		if (metadataMap != null)  {
-			returnValue = publishElement(doiUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+			returnValue = exportElement(doiUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
 		}
 		if(returnValue != null) {
 			return true;
@@ -322,7 +314,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		Entry entry = null;
 		int beginDOI=doiUrl.indexOf("doi:");
 		int end=doiUrl.length();
-		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL, authCredentials),doiUrl.substring(beginDOI, end));
+		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),doiUrl.substring(beginDOI, end));
 		replaceMetadata(doiUrl, null, null, metadataMap);
 		return uploadZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}

@@ -8,8 +8,6 @@ import java.util.Map;
 
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Feed;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
 import org.swordapp.client.SWORDClientException;
 import bwfdm.replaydh.workflow.export.generic.SwordRepositoryExporter;
@@ -25,8 +23,6 @@ public abstract class DataverseRepository extends SwordRepositoryExporter {
 		super(authCredentials);
 	}
 
-	protected static final Logger log = LoggerFactory.getLogger(DataverseRepository.class);
-	
 	
 	/**
 	 * Get the Atom Feed of a Dataverse collection URL
@@ -36,7 +32,7 @@ public abstract class DataverseRepository extends SwordRepositoryExporter {
 	 * @throws SWORDClientException
 	 * @throws MalformedURLException
 	 */
-	public abstract Feed getAtomFeed(String dataverseURL, AuthCredentials auth) throws SWORDClientException, MalformedURLException;
+	public abstract Feed getAtomFeed(String dataverseURL) throws SWORDClientException, MalformedURLException;
 	
 	
 
