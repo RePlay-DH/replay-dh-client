@@ -31,7 +31,7 @@ import org.swordapp.client.UriRegistry;
  * @author Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze
  *
  */
-public class SwordRepositoryExporter {
+public abstract class SwordRepositoryExporter {
 
 	protected static final Logger log = LoggerFactory.getLogger(SwordRepositoryExporter.class);
 
@@ -235,5 +235,31 @@ public class SwordRepositoryExporter {
 			}
 		}
 	}
+	
+	/**
+	 * @param collectionURL holds the collection URL where the metadata will be exported to
+	 * @param metadataMap holds the metadata itself
+	 * @return
+	 */
+	public abstract String exportNewMetadata(String collectionURL, Map<String, List<String>> metadataMap);
+	
+	/**
+	 * @param collectionURL holds the collection URL where items will be exported to
+	 * @param packedFiles holds a zip file which can contain one or multiple files
+	 * @param metadataMap holds the metadata which is necessary for the ingest
+	 * @return
+	 * @throws SWORDClientException 
+	 * @throws IOException 
+	 */
+	public abstract boolean exportNewMetadataAndFile(String collectionURL, File packedFiles, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
 
+
+	
+	/**
+	 * @param metadataSetURL The URL where to export the zipFile to.
+	 * @param zipFile A zip file that should be exported.
+	 * @return
+	 * @throws IOException
+	 */
+	public abstract boolean exportZipFile(String metadataSetURL, File zipFile) throws IOException;
 }

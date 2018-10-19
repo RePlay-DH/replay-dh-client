@@ -247,7 +247,7 @@ public class DataversePublisher implements ResourcePublisher {
 							context.getChosenDataset(), zipFile, null,
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
-					result = repository.uploadNewMetadataAndFile(context.getCollectionURL(), zipFile, null,
+					result = repository.exportNewMetadataAndFile(context.getCollectionURL(), zipFile, 
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				}
 
@@ -286,7 +286,7 @@ public class DataversePublisher implements ResourcePublisher {
 							context.getChosenDataset(), zipFile, null,
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
-					result = repository.uploadNewMetadataAndFile(context.getCollectionURL(), zipFile, null,
+					result = repository.exportNewMetadataAndFile(context.getCollectionURL(), zipFile, 
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				}
 
@@ -305,7 +305,7 @@ public class DataversePublisher implements ResourcePublisher {
 					result = repository.replaceMetadata(context.getChosenDataset(), null, null,
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
-					returnValue = repository.uploadMetadata(context.getCollectionURL(), null,
+					returnValue = repository.exportNewMetadata(context.getCollectionURL(), 
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 					if (returnValue != null) {
 						result = true;

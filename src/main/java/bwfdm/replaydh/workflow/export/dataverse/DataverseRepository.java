@@ -1,5 +1,7 @@
 package bwfdm.replaydh.workflow.export.dataverse;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -8,9 +10,12 @@ import java.util.Map;
 
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Feed;
+import org.eclipse.jgit.util.FileUtils;
 import org.swordapp.client.AuthCredentials;
+import org.swordapp.client.DepositReceipt;
 import org.swordapp.client.SWORDClientException;
 import bwfdm.replaydh.workflow.export.generic.SwordRepositoryExporter;
+import bwfdm.replaydh.workflow.export.generic.SwordRepositoryExporter.SwordRequestType;
 
 /**
  * 
@@ -34,43 +39,6 @@ public abstract class DataverseRepository extends SwordRepositoryExporter {
 	 */
 	public abstract Feed getAtomFeed(String dataverseURL) throws SWORDClientException, MalformedURLException;
 	
-	
-
-	/**
-	 * Publish a file to some collections, which is available for the user.
-	 * 
-	 * @param userLogin
-	 * @param metadataSetHrefURL
-	 * @param zipFile
-	 * @return
-	 * @throws IOException 
-	 */
-	public abstract boolean uploadZipFile(String metadataSetHrefURL, File zipFile) throws IOException;
-
-	/**
-	 * Publish metada only (without any file) to some collection, which is available for the user.
-	 * Metadata are described as a {@link java.util.Map}. 
-	 *  
-	 * @param userLogin
-	 * @param collectionURL
-	 * @param metadataMap
-	 * @return
-	 */
-	public abstract String uploadMetadata(String collectionURL, File fileFullPath, Map<String, List<String>> metadataMap);
-
-	/**
-	 * Publish a file together with the metadata.
-	 * Metadata are described in the xml-file.
-	 * 
-	 * @param userLogin
-	 * @param collectionURL
-	 * @param filesToZip
-	 * @param metadataFileXML
-	 * @return
-	 * @throws IOException 
-	 * @throws SWORDClientException 
-	 */
-	public abstract boolean uploadNewMetadataAndFile(String collectionURL, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
 	
 	/**
 	 * Replaces a metadata entry
@@ -130,4 +98,39 @@ public abstract class DataverseRepository extends SwordRepositoryExporter {
 	 */
 	public abstract String getJSONMetadata(String doiUrl) throws SWORDClientException, IOException;
 	
+	
+	public String exportNewMetadata(String collectionURL, Map<String, List<String>> metadataMap) {
+		DepositReceipt returnValue = null;
+		requireNonNull(metadataMap);
+		requireNonNull(collectionURL);
+		returnValue = (DepositReceipt) exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+		if(returnValue != null) {
+			return returnValue.getEntry().getEditMediaLinkResolvedHref().toString();
+		} else {
+			log.error("No return value from publishElement method");
+			return null;
+		}
+	}
+
+	
+	public boolean exportNewMetadataAndFile(String collectionURL, File zipFile, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
+		Entry entry = null;
+		String doiId = this.exportNewMetadata(collectionURL,  metadataMap);
+		int beginDOI=doiId.indexOf("doi:");
+		int end=doiId.length();
+		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),doiId.substring(beginDOI, end));
+		return this.exportZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
+	}
+	
+	
+	public boolean exportZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
+		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
+		DepositReceipt returnValue = (DepositReceipt) exportElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
+		FileUtils.delete(zipFile);
+		if (returnValue != null) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 }

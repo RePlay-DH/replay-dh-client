@@ -21,11 +21,9 @@ import org.apache.abdera.protocol.client.AbderaClient;
 import org.apache.abdera.protocol.client.ClientResponse;
 import org.apache.abdera.protocol.client.RequestOptions;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
-import org.eclipse.jgit.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
-import org.swordapp.client.DepositReceipt;
 import org.swordapp.client.SWORDClientException;
 import org.swordapp.client.SwordResponse;
 
@@ -111,48 +109,9 @@ public class DataverseRepository_v4 extends DataverseRepository {
 	
 
 	public Map<String, String> getUserAvailableCollectionsWithTitle() {
-		if(this.getServiceDocument(serviceDocumentURL) != null) {
-			return super.getAvailableCollectionsViaSWORD(this.getServiceDocument(serviceDocumentURL));
-		} else {
-			return null;
-		}
+		return super.getAvailableCollectionsViaSWORD(this.getServiceDocument(serviceDocumentURL));
 	}
 
-
-	public boolean uploadZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
-		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
-		DepositReceipt returnValue = (DepositReceipt) exportElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
-		FileUtils.delete(zipFile);
-		if (returnValue != null) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	public String uploadMetadata(String collectionURL, File fileFullPath, Map<String, List<String>> metadataMap) {
-		DepositReceipt returnValue = null;
-		if ((metadataMap == null) && (fileFullPath != null)) {
-			returnValue = (DepositReceipt) exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
-		} else if ((metadataMap != null) && (fileFullPath == null)) {
-			returnValue = (DepositReceipt) exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
-		}
-		if(returnValue != null) {
-			return returnValue.getEntry().getEditMediaLinkResolvedHref().toString();
-		} else {
-			log.error("No return value from publishElement method");
-			return null;
-		}
-	}
-
-	public boolean uploadNewMetadataAndFile(String collectionURL, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
-		Entry entry = null;
-		String doiId = this.uploadMetadata(collectionURL, metadataFileXML, metadataMap);
-		int beginDOI=doiId.indexOf("doi:");
-		int end=doiId.length();
-		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),doiId.substring(beginDOI, end));
-		return this.uploadZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
-	}
 
 
 	public Entry getUserAvailableMetadataset(Feed feed, String doiId) {
@@ -304,6 +263,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		int end=doiUrl.length();
 		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),doiUrl.substring(beginDOI, end));
 		replaceMetadata(doiUrl, null, null, metadataMap);
-		return uploadZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
+		return exportZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}
+
 }
