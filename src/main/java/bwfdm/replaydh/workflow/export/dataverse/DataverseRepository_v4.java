@@ -24,6 +24,7 @@ import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
+import org.swordapp.client.Content;
 import org.swordapp.client.SWORDClientException;
 import org.swordapp.client.SwordResponse;
 
@@ -46,6 +47,11 @@ public class DataverseRepository_v4 extends DataverseRepository {
 			
 	private Abdera abdera = new Abdera();
 	
+	
+	/**
+	 * Parts copied from: public Content getContent(String contentURL, String mimeType, String packaging, AuthCredentials auth)
+	 * class SWORDClient
+	 */
 	public Feed getAtomFeed(String dataverseURL)
 			throws SWORDClientException, MalformedURLException {
 		// do some error checking and validations
@@ -148,6 +154,10 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		return getMetadataSetsWithId(getAtomFeed(chosenCollection));
 	}
 
+	/**
+	 * Parts copied from: public Content getContent(String contentURL, String mimeType, String packaging, AuthCredentials auth)
+	 * class SWORDClient
+	 */
 	@Override
 	public String getJSONMetadata(String doiUrl) throws SWORDClientException, IOException {
 		if (doiUrl == null) {
