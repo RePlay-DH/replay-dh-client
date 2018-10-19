@@ -247,7 +247,7 @@ public class DataversePublisher implements ResourcePublisher {
 							context.getChosenDataset(), zipFile, null,
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
-					result = repository.exportNewMetadataAndFile(context.getCollectionURL(), zipFile, 
+					result = repository.exportNewMetadataAndZipFile(context.getCollectionURL(), zipFile, 
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				}
 
@@ -286,7 +286,7 @@ public class DataversePublisher implements ResourcePublisher {
 							context.getChosenDataset(), zipFile, null,
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
-					result = repository.exportNewMetadataAndFile(context.getCollectionURL(), zipFile, 
+					result = repository.exportNewMetadataAndZipFile(context.getCollectionURL(), zipFile, 
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				}
 

@@ -245,13 +245,13 @@ public abstract class SwordRepositoryExporter {
 	
 	/**
 	 * @param collectionURL holds the collection URL where items will be exported to
-	 * @param packedFiles holds a zip file which can contain one or multiple files
+	 * @param zipFile holds a file which can contain one or multiple files
 	 * @param metadataMap holds the metadata which is necessary for the ingest
 	 * @return
 	 * @throws SWORDClientException 
 	 * @throws IOException 
 	 */
-	public abstract boolean exportNewMetadataAndFile(String collectionURL, File packedFiles, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
+	public abstract boolean exportNewMetadataAndZipFile(String collectionURL, File zipFile, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
 
 
 	
@@ -261,5 +261,5 @@ public abstract class SwordRepositoryExporter {
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract boolean exportZipFile(String metadataSetURL, File zipFile) throws IOException;
+	public abstract boolean exportNewZipFile(String metadataSetURL, File zipFile) throws IOException;
 }

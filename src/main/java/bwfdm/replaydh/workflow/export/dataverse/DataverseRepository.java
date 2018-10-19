@@ -15,7 +15,6 @@ import org.swordapp.client.AuthCredentials;
 import org.swordapp.client.DepositReceipt;
 import org.swordapp.client.SWORDClientException;
 import bwfdm.replaydh.workflow.export.generic.SwordRepositoryExporter;
-import bwfdm.replaydh.workflow.export.generic.SwordRepositoryExporter.SwordRequestType;
 
 /**
  * 
@@ -99,6 +98,11 @@ public abstract class DataverseRepository extends SwordRepositoryExporter {
 	public abstract String getJSONMetadata(String doiUrl) throws SWORDClientException, IOException;
 	
 	
+	/**
+	 * @param collectionURL holds the collection URL where the metadata will be exported to
+	 * @param metadataMap holds the metadata itself
+	 * @return
+	 */
 	public String exportNewMetadata(String collectionURL, Map<String, List<String>> metadataMap) {
 		DepositReceipt returnValue = null;
 		requireNonNull(metadataMap);
@@ -112,18 +116,30 @@ public abstract class DataverseRepository extends SwordRepositoryExporter {
 		}
 	}
 
-	
-	public boolean exportNewMetadataAndFile(String collectionURL, File zipFile, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
+	/**
+	 * @param collectionURL holds the collection URL where items will be exported to
+	 * @param packedFiles holds a zip file which can contain one or multiple files
+	 * @param metadataMap holds the metadata which is necessary for the ingest
+	 * @return
+	 * @throws SWORDClientException 
+	 * @throws IOException 
+	 */
+	public boolean exportNewMetadataAndZipFile(String collectionURL, File zipFile, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
 		Entry entry = null;
 		String doiId = this.exportNewMetadata(collectionURL,  metadataMap);
 		int beginDOI=doiId.indexOf("doi:");
 		int end=doiId.length();
 		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),doiId.substring(beginDOI, end));
-		return this.exportZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
+		return this.exportNewZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}
 	
-	
-	public boolean exportZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
+	/**
+	 * @param metadataSetURL The URL where to export the zipFile to.
+	 * @param zipFile A zip file that should be exported.
+	 * @return
+	 * @throws IOException
+	 */
+	public boolean exportNewZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
 		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
 		DepositReceipt returnValue = (DepositReceipt) exportElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
 		FileUtils.delete(zipFile);

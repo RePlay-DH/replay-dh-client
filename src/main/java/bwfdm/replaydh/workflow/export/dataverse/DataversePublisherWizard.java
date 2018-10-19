@@ -620,8 +620,13 @@ public class DataversePublisherWizard {
 			noAvailableCollectionsMessage.setVisible(context.getAvailableCollections().isEmpty());
 
 			// Remove selection and disable "next" button
-			collectionsComboBox.setSelectedIndex(-1);
-			setNextEnabled(false);
+			if (context.getAvailableCollections().isEmpty()) {
+				collectionsComboBox.setSelectedIndex(-1);
+				setNextEnabled(false);
+			} else {
+				collectionsComboBox.setSelectedIndex(0);
+				setNextEnabled(true);
+			}
 		};
 
 		@Override
@@ -693,8 +698,8 @@ public class DataversePublisherWizard {
 			collectionsComboBox.addItem(rm.get("replaydh.wizard.dataversePublisher.chooseDataset.create"));
 
 			// Remove selection and disable "next" button
-			collectionsComboBox.setSelectedIndex(-1);
-			setNextEnabled(false);
+			//collectionsComboBox.setSelectedIndex(-1);
+			//setNextEnabled(false);
 		};
 
 		private void checkFilesAvailable(DataversePublisherContext context) {
@@ -704,7 +709,7 @@ public class DataversePublisherWizard {
 				@Override
 				protected Boolean doInBackground() throws Exception {
 					filesAvailable = false;
-					if (context.getPublicationRepository().getDatasetsInDataverseCollection(context.collectionURL) != null) {
+					if (!(context.getPublicationRepository().getDatasetsInDataverseCollection(context.collectionURL).isEmpty())) {
 						context.availableDatasetsInCollection=context.getPublicationRepository().getDatasetsInDataverseCollection(context.collectionURL);
 						filesAvailable=true;
 					}
@@ -714,15 +719,19 @@ public class DataversePublisherWizard {
 				@Override
 				protected void done() {
 					if (filesAvailable) {
-						noAvailableDatasetsMessage.setVisible(false);
 						collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
 						for (String value : collectionEntries.getValuesForDatasets()) {
 							collectionsComboBox.addItem(value);
 						}
+						collectionsComboBox.setSelectedIndex(0);
+						setNextEnabled(true);
+						noAvailableDatasetsMessage.setText(ResourceManager.getInstance()
+								.get("replaydh.wizard.dataversePublisher.chooseDataset.datasetsMessage"));
 					} else {
 						// Display the error message if there are no collections available
 						collectionEntries = null;
-						noAvailableDatasetsMessage.setVisible(true);
+						noAvailableDatasetsMessage.setText(ResourceManager.getInstance()
+								.get("replaydh.wizard.dataversePublisher.chooseDataset.noDatasetsMessage"));
 					}
 				}
 			};
