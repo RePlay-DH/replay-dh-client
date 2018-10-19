@@ -121,7 +121,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 
 	public boolean uploadZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
 		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
-		DepositReceipt returnValue = (DepositReceipt) this.exportElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
+		DepositReceipt returnValue = (DepositReceipt) exportElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
 		FileUtils.delete(zipFile);
 		if (returnValue != null) {
 			return true;
@@ -133,9 +133,9 @@ public class DataverseRepository_v4 extends DataverseRepository {
 	public String uploadMetadata(String collectionURL, File fileFullPath, Map<String, List<String>> metadataMap) {
 		DepositReceipt returnValue = null;
 		if ((metadataMap == null) && (fileFullPath != null)) {
-			returnValue = (DepositReceipt) this.exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
+			returnValue = (DepositReceipt) exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, fileFullPath, null);
 		} else if ((metadataMap != null) && (fileFullPath == null)) {
-			returnValue = (DepositReceipt) this.exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+			returnValue = (DepositReceipt) exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
 		}
 		if(returnValue != null) {
 			return returnValue.getEntry().getEditMediaLinkResolvedHref().toString();
@@ -191,74 +191,62 @@ public class DataverseRepository_v4 extends DataverseRepository {
 
 	@Override
 	public String getJSONMetadata(String doiUrl) throws SWORDClientException, IOException {
-		if (doiUrl == null)
-        {
-            log.error("Null doiUrl passed in to getJSONMetadata; returning null");
-            return null;
-        }
-        if (log.isDebugEnabled())
-        {
-            log.debug("Showing JSON object contents from " + doiUrl);
-        }
+		if (doiUrl == null) {
+			log.error("Null doiUrl passed in to getJSONMetadata; returning null");
+			return null;
+		}
+		if (log.isDebugEnabled()) {
+			log.debug("Showing JSON object contents from " + doiUrl);
+		}
 
-        AbderaClient client = new AbderaClient(this.abdera);
-        RequestOptions options = new RequestOptions();
-        options.setHeader("X-Dataverse-key", super.getAuthCredentials().getUsername());
+		AbderaClient client = new AbderaClient(this.abdera);
+		RequestOptions options = new RequestOptions();
+		options.setHeader("X-Dataverse-key", super.getAuthCredentials().getUsername());
 
-        // ensure that the URL is valid
-        URL url = this.formaliseURL(doiUrl);
-        if (log.isDebugEnabled())
-        {
-            log.debug("Formalised Collection URL to " + url.toString());
-        }
+		// ensure that the URL is valid
+		URL url = this.formaliseURL(doiUrl);
+		if (log.isDebugEnabled()) {
+			log.debug("Formalised Collection URL to " + url.toString());
+		}
 
-        // make the request for the service document
-        if (log.isDebugEnabled())
-        {
-           log.debug("Connecting to Server to get JSON Object " + url.toString() + " ...");
-        }
-        ClientResponse resp = client.get(url.toString(), options);
-        if (log.isDebugEnabled())
-        {
-            log.debug("Successfully retrieved JSON Object from " + url.toString());
-        }
+		// make the request for the service document
+		if (log.isDebugEnabled()) {
+			log.debug("Connecting to Server to get JSON Object " + url.toString() + " ...");
+		}
+		ClientResponse resp = client.get(url.toString(), options);
+		if (log.isDebugEnabled()) {
+			log.debug("Successfully retrieved JSON Object from " + url.toString());
+		}
 
-        // if the response is successful, get the JSON object out of the response,
-        // and return it as String
-        if (resp.getType() == Response.ResponseType.SUCCESS)
-        {
-            log.info("Successfully retrieved JSON Object from " + url.toString());
-            return this.getStringFromInputStream(resp.getInputStream());
-        }
+		// if the response is successful, get the JSON object out of the response,
+		// and return it as String
+		if (resp.getType() == Response.ResponseType.SUCCESS) {
+			log.info("Successfully retrieved JSON Object from " + url.toString());
+			return this.getStringFromInputStream(resp.getInputStream());
+		}
 
-        // if we don't get anything respond with null
-        log.warn("Unable to retrieve JSON Object from " + url.toString() + "; responded with " + resp.getStatus()
-                + ". Possible problem with Dataverse API, or URL");
-        return null;		
+		// if we don't get anything respond with null
+		log.warn("Unable to retrieve JSON Object from " + url.toString() + "; responded with " + resp.getStatus()
+				+ ". Possible problem with Dataverse API, or URL");
+		return null;
 	}
-	
+
 	/**
 	 * Copied from class SWORDClient
+	 * 
 	 * @param url
 	 * @return
 	 * @throws SWORDClientException
 	 */
-	private URL formaliseURL(String url)
-            throws SWORDClientException
-    {
-        try
-        {
-            URL nurl = new URL(url);
-            return nurl;
-        }
-        catch (MalformedURLException e)
-        {
-            // No dice, can't even form base URL...
-            throw new SWORDClientException(url + " is not a valid URL ("
-                    + e.getMessage()
-                    + ")");
-        }
-    }
+	private URL formaliseURL(String url) throws SWORDClientException {
+		try {
+			URL nurl = new URL(url);
+			return nurl;
+		} catch (MalformedURLException e) {
+			// No dice, can't even form base URL...
+			throw new SWORDClientException(url + " is not a valid URL (" + e.getMessage() + ")");
+		}
+	}
 	
 	
 	/**

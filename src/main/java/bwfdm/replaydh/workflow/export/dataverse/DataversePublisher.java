@@ -191,112 +191,122 @@ public class DataversePublisher implements ResourcePublisher {
 		 */
 		@Override
 		protected Boolean doInBackground() throws Exception {
-			
+
 			DataverseRepository repository = context.getPublicationRepository();
 			boolean result = false;
-			
+
 			File tempFile = null;
-			
+
 			if (context.isExportProcessMetadataAllowed()) {
 				RawMetadataExporter exporter = new RawMetadataExporter();
-				
-				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS).toString();//use log folder to store temporary zip-file
+
+				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS)
+						.toString();// use log folder to store temporary zip-file
 				String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
-				tempFile = new File(logFolder + FileSystems.getDefault().getSeparator() +  rdhPrefix + timeStamp + "_ProcessMetadata.json");
+				tempFile = new File(logFolder + FileSystems.getDefault().getSeparator() + rdhPrefix + timeStamp
+						+ "_ProcessMetadata.json");
 				IOResource outputResource = new FileResource(Paths.get(tempFile.getPath()));
-				
-				Builder exportInfo = WorkflowExportInfo.newExportBuilder()
-						.encoding(StandardCharsets.UTF_8)
-						.mode(Mode.FILE)
-						.outputResource(outputResource)
-						.environment(context.exportInfo.getEnvironment())
+
+				Builder exportInfo = WorkflowExportInfo.newExportBuilder().encoding(StandardCharsets.UTF_8)
+						.mode(Mode.FILE).outputResource(outputResource).environment(context.exportInfo.getEnvironment())
 						.workflowScope(context.exportInfo.getWorkflowScope())
-						.objectScope(context.exportInfo.getObjectScope())
-						.type(Type.METADATA)
-						.workflow(context.exportInfo.getWorkflow())
-						.steps(context.exportInfo.getSteps())
+						.objectScope(context.exportInfo.getObjectScope()).type(Type.METADATA)
+						.workflow(context.exportInfo.getWorkflow()).steps(context.exportInfo.getSteps())
 						.targetStep(context.exportInfo.getTargetStep());
-				
+
 				exporter.export(exportInfo.build());
 			}
-			
-			if(!context.getFilesToPublish().isEmpty()) {
-				
+
+			if (!context.getFilesToPublish().isEmpty()) {
+
 				// Publication: files + metadata
-				
+
 				String workspacePath = context.exportInfo.getEnvironment().getWorkspacePath().toString();
-				//TODO: store tmp zip archive in logs or somewhere else?
-				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS).toString();//use log folder to store temporary zip-file
+				// TODO: store tmp zip archive in logs or somewhere else?
+				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS)
+						.toString();// use log folder to store temporary zip-file
 				String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
-				File zipFile = new File(logFolder + FileSystems.getDefault().getSeparator() +  rdhPrefix + timeStamp + ".zip");
-								
+				File zipFile = new File(
+						logFolder + FileSystems.getDefault().getSeparator() + rdhPrefix + timeStamp + ".zip");
+
 				List<File> filesList = context.getFilesToPublish();
 				if (context.isExportProcessMetadataAllowed()) {
 					filesList.add(tempFile);
 				}
-				
+
 				try {
 					IOUtils.packFilesToZip(filesList, zipFile, workspacePath);
 				} catch (IOException ex) {
-					log.error("Exception by addition of file to zip: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
+					log.error("Exception by addition of file to zip: {}: {}", ex.getClass().getSimpleName(),
+							ex.getMessage());
 				}
-				
+
 				// Start publication process
 				if (context.isReplaceMetadataAllowed()) {
-					result = repository.replaceMetadataAndAddFile(context.getCollectionURL(), context.getChosenDataset(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+					result = repository.replaceMetadataAndAddFile(context.getCollectionURL(),
+							context.getChosenDataset(), zipFile, null,
+							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
-					result = repository.uploadNewMetadataAndFile(context.getCollectionURL(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+					result = repository.uploadNewMetadataAndFile(context.getCollectionURL(), zipFile, null,
+							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				}
-				
+
 				// Delete zip-file
 				try {
-					FileUtils.delete(zipFile); 
+					FileUtils.delete(zipFile);
 					if (context.isExportProcessMetadataAllowed()) {
 						FileUtils.delete(tempFile);
 					}
 				} catch (Exception ex) {
 					log.error("Exception by deleting the file: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
-				}				
-				
+				}
+
 			} else if (context.isExportProcessMetadataAllowed()) {
 				String workspacePath = context.exportInfo.getEnvironment().getWorkspacePath().toString();
-				//TODO: store tmp zip archive in logs or somewhere else?
-				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS).toString();//use log folder to store temporary zip-file
+				// TODO: store tmp zip archive in logs or somewhere else?
+				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS)
+						.toString();// use log folder to store temporary zip-file
 				String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
-				File zipFile = new File(logFolder + FileSystems.getDefault().getSeparator() +  rdhPrefix + timeStamp + ".zip");
-								
+				File zipFile = new File(
+						logFolder + FileSystems.getDefault().getSeparator() + rdhPrefix + timeStamp + ".zip");
+
 				List<File> filesList = new ArrayList<>();
 				filesList.add(tempFile);
-				
+
 				try {
 					IOUtils.packFilesToZip(filesList, zipFile, workspacePath);
 				} catch (IOException ex) {
-					log.error("Exception by addition of file to zip: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
+					log.error("Exception by addition of file to zip: {}: {}", ex.getClass().getSimpleName(),
+							ex.getMessage());
 				}
-				
+
 				// Start publication process
 				if (context.isReplaceMetadataAllowed()) {
-					result = repository.replaceMetadataAndAddFile(context.getCollectionURL(), context.getChosenDataset(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+					result = repository.replaceMetadataAndAddFile(context.getCollectionURL(),
+							context.getChosenDataset(), zipFile, null,
+							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
-					result = repository.uploadNewMetadataAndFile(context.getCollectionURL(), zipFile, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+					result = repository.uploadNewMetadataAndFile(context.getCollectionURL(), zipFile, null,
+							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				}
-				
+
 				// Delete zip-file
 				try {
-					FileUtils.delete(zipFile); 
+					FileUtils.delete(zipFile);
 					FileUtils.delete(tempFile);
 				} catch (Exception ex) {
 					log.error("Exception by deleting the file: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
 				}
-			}
-				else {
-				
+			} else {
+
 				// Publication: metadata only
 				String returnValue = null;
 				if (context.isReplaceMetadataAllowed()) {
-					result = repository.replaceMetadata(context.getChosenDataset(), null, null, context.getMetadataObject().getMapDoublinCoreToMetadata());
-				} else {				
-					returnValue = repository.uploadMetadata(context.getCollectionURL(), null, context.getMetadataObject().getMapDoublinCoreToMetadata());
+					result = repository.replaceMetadata(context.getChosenDataset(), null, null,
+							context.getMetadataObject().getMapDoublinCoreToMetadata());
+				} else {
+					returnValue = repository.uploadMetadata(context.getCollectionURL(), null,
+							context.getMetadataObject().getMapDoublinCoreToMetadata());
 					if (returnValue != null) {
 						result = true;
 					} else {
@@ -304,7 +314,7 @@ public class DataversePublisher implements ResourcePublisher {
 					}
 				}
 			}
-			
+
 			return Boolean.valueOf(result);
 		}
 		

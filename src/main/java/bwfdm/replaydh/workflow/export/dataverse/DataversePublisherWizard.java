@@ -67,7 +67,6 @@ import javax.swing.table.TableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
-
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
@@ -674,7 +673,7 @@ public class DataversePublisherWizard {
 			"replaydh.wizard.dataversePublisher.chooseDataset.description") {
 
 		private JComboBox<String> collectionsComboBox;
-		private JTextArea noAvailableCollectionsMessage;
+		private JTextArea noAvailableDatasetsMessage;
 
 		private CollectionEntry collectionEntries;
 
@@ -693,15 +692,6 @@ public class DataversePublisherWizard {
 
 			collectionsComboBox.addItem(rm.get("replaydh.wizard.dataversePublisher.chooseDataset.create"));
 
-			collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
-
-			for(String value: collectionEntries.getValuesForDatasets()) {
-				collectionsComboBox.addItem(value);
-			}
-
-			// Display the error message if there are no collections available
-			noAvailableCollectionsMessage.setVisible(context.availableDatasetsInCollection.isEmpty());
-
 			// Remove selection and disable "next" button
 			collectionsComboBox.setSelectedIndex(-1);
 			setNextEnabled(false);
@@ -710,24 +700,42 @@ public class DataversePublisherWizard {
 		private void checkFilesAvailable(DataversePublisherContext context) {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
-
+				boolean filesAvailable;
 				@Override
 				protected Boolean doInBackground() throws Exception {
-					boolean filesAvailable = false;
+					filesAvailable = false;
 					if (context.getPublicationRepository().getDatasetsInDataverseCollection(context.collectionURL) != null) {
 						context.availableDatasetsInCollection=context.getPublicationRepository().getDatasetsInDataverseCollection(context.collectionURL);
 						filesAvailable=true;
 					}
 					return filesAvailable;
 				}
-
+				
+				@Override
+				protected void done() {
+					if (filesAvailable) {
+						noAvailableDatasetsMessage.setVisible(false);
+						collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
+						for (String value : collectionEntries.getValuesForDatasets()) {
+							collectionsComboBox.addItem(value);
+						}
+					} else {
+						// Display the error message if there are no collections available
+						collectionEntries = null;
+						noAvailableDatasetsMessage.setVisible(true);
+					}
+				}
 			};
 			executeWorkerWithTimeout(worker, timeOut, "Exception by exchanging http/https");
 		}
 
 		@Override
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
-			context.chosenDataset = collectionEntries.getKeyForDatasets(collectionsComboBox.getSelectedItem().toString());
+			if (collectionEntries != null) {
+				context.chosenDataset = collectionEntries.getKeyForDatasets(collectionsComboBox.getSelectedItem().toString());
+			} else {
+				context.chosenDataset = null;
+			}
 			return CHOOSE_FILES;
 		}
 
@@ -742,8 +750,8 @@ public class DataversePublisherWizard {
 				}
 			});
 
-			noAvailableCollectionsMessage = GuiUtils.createTextArea(ResourceManager.getInstance()
-					.get("replaydh.wizard.dataversePublisher.chooseCollection.noCollectionsMessage"));
+			noAvailableDatasetsMessage = GuiUtils.createTextArea(ResourceManager.getInstance()
+					.get("replaydh.wizard.dataversePublisher.chooseDataset.noDatasetsMessage"));
 
 			return FormBuilder.create()
 					.columns("fill:pref:grow")
@@ -751,7 +759,7 @@ public class DataversePublisherWizard {
 					.padding(Paddings.DLU4)
 					.add(new JLabel(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseDataset.collectionLabel"))).xy(1, 1)
 					.add(collectionsComboBox).xy(1, 3)
-					.add(noAvailableCollectionsMessage).xy(1, 5)
+					.add(noAvailableDatasetsMessage).xy(1, 5)
 					.build();
 		}
 
