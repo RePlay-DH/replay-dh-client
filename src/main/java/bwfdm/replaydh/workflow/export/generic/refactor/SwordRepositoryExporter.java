@@ -65,6 +65,49 @@ public abstract class SwordRepositoryExporter {
 		}
 	}
 	
+	
+	/**
+	 * Create new authentication credentials.
+	 * <p>
+	 * To disactivate "on-behalf-of" option please use the same string for
+	 * "adminUser" and "userLogin".
+	 * <p>
+	 * If "adminUser" and "userLogin" are different, "on-behalf-of" option 
+	 * will be used.
+	 * 
+	 * @param adminUser - administrator login
+	 * @param adminPassword - administrator password
+	 * @param standardUser - standard user login
+	 * 
+	 * @return {@link AuthCredentials}
+	 */
+	public static AuthCredentials createAuthCredentials(String adminUser, char[] adminPassword, String standardUser) {
+
+		requireNonNull(adminUser);
+		requireNonNull(adminPassword);
+		requireNonNull(standardUser);
+		
+		if (adminUser.equals(standardUser)) {
+			return new AuthCredentials(standardUser, String.valueOf(adminPassword)); // without "on-behalf-of"
+		} else {
+			return new AuthCredentials(adminUser, String.valueOf(adminPassword), standardUser); // with "on-behalf-of"
+		}
+	}
+	
+	
+	/**
+	 * Create new authentication credentials based on the API token. Could be used for the Dataverse repositories.
+	 * 
+	 * @param apiToken - API token. Password in that case is not needed.
+	 * 
+	 * @return {@link AuthCredentials}
+	 */
+	public static AuthCredentials createAuthCredentials(char[] apiToken) {
+
+		requireNonNull(apiToken);
+		return new AuthCredentials(String.valueOf(apiToken), "null"); // use a placeholder "null" instead of password
+	}
+	
 
 	/**
 	 * Get available collections via SWORD v2
@@ -112,6 +155,7 @@ public abstract class SwordRepositoryExporter {
 
 	
 	public ServiceDocument getServiceDocument(String serviceDocumentURL) {
+		requireNonNull(serviceDocumentURL);
 		ServiceDocument serviceDocument = null;
 		try {
 			serviceDocument = swordClient.getServiceDocument(serviceDocumentURL, authCredentials);
@@ -129,17 +173,17 @@ public abstract class SwordRepositoryExporter {
 	 * @return boolean
 	 */
 	public boolean isSwordAccessible(String serviceDocumentURL) {
+		requireNonNull(serviceDocumentURL);
 		return getServiceDocument(serviceDocumentURL) != null;
 	}
 
 	
 	/**
-	 * Publish a file or metadata. Private method.
+	 * Publish a file or metadata. Private internal method.
 	 * <p>
 	 * IMPORTANT - you can use ONLY 1 possibility in the same time (only file, or only metadata).
 	 * "Multipart" is not supported!
 	 *
-	 * @param userLogin
 	 * @param collectionURL - could be link to the collection (from the service document)
 	 * 		  or a link to edit the collection ("Location" field in the response)
 	 * @param mimeFormat - use e.g. {@code "application/atom+xml"} or {@code "application/zip"}
@@ -157,6 +201,12 @@ public abstract class SwordRepositoryExporter {
 	protected SwordResponse exportElement(String collectionURL, SwordRequestType swordRequestType, String mimeFormat, 
 											String packageFormat, File file, Map<String, List<String>> metadataMap) {
 
+		//TODO: save requireNotNull check in further refactoring!
+		requireNonNull(collectionURL);
+		requireNonNull(swordRequestType);
+		requireNonNull(mimeFormat);
+		requireNonNull(packageFormat);
+		
 		
 		//TODO: replace with the code from DSpace-Connector!!! But with SwordResponse as output.
 		
