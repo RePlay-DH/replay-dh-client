@@ -256,10 +256,10 @@ public abstract class SwordRepositoryExporter {
 
 	
 	/**
-	 * @param metadataSetURL The URL where to export the zipFile to.
-	 * @param file A zip file that should be exported.
+	 * @param url The URL where to export the zipFile to.
+	 * @param file A file that should be exported.
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract boolean exportFile(String metadataSetURL, File file) throws IOException;
+	public abstract boolean exportFile(String url, File file) throws IOException;
 }
