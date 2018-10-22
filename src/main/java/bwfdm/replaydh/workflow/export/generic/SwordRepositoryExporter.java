@@ -27,6 +27,7 @@ import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
 /**
+ * General exporting methods for SWORD-based repositories (e.g. DSpace, Dataverse). 
  * 
  * @author Markus Gärtner
  * @author Volodymyr Kushnarenko
@@ -71,7 +72,6 @@ public abstract class SwordRepositoryExporter {
 	 * (e.g. "txt", "zip", * ...)
 	 * 
 	 * @param fileName {@link String} with the file name
-	 * 
 	 * @return {@link String}
 	 */
 	public static String getFileExtension(String fileName) {
@@ -89,7 +89,6 @@ public abstract class SwordRepositoryExporter {
 	 * E.g. {@code UriRegistry.PACKAGE_SIMPLE_ZIP} or {@code UriRegistry.PACKAGE_BINARY}
 	 * 
 	 * @param fileName {@link String} with the file name
-	 * 
 	 * @return {@link String}
 	 */
 	public static String getPackageFormat(String fileName) {
@@ -103,8 +102,9 @@ public abstract class SwordRepositoryExporter {
 
 
 	/**
-	 * Get available collections via SWORD v2
-	 *
+	 * Get available collections via SWORD v2 protocol based on the {@link ServiceDocument}.
+	 * 
+	 * @param serviceDocument can be created via {@link #getServiceDocument(String) getServiceDocument(serviceDocumentURL)}
 	 * @return Map<String, String> where key=URL, value=Title
 	 */
 	public static Map<String, String> getAvailableCollectionsViaSWORD(ServiceDocument serviceDocument){
@@ -179,7 +179,7 @@ public abstract class SwordRepositoryExporter {
 	}
 
 	/**
-	 * Export an element via SWORD - any file (also including metadata as xml-file) or metadata as a {@link Map}. 
+	 * Export an element via SWORD - any file (also including metadata as a xml-file) or metadata as a {@link Map}. 
 	 * Private internal method, should be used ONLY for the internal implementation.
 	 * <p>
 	 * IMPORTANT: is possible to export ONLY 1 option in the same time (only file, or only a Map of metadata).
@@ -189,6 +189,7 @@ public abstract class SwordRepositoryExporter {
 	 *
 	 * @param collectionURL could be link to the collection (from the service document)
 	 * 		  or a link to edit the collection ("Location" field in the response)
+	 * @param swordRequestType see {@link SwordRequestType}
 	 * @param mimeFormat String with e.g. {@code "application/atom+xml"} or {@code "application/zip"}, see {@link SwordRequestType}}
 	 * @param packageFormat {@code String} with the package format, see {@link UriRegistry.PACKAGE_SIMPLE_ZIP} or {@linkplain UriRegistry.PACKAGE_BINARY}
 	 * @param file {@link File} for export
@@ -274,7 +275,7 @@ public abstract class SwordRepositoryExporter {
 	}
 	
 	/**
-	 * Export metadata only (without any file) to some collection, which is available for the current authentication credentials.
+	 * Export the metadata only (without any file) to some collection.
 	 * Metadata are described as a {@link java.util.Map}. 
 	 * <p>
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
@@ -285,12 +286,12 @@ public abstract class SwordRepositoryExporter {
 	 */
 	public abstract String exportMetadata(String collectionURL, Map<String, List<String>> metadataMap);
 	
-	//TODO: add exportMetadata based on the XML-file in further releases
+	//TODO: add exportMetadata based on the XML-file in future releases
 	//public abstract String exportMetadata(String collectionURL, File metadataFileXML);
 	
 	
 	/**
-	 * Export a file together with the metadata to some collection, which is available for the current authentication credentials.
+	 * Export a file together with the metadata to some collection.
 	 * Metadata are described as a {@link java.util.Map}. 
 	 * <p>
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
@@ -307,12 +308,12 @@ public abstract class SwordRepositoryExporter {
 	 */ 
 	public abstract boolean exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
 	
-	//TODO: add exportMetadataAndFile with the metadata as a XML-file in further releases 
+	//TODO: add exportMetadataAndFile with the metadata as a XML-file in future releases 
 	//public abstract boolean exportFileAndMetadata(String collectionURL, File file, File metadataFileXML);
 
 	
 	/**
-	 * Export a file to some URL (e.g. URL of some collection or metadata set)
+	 * Export a file to some URL (e.g. URL of some collection or metadata set).
 	 * <p>
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 * 
