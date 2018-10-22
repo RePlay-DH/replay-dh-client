@@ -103,7 +103,7 @@ public abstract class DataverseRepository extends SwordRepositoryExporter {
 	 * @param metadataMap holds the metadata itself
 	 * @return
 	 */
-	public String exportNewMetadata(String collectionURL, Map<String, List<String>> metadataMap) {
+	public String exportMetadata(String collectionURL, Map<String, List<String>> metadataMap) {
 		DepositReceipt returnValue = null;
 		requireNonNull(metadataMap);
 		requireNonNull(collectionURL);
@@ -124,13 +124,13 @@ public abstract class DataverseRepository extends SwordRepositoryExporter {
 	 * @throws SWORDClientException 
 	 * @throws IOException 
 	 */
-	public boolean exportNewMetadataAndZipFile(String collectionURL, File zipFile, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
+	public boolean exportMetadataAndFile(String collectionURL, File zipFile, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
 		Entry entry = null;
-		String doiId = this.exportNewMetadata(collectionURL,  metadataMap);
+		String doiId = this.exportMetadata(collectionURL,  metadataMap);
 		int beginDOI=doiId.indexOf("doi:");
 		int end=doiId.length();
 		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),doiId.substring(beginDOI, end));
-		return this.exportNewZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
+		return this.exportFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}
 	
 	/**
@@ -139,7 +139,7 @@ public abstract class DataverseRepository extends SwordRepositoryExporter {
 	 * @return
 	 * @throws IOException
 	 */
-	public boolean exportNewZipFile(String metadataSetHrefURL, File zipFile) throws IOException {
+	public boolean exportFile(String metadataSetHrefURL, File zipFile) throws IOException {
 		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
 		DepositReceipt returnValue = (DepositReceipt) exportElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
 		FileUtils.delete(zipFile);

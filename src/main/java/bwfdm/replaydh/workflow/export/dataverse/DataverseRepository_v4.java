@@ -272,7 +272,7 @@ public class DataverseRepository_v4 extends DataverseRepository {
 		int end=doiUrl.length();
 		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),doiUrl.substring(beginDOI, end));
 		replaceMetadata(doiUrl, null, null, metadataMap);
-		return exportNewZipFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
+		return exportFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}
 
 }
