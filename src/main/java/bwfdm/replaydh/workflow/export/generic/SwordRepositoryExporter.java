@@ -28,7 +28,9 @@ import org.swordapp.client.UriRegistry;
 
 /**
  * 
- * @author Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze
+ * @author Markus Gärtner
+ * @author Volodymyr Kushnarenko
+ * @author Florian Fritze
  *
  */
 public abstract class SwordRepositoryExporter {
@@ -65,9 +67,12 @@ public abstract class SwordRepositoryExporter {
 
 
 	/**
-	 * Get a file extension (without a dot) from the file name (e.g. "txt", "zip", ...)
-	 * @param fileName
-	 * @return
+	 * Get a file extension (without a dot) from the file name 
+	 * (e.g. "txt", "zip", * ...)
+	 * 
+	 * @param fileName {@link String} with the file name
+	 * 
+	 * @return {@link String}
 	 */
 	public static String getFileExtension(String fileName) {
 		String extension = "";
@@ -80,10 +85,12 @@ public abstract class SwordRepositoryExporter {
 
 
 	/**
-	 * Get package format basing on the file name.
-	 * E.g. {@link UriRegistry.PACKAGE_SIMPLE_ZIP} {@link UriRegistry.PACKAGE_BINARY}
-	 * @param fileName
-	 * @return
+	 * Get package format basing on the file name. 
+	 * E.g. {@code UriRegistry.PACKAGE_SIMPLE_ZIP} or {@code UriRegistry.PACKAGE_BINARY}
+	 * 
+	 * @param fileName {@link String} with the file name
+	 * 
+	 * @return {@link String}
 	 */
 	public static String getPackageFormat(String fileName) {
 		String extension = getFileExtension(fileName);
@@ -113,15 +120,26 @@ public abstract class SwordRepositoryExporter {
 		return collections;
 	}
 
+	
 	private final AuthCredentials authCredentials;
-
 	private final SWORDClient swordClient;
 
+	
+	/**
+	 * Constructor, creates private final {@link SWORDClient} object and sets the authentication credentials (as private final object). 
+	 * To change the authentication credentials, please always create a new object.
+	 * 
+	 * @param authCredentials {@link AuthCredentials} object. To create it please use the following methods: ...
+	 * 
+	 * TODO: add 2 methods to create an AuthCredentials object (for user/password and for API-token) and make link above
+	 * 
+	 */
 	protected SwordRepositoryExporter(AuthCredentials authCredentials) {
 		swordClient = new SWORDClient();
 		this.authCredentials = requireNonNull(authCredentials);
 	}
 
+	
 	public AuthCredentials getAuthCredentials() {
 		return authCredentials;
 	}
@@ -131,7 +149,15 @@ public abstract class SwordRepositoryExporter {
 		return swordClient;
 	}
 
-
+	
+	/**
+	 * Request a service document based on the URL.
+	 * <p>
+	 * IMPORTANT: credentials are used implicitly. Definition of the credentials is realized via the class constructor.
+	 * 
+	 * @param serviceDocumentURL string with the service document URL 
+	 * @return {@link ServiceDocument} object
+	 */
 	public ServiceDocument getServiceDocument(String serviceDocumentURL) {
 		ServiceDocument serviceDocument = null;
 		try {
@@ -145,31 +171,42 @@ public abstract class SwordRepositoryExporter {
 
 	/**
 	 * Check if SWORDv2-protocol is accessible
-	 * @return
+	 * @param serviceDocumentURL string with the service document URL
+	 * @return {@code true} if SWORD API is accessible and {@code false} otherwise
 	 */
 	public boolean isSwordAccessible(String serviceDocumentURL) {
 		return getServiceDocument(serviceDocumentURL) != null;
 	}
 
 	/**
-	 * Publish a file or metadata. Private method.
+	 * Export an element via SWORD - any file (also including metadata as xml-file) or metadata as a {@link Map}. 
+	 * Private internal method, should be used ONLY for the internal implementation.
 	 * <p>
-	 * IMPORTANT - you can use ONLY 1 possibility in the same time (only file, or only metadata).
+	 * IMPORTANT: is possible to export ONLY 1 option in the same time (only file, or only a Map of metadata).
 	 * "Multipart" is not supported!
+	 * <p>
+	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 *
-	 * @param userLogin
-	 * @param collectionURL - could be link to the collection (from the service document)
+	 * @param collectionURL could be link to the collection (from the service document)
 	 * 		  or a link to edit the collection ("Location" field in the response)
-	 * @param mimeFormat - use e.g. {@code "application/atom+xml"} or {@code "application/zip"}
-	 * @param packageFormat - see {@link UriRegistry.PACKAGE_SIMPLE_ZIP} or {@linkplain UriRegistry.PACKAGE_BINARY}
-	 * @param file
-	 * @param metadataMap
-	 * @return "Location" parameter from the response in case of {@code SwordRequestType.DEPOSIT} request,
-	 *  	   "StatusCode" parameter from the response in case of {@code SwordRequestType.REPLACE} request,
-	 *  	   or {@code null} in case of error
+	 * @param mimeFormat String with e.g. {@code "application/atom+xml"} or {@code "application/zip"}, see {@link SwordRequestType}}
+	 * @param packageFormat {@code String} with the package format, see {@link UriRegistry.PACKAGE_SIMPLE_ZIP} or {@linkplain UriRegistry.PACKAGE_BINARY}
+	 * @param file {@link File} for export
+	 * @param metadataMap {@link Map} of metadata for export
+	 *  
+	 * @return <pre>{@link SwordResponse} object or {@code null} in case of error. 
+	 * 		   If request type is {@code SwordRequestType.DEPOSIT}, please cast the returned object to {@code DepositReceipt},
+	 * 		   you can check it via e.g. {@code instanceof} operator.
+	 *  	   If request type is {@code SwordRequestType.REPLACE}, the casting is not needed.
+	 *  	   </pre>  
+	 *  	   
 	 */
 	protected SwordResponse exportElement(String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, List<String>> metadataMap) {
 
+		//TODO: check input parameter on null
+		
+		//TODO: use implementation from the dspace-connector library
+		
 		// Check if only 1 parameter is used (metadata OR file).
 		// Multipart is not supported.
 		if( ((file != null)&&(metadataMap != null)) || ((file == null)&&(metadataMap == null)) ) {
@@ -237,28 +274,54 @@ public abstract class SwordRepositoryExporter {
 	}
 	
 	/**
+	 * Export metadata only (without any file) to some collection, which is available for the current authentication credentials.
+	 * Metadata are described as a {@link java.util.Map}. 
+	 * <p>
+	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
+	 * 
 	 * @param collectionURL holds the collection URL where the metadata will be exported to
 	 * @param metadataMap holds the metadata itself
-	 * @return
+	 * @return {@code true} if publication was successful and {@code false} otherwise (e.g. some error has occurred)
 	 */
 	public abstract String exportMetadata(String collectionURL, Map<String, List<String>> metadataMap);
 	
+	//TODO: add exportMetadata based on the XML-file in further releases
+	//public abstract String exportMetadata(String collectionURL, File metadataFileXML);
+	
+	
 	/**
+	 * Export a file together with the metadata to some collection, which is available for the current authentication credentials.
+	 * Metadata are described as a {@link java.util.Map}. 
+	 * <p>
+	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
+	 * 
 	 * @param collectionURL holds the collection URL where items will be exported to
 	 * @param file holds a file which can contain one or multiple files
 	 * @param metadataMap holds the metadata which is necessary for the ingest
-	 * @return
+	 * @return {@code true} if publication was successful and {@code false} otherwise (e.g. some error has occurred)
+	 * 
+	 * TODO: remove "throws", catch exceptions inside the method
+	 * 
 	 * @throws SWORDClientException 
 	 * @throws IOException 
-	 */
+	 */ 
 	public abstract boolean exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
-
+	
+	//TODO: add exportMetadataAndFile with the metadata as a XML-file in further releases 
+	//public abstract boolean exportFileAndMetadata(String collectionURL, File file, File metadataFileXML);
 
 	
 	/**
+	 * Export a file to some URL (e.g. URL of some collection or metadata set)
+	 * <p>
+	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
+	 * 
 	 * @param url The URL where to export the zipFile to.
 	 * @param file A file that should be exported.
-	 * @return
+	 * @return {@code true} if publication was successful and {@code false} otherwise (e.g. some error has occurred)
+	 * 
+	 * TODO: remove "throws", catch exceptions inside the method
+	 * 
 	 * @throws IOException
 	 */
 	public abstract boolean exportFile(String url, File file) throws IOException;
