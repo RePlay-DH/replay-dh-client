@@ -14,14 +14,14 @@ import org.eclipse.jgit.util.FileUtils;
 import org.swordapp.client.AuthCredentials;
 import org.swordapp.client.DepositReceipt;
 import org.swordapp.client.SWORDClientException;
-import bwfdm.replaydh.workflow.export.generic.SwordRepositoryExporter;
+import bwfdm.replaydh.workflow.export.generic.SwordExporter;
 
 /**
  * 
  * @author Florian Fritze, Volodymyr Kushnarenko
  *
  */
-public abstract class DataverseRepository extends SwordRepositoryExporter {
+public abstract class DataverseRepository extends SwordExporter {
 	
 	public DataverseRepository(AuthCredentials authCredentials) {
 		super(authCredentials);

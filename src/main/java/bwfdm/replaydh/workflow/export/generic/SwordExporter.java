@@ -34,9 +34,9 @@ import org.swordapp.client.UriRegistry;
  * @author Florian Fritze
  *
  */
-public abstract class SwordRepositoryExporter {
+public abstract class SwordExporter {
 
-	protected static final Logger log = LoggerFactory.getLogger(SwordRepositoryExporter.class);
+	protected static final Logger log = LoggerFactory.getLogger(SwordExporter.class);
 
 	public static final String APPLICATION_JSON = "application/json";
 	public static final String CONTENT_TYPE_HEADER = "Content-Type";
@@ -107,7 +107,7 @@ public abstract class SwordRepositoryExporter {
 	 * @param serviceDocument can be created via {@link #getServiceDocument(String) getServiceDocument(serviceDocumentURL)}
 	 * @return Map<String, String> where key=URL, value=Title
 	 */
-	public static Map<String, String> getAvailableCollectionsViaSWORD(ServiceDocument serviceDocument){
+	public Map<String, String> getAvailableCollectionsViaSWORD(ServiceDocument serviceDocument){
 		requireNonNull(serviceDocument);
 		Map<String, String> collections = new HashMap<String, String>();
 
@@ -134,7 +134,7 @@ public abstract class SwordRepositoryExporter {
 	 * TODO: add 2 methods to create an AuthCredentials object (for user/password and for API-token) and make link above
 	 * 
 	 */
-	protected SwordRepositoryExporter(AuthCredentials authCredentials) {
+	protected SwordExporter(AuthCredentials authCredentials) {
 		swordClient = new SWORDClient();
 		this.authCredentials = requireNonNull(authCredentials);
 	}
@@ -200,14 +200,14 @@ public abstract class SwordRepositoryExporter {
 	 * 		   you can check it via e.g. {@code instanceof} operator.
 	 *  	   If request type is {@code SwordRequestType.REPLACE}, the casting is not needed.
 	 *  	   </pre>  
+	 * @throws ProtocolViolationException 
+	 * @throws SWORDError 
+	 * @throws SWORDClientException 
+	 * @throws FileNotFoundException 
 	 *  	   
 	 */
-	protected SwordResponse exportElement(String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, List<String>> metadataMap) {
+	protected SwordResponse exportElement(String collectionURL, SwordRequestType swordRequestType, String mimeFormat, String packageFormat, File file, Map<String, List<String>> metadataMap) throws SWORDClientException, SWORDError, ProtocolViolationException, FileNotFoundException {
 
-		//TODO: check input parameter on null
-		
-		//TODO: use implementation from the dspace-connector library
-		
 		// Check if only 1 parameter is used (metadata OR file).
 		// Multipart is not supported.
 		if( ((file != null)&&(metadataMap != null)) || ((file == null)&&(metadataMap == null)) ) {
@@ -218,7 +218,6 @@ public abstract class SwordRepositoryExporter {
 
 		Deposit deposit = new Deposit();
 
-		try {
 			// Check if "metadata as a Map"
 			if(metadataMap != null) {
 				EntryPart ep = new EntryPart();
@@ -252,26 +251,9 @@ public abstract class SwordRepositoryExporter {
 			default:
 				log.error("Wrong SWORD-request type: {} : Supported here types are: {}, {}",
 						swordRequestType, SwordRequestType.DEPOSIT, SwordRequestType.REPLACE);
-				return null;
+				throw new IllegalArgumentException();
 			}
 
-		} catch (FileNotFoundException e) {
-			log.error("Exception by accessing a file", e);
-			return null;
-
-		} catch (SWORDClientException | SWORDError | ProtocolViolationException e) {
-			log.error("Exception by making deposit", e);
-			return null;
-		} finally {
-			// Close FileInputStream
-			if(fis != null) {
-				try {
-					fis.close();
-				} catch (IOException e) {
-					log.error("Exception by closing the FileInputStream", e);
-				}
-			}
-		}
 	}
 	
 	/**
@@ -282,9 +264,9 @@ public abstract class SwordRepositoryExporter {
 	 * 
 	 * @param collectionURL holds the collection URL where the metadata will be exported to
 	 * @param metadataMap holds the metadata itself
-	 * @return {@code true} if publication was successful and {@code false} otherwise (e.g. some error has occurred)
+	 * @return String 
 	 */
-	public abstract String exportMetadata(String collectionURL, Map<String, List<String>> metadataMap);
+	public abstract void exportMetadata(String collectionURL, Map<String, List<String>> metadataMap) throws SWORDClientException;
 	
 	//TODO: add exportMetadata based on the XML-file in future releases
 	//public abstract String exportMetadata(String collectionURL, File metadataFileXML);
@@ -306,7 +288,7 @@ public abstract class SwordRepositoryExporter {
 	 * @throws SWORDClientException 
 	 * @throws IOException 
 	 */ 
-	public abstract boolean exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
+	public abstract void exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
 	
 	//TODO: add exportMetadataAndFile with the metadata as a XML-file in future releases 
 	//public abstract boolean exportFileAndMetadata(String collectionURL, File file, File metadataFileXML);
@@ -325,5 +307,5 @@ public abstract class SwordRepositoryExporter {
 	 * 
 	 * @throws IOException
 	 */
-	public abstract boolean exportFile(String url, File file) throws IOException;
+	public abstract void exportFile(String url, File file) throws IOException, SWORDClientException;
 }
