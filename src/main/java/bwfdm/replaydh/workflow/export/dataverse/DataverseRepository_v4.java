@@ -307,12 +307,20 @@ public class DataverseRepository_v4 extends SwordExporter {
 	 * @throws SWORDClientException 
 	 * @throws IOException 
 	 */
-	public void exportMetadataAndFile(String collectionURL, File zipFile, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
+	public void exportMetadataAndFile(String collectionURL, File zipFile, Map<String, List<String>> metadataMap){
 		Entry entry = null;
 		this.exportMetadata(collectionURL,  metadataMap);
 		int beginDOI=metadataSetUrl.indexOf("doi:");
 		int end=metadataSetUrl.length();
-		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),metadataSetUrl.substring(beginDOI, end));
+		try {
+			entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),metadataSetUrl.substring(beginDOI, end));
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SWORDClientException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		this.exportFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}
 	
@@ -322,10 +330,13 @@ public class DataverseRepository_v4 extends SwordExporter {
 	 * @return
 	 * @throws IOException
 	 */
-	public void exportFile(String metadataSetHrefURL, File zipFile) throws IOException {
+	public void exportFile(String metadataSetHrefURL, File zipFile) {
 		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
 		try {
 			DepositReceipt receipt = (DepositReceipt) exportElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} catch (SWORDClientException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -336,12 +347,24 @@ public class DataverseRepository_v4 extends SwordExporter {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		FileUtils.delete(zipFile);
+		
+		try {
+			FileUtils.delete(zipFile);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
-	public void replaceMetadata(String doiUrl, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
+	public void replaceMetadata(String doiUrl, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) {
 		try {
 			SwordResponse response = exportElement(doiUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SWORDClientException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} catch (SWORDError e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -351,11 +374,19 @@ public class DataverseRepository_v4 extends SwordExporter {
 		}
 	}
 
-	public void replaceMetadataAndAddFile(String collectionURL, String doiUrl, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException {
+	public void replaceMetadataAndAddFile(String collectionURL, String doiUrl, File zipFile, File metadataFileXML, Map<String, List<String>> metadataMap) {
 		Entry entry = null;
 		int beginDOI=doiUrl.indexOf("doi:");
 		int end=doiUrl.length();
-		entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),doiUrl.substring(beginDOI, end));
+		try {
+			entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),doiUrl.substring(beginDOI, end));
+		} catch (MalformedURLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (SWORDClientException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		replaceMetadata(doiUrl, null, null, metadataMap);
 		exportFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}
