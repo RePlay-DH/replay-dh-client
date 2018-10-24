@@ -280,7 +280,6 @@ public abstract class SwordExporter {
 	 *
 	 * @param collectionURL holds the collection URL where the metadata will be exported to
 	 * @param metadataMap holds the metadata itself
-	 * @return String
 	 */
 	public abstract void exportMetadata(String collectionURL, Map<String, List<String>> metadataMap) throws SWORDClientException;
 
@@ -297,7 +296,6 @@ public abstract class SwordExporter {
 	 * @param collectionURL holds the collection URL where items will be exported to
 	 * @param file holds a file which can contain one or multiple files
 	 * @param metadataMap holds the metadata which is necessary for the ingest
-	 * @return {@code true} if publication was successful and {@code false} otherwise (e.g. some error has occurred)
 	 *
 	 * TODO: remove "throws", catch exceptions inside the method
 	 *
@@ -317,7 +315,6 @@ public abstract class SwordExporter {
 	 *
 	 * @param url The URL where to export the zipFile to.
 	 * @param file A file that should be exported.
-	 * @return {@code true} if publication was successful and {@code false} otherwise (e.g. some error has occurred)
 	 *
 	 * TODO: remove "throws", catch exceptions inside the method
 	 *

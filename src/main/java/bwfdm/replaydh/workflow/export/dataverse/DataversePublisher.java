@@ -192,7 +192,7 @@ public class DataversePublisher implements ResourcePublisher {
 		@Override
 		protected Boolean doInBackground() throws Exception {
 
-			DataverseRepository repository = context.getPublicationRepository();
+			DataverseRepository_v4 repository = context.getPublicationRepository();
 			boolean result = false;
 
 			File tempFile = null;
@@ -243,11 +243,11 @@ public class DataversePublisher implements ResourcePublisher {
 
 				// Start publication process
 				if (context.isReplaceMetadataAllowed()) {
-					result = repository.replaceMetadataAndAddFile(context.getCollectionURL(),
+					repository.replaceMetadataAndAddFile(context.getCollectionURL(),
 							context.getChosenDataset(), zipFile, null,
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
-					result = repository.exportMetadataAndFile(context.getCollectionURL(), zipFile, 
+					repository.exportMetadataAndFile(context.getCollectionURL(), zipFile, 
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				}
 
@@ -282,11 +282,11 @@ public class DataversePublisher implements ResourcePublisher {
 
 				// Start publication process
 				if (context.isReplaceMetadataAllowed()) {
-					result = repository.replaceMetadataAndAddFile(context.getCollectionURL(),
+					repository.replaceMetadataAndAddFile(context.getCollectionURL(),
 							context.getChosenDataset(), zipFile, null,
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
-					result = repository.exportMetadataAndFile(context.getCollectionURL(), zipFile, 
+					repository.exportMetadataAndFile(context.getCollectionURL(), zipFile, 
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				}
 
@@ -300,18 +300,12 @@ public class DataversePublisher implements ResourcePublisher {
 			} else {
 
 				// Publication: metadata only
-				String returnValue = null;
 				if (context.isReplaceMetadataAllowed()) {
-					result = repository.replaceMetadata(context.getChosenDataset(), null, null,
+					repository.replaceMetadata(context.getChosenDataset(), null, null,
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
-					returnValue = repository.exportMetadata(context.getCollectionURL(), 
+					repository.exportMetadata(context.getCollectionURL(), 
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
-					if (returnValue != null) {
-						result = true;
-					} else {
-						result = false;
-					}
 				}
 			}
 

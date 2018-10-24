@@ -164,7 +164,7 @@ public class DataversePublisherWizard {
 		public String getCollectionURL() {
 			return collectionURL;
 		}
-		public DataverseRepository getPublicationRepository() {
+		public DataverseRepository_v4 getPublicationRepository() {
 			return publicationRepository;
 		}
 		public Map<String, String> getAvailableCollections() {
@@ -709,8 +709,8 @@ public class DataversePublisherWizard {
 				@Override
 				protected Boolean doInBackground() throws Exception {
 					filesAvailable = false;
-					if (!(context.getPublicationRepository().getDatasetsInDataverseCollection(context.collectionURL).isEmpty())) {
-						context.availableDatasetsInCollection=context.getPublicationRepository().getDatasetsInDataverseCollection(context.collectionURL);
+					if (!(context.getPublicationRepository().getCollectionEntries(context.collectionURL).isEmpty())) {
+						context.availableDatasetsInCollection=context.getPublicationRepository().getCollectionEntries(context.collectionURL);
 						filesAvailable=true;
 					}
 					return filesAvailable;
