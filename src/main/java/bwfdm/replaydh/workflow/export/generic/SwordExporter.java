@@ -257,12 +257,35 @@ public abstract class SwordExporter {
 				DepositReceipt receipt = swordClient.deposit(collectionURL, deposit, authCredentials);
 				return receipt; // returns Deposit Receipt instance;
 			case REPLACE:
-				SwordResponse response = swordClient.replace(collectionURL, deposit, authCredentials);
-				return response; //returns the Sword response
+				if (deposit.getEntryPart() != null) {
+					// Use "replace" method for EntryPart (metadata as a Map)
+					SwordResponse response = swordClient.replace(collectionURL, deposit, authCredentials);
+					return response;
+				} else {
+					// Use "replace" for Media (metadata as a XML-file)
+
+					// TODO: create issue for SWORD-Client to consider the header "In-Progress:
+					// true" for "replaceMedia()" method
+					// -> https://github.com/swordapp/JavaClient2.0/issues
+					//
+					// Code area, file "org.swordapp.client.SWORDClient.java", lines 464-468:
+					//
+					// // add the headers specific to a binary only deposit
+					// http.addContentDisposition(options, deposit.getFilename());
+					// http.addContentMd5(options, deposit.getMd5());
+					// http.addPackaging(options, deposit.getPackaging());
+					// http.addMetadataRelevant(options, deposit.isMetadataRelevant());
+					//
+					// Add new line:
+					// http.addInProgress(options, deposit.isInProgress());
+					//
+					SwordResponse response = swordClient.replaceMedia(collectionURL, deposit, authCredentials);
+					return response;
+				}
 			default:
 				log.error("Wrong SWORD-request type: {} : Supported here types are: {}, {}",
 						swordRequestType, SwordRequestType.DEPOSIT, SwordRequestType.REPLACE);
-				throw new IllegalArgumentException("Wrong SWORD-request type: "+swordRequestType);
+				throw new IllegalArgumentException("Wrong SWORD-request type: " + swordRequestType);
 			}
 		} finally {
 			if(fis!=null) {
