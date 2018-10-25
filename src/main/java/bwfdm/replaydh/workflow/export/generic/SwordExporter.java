@@ -103,6 +103,48 @@ public abstract class SwordExporter {
 	}
 
 
+	/**
+	 * Create new authentication credentials with possibility to use "on-behalf-of" option.
+	 * <p>
+	 * To disactivate "on-behalf-of" option please use the same string for
+	 * "adminUser" and "standardUser".
+	 * <p>
+	 * If "adminUser" and "standardUser" are different, "on-behalf-of" option will be used.
+	 * 
+	 * @param adminUser - administrator login ("on-behalf-of" is active) or standard user login ("on-behalf-of" is inactive)
+	 * @param adminPassword - administrator password ("on-behalf-of" is active) or standard user password ("on-behalf-of" is inactive)
+	 * @param standardUser - standard user login
+	 * 
+	 * @return {@link AuthCredentials}
+	 */
+	public static AuthCredentials createAuthCredentials(String adminUser, char[] adminPassword, String standardUser) {
+
+		requireNonNull(adminUser);
+		requireNonNull(adminPassword);
+		requireNonNull(standardUser);
+		
+		if (adminUser.equals(standardUser)) {
+			return new AuthCredentials(standardUser, String.valueOf(adminPassword)); // without "on-behalf-of"
+		} else {
+			return new AuthCredentials(adminUser, String.valueOf(adminPassword), standardUser); // with "on-behalf-of"
+		}
+	}
+	
+	
+	/**
+	 * Create new authentication credentials based on the API token. Could be used for the Dataverse repositories.
+	 * 
+	 * @param apiToken - API token. Password in that case is not needed.
+	 * 
+	 * @return {@link AuthCredentials}
+	 */
+	public static AuthCredentials createAuthCredentials(char[] apiToken) {
+
+		requireNonNull(apiToken);
+		return new AuthCredentials(String.valueOf(apiToken), ""); // use an empty string instead of password
+	}
+	
+	
 	private final AuthCredentials authCredentials;
 	private final SWORDClient swordClient;
 
