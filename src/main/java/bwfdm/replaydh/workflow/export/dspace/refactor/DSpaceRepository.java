@@ -18,12 +18,15 @@
  */
 package bwfdm.replaydh.workflow.export.dspace.refactor;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
 
-import bwfdm.replaydh.workflow.export.generic.refactor.ExportRepository;
-import bwfdm.replaydh.workflow.export.generic.refactor.SwordRepositoryExporter;
+import bwfdm.replaydh.workflow.export.generic.SwordExporter;
 
 /**
  * The class consists implementation of some general purpose DSpace-specific methods.
@@ -32,7 +35,7 @@ import bwfdm.replaydh.workflow.export.generic.refactor.SwordRepositoryExporter;
  * @author Volodymyr Kushnarenko
  *
  */
-public abstract class DSpaceRepository extends SwordRepositoryExporter implements ExportRepository{
+public abstract class DSpaceRepository extends SwordExporter implements ExportRepository{
 
 	protected DSpaceRepository(AuthCredentials authCredentials) {
 		super(authCredentials);
@@ -47,6 +50,36 @@ public abstract class DSpaceRepository extends SwordRepositoryExporter implement
 	 * General DSpace specific methods
 	 * -------------------------------
 	 */
+	
+	
+	/**
+	 * Get collections, which are available for the current authentication credentials, and show their full name
+	 * (e.g. for DSpace-repository it means "community/subcommunity/collection", where '/' is the full name separator)
+	 * <p>
+	 * Could be, that the current credentials have an access only for some specific collections.
+	 * <p>
+	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, e.g. via class constructor.
+	 *  
+	 * @param nameSeparator
+	 * @return Map of Strings, where key="Collection full URL", value="Collection full name", or empty Map if there are not available collections.
+	 */
+	public abstract Map<String, String> getAvailableCollectionsWithFullName(String fullNameSeparator);
+
+	
+	/**
+	 * Create a new item with a file only (without metadata) in some collection, which is available for the current authentication credentials.
+	 * <p>
+	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, e.g. via class constructor.
+	 * 
+	 * @param collectionURL
+	 * @param file
+	 * @return {@code true} in case of success and {@code false} otherwise 
+	 * 
+	 * TODO: String with the new item URL in case of success or "" otherwise
+	 */
+	public abstract boolean createNewItemWithFile(String collectionURL, File file) throws IOException;
+	
+	
 	
 
 	// TODO: put here some common DSpace specific methods... 
