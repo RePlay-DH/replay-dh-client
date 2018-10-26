@@ -346,7 +346,8 @@ public abstract class SwordExporter {
 	 * @param collectionURL holds the collection URL where the metadata will be exported to
 	 * @param metadataMap holds the metadata itself
 	 */
-	public abstract void exportMetadata(String collectionURL, Map<String, List<String>> metadataMap) throws SWORDClientException;
+	public abstract void exportMetadata(String collectionURL, Map<String, List<String>> metadataMap) 
+			throws SWORDClientException, SWORDError, ProtocolViolationException;
 
 	//TODO: add exportMetadata based on the XML-file in future releases
 	//public abstract String exportMetadata(String collectionURL, File metadataFileXML);
@@ -367,7 +368,8 @@ public abstract class SwordExporter {
 	 * @throws SWORDClientException
 	 * @throws IOException
 	 */
-	public abstract void exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
+	public abstract void exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) 
+			throws IOException, SWORDClientException, SWORDError, ProtocolViolationException;
 
 	//TODO: add exportMetadataAndFile with the metadata as a XML-file in future releases
 	//public abstract boolean exportFileAndMetadata(String collectionURL, File file, File metadataFileXML);
@@ -385,5 +387,6 @@ public abstract class SwordExporter {
 	 *
 	 * @throws IOException
 	 */
-	public abstract void exportFile(String url, File file) throws IOException, SWORDClientException;
+	public abstract void exportFile(String url, File file) 
+			throws IOException, SWORDClientException, SWORDError, ProtocolViolationException;
 }
