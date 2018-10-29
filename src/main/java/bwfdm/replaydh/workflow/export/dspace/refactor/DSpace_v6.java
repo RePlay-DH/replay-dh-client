@@ -29,14 +29,13 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.swordapp.client.AuthCredentials;
 import org.swordapp.client.ProtocolViolationException;
-import org.swordapp.client.SWORDClient;
 import org.swordapp.client.SWORDClientException;
 import org.swordapp.client.SWORDCollection;
 import org.swordapp.client.SWORDError;
 import org.swordapp.client.SWORDWorkspace;
 import org.swordapp.client.ServiceDocument;
+import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.CollectionObject;
@@ -66,17 +65,16 @@ public class DSpace_v6 extends DSpaceRepository {
 
 	public DSpace_v6(String serviceDocumentURL, String restURL, String adminUser, String standardUser, char[] adminPassword) {
 
-		super(createAuthCredentials(adminUser, adminPassword, standardUser));
+		super(SwordExporter.createAuthCredentials(adminUser, adminPassword, standardUser));
 		
-		setServiceDocumentURL(serviceDocumentURL);
+		this.setServiceDocumentURL(serviceDocumentURL);
+		this.setAllRestURLs(restURL);
 
 		// HttpClient which ignores the ssl certificate
 		this.client = WebUtils.createHttpClientWithSSLSupport();
 
 		// TODO: original version, without ignoring of ssl certificate
-		// this.client = HttpClientBuilder.create().build();
-
-		setAllRestURLs(restURL);
+		// this.client = HttpClientBuilder.create().build();	
 	}
 
 	/*
@@ -91,6 +89,7 @@ public class DSpace_v6 extends DSpaceRepository {
 		this.serviceDocumentURL = serviceDocumentURL;
 	}
 
+	
 	public void setAllRestURLs(String restURL) {
 		this.restURL = restURL;
 		this.communitiesURL = this.restURL + "/communities";
@@ -99,6 +98,7 @@ public class DSpace_v6 extends DSpaceRepository {
 		this.restTestURL = this.restURL + "/test";
 	}
 
+	
 	/**
 	 * Check if REST-interface is accessible.
 	 * 
@@ -119,6 +119,7 @@ public class DSpace_v6 extends DSpaceRepository {
 		}
 	}
 
+	
 	/**
 	 * Get a list of communities for the collection Specific only for DSpace-6.
 	 * <p>
@@ -131,13 +132,14 @@ public class DSpace_v6 extends DSpaceRepository {
 	 */
 	public List<String> getCommunitiesForCollection(String collectionURL) {
 
-		ServiceDocument serviceDocument = getServiceDocument(this.serviceDocumentURL);
+		ServiceDocument serviceDocument = super.getServiceDocument(this.serviceDocumentURL);
 
 		HierarchyObject hierarchy = getHierarchyObject();
 		CollectionObject[] existedCollectionObjects = getAllCollectionObjects();
 
 		return getCommunitiesForCollection(collectionURL, serviceDocument, hierarchy, existedCollectionObjects);
 	}
+	
 	
 	/**
 	 * Private method with logic. Get a list of communities for the current collection.
@@ -187,6 +189,7 @@ public class DSpace_v6 extends DSpaceRepository {
 		return hierarchy;
 	}
 
+	
 	/**
 	 * Get a collection handle based on the collection URL.
 	 * <p>
@@ -198,7 +201,7 @@ public class DSpace_v6 extends DSpaceRepository {
 	 */
 	public String getCollectionHandle(String collectionURL) {
 
-		ServiceDocument serviceDocument = getServiceDocument(this.serviceDocumentURL);
+		ServiceDocument serviceDocument = super.getServiceDocument(this.serviceDocumentURL);
 
 		// Get all collections via REST to check, if swordCollectionPath contains a REST-handle
 		CollectionObject[] existedCollectionObjects = getAllCollectionObjects();
@@ -206,6 +209,7 @@ public class DSpace_v6 extends DSpaceRepository {
 		return getCollectionHandle(collectionURL, serviceDocument, existedCollectionObjects);
 	}
 
+	
 	/**
 	 * Private method with logic. Get a collection handle based on the collection URL.
 	 * <p>
@@ -239,6 +243,7 @@ public class DSpace_v6 extends DSpaceRepository {
 		return null; // collectionURL was not found
 	}
 
+	
 	/**
 	 * Get all existed collections as an array of CollectionObject. REST is used.
 	 * 
@@ -256,18 +261,20 @@ public class DSpace_v6 extends DSpaceRepository {
 	
 
 	/*
-	 * -------------------------------
+	 * ---------------------------------
 	 * 
-	 * SwordExporter interface methods
+	 * SwordExporter methods realization
 	 * 
-	 * -------------------------------
+	 * ---------------------------------
 	 */
 
+	
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	public Map<String, String> getCollectionEntries(String collectionUrl) {
+		
 		// TODO 
 		
 		return null;
@@ -288,22 +295,19 @@ public class DSpace_v6 extends DSpaceRepository {
 		String mimeFormat = SwordExporter.MIME_FORMAT_ZIP; // for every file type, to publish even "XML" files as a normal file
 		String packageFormat = SwordExporter.getPackageFormat(file.getName()); // zip-archive or separate file
 		try {
-			exportElement(url, SwordRequestType.DEPOSIT, mimeFormat, packageFormat, file, null);
+			super.exportElement(url, SwordRequestType.DEPOSIT, mimeFormat, packageFormat, file, null);
 		} catch (SWORDError | ProtocolViolationException e) {
 			throw new SWORDClientException("Exception by export file: " + e.getClass().getSimpleName() + ": " + e.getMessage());
 		}
 	}
 
+	
 	/**
-	 * {@inheritDoc} Publish metadata as a Map.
-	 * 
-	 * @param collectionURL - URL of the collection where to publish
-	 * @param metadataMap - metadata as a Map
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void exportMetadata(String collectionURL, Map<String, List<String>> metadataMap) 
 			throws SWORDClientException {
-		
 		try {
 			exportMetadataViaSword(collectionURL, metadataMap, SwordRequestType.DEPOSIT);
 		} catch (IOException | ProtocolViolationException | SWORDError e) {
@@ -312,256 +316,194 @@ public class DSpace_v6 extends DSpaceRepository {
 	}
 	
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Publish metadata as a XML-file in ATOM-format.
+	 * 
+	 * @param collectionURL - URL of the collection where to publish
+	 * @param metadataFileXML - file in XML-format (ATOM format of the metadata description) and
+	 *            			    with an XML-extension
+	 * @throws IOException
+	 * @throws {@link SWORDClientException}
+	 */
+	public void exportMetadata(String collectionURL, File metadataFileXML) throws IOException, SWORDClientException{
+		try {
+			exportMetadataViaSword(collectionURL, metadataFileXML, SwordRequestType.DEPOSIT);
+		} catch (ProtocolViolationException | SWORDError e) {
+			throw new SWORDClientException("Exception by export file and metadta as XML-file: " 
+					+ e.getClass().getSimpleName() + ": " + e.getMessage());
+		}
+	}
 	
-
 	
-
+	/**
+	 * {@inheritDoc}
+	 * Export will be realized via 2 steps: 1 - export a file (create a new item), 2 - add metadata via PUT request.
+	 */
 	@Override
 	public void exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap)
-			throws IOException, SWORDClientException, SWORDError, ProtocolViolationException {
-		// TODO Auto-generated method stub
+			throws IOException, SWORDClientException {
+		
+		String mimeFormat = SwordExporter.MIME_FORMAT_ZIP; // as a common file (even for XML-file)
+		String packageFormat = SwordExporter.getPackageFormat(file.getName());
+
+		try {
+			// Step 1: export file (as file or archive), without metadata
+			SwordResponse response = super.exportElement(collectionURL, SwordRequestType.DEPOSIT, mimeFormat, 
+					packageFormat, file, null); // "POST" request (DEPOSIT)
+			String editLink = response.getLocation();
+			if (editLink == null) {
+				throw new SWORDClientException("Error by export file and metadta as Map: "
+						+ "after the file export the item URL for editing (as a response) is null. "
+						+ "Not possible to add metadata as the next step.");
+			}
+			
+			// Step 2: add metadata (as a Map structure)
+			exportMetadataViaSword(editLink, metadataMap, SwordRequestType.REPLACE); 	// "PUT" request (REPLACE) 
+																						// to overwrite some previous
+																						// automatically generated 
+																						// metadata 
+	
+			// NOTE: if replace order (step 1: export metadata, step 2: export file) --> Bad request, ERROR 400
+			
+		} catch (ProtocolViolationException | SWORDError e) {
+			throw new SWORDClientException("Exception by export file and metadta as Map: " 
+						+ e.getClass().getSimpleName() + ": " + e.getMessage());
+		}
 		
 	}
 	
 	
+	/**
+	 * Export a file together with the metadata to some collection.
+	 * Metadata are described as a xml-file.
+	 * <p>
+	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
+	 * <p>
+	 * Export will be realized via 2 steps: 1 - export a file (create a new item), 2 - add metadata via PUT request.
+	 * 
+	 * @param collectionURL holds the collection URL where items will be exported to, usually has "collection" substring inside
+	 * @param file holds a file which can contain one or multiple files
+	 * @param metadataFileXML holds the metadata which is necessary for the ingest
+	 *
+	 * @throws @linkIOException
+	 * @throws SWORDClientException
+	 */
+	public void exportMetadataAndFile(String collectionURL, File file, File metadataFileXML)
+			throws IOException, SWORDClientException {
+		
+		String mimeFormat = SwordExporter.MIME_FORMAT_ZIP; // as a common file (even for XML-file)
+		String packageFormat = SwordExporter.getPackageFormat(file.getName());
 
+		try {
+			// Step 1: export file (as file or archive), without metadata
+			SwordResponse response = super.exportElement(collectionURL, SwordRequestType.DEPOSIT, mimeFormat, 
+					packageFormat, file, null); // "POST" request (DEPOSIT)
+			String editLink = response.getLocation();
+			if (editLink == null) {
+				throw new SWORDClientException("Error by export file and metadta as xml-file: "
+						+ "after the file export the item URL for editing (as a response) is null. "
+						+ "Not possible to add metadata as the next step.");
+			}
+			
+			// Step 2: add metadata (as a Map structure)
+			exportMetadataViaSword(editLink, metadataFileXML, SwordRequestType.REPLACE);// "PUT" request (REPLACE) 
+																						// to overwrite some previous
+																						// automatically generated 
+																						// metadata 
+	
+			// NOTE: if replace order (step 1: export metadata, step 2: export file) --> Bad request, ERROR 400
+			
+		} catch (ProtocolViolationException | SWORDError e) {
+			throw new SWORDClientException("Exception by export file and metadta as xml-file: " 
+						+ e.getClass().getSimpleName() + ": " + e.getMessage());
+		}
+		
+	}
+	
+	
 	/**
 	 * Private method which can use different request types. See
 	 * {@link SwordRequestType}.
 	 * 
 	 * @param userLogin - login name of the user
-	 * @param collectionURL - URL of the collection where to publish 
+	 * @param url - collection URL (with "collection" substring inside) or item URL (with "edit" substring inside)
+	 * 				where to to export (or edit) metadata 
 	 * @param metadataMap - metadata as a Map
 	 * @param swordRequestType - object of {@link SwordRequestType}
+	 * 
+	 * @throws {@link IOException}
+	 * @throws {@link SWORDClientException}
+	 * @throws {@link SWORDError}
+	 * @throws {@link ProtocolViolationException}
 	 */
-	protected void exportMetadataViaSword(String collectionURL, Map<String, List<String>> metadataMap,
+	protected void exportMetadataViaSword(String url, Map<String, List<String>> metadataMap,
 			SwordRequestType swordRequestType)throws IOException, SWORDClientException, SWORDError, ProtocolViolationException {
 
 		String mimeFormat = SwordExporter.MIME_FORMAT_ATOM_XML;
 		String packageFormat = UriRegistry.PACKAGE_BINARY;
 
 		try {
-			exportElement(collectionURL, swordRequestType, mimeFormat, packageFormat, null,	metadataMap);
+			super.exportElement(url, swordRequestType, mimeFormat, packageFormat, null,	metadataMap);
 		} catch (IOException e) {
 			log.error("Exception by export metadata as Map: {}: {}", e.getClass().getSimpleName(), e.getMessage());
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * Publish metadata as a XML-file in ATOM-format.
-	 * 
-	 * @param userLogin - login name of the user
-	 * @param collectionURL - URL of the collection where to publish
-	 * @param metadataFileXML
-	 *            - file in XML-format (ATOM format of the metadata description) and
-	 *            with an XML-extension
-	 *            
-	 * @return {@code true} if case of success and {@code false} otherwise
-	 */
-	public boolean publishMetadata(String collectionURL, File metadataFileXML) {
-		return publishMetadataViaSword(collectionURL, metadataFileXML, SwordRequestType.DEPOSIT);
-	}
-
+	
 	/**
 	 * Private method which can use different request types. See
 	 * {@link SwordRequestType}.
 	 * 
 	 * @param userLogin - login name of the user
-	 * @param collectionURL - URL of the collection where to publish
+	 * @param url - collection URL (with "collection" substring inside) or item URL (with "edit" substring inside)
+	 * 				where to to export (or edit) metadata
 	 * @param metadataFileXML 
 	 * 			  - file in XML-format (ATOM format of the metadata description) and
-	 *            with an XML-extension  
+	 *            	with an XML-extension  
 	 * @param swordRequestType - object of {@link SwordRequestType}
 	 * 
 	 * @return {@code true} if case of success and {@code false} otherwise
 	 */
-	protected void publishMetadataViaSword(String collectionURL, File metadataFileXML, SwordRequestType swordRequestType) 
+	protected void exportMetadataViaSword(String url, File metadataFileXML, SwordRequestType swordRequestType) 
 				throws IOException, SWORDClientException, SWORDError, ProtocolViolationException{
 
 		// Check if file has an XML-extension
-		String ext = getFileExtension(metadataFileXML.getName()).toLowerCase();
+		String ext = super.getFileExtension(metadataFileXML.getName()).toLowerCase();
 		if (!ext.equals("xml")) {
 			log.error("Wrong metadata file extension: {} : Supported extension is: {}",	ext, "xml");
-			throw new IllegalArgumentException("Wrong metadta file extension: " + ext);
+			throw new ProtocolViolationException("Wrong metadta file extension: " + ext + " : Supported extension is: xml");
 		}
 
 		String mimeFormat = SwordExporter.MIME_FORMAT_ATOM_XML;
-		String packageFormat = getPackageFormat(metadataFileXML.getName());
-		exportElement(collectionURL, swordRequestType, mimeFormat, packageFormat, metadataFileXML, null);
+		String packageFormat = super.getPackageFormat(metadataFileXML.getName());
+		super.exportElement(url, swordRequestType, mimeFormat, packageFormat, metadataFileXML, null);
 	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * In DSpace SWORD-v2 protocol will be used.
-	 */
-	@Override
-	public boolean publishFileAndMetadata(String userLogin, String collectionURL, File fileFullPath,
-			Map<String, String> metadataMap) {
-
-		String mimeFormat = "application/zip"; // as a common file (even for XML)
-		String packageFormat = getPackageFormat(fileFullPath.getName());
-
-		// Step 1: publish file (as file or archive), without metadata
-		String editLink = publishElement(userLogin, collectionURL, SwordRequestType.DEPOSIT, mimeFormat, packageFormat,
-											fileFullPath, null); // "POST" request (DEPOSIT)
-
-		// Step 2: add metadata (as a Map structure)
-		if (editLink != null) {
-			return publishMetadataViaSword(userLogin, editLink, metadataMap, SwordRequestType.REPLACE); // "PUT" request
-																								// (REPLACE) to
-																								// overwrite some
-																								// previous
-																								// automatically
-																								// generated metadata
-		} else {
-			return false;
-		}
-
-		// If replace order (step 1: metadata, step 2: file) --> Bad request, ERROR 400
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * In DSpace SWORD-v2 protocol will be used.
-	 */
-	@Override
-	public boolean publishFileAndMetadata(String userLogin, String collectionURL, File fileFullPath,
-			File metadataFileXML) {
-
-		// Check if metadata file has an XML-extension
-		if (!getFileExtension(metadataFileXML.getName()).toLowerCase().equals("xml")) {
-			return false;
-		}
-
-		String mimeFormat = "application/zip"; // as a common file (even for XML)
-		String packageFormat = getPackageFormat(fileFullPath.getName());
-
-		// Step 1: publish file (as file or archive), without metadata
-		String editLink = publishElement(userLogin, collectionURL, SwordRequestType.DEPOSIT, mimeFormat, packageFormat,
-											fileFullPath, null); // "POST" request (DEPOSIT)
-
-		// Step 2: add metadata (as XML-file)
-		if (editLink != null) {
-			return publishMetadata(userLogin, editLink, metadataFileXML, SwordRequestType.REPLACE); // "PUT" request
-																									// (REPLACE) to
-																									// overwrite some
-																									// previous
-																									// automatically
-																									// generated
-																									// metadata
-		} else {
-			return false;
-		}
-
-		// If replace order (step 1: metadata, step 2: file) --> Bad request, ERROR 400
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * For DSpace it is done by access to the Service Document via SWORD-protocol
-	 * and checking an access to the REST-interface.
+	
+	
+	/*
+	 * ---------------------------------------
 	 * 
-	 * @return {@code true} if service document and REST are accessible, and
-	 *         {@code false} if not (e.g. by Error 403).
+	 * DSpaceRepository methods implementation
+	 * 
+	 * ---------------------------------------
 	 */
-	@Override
-	public boolean isRepositoryAccessible() {
-		return (isRestAccessible() && isSwordAccessible(this.serviceDocumentURL));
-	}
-
+	
+	
 	/**
 	 * {@inheritDoc}
-	 * <p>
-	 * In DSpace it will be checked via access to the service document
-	 * (SWORD-protocol)
+	 * 
+	 * In DSpace-v6 SWORD and REST are used. 
 	 */
 	@Override
-	public boolean isUserRegistered(String userLogin) {
-
-		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = getNewAuthCredentials(this.adminUser, this.adminPassword, userLogin);
-
-		if (DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL, authCredentials) != null) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * In DSpace it will be checked via access to the service document
-	 * (SWORD-protocol)
-	 */
-	@Override
-	public boolean isUserAssigned(String userLogin) {
-		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = getNewAuthCredentials(this.adminUser, this.adminPassword, userLogin);
-		ServiceDocument serviceDocument = DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL,	authCredentials);
-
-		int collectionCount = 0;
-		if (serviceDocument != null) {
-			for (SWORDWorkspace workspace : serviceDocument.getWorkspaces()) {
-				collectionCount += workspace.getCollections().size(); // increment collection count
-			}
-		}
-		return ((collectionCount > 0) ? true : false);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Map<String, String> getUserAvailableCollectionsWithTitle(String userLogin) {
-		SWORDClient swordClient = new SWORDClient();
-		// Login as "adminUser" but on-behalf-of "userLogin"
-		AuthCredentials authCredentials = getNewAuthCredentials(this.adminUser, this.adminPassword, userLogin);
-		ServiceDocument serviceDocument = DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL,	authCredentials);
-		return DSpaceRepository.getAvailableCollectionsViaSWORD(serviceDocument);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Map<String, String> getAdminAvailableCollectionsWithTitle() {
-		SWORDClient swordClient = new SWORDClient();
-		// Login as "adminUser"
-		AuthCredentials authCredentials = new AuthCredentials(this.adminUser, String.valueOf(this.adminPassword));
-		ServiceDocument serviceDocument = DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL,	authCredentials);
-		return DSpaceRepository.getAvailableCollectionsViaSWORD(serviceDocument);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setCredentials(String user, char[] password) {
-		this.adminUser = user;
-		this.adminPassword = password;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Map<String, String> getUserAvailableCollectionsWithFullName(String userLogin, String fullNameSeparator) {
+	public Map<String, String> getAvailableCollectionsWithFullName(String fullNameSeparator) {
 
 		// Get all available for the user collections from the ServiceDocument 
 		// (via SWORD)
-		SWORDClient swordClient = new SWORDClient();
-		AuthCredentials authCredentials = getNewAuthCredentials(this.adminUser, this.adminPassword, userLogin);
-		ServiceDocument serviceDocument = DSpaceRepository.getServiceDocument(swordClient, this.serviceDocumentURL,
-				authCredentials);
-		Map<String, String> collectionsMap = DSpaceRepository.getAvailableCollectionsViaSWORD(serviceDocument); // all
-																												// available
-																												// collections
+		ServiceDocument serviceDocument = super.getServiceDocument(this.serviceDocumentURL);
+		Map<String, String> collectionsMap = super.getCollections(serviceDocument); // all available collections
+		
 		// Get complete hierarchy of collections. Is needed later to get communities of
 		// the collection.
 		final HierarchyObject hierarchy = getHierarchyObject();
@@ -582,21 +524,157 @@ public class DSpace_v6 extends DSpaceRepository {
 		}
 		return collectionsMap;
 	}
-
+	
+	
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Map<String, String> getAdminAvailableCollectionsWithFullName(String fullNameSeparator) {
-		return this.getUserAvailableCollectionsWithFullName(this.adminUser, fullNameSeparator);
+	public boolean createNewEntryWithFile(String collectionURL, File file) throws IOException {
+
+		try {
+			this.exportFile(collectionURL, file);
+		} catch (SWORDClientException e) {
+			log.error("Exception by creation of new item with file without metadata.", e);
+			return false;
+		}
+		return true;
+	}
+	
+	
+	/*
+	 * -----------------------------------------
+	 * 
+	 * ExportRepository interface implementation
+	 * 
+	 * -----------------------------------------
+	 */
+	
+	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * For DSpace it is done by access to the Service Document via SWORD-protocol
+	 * and checking an access to the REST-interface.
+	 * 
+	 * @return {@code true} if service document and REST are accessible, and
+	 *         {@code false} if not (e.g. by Error 403).
+	 */
+	@Override
+	public boolean isRepositoryAccessible() {
+		return (isRestAccessible() && super.isSwordAccessible(this.serviceDocumentURL));
 	}
 
 	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * In DSpace it will be checked via access to the service document
+	 * (SWORD-protocol)
+	 */
+	@Override
+	public boolean hasRegisteredCredentials() {
+		return super.getServiceDocument(this.serviceDocumentURL) != null;
+	}
 
 	
-
-
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * In DSpace it will be checked via access to the service document and 
+	 * count of available for the current authentication credentials collections.
+	 * 
+	 * @return {@code true} if there is at least 1 collection for export, 
+	 * 			and {@code false} if there are not available collections.
+	 */
+	@Override
+	public boolean hasAssignedCredentials() {
+		
+		ServiceDocument serviceDocument = super.getServiceDocument(this.serviceDocumentURL);
+		if (serviceDocument != null) {
+			for (SWORDWorkspace workspace : serviceDocument.getWorkspaces()) {
+				if(workspace.getCollections().size() > 0) {
+					return true; // there is at least 1 available collection, credentials are assigned to export
+				}
+			}
+		}
+		return false;
+	}
 
 	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Map<String, String> getAvailableCollections() {
+		ServiceDocument serviceDocument = super.getServiceDocument(this.serviceDocumentURL);
+		return super.getCollections(serviceDocument);
+	}
+
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean createNewEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap) {
+		
+		try {
+			this.exportMetadata(collectionURL, metadataMap);
+		} catch (SWORDClientException e) {
+			log.error("Exception by creation of new entry with metadata as Map.", e);
+			return false;
+		}
+		return true;
+	}
+
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean createNewEntryWithMetadata(String collectionURL, File metadataFileXml) throws IOException {
+		
+		try {
+			this.exportMetadata(collectionURL, metadataFileXml);
+		} catch (SWORDClientException e) {
+			log.error("Exception by creation of new entry with metadata as xml-file.", e);
+			return false;
+		}
+		return true;
+	}
+
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean createNewEntryWithFileAndMetadata(String collectionURL, File file,
+			Map<String, List<String>> metadataMap) throws IOException {
+
+		try {
+			this.exportMetadataAndFile(collectionURL, file, metadataMap);
+		} catch (SWORDClientException e) {
+			log.error("Exception by creation of new entry with file and metadata as Map.", e);
+			return false;
+		}
+		return true;
+	}
+
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean createNewEntryWithFileAndMetadata(String collectionURL, File file, File metadataFileXml)
+			throws IOException {
+
+		try {
+			this.exportMetadataAndFile(collectionURL, file, metadataFileXml);
+		} catch (SWORDClientException e) {
+			log.error("Exception by creation of new entry with file and metadata as xml-file.", e);
+			return false;
+		}
+		return true;
+	}
 
 }

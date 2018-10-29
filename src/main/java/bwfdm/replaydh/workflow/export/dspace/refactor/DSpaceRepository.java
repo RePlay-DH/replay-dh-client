@@ -74,17 +74,8 @@ public abstract class DSpaceRepository extends SwordExporter implements ExportRe
 	 * @param collectionURL
 	 * @param file
 	 * @return {@code true} in case of success and {@code false} otherwise 
-	 * 
-	 * TODO: String with the new item URL in case of success or "" otherwise
 	 */
-	public abstract boolean createNewItemWithFile(String collectionURL, File file) throws IOException;
-	
-	
-	
-
-	// TODO: put here some common DSpace specific methods... 
-	
-	
-	
-		
+	// TODO: return String with the new item URL in case of success or "" otherwise
+	public abstract boolean createNewEntryWithFile(String collectionURL, File file) throws IOException;
+			
 }

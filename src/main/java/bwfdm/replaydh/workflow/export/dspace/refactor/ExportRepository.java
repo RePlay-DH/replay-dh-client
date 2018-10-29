@@ -62,7 +62,7 @@ public interface ExportRepository {
 	 * 
 	 * TODO: String with the new item URL in case of success or "" otherwise
 	 */
-	public boolean createNewItemWithMetadata(String collectionURL, Map<String, List<String>> metadataMap);
+	public boolean createNewEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap);
 	
 	
 	/**
@@ -77,7 +77,7 @@ public interface ExportRepository {
 	 * 
 	 * TODO: String with the new item URL in case of success or "" otherwise
 	 */
-	public boolean createNewItemWithMetadata(String collectionURL, File metadataFileXml) throws IOException;
+	public boolean createNewEntryWithMetadata(String collectionURL, File metadataFileXml) throws IOException;
 	
 	
 	/**
@@ -93,7 +93,7 @@ public interface ExportRepository {
 	 * 
 	 * TODO: String with the new item URL in case of success or "" otherwise
 	 */
-	public boolean createNewItemWithFileAndMetadata(String collectionURL, File file, Map<String, List<String>> metadataMap) throws IOException;
+	public boolean createNewEntryWithFileAndMetadata(String collectionURL, File file, Map<String, List<String>> metadataMap) throws IOException;
 	
 	
 	/**
@@ -109,6 +109,6 @@ public interface ExportRepository {
 	 * 
 	 * TODO: return String with the new item URL in case of success or "" otherwise 
 	 */
-	public boolean createNewItemWithFileAndMetadata(String collectionURL, File file, File metadataFileXml) throws IOException;
+	public boolean createNewEntryWithFileAndMetadata(String collectionURL, File file, File metadataFileXml) throws IOException;
 	
 }
