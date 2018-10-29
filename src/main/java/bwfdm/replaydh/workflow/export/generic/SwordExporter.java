@@ -168,7 +168,7 @@ public abstract class SwordExporter {
 	 * Get available collections via SWORD v2 protocol based on the {@link ServiceDocument}.
 	 *
 	 * @param serviceDocument can be created via {@link #getServiceDocument(String) getServiceDocument(serviceDocumentURL)}
-	 * @return Map<String, String> where key=URL, value=Title
+	 * @return Map<String, String> where "key == collection URL", "value == collection title"
 	 */
 	public Map<String, String> getCollections(ServiceDocument serviceDocument){
 		requireNonNull(serviceDocument);
@@ -183,7 +183,17 @@ public abstract class SwordExporter {
 		return collections;
 	}
 
-	//TODO javadoc
+	
+	/**
+	 * Get available entries of the provided collection based on the the current authentication credentials.
+	 * E.g. for DSpace it means - items inside the collection. For Dataverse - datasets inside the dataverse.
+	 * <p>
+	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
+	 * 
+	 * @param collectionUrl a collection URL, usually has "edit" substring inside
+	 * @return {@link Map} of entries, where "key == entry URL", "value == entry title". 
+	 * 					If there are not available entries, the map will be also empty.
+	 */
 	public abstract Map<String, String> getCollectionEntries(String collectionUrl);
 
 
@@ -348,6 +358,7 @@ public abstract class SwordExporter {
 	 * 
 	 * @throws SWORDClientException
 	 */
+	//TODO: return "Location" URL as String with "edit" substring
 	public abstract void exportMetadata(String collectionURL, Map<String, List<String>> metadataMap) 
 			throws SWORDClientException;
 
@@ -361,15 +372,14 @@ public abstract class SwordExporter {
 	 * <p>
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 *
-	 * @param collectionURL holds the collection URL where items will be exported to
+	 * @param collectionURL holds the collection URL where items will be exported to, usually has "collection" substring inside
 	 * @param file holds a file which can contain one or multiple files
 	 * @param metadataMap holds the metadata which is necessary for the ingest
 	 *
-	 * TODO: remove "throws", catch exceptions inside the method
-	 *
-	 * @throws SWORDClientException
 	 * @throws IOException
+	 * @throws SWORDClientException
 	 */
+	//TODO: return "Location" URL as String - with "edit" substring
 	public abstract void exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) 
 			throws IOException, SWORDClientException;
 
@@ -382,14 +392,14 @@ public abstract class SwordExporter {
 	 * <p>
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 *
-	 * @param url The URL where to export the zipFile to.
-	 * @param file A file that should be exported.
-	 *
-	 * TODO: remove "throws", catch exceptions inside the method
+	 * @param url the URL where to export a file. Could be collection-URL (has usually "collection" substring, used to create a new entry) 
+	 * 			  or entry-URL (has usually "edit" substring inside, used to update an already existed entry) 
+	 * @param file a file that should be exported.
 	 *
 	 * @throws IOException
 	 * @throws SWORDClientException
 	 */
+	//TODO: return "Location" URL as String with "edit" substring
 	public abstract void exportFile(String url, File file) 
 			throws IOException, SWORDClientException;
 }
