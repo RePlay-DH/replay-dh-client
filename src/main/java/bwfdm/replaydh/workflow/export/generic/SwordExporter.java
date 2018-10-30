@@ -263,6 +263,11 @@ public abstract class SwordExporter {
 	 * @throws FileNotFoundException
 	 *
 	 */
+	
+	//TODO: replace "collectionURL" with "url", because we have 2 options for the same method:
+	// 1) can export to collection (create new entry), use link with "swordv2/collection/" substring inside
+	// 2) can replace the entry's metadata, if we use editURL instead of collectionURL ("swordv2/edit/" substring inside)  
+	
 	protected SwordResponse exportElement(String collectionURL, SwordRequestType swordRequestType,
 			String mimeFormat, String packageFormat, File file, Map<String, List<String>> metadataMap)
 					throws SWORDClientException, SWORDError, ProtocolViolationException, FileNotFoundException {
@@ -358,12 +363,13 @@ public abstract class SwordExporter {
 	 * 
 	 * @throws SWORDClientException
 	 */
-	//TODO: return "Location" URL as String with "edit" substring
+	//TODO: return "Location" URL as String with "/swordv2/edit/" substring
+	//TODO: rename method to "createEntryWithMetadata"
 	public abstract void exportMetadata(String collectionURL, Map<String, List<String>> metadataMap) 
 			throws SWORDClientException;
 
-	//TODO: add exportMetadata based on the XML-file in future releases
-	//public abstract String exportMetadata(String collectionURL, File metadataFileXML);
+	//TODO: add in the future releases -> createEntryWithMetadata method for metadata as an the XML-file
+	//public abstract String createEntryWithMetadata(String collectionURL, File metadataFileXML);
 
 
 	/**
@@ -379,12 +385,16 @@ public abstract class SwordExporter {
 	 * @throws IOException
 	 * @throws SWORDClientException
 	 */
-	//TODO: return "Location" URL as String - with "edit" substring
+	//TODO: return "Location" URL as String - with "/swordv2/edit/" substring
+	//TODO: rename to "createEntryWithMetadataAndBinaryFile", use "File fileBinary" instead of "File file"
+	//TODO: add a method "createEntryWithMetadataAndZipFile", use "File fileZip"
 	public abstract void exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) 
 			throws IOException, SWORDClientException;
 
-	//TODO: add exportMetadataAndFile with the metadata as a XML-file in future releases
-	//public abstract boolean exportFileAndMetadata(String collectionURL, File file, File metadataFileXML);
+	//TODO: add in the future releases -> 2 same methods (see above), but for metadata as a XML-file
+	//public abstract String createEntryWithMetadataAndBinaryFile(String collectionURL, File fileBinary, File metadataFileXML);
+	//public abstract String createEntryWithMetadataAndZipFile(String collectionURL, File fileZip, File metadataFileXML);
+
 
 
 	/**
@@ -399,7 +409,11 @@ public abstract class SwordExporter {
 	 * @throws IOException
 	 * @throws SWORDClientException
 	 */
-	//TODO: return "Location" URL as String with "edit" substring
+	//TODO: return "Location" URL as String with "/swordv2/edit/" substring
+	//TODO: remove this method, it is not EXPLICITELY suitable for DS/DV in the same time
 	public abstract void exportFile(String url, File file) 
 			throws IOException, SWORDClientException;
+	
+	
+	//TODO: discuss issue -> https://github.com/RePlay-DH/replay-dh-client/issues/12
 }
