@@ -104,6 +104,17 @@ public abstract class SwordExporter {
 
 
 	/**
+	 * Check if file is a zip archive
+	 * @param file file to check
+	 * @return {@code true} if file is a zip archive and {@code false} otherwise
+	 */
+	public static boolean isZipFile(File file) {
+		requireNonNull(file);
+		return getFileExtension(file.getName()).toLowerCase().equals("zip");
+	}
+	
+	
+	/**
 	 * Create new authentication credentials with possibility to use "on-behalf-of" option.
 	 * <p>
 	 * To disactivate "on-behalf-of" option please use the same string for
@@ -386,14 +397,14 @@ public abstract class SwordExporter {
 	 * @throws SWORDClientException
 	 */
 	//TODO: return "Location" URL as String - with "/swordv2/edit/" substring
-	//TODO: rename to "createEntryWithMetadataAndBinaryFile", use "File fileBinary" instead of "File file"
-	//TODO: add a method "createEntryWithMetadataAndZipFile", use "File fileZip"
+	//TODO: rename to "createEntryWithMetadataAndFileAsBinary", use "File file"
+	//TODO: add a method "createEntryWithMetadataAndFileAsZip", use "File fileZip"
 	public abstract void exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) 
 			throws IOException, SWORDClientException;
 
 	//TODO: add in the future releases -> 2 same methods (see above), but for metadata as a XML-file
-	//public abstract String createEntryWithMetadataAndBinaryFile(String collectionURL, File fileBinary, File metadataFileXML);
-	//public abstract String createEntryWithMetadataAndZipFile(String collectionURL, File fileZip, File metadataFileXML);
+	//public abstract String createEntryWithMetadataAndFileAsBinary(String collectionURL, File file, File metadataFileXML);
+	//public abstract String createEntryWithMetadataAndFileAsZip(String collectionURL, File fileZip, File metadataFileXML);
 
 
 
