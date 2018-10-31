@@ -21,14 +21,18 @@ package bwfdm.replaydh.workflow.export.dspace.refactor;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.swordapp.client.Content;
 import org.swordapp.client.ProtocolViolationException;
 import org.swordapp.client.SWORDClientException;
 import org.swordapp.client.SWORDCollection;
@@ -38,6 +42,7 @@ import org.swordapp.client.ServiceDocument;
 import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
+import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.CollectionObject;
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.HierarchyObject;
 import bwfdm.replaydh.workflow.export.dspace.refactor.WebUtils.RequestType;
@@ -121,15 +126,11 @@ public class DSpace_v6 extends DSpaceRepository {
 
 	
 	/**
-	 * Get a list of communities for the collection Specific only for DSpace-6.
-	 * <p>
-	 * REST and SWORD requests are used.
+	 * {@inheritDoc}
 	 * 
-	 * @param collectionURL - URL of the collection as {@link String}
-	 * 
-	 * @return a {@code List<String>} of communities (0 or more communities are
-	 *         possible) or {@code null} if the collection was not found
+	 * For DSpace-v6 REST and SWORD requests are used.
 	 */
+	@Override
 	public List<String> getCommunitiesForCollection(String collectionURL) {
 
 		ServiceDocument serviceDocument = super.getServiceDocument(this.serviceDocumentURL);
@@ -174,6 +175,7 @@ public class DSpace_v6 extends DSpaceRepository {
 		}
 		return communityList; // List of communities ( >= 0) or "null"
 	}
+	
 	
 	/**
 	 * Get a complete hierarchy of collections as HierarchyObject. REST is used.
@@ -271,13 +273,51 @@ public class DSpace_v6 extends DSpaceRepository {
 	
 	/**
 	 * {@inheritDoc}
+	 * 
+	 * Implementation via parsing of response String using regular expressions.
 	 */
 	@Override
 	public Map<String, String> getCollectionEntries(String collectionUrl) {
+			
+		Map<String, String> entriesMap = new HashMap<String, String>();
 		
-		// TODO 
+		try {
+			// Get request on collectionUrl, same as via "curl" 
+			// -> curl -i $collectionUrl --user "$USER_MAIL:$USER_PASSWORD"
+			Content content = super.getSwordClient().getContent(collectionUrl, SwordExporter.MIME_FORMAT_ATOM_XML, 
+					UriRegistry.PACKAGE_SIMPLE_ZIP, super.getAuthCredentials());
+			try {
+				String response = IOUtils.readStream(content.getInputStream());
+				System.out.println("Response: " + response);
+				
+				Pattern entryPattern = Pattern.compile("<entry>(.+?)</entry>"); //e.g. "<entry>some_entry_with_other_tags_inside</entry>
+				Matcher entryMatcher = entryPattern.matcher(response);
+				
+				// Find all entries
+				while(entryMatcher.find()) {
+					String entryString = entryMatcher.group(1);
+					
+					Pattern idPattern = Pattern.compile("<id>(.+?)</id>"); //e.g. "<id>https://some_link</id>"
+					Matcher idMatcher = idPattern.matcher(entryString);
+					
+					Pattern titlePattern = Pattern.compile("<title.+?>(.+?)</title>"); //e.g. "<title type="text">some_title</title>" 
+					Matcher titleMatcher = titlePattern.matcher(entryString);
+					
+					// Find id and title
+					if(idMatcher.find() && titleMatcher.find()) { 
+						entriesMap.put(idMatcher.group(1), titleMatcher.group(1));
+					}
+				}
+				
+			} catch (IOException e) {
+				log.error("Exception by converting Bitstream to String: {}: {}", e.getClass().getSimpleName(), e.getMessage());
+			}
+			
+		} catch (SWORDClientException | ProtocolViolationException | SWORDError e) {
+			log.error("Exception by getting content (request) via SWORD: {}: {}", e.getClass().getSimpleName(), e.getMessage());
+		}
 		
-		return null;
+		return entriesMap;
 	}
 	
 		
@@ -427,7 +467,6 @@ public class DSpace_v6 extends DSpaceRepository {
 	 * Private method which can use different request types. See
 	 * {@link SwordRequestType}.
 	 * 
-	 * @param userLogin - login name of the user
 	 * @param url - collection URL (with "collection" substring inside) or item URL (with "edit" substring inside)
 	 * 				where to to export (or edit) metadata 
 	 * @param metadataMap - metadata as a Map
@@ -456,7 +495,6 @@ public class DSpace_v6 extends DSpaceRepository {
 	 * Private method which can use different request types. See
 	 * {@link SwordRequestType}.
 	 * 
-	 * @param userLogin - login name of the user
 	 * @param url - collection URL (with "collection" substring inside) or item URL (with "edit" substring inside)
 	 * 				where to to export (or edit) metadata
 	 * @param metadataFileXML 

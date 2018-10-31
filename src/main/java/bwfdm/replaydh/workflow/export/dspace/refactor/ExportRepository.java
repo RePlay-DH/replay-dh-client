@@ -60,7 +60,7 @@ public interface ExportRepository {
 	 * @param metadataMap
 	 * @return {@code true} in case of success and {@code false} otherwise  
 	 * 
-	 * TODO: String with the new item URL in case of success or "" otherwise
+	 * TODO: return String with the new item URL in case of success or "" otherwise
 	 */
 	public boolean createNewEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap);
 	
@@ -75,7 +75,7 @@ public interface ExportRepository {
 	 * @param metadataFileXml
 	 * @return {@code true} in case of success and {@code false} otherwise
 	 * 
-	 * TODO: String with the new item URL in case of success or "" otherwise
+	 * TODO: return String with the new item URL in case of success or "" otherwise
 	 */
 	public boolean createNewEntryWithMetadata(String collectionURL, File metadataFileXml) throws IOException;
 	
@@ -91,7 +91,7 @@ public interface ExportRepository {
 	 * @param metadataMap
 	 * @return {@code true} in case of success and {@code false} otherwise
 	 * 
-	 * TODO: String with the new item URL in case of success or "" otherwise
+	 * TODO: return String with the new item URL in case of success or "" otherwise
 	 */
 	public boolean createNewEntryWithFileAndMetadata(String collectionURL, File file, Map<String, List<String>> metadataMap) throws IOException;
 	

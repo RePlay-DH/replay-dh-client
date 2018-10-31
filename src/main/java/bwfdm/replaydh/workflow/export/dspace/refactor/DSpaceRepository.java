@@ -20,6 +20,7 @@ package bwfdm.replaydh.workflow.export.dspace.refactor;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -50,6 +51,17 @@ public abstract class DSpaceRepository extends SwordExporter implements ExportRe
 	 * General DSpace specific methods
 	 * -------------------------------
 	 */
+	
+	
+	/**
+	 * Get a list of communities for the collection Specific only for DSpace-6.
+	 *  
+	 * @param collectionURL - URL of the collection as {@link String}
+	 * 
+	 * @return a {@code List<String>} of communities (0 or more communities are
+	 *         possible) or {@code null} if the collection was not found
+	 */
+	public abstract List<String> getCommunitiesForCollection(String collectionURL);
 	
 	
 	/**
