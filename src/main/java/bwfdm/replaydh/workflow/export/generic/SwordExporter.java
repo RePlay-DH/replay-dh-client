@@ -164,10 +164,10 @@ public abstract class SwordExporter {
 	 * Constructor, creates private final {@link SWORDClient} object and sets the authentication credentials (as private final object).
 	 * To change the authentication credentials, please always create a new object.
 	 *
-	 * @param authCredentials {@link AuthCredentials} object. To create it please use the following methods: ...
-	 *
-	 * TODO: add 2 methods to create an AuthCredentials object (for user/password and for API-token) and make link above
-	 *
+	 * @param authCredentials {@link AuthCredentials} object. To create it please use 
+	 * {@link #createAuthCredentials(String, char[], String) createAuthCredentials(adminUser, adminPassword, standardUser)} or
+	 * {@link #createAuthCredentials(char[]) createAuthCredentials(apiToken)} methods.
+	 * 			
 	 */
 	protected SwordExporter(AuthCredentials authCredentials) {
 		swordClient = new SWORDClient();
@@ -224,7 +224,8 @@ public abstract class SwordExporter {
 	 * IMPORTANT: credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 *
 	 * @param serviceDocumentURL string with the service document URL
-	 * @return {@link ServiceDocument} object
+	 * @return {@link ServiceDocument} object or {@code null} if service document is not accessible via provided URL 
+	 * 			and implicitly used authentication credentials or in case of error.
 	 */
 	public ServiceDocument getServiceDocument(String serviceDocumentURL) {
 		ServiceDocument serviceDocument = null;
@@ -255,6 +256,8 @@ public abstract class SwordExporter {
 	 * <p>
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 *
+	 * TODO: describe "url" more precise ("edit", "collection" substrings)
+	 *  
 	 * @param collectionURL could be link to the collection (from the service document)
 	 * 		  or a link to edit the collection ("Location" field in the response)
 	 * @param swordRequestType see {@link SwordRequestType}
@@ -275,7 +278,7 @@ public abstract class SwordExporter {
 	 *
 	 */
 	
-	//TODO: replace "collectionURL" with "url", because we have 2 options for the same method:
+	//TODO: replace "collectionURL" with "exportUrl", because we have 2 options for the same method:
 	// 1) can export to collection (create new entry), use link with "swordv2/collection/" substring inside
 	// 2) can replace the entry's metadata, if we use editURL instead of collectionURL ("swordv2/edit/" substring inside)  
 	
@@ -397,8 +400,9 @@ public abstract class SwordExporter {
 	 * @throws SWORDClientException
 	 */
 	//TODO: return "Location" URL as String - with "/swordv2/edit/" substring
-	//TODO: rename to "createEntryWithMetadataAndFileAsBinary", use "File file"
-	//TODO: add a method "createEntryWithMetadataAndFileAsZip", use "File fileZip"
+	//TODO: rename to "createEntryWithMetadataAndBinaryFile", use "File file"
+	//TODO: add a method "createEntryWithMetadataAndZipFile", use "File fileZip"
+	//TODO: refactor javadoc in case of renaming
 	public abstract void exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) 
 			throws IOException, SWORDClientException;
 
@@ -409,10 +413,12 @@ public abstract class SwordExporter {
 
 
 	/**
-	 * Export a file to some URL (e.g. URL of some collection or metadata set).
+	 * Export a new file to some URL (e.g. URL of some collection or metadata set).
 	 * <p>
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
-	 *
+	 * <P>
+	 * IMPORTANT: "post" request will be used.
+	 * 
 	 * @param url the URL where to export a file. Could be collection-URL (has usually "collection" substring, used to create a new entry) 
 	 * 			  or entry-URL (has usually "edit" substring inside, used to update an already existed entry) 
 	 * @param file a file that should be exported.
@@ -421,10 +427,27 @@ public abstract class SwordExporter {
 	 * @throws SWORDClientException
 	 */
 	//TODO: return "Location" URL as String with "/swordv2/edit/" substring
-	//TODO: remove this method, it is not EXPLICITELY suitable for DS/DV in the same time
+	//TODO: rename "url" to "exportUrl"
+	//TODO: make attention to "DEPOSIT" (post) request, not "put" !
+	//TODO: remove "abstract", add implementation
 	public abstract void exportFile(String url, File file) 
 			throws IOException, SWORDClientException;
 	
 	
 	//TODO: discuss issue -> https://github.com/RePlay-DH/replay-dh-client/issues/12
+	
+	
+	//TODO: 
+	// add implementation for entry's  metadata replacement (via "put" (REPLACE) request). 
+	// return value - "Location" url.
+	// 
+//	public String replaceEntryMetadata(String entryUrl, Map<String, List<String>> metadataMap) 
+//			throws SWORDClientException {
+//	 ... implementation
+//	}
+	
+	//
+	//TODO: support of metadata as xml-file for later release (with realization):
+	// public String replaceEntryMetadata(String entryUrl, Map<String, File metadataMap) throws SWORDClientException, IOException
+	
 }
