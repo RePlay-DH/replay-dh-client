@@ -102,6 +102,7 @@ public abstract class SwordExporter {
 		return UriRegistry.PACKAGE_BINARY;
 	}
 	
+	
 	/**
 	 * Create new authentication credentials with possibility to use "on-behalf-of" option.
 	 * <p>
@@ -167,7 +168,7 @@ public abstract class SwordExporter {
 	 * Get available collections via SWORD v2 protocol based on the {@link ServiceDocument}.
 	 *
 	 * @param serviceDocument can be created via {@link #getServiceDocument(String) getServiceDocument(serviceDocumentURL)}
-	 * @return Map<String, String> where key=URL, value=Title
+	 * @return Map<String, String> where key = collection URL, value = collection title
 	 */
 	public Map<String, String> getCollections(ServiceDocument serviceDocument){
 		requireNonNull(serviceDocument);
@@ -182,7 +183,18 @@ public abstract class SwordExporter {
 		return collections;
 	}
 
-	//TODO javadoc
+	
+	/**
+	 * Get available entries of the provided collection based on the the current authentication credentials.
+	 * E.g. for DSpace repository it means - items inside the collection. 
+	 * For Dataverse repository - datasets inside the dataverse.
+	 * <p>
+	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
+	 * 
+	 * @param collectionUrl a collection URL, must have a "/swordv2/collection/" substring inside
+	 * @return {@link Map} of entries, where key = entry URL (with "/swordv2/edit/" substring inside), 
+	 * 					value = entry title. If there are not available entries, the map will be also empty.
+	 */
 	public abstract Map<String, String> getCollectionEntries(String collectionUrl);
 
 
@@ -202,7 +214,8 @@ public abstract class SwordExporter {
 	 * IMPORTANT: credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 *
 	 * @param serviceDocumentURL string with the service document URL
-	 * @return {@link ServiceDocument} object
+	 * @return {@link ServiceDocument} object or {@code null} if service document is not accessible via provided URL 
+	 * 			and implicitly used authentication credentials or in case of error.
 	 */
 	public ServiceDocument getServiceDocument(String serviceDocumentURL) {
 		ServiceDocument serviceDocument = null;
@@ -313,6 +326,7 @@ public abstract class SwordExporter {
 
 	}
 
+	
 	/**
 	 * Export the metadata only (without any file) to some collection.
 	 * Metadata are described as a {@link java.util.Map}.
@@ -324,6 +338,7 @@ public abstract class SwordExporter {
 	 */
 	public abstract String createEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap) throws SWORDClientException;
 
+	
 	/**
 	 * Export a file together with the metadata to some collection.
 	 * Metadata are described as a {@link java.util.Map}.
@@ -334,8 +349,6 @@ public abstract class SwordExporter {
 	 * @param unpackZip decides whether to unpack the zipfile or places the packed zip file as uploaded data
 	 * @param file holds a file which can contain one or multiple files
 	 * @param metadataMap holds the metadata which is necessary for the ingest
-	 *
-	 * TODO: remove "throws", catch exceptions inside the method
 	 *
 	 * @throws SWORDClientException
 	 * @throws IOException
@@ -351,11 +364,13 @@ public abstract class SwordExporter {
 	 * @param url The URL where to export the zipFile to.
 	 * @param file A file that should be exported.
 	 *
-	 * TODO: remove "throws", catch exceptions inside the method
+	 * TODO: uncomment later. Think about - return location link as String (with "edit" substring inside)
 	 *
 	 * @throws IOException
+	 * @throws SWORDClientException
 	 */
 	//public abstract void exportFile(String url, File file) throws IOException, SWORDClientException;
+	
 	
 	/**
 	 * Replaces an existing metadata entry with new metadata in the repository
