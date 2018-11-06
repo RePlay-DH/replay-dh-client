@@ -335,6 +335,20 @@ public abstract class SwordExporter {
 	 *
 	 * @param collectionURL holds the collection URL where the metadata will be exported to
 	 * @param metadataMap holds the metadata itself
+	 * 
+	 * @return {@link String} with the entry URL which includes "/swordv2/edit/" substring inside. 
+	 * 		This URL could be used without changes for further update of the metadata 
+	 * 		(see {@link #replaceMetadataEntry(String, Map) replaceMetadataEntry(entryURL, metadataMap)}) 
+	 * 		<p>
+	 * 		<b>IMPORTANT for Dataverse repository:</b> for further update/extension of the media part 
+	 * 		(e.g. uploaded files inside the dataset) please replace "/swordv2/edit/" substring inside the entry URL to 
+	 * 		"/swordv2/edit-media/". 
+	 * 		For more details please visit <a href="http://guides.dataverse.org/en/latest/api/sword.html">http://guides.dataverse.org/en/latest/api/sword.html</a>
+	 * 		<p>
+	 * 		<b>IMPORTANT for DSpace repository:</b> further update/extension of the media part (e.g. uploaded files)
+	 * 		via SWORD is not supported, only update of the metadata is allowed.
+	 * 
+	 * @throws SWORDClientException
 	 */
 	public abstract String createEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap) throws SWORDClientException;
 
@@ -349,6 +363,18 @@ public abstract class SwordExporter {
 	 * @param unpackZip decides whether to unpack the zipfile or places the packed zip file as uploaded data
 	 * @param file holds a file which can contain one or multiple files
 	 * @param metadataMap holds the metadata which is necessary for the ingest
+	 *
+	 * @return {@link String} with the entry URL which includes "/swordv2/edit/" substring inside. 
+	 * 		This URL could be used without changes for further update of the metadata 
+	 * 		(see {@link #replaceMetadataEntry(String, Map) replaceMetadataEntry(entryURL, metadataMap)}) 
+	 * 		<p>
+	 * 		<b>IMPORTANT for Dataverse repository:</b> for further update/extension of the media part 
+	 * 		(e.g. uploaded files inside the dataset) please replace "/swordv2/edit/" substring inside the entry URL to 
+	 * 		"/swordv2/edit-media/". 
+	 * 		For more details please visit <a href="http://guides.dataverse.org/en/latest/api/sword.html">http://guides.dataverse.org/en/latest/api/sword.html</a>
+	 * 		<p>
+	 * 		<b>IMPORTANT for DSpace repository:</b> further update/extension of the media part (e.g. uploaded files)
+	 * 		via SWORD is not supported, only update of the metadata is allowed.   
 	 *
 	 * @throws SWORDClientException
 	 * @throws IOException
@@ -374,8 +400,10 @@ public abstract class SwordExporter {
 	
 	/**
 	 * Replaces an existing metadata entry with new metadata in the repository
-	 * @param entryUrl The URL which points to the metadata entry.
+	 * 
+	 * @param entryUrl The URL which points to the metadata entry, includes "/swordv2/edit/" substring inside.
 	 * @param metadataMap The metadata that will replace the old metadata.
+	 * 
 	 * @throws SWORDClientException 
 	 */
 	public void replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) throws SWORDClientException {
