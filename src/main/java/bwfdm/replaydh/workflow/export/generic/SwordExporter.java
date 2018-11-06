@@ -101,18 +101,6 @@ public abstract class SwordExporter {
 		}
 		return UriRegistry.PACKAGE_BINARY;
 	}
-
-
-	/**
-	 * Check if file is a zip archive
-	 * @param file file to check
-	 * @return {@code true} if file is a zip archive and {@code false} otherwise
-	 */
-	public static boolean isZipFile(File file) {
-		requireNonNull(file);
-		return getFileExtension(file.getName()).toLowerCase().equals("zip");
-	}
-	
 	
 	/**
 	 * Create new authentication credentials with possibility to use "on-behalf-of" option.
@@ -128,7 +116,7 @@ public abstract class SwordExporter {
 	 * 
 	 * @return {@link AuthCredentials}
 	 */
-	public static AuthCredentials createAuthCredentials(String adminUser, char[] adminPassword, String standardUser) {
+	/*public static AuthCredentials createAuthCredentials(String adminUser, char[] adminPassword, String standardUser) {
 
 		requireNonNull(adminUser);
 		requireNonNull(adminPassword);
@@ -139,7 +127,7 @@ public abstract class SwordExporter {
 		} else {
 			return new AuthCredentials(adminUser, String.valueOf(adminPassword), standardUser); // with "on-behalf-of"
 		}
-	}
+	}*/
 	
 	
 	/**
@@ -149,13 +137,13 @@ public abstract class SwordExporter {
 	 * 
 	 * @return {@link AuthCredentials}
 	 */
-	public static AuthCredentials createAuthCredentials(char[] apiToken) {
+	/*public static AuthCredentials createAuthCredentials(char[] apiToken) {
 
 		requireNonNull(apiToken);
 		return new AuthCredentials(String.valueOf(apiToken), ""); // use an empty string instead of password
-	}
-	
-	
+	}*/
+
+
 	private final AuthCredentials authCredentials;
 	private final SWORDClient swordClient;
 
@@ -164,10 +152,10 @@ public abstract class SwordExporter {
 	 * Constructor, creates private final {@link SWORDClient} object and sets the authentication credentials (as private final object).
 	 * To change the authentication credentials, please always create a new object.
 	 *
-	 * @param authCredentials {@link AuthCredentials} object. To create it please use 
-	 * {@link #createAuthCredentials(String, char[], String) createAuthCredentials(adminUser, adminPassword, standardUser)} or
-	 * {@link #createAuthCredentials(char[]) createAuthCredentials(apiToken)} methods.
-	 * 			
+	 * @param authCredentials {@link AuthCredentials} object. To create it please use the following methods: ...
+	 *
+	 * TODO: add 2 methods to create an AuthCredentials object (for user/password and for API-token) and make link above
+	 *
 	 */
 	protected SwordExporter(AuthCredentials authCredentials) {
 		swordClient = new SWORDClient();
@@ -179,7 +167,7 @@ public abstract class SwordExporter {
 	 * Get available collections via SWORD v2 protocol based on the {@link ServiceDocument}.
 	 *
 	 * @param serviceDocument can be created via {@link #getServiceDocument(String) getServiceDocument(serviceDocumentURL)}
-	 * @return Map<String, String> where "key == collection URL", "value == collection title"
+	 * @return Map<String, String> where key=URL, value=Title
 	 */
 	public Map<String, String> getCollections(ServiceDocument serviceDocument){
 		requireNonNull(serviceDocument);
@@ -194,17 +182,7 @@ public abstract class SwordExporter {
 		return collections;
 	}
 
-	
-	/**
-	 * Get available entries of the provided collection based on the the current authentication credentials.
-	 * E.g. for DSpace it means - items inside the collection. For Dataverse - datasets inside the dataverse.
-	 * <p>
-	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
-	 * 
-	 * @param collectionUrl a collection URL, usually has "edit" substring inside
-	 * @return {@link Map} of entries, where "key == entry URL", "value == entry title". 
-	 * 					If there are not available entries, the map will be also empty.
-	 */
+	//TODO javadoc
 	public abstract Map<String, String> getCollectionEntries(String collectionUrl);
 
 
@@ -224,8 +202,7 @@ public abstract class SwordExporter {
 	 * IMPORTANT: credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 *
 	 * @param serviceDocumentURL string with the service document URL
-	 * @return {@link ServiceDocument} object or {@code null} if service document is not accessible via provided URL 
-	 * 			and implicitly used authentication credentials or in case of error.
+	 * @return {@link ServiceDocument} object
 	 */
 	public ServiceDocument getServiceDocument(String serviceDocumentURL) {
 		ServiceDocument serviceDocument = null;
@@ -256,9 +233,7 @@ public abstract class SwordExporter {
 	 * <p>
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 *
-	 * TODO: describe "url" more precise ("edit", "collection" substrings)
-	 *  
-	 * @param collectionURL could be link to the collection (from the service document)
+	 * @param exportURL could be link to the collection (from the service document)
 	 * 		  or a link to edit the collection ("Location" field in the response)
 	 * @param swordRequestType see {@link SwordRequestType}
 	 * @param mimeFormat String with e.g. {@code "application/atom+xml"} or {@code "application/zip"}, see {@link SwordRequestType}}
@@ -277,16 +252,11 @@ public abstract class SwordExporter {
 	 * @throws FileNotFoundException
 	 *
 	 */
-	
-	//TODO: replace "collectionURL" with "exportUrl", because we have 2 options for the same method:
-	// 1) can export to collection (create new entry), use link with "swordv2/collection/" substring inside
-	// 2) can replace the entry's metadata, if we use editURL instead of collectionURL ("swordv2/edit/" substring inside)  
-	
-	protected SwordResponse exportElement(String collectionURL, SwordRequestType swordRequestType,
+	protected SwordResponse exportElement(String exportURL, SwordRequestType swordRequestType,
 			String mimeFormat, String packageFormat, File file, Map<String, List<String>> metadataMap)
 					throws SWORDClientException, SWORDError, ProtocolViolationException, FileNotFoundException {
 
-		requireNonNull(collectionURL);
+		requireNonNull(exportURL);
 		requireNonNull(swordRequestType);
 
 		// Check if only 1 parameter is used (metadata OR file).
@@ -325,38 +295,15 @@ public abstract class SwordExporter {
 		try {
 			switch (swordRequestType) {
 			case DEPOSIT:
-				DepositReceipt receipt = swordClient.deposit(collectionURL, deposit, authCredentials);
+				DepositReceipt receipt = swordClient.deposit(exportURL, deposit, authCredentials);
 				return receipt; // returns Deposit Receipt instance;
 			case REPLACE:
-				if (deposit.getEntryPart() != null) {
-					// Use "replace" method for EntryPart (metadata as a Map)
-					SwordResponse response = swordClient.replace(collectionURL, deposit, authCredentials);
-					return response;
-				} else {
-					// Use "replace" for Media (metadata as a XML-file)
-
-					// TODO: create issue for SWORD-Client to consider the header "In-Progress:
-					// true" for "replaceMedia()" method
-					// -> https://github.com/swordapp/JavaClient2.0/issues
-					//
-					// Code area, file "org.swordapp.client.SWORDClient.java", lines 464-468:
-					//
-					// // add the headers specific to a binary only deposit
-					// http.addContentDisposition(options, deposit.getFilename());
-					// http.addContentMd5(options, deposit.getMd5());
-					// http.addPackaging(options, deposit.getPackaging());
-					// http.addMetadataRelevant(options, deposit.isMetadataRelevant());
-					//
-					// Add new line:
-					// http.addInProgress(options, deposit.isInProgress());
-					//
-					SwordResponse response = swordClient.replaceMedia(collectionURL, deposit, authCredentials);
-					return response;
-				}
+				SwordResponse response = swordClient.replace(exportURL, deposit, authCredentials);
+				return response; //returns the Sword response
 			default:
 				log.error("Wrong SWORD-request type: {} : Supported here types are: {}, {}",
 						swordRequestType, SwordRequestType.DEPOSIT, SwordRequestType.REPLACE);
-				throw new IllegalArgumentException("Wrong SWORD-request type: " + swordRequestType);
+				throw new IllegalArgumentException("Wrong SWORD-request type: "+swordRequestType);
 			}
 		} finally {
 			if(fis!=null) {
@@ -374,17 +321,8 @@ public abstract class SwordExporter {
 	 *
 	 * @param collectionURL holds the collection URL where the metadata will be exported to
 	 * @param metadataMap holds the metadata itself
-	 * 
-	 * @throws SWORDClientException
 	 */
-	//TODO: return "Location" URL as String with "/swordv2/edit/" substring
-	//TODO: rename method to "createEntryWithMetadata"
-	public abstract void exportMetadata(String collectionURL, Map<String, List<String>> metadataMap) 
-			throws SWORDClientException;
-
-	//TODO: add in the future releases -> createEntryWithMetadata method for metadata as an the XML-file
-	//public abstract String createEntryWithMetadata(String collectionURL, File metadataFileXML);
-
+	public abstract String createEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap) throws SWORDClientException;
 
 	/**
 	 * Export a file together with the metadata to some collection.
@@ -392,62 +330,43 @@ public abstract class SwordExporter {
 	 * <p>
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 *
-	 * @param collectionURL holds the collection URL where items will be exported to, usually has "collection" substring inside
+	 * @param collectionURL holds the collection URL where items will be exported to
+	 * @param unpackZip decides whether to unpack the zipfile or places the packed zip file as uploaded data
 	 * @param file holds a file which can contain one or multiple files
 	 * @param metadataMap holds the metadata which is necessary for the ingest
 	 *
-	 * @throws IOException
+	 * TODO: remove "throws", catch exceptions inside the method
+	 *
 	 * @throws SWORDClientException
+	 * @throws IOException
 	 */
-	//TODO: return "Location" URL as String - with "/swordv2/edit/" substring
-	//TODO: rename to "createEntryWithMetadataAndBinaryFile", use "File file"
-	//TODO: add a method "createEntryWithMetadataAndZipFile", use "File fileZip"
-	//TODO: refactor javadoc in case of renaming
-	public abstract void exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) 
-			throws IOException, SWORDClientException;
-
-	//TODO: add in the future releases -> 2 same methods (see above), but for metadata as a XML-file
-	//public abstract String createEntryWithMetadataAndFileAsBinary(String collectionURL, File file, File metadataFileXML);
-	//public abstract String createEntryWithMetadataAndFileAsZip(String collectionURL, File fileZip, File metadataFileXML);
-
+	public abstract String createEntryWithMetadataAndFile(String collectionURL, File file, boolean unpackZip, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
 
 
 	/**
-	 * Export a new file to some URL (e.g. URL of some collection or metadata set).
+	 * Export a file to some URL (e.g. URL of some collection or metadata set).
 	 * <p>
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
-	 * <P>
-	 * IMPORTANT: "post" request will be used.
-	 * 
-	 * @param url the URL where to export a file. Could be collection-URL (has usually "collection" substring, used to create a new entry) 
-	 * 			  or entry-URL (has usually "edit" substring inside, used to update an already existed entry) 
-	 * @param file a file that should be exported.
+	 *
+	 * @param url The URL where to export the zipFile to.
+	 * @param file A file that should be exported.
+	 *
+	 * TODO: remove "throws", catch exceptions inside the method
 	 *
 	 * @throws IOException
-	 * @throws SWORDClientException
 	 */
-	//TODO: return "Location" URL as String with "/swordv2/edit/" substring
-	//TODO: rename "url" to "exportUrl"
-	//TODO: make attention to "DEPOSIT" (post) request, not "put" !
-	//TODO: remove "abstract", add implementation
-	public abstract void exportFile(String url, File file) 
-			throws IOException, SWORDClientException;
+	//public abstract void exportFile(String url, File file) throws IOException, SWORDClientException;
 	
-	
-	//TODO: discuss issue -> https://github.com/RePlay-DH/replay-dh-client/issues/12
-	
-	
-	//TODO: 
-	// add implementation for entry's  metadata replacement (via "put" (REPLACE) request). 
-	// return value - "Location" url.
-	// 
-//	public String replaceEntryMetadata(String entryUrl, Map<String, List<String>> metadataMap) 
-//			throws SWORDClientException {
-//	 ... implementation
-//	}
-	
-	//
-	//TODO: support of metadata as xml-file for later release (with realization):
-	// public String replaceEntryMetadata(String entryUrl, Map<String, File metadataMap) throws SWORDClientException, IOException
-	
+	/**
+	 * Replaces an existing metadata entry with new metadata in the repository
+	 * @param entryUrl The URL which points to the metadata entry.
+	 * @param metadataMap The metadata that will replace the old metadata.
+	 * @throws ProtocolViolationException 
+	 * @throws SWORDError 
+	 * @throws SWORDClientException 
+	 * @throws FileNotFoundException 
+	 */
+	public void replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) throws FileNotFoundException, SWORDClientException, SWORDError, ProtocolViolationException {
+		SwordResponse response = exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+	}
 }
