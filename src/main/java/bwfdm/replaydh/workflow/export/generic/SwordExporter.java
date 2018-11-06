@@ -192,7 +192,7 @@ public abstract class SwordExporter {
 	 * <p>
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 *
-	 * @param collectionURL could be link to the collection (from the service document)
+	 * @param exportURL could be link to the collection (from the service document)
 	 * 		  or a link to edit the collection ("Location" field in the response)
 	 * @param swordRequestType see {@link SwordRequestType}
 	 * @param mimeFormat String with e.g. {@code "application/atom+xml"} or {@code "application/zip"}, see {@link SwordRequestType}}
@@ -211,11 +211,11 @@ public abstract class SwordExporter {
 	 * @throws FileNotFoundException
 	 *
 	 */
-	protected SwordResponse exportElement(String collectionURL, SwordRequestType swordRequestType,
+	protected SwordResponse exportElement(String exportURL, SwordRequestType swordRequestType,
 			String mimeFormat, String packageFormat, File file, Map<String, List<String>> metadataMap)
 					throws SWORDClientException, SWORDError, ProtocolViolationException, FileNotFoundException {
 
-		requireNonNull(collectionURL);
+		requireNonNull(exportURL);
 		requireNonNull(swordRequestType);
 
 		// Check if only 1 parameter is used (metadata OR file).
@@ -254,10 +254,10 @@ public abstract class SwordExporter {
 		try {
 			switch (swordRequestType) {
 			case DEPOSIT:
-				DepositReceipt receipt = swordClient.deposit(collectionURL, deposit, authCredentials);
+				DepositReceipt receipt = swordClient.deposit(exportURL, deposit, authCredentials);
 				return receipt; // returns Deposit Receipt instance;
 			case REPLACE:
-				SwordResponse response = swordClient.replace(collectionURL, deposit, authCredentials);
+				SwordResponse response = swordClient.replace(exportURL, deposit, authCredentials);
 				return response; //returns the Sword response
 			default:
 				log.error("Wrong SWORD-request type: {} : Supported here types are: {}, {}",
