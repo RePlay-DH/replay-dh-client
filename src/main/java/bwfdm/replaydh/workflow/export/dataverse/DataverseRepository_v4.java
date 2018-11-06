@@ -273,7 +273,7 @@ public class DataverseRepository_v4 extends SwordExporter {
 	 * @param metadataMap holds the metadata itself
 	 * @return
 	 */
-	public void exportMetadata(String collectionURL, Map<String, List<String>> metadataMap) {
+	public void createEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap) {
 		requireNonNull(metadataMap);
 		requireNonNull(collectionURL);
 		try {
@@ -301,7 +301,7 @@ public class DataverseRepository_v4 extends SwordExporter {
 	 * @throws SWORDClientException 
 	 * @throws IOException 
 	 */
-	public void exportMetadataAndFile(String collectionURL, File zipFile, Map<String, List<String>> metadataMap){
+	public void createEntryWithMetadataAndFile(String collectionURL, File zipFile, Map<String, List<String>> metadataMap){
 		requireNonNull(metadataMap);
 		requireNonNull(collectionURL);
 		Entry entry = null;
@@ -371,9 +371,9 @@ public class DataverseRepository_v4 extends SwordExporter {
 		}
 	}
 	
-	public void replaceMetadata(String doiUrl, Map<String, List<String>> metadataMap) {
+	public void replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) {
 		try {
-			SwordResponse response = exportElement(doiUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+			SwordResponse response = exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -390,7 +390,7 @@ public class DataverseRepository_v4 extends SwordExporter {
 	}
 
 	public void replaceMetadataAndAddFile(String collectionURL, String doiUrl, File zipFile, Map<String, List<String>> metadataMap) {
-		replaceMetadata(doiUrl, metadataMap);
+		replaceMetadataEntry(doiUrl, metadataMap);
 		Entry entry = null;
 		int beginDOI=doiUrl.indexOf("doi:");
 		int end=doiUrl.length();

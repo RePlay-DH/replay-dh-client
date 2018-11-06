@@ -27,6 +27,7 @@ import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
 import bwfdm.replaydh.io.IOUtils;
+import bwfdm.replaydh.workflow.export.generic.SwordExporter.SwordRequestType;
 
 /**
  * General exporting methods for SWORD-based repositories (e.g. DSpace, Dataverse).
@@ -101,6 +102,47 @@ public abstract class SwordExporter {
 		}
 		return UriRegistry.PACKAGE_BINARY;
 	}
+	
+	/**
+	 * Create new authentication credentials with possibility to use "on-behalf-of" option.
+	 * <p>
+	 * To disactivate "on-behalf-of" option please use the same string for
+	 * "adminUser" and "standardUser".
+	 * <p>
+	 * If "adminUser" and "standardUser" are different, "on-behalf-of" option will be used.
+	 * 
+	 * @param adminUser - administrator login ("on-behalf-of" is active) or standard user login ("on-behalf-of" is inactive)
+	 * @param adminPassword - administrator password ("on-behalf-of" is active) or standard user password ("on-behalf-of" is inactive)
+	 * @param standardUser - standard user login
+	 * 
+	 * @return {@link AuthCredentials}
+	 */
+	/*public static AuthCredentials createAuthCredentials(String adminUser, char[] adminPassword, String standardUser) {
+
+		requireNonNull(adminUser);
+		requireNonNull(adminPassword);
+		requireNonNull(standardUser);
+		
+		if (adminUser.equals(standardUser)) {
+			return new AuthCredentials(standardUser, String.valueOf(adminPassword)); // without "on-behalf-of"
+		} else {
+			return new AuthCredentials(adminUser, String.valueOf(adminPassword), standardUser); // with "on-behalf-of"
+		}
+	}*/
+	
+	
+	/**
+	 * Create new authentication credentials based on the API token. Could be used for the Dataverse repositories.
+	 * 
+	 * @param apiToken - API token. Password in that case is not needed.
+	 * 
+	 * @return {@link AuthCredentials}
+	 */
+	/*public static AuthCredentials createAuthCredentials(char[] apiToken) {
+
+		requireNonNull(apiToken);
+		return new AuthCredentials(String.valueOf(apiToken), ""); // use an empty string instead of password
+	}*/
 
 
 	private final AuthCredentials authCredentials;
@@ -281,11 +323,7 @@ public abstract class SwordExporter {
 	 * @param collectionURL holds the collection URL where the metadata will be exported to
 	 * @param metadataMap holds the metadata itself
 	 */
-	public abstract void exportMetadata(String collectionURL, Map<String, List<String>> metadataMap) throws SWORDClientException;
-
-	//TODO: add exportMetadata based on the XML-file in future releases
-	//public abstract String exportMetadata(String collectionURL, File metadataFileXML);
-
+	public abstract String createEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap) throws SWORDClientException;
 
 	/**
 	 * Export a file together with the metadata to some collection.
@@ -294,6 +332,7 @@ public abstract class SwordExporter {
 	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
 	 *
 	 * @param collectionURL holds the collection URL where items will be exported to
+	 * @param unpackZip decides whether to unpack the zipfile or places the packed zip file as uploaded data
 	 * @param file holds a file which can contain one or multiple files
 	 * @param metadataMap holds the metadata which is necessary for the ingest
 	 *
@@ -302,10 +341,7 @@ public abstract class SwordExporter {
 	 * @throws SWORDClientException
 	 * @throws IOException
 	 */
-	public abstract void exportMetadataAndFile(String collectionURL, File file, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
-
-	//TODO: add exportMetadataAndFile with the metadata as a XML-file in future releases
-	//public abstract boolean exportFileAndMetadata(String collectionURL, File file, File metadataFileXML);
+	public abstract String createEntryWithMetadataAndFile(String collectionURL, File file, boolean unpackZip, Map<String, List<String>> metadataMap) throws IOException, SWORDClientException;
 
 
 	/**
@@ -320,5 +356,18 @@ public abstract class SwordExporter {
 	 *
 	 * @throws IOException
 	 */
-	public abstract void exportFile(String url, File file) throws IOException, SWORDClientException;
+	//public abstract void exportFile(String url, File file) throws IOException, SWORDClientException;
+	
+	/**
+	 * Replaces an existing metadata entry with new metadata in the repository
+	 * @param entryUrl The URL which points to the metadata entry.
+	 * @param metadataMap The metadata that will replace the old metadata.
+	 * @throws ProtocolViolationException 
+	 * @throws SWORDError 
+	 * @throws SWORDClientException 
+	 * @throws FileNotFoundException 
+	 */
+	public void replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) throws FileNotFoundException, SWORDClientException, SWORDError, ProtocolViolationException {
+		SwordResponse response = exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+	}
 }
