@@ -361,12 +361,14 @@ public abstract class SwordExporter {
 	 * Replaces an existing metadata entry with new metadata in the repository
 	 * @param entryUrl The URL which points to the metadata entry.
 	 * @param metadataMap The metadata that will replace the old metadata.
-	 * @throws ProtocolViolationException 
-	 * @throws SWORDError 
 	 * @throws SWORDClientException 
-	 * @throws FileNotFoundException 
 	 */
-	public void replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) throws FileNotFoundException, SWORDClientException, SWORDError, ProtocolViolationException {
-		SwordResponse response = exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+	public void replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) throws SWORDClientException {
+		try {
+			exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);	
+		} catch (FileNotFoundException | ProtocolViolationException | SWORDError e) {
+			throw new SWORDClientException("Exception by replacing of metadata via metadata Map: " 
+					+ e.getClass().getSimpleName() + ": " + e.getMessage());
+		}
 	}
 }
