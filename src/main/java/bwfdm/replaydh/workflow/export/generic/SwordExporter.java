@@ -27,7 +27,6 @@ import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
 import bwfdm.replaydh.io.IOUtils;
-import bwfdm.replaydh.workflow.export.generic.SwordExporter.SwordRequestType;
 
 /**
  * General exporting methods for SWORD-based repositories (e.g. DSpace, Dataverse).

@@ -32,8 +32,6 @@ import org.swordapp.client.DepositReceipt;
 import org.swordapp.client.ProtocolViolationException;
 import org.swordapp.client.SWORDClientException;
 import org.swordapp.client.SWORDError;
-import org.swordapp.client.SwordResponse;
-
 import bwfdm.replaydh.workflow.export.generic.SwordExporter;
 
 /**
