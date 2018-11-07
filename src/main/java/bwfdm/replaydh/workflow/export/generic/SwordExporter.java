@@ -104,45 +104,68 @@ public abstract class SwordExporter {
 	
 	
 	/**
-	 * Create new authentication credentials with possibility to use "on-behalf-of" option.
-	 * <p>
-	 * To disactivate "on-behalf-of" option please use the same string for
-	 * "adminUser" and "standardUser".
-	 * <p>
-	 * If "adminUser" and "standardUser" are different, "on-behalf-of" option will be used.
+	 * Create new authentication credentials based on the user login and password.
 	 * 
-	 * @param adminUser - administrator login ("on-behalf-of" is active) or standard user login ("on-behalf-of" is inactive)
-	 * @param adminPassword - administrator password ("on-behalf-of" is active) or standard user password ("on-behalf-of" is inactive)
-	 * @param standardUser - standard user login
+	 * @param userLogin login name of the user, usually is an E-mail address
+	 * @param userPassword password for the user login
 	 * 
-	 * @return {@link AuthCredentials}
+	 * @return {@link AuthCredentials} object
 	 */
-	/*public static AuthCredentials createAuthCredentials(String adminUser, char[] adminPassword, String standardUser) {
+	public static AuthCredentials createAuthCredentials(String userLogin, char[] userPassword) {
+
+		requireNonNull(userLogin);
+		requireNonNull(userPassword);
+		return new AuthCredentials(userLogin, String.valueOf(userPassword)); // without "on-behalf-of" option
+	}
+	
+	
+	/**
+	 * Create new authentication credentials with activated "on-behalf-of" option, what allows to make an export
+	 * for some user (onBehalfOfUser) based only on its login name. For that case credentials of some privileged user
+	 * are needed (login name, password), who could play e.g. an administrator role or just could be only allowed 
+	 * to make an export into the repository and whose credentials are known. The privileged user in this case 
+	 * will make an export on behalf of other user.
+	 * <p>
+	 * This type of authentication credentials could be used, if only administrator credentials are available 
+	 * (adminUser, adminPassword) and from credentials of the current export's owner only login name is known 
+	 * (onBehalfOfUser) and the password must not be used.      
+	 * <p>
+	 * <b>IMPORTNANT:</b> if "adminUser" and "onBehalfOfUser" are <b>identical</b>, authentication credentials 
+	 * will be created <b>without the "on-behalf-of" option</b>.
+	 * 
+	 * @param adminUser login name of the privileged user, usually is an E-mail address
+	 * @param adminPassword password of the privileged user
+	 * @param onBehalfOfUser login name of the current owner of the export, usually is an E-mail address   
+	 * 
+	 * @return {@link AuthCredentials} object
+	 */
+	public static AuthCredentials createAuthCredentials(String adminUser, char[] adminPassword, String onBehalfOfUser) {
 
 		requireNonNull(adminUser);
 		requireNonNull(adminPassword);
-		requireNonNull(standardUser);
+		requireNonNull(onBehalfOfUser);
 		
-		if (adminUser.equals(standardUser)) {
-			return new AuthCredentials(standardUser, String.valueOf(adminPassword)); // without "on-behalf-of"
+		if (adminUser.equals(onBehalfOfUser)) {
+			return createAuthCredentials(onBehalfOfUser, adminPassword); // without "on-behalf-of" 
 		} else {
-			return new AuthCredentials(adminUser, String.valueOf(adminPassword), standardUser); // with "on-behalf-of"
+			return new AuthCredentials(adminUser, String.valueOf(adminPassword), onBehalfOfUser); // with "on-behalf-of"
 		}
-	}*/
+	}
 	
 	
 	/**
 	 * Create new authentication credentials based on the API token. Could be used for the Dataverse repositories.
 	 * 
-	 * @param apiToken - API token. Password in that case is not needed.
+	 * @param apiToken - API token, which could be usually found in the export repository GUI in the account settings. 
+	 * 		Password in this case is not needed.
 	 * 
-	 * @return {@link AuthCredentials}
+	 * @return {@link AuthCredentials} object
 	 */
-	/*public static AuthCredentials createAuthCredentials(char[] apiToken) {
+	public static AuthCredentials createAuthCredentials(char[] apiToken) {
 
 		requireNonNull(apiToken);
 		return new AuthCredentials(String.valueOf(apiToken), ""); // use an empty string instead of password
-	}*/
+	}
 
 
 	private final AuthCredentials authCredentials;
