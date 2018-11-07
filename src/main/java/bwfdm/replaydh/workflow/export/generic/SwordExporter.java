@@ -367,7 +367,21 @@ public abstract class SwordExporter {
 	 * @throws SWORDClientException 
 	 * @throws FileNotFoundException 
 	 */
-	public void replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) throws FileNotFoundException, SWORDClientException, SWORDError, ProtocolViolationException {
-		SwordResponse response = exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+	public void replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) {
+		try {
+			SwordResponse response = exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SWORDClientException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SWORDError e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ProtocolViolationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

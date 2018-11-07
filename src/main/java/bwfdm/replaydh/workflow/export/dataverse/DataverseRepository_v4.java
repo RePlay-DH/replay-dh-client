@@ -273,11 +273,12 @@ public class DataverseRepository_v4 extends SwordExporter {
 	 * @param metadataMap holds the metadata itself
 	 * @return
 	 */
-	public void createEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap) {
+	public String createEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap) {
 		requireNonNull(metadataMap);
 		requireNonNull(collectionURL);
+		DepositReceipt receipt = null;
 		try {
-			DepositReceipt receipt = (DepositReceipt) exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+			receipt = (DepositReceipt) exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -291,52 +292,24 @@ public class DataverseRepository_v4 extends SwordExporter {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return receipt.getEntry().getEditMediaLinkResolvedHref().toString();
 	}
 
 	/**
 	 * @param collectionURL holds the collection URL where items will be exported to
 	 * @param packedFiles holds a zip file which can contain one or multiple files
+	 * @param unpackZip decides whether to unpack the zipfile or places the packed zip file as uploaded data
 	 * @param metadataMap holds the metadata which is necessary for the ingest
 	 * @return
 	 * @throws SWORDClientException 
 	 * @throws IOException 
 	 */
-	public void createEntryWithMetadataAndFile(String collectionURL, File zipFile, Map<String, List<String>> metadataMap){
+	public String createEntryWithMetadataAndFile(String collectionURL, File zipFile, boolean unpackZip, Map<String, List<String>> metadataMap){
 		requireNonNull(metadataMap);
 		requireNonNull(collectionURL);
-		Entry entry = null;
-		DepositReceipt receipt;
-		String metadataSetUrl = null;
-		int beginDOI = 0;
-		int end = 0;
-		try {
-			receipt = (DepositReceipt) exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
-			metadataSetUrl=receipt.getEntry().getEditMediaLinkResolvedHref().toString();
-			beginDOI=metadataSetUrl.indexOf("doi:");
-			end=metadataSetUrl.length();
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (SWORDClientException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (SWORDError e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (ProtocolViolationException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		try {
-			entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),metadataSetUrl.substring(beginDOI, end));
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SWORDClientException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		this.exportFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
+		String metadataSetUrl = createEntryWithMetadata(collectionURL, metadataMap);
+		this.exportFile(metadataSetUrl, zipFile);
+		return metadataSetUrl;
 	}
 	
 	/**
@@ -371,24 +344,6 @@ public class DataverseRepository_v4 extends SwordExporter {
 		}
 	}
 	
-	public void replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) {
-		try {
-			SwordResponse response = exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SWORDClientException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SWORDError e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ProtocolViolationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
 	public void replaceMetadataAndAddFile(String collectionURL, String doiUrl, File zipFile, Map<String, List<String>> metadataMap) {
 		replaceMetadataEntry(doiUrl, metadataMap);
 		Entry entry = null;
