@@ -19,9 +19,11 @@ public interface ExportRepository {
 		
 	
 	/**
-	 * Check if current authentication credentials (e.g. API token, user login and password) are registered in the export repository.
+	 * Check if current authentication credentials (e.g. API token, user login and password) are registered 
+	 * in the export repository.
 	 * <p>
-	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, e.g. via class constructor.
+	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, 
+	 * e.g. via class constructor.
 	 * 
 	 * @return {@code true} if credentials are registered and {@code false} otherwise 
 	 */
@@ -29,9 +31,11 @@ public interface ExportRepository {
 	
 	
 	/**
-	 * Check if current authentication credentials (e.g. API token, user login and password) are assigned to export in the repository.
+	 * Check if current authentication credentials (e.g. API token, user login and password) 
+	 * are assigned to export in the repository.
 	 * <p>
-	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, e.g. via class constructor.
+	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, 
+	 * e.g. via class constructor.
 	 *
 	 * @return {@code true} if count of user available collections is great than zero, 
 	 * 		   otherwise {@code false} 
@@ -43,57 +47,67 @@ public interface ExportRepository {
 	 * Get collections, which are available for the current authentication credentials.
 	 * Could be, that different credentials can have an access to different collections.
 	 * <p>
-	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, e.g. via class constructor.
+	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, 
+	 * e.g. via class constructor.
 	 *  
-	 * @return Map of Strings, where key="Collection full URL", value="Collection title", or empty Map if there are not available collections.
+	 * @return {@link Map} of Strings, where key="Collection full URL", value="Collection title". 
+	 * 		The map can be also empty if there ara not available collections. 
+	 * 		In case of error should be returned {@code null} value.  
 	 */
 	public Map<String, String> getAvailableCollections();
 	
 	
 	/**
-	 * Create a new item with metadata only (without any file) in some collection, which is available for the current authentication credentials.
-	 * Metadata are described as a {@link java.util.Map}. 
+	 * Create a new item with metadata only (without any file) in some collection, which is available 
+	 * for the current authentication credentials. Metadata are described as a {@link java.util.Map}. 
 	 * <p>
-	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, e.g. via class constructor.
+	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, 
+	 * e.g. via class constructor.
 	 *  
-	 * @param collectionURL
-	 * @param metadataMap
-	 * @return {@code true} in case of success and {@code false} otherwise  
+	 * @param collectionURL the full URL of the collection, where the export (ingest) will be done
+	 * @param metadataMap metadata as {@link Map}, where key = metadata field (e.g. creator, title, identifier, ... ), 
+	 * 		value = {@link List} with the metadata field values (e.g. {"Author-1", "Author-2", ... }).
 	 * 
-	 * TODO: return String with the new item URL in case of success or "" otherwise
+	 * @return {@link String} with the URL of the new created entry or {@code null} in case of error.  
 	 */
-	public boolean createNewEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap);
+	public String createNewEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap);
 	
 	
 	/**
-	 * Create a new item with metadata only (without any file) in some collection, which is available for the current authentication credentials.
-	 * Metadata are described in the xml-file.
+	 * Create a new item with metadata only (without any file) in some collection, which is available 
+	 * for the current authentication credentials. Metadata are described as a xml-file.
 	 * <p>
-	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, e.g. via class constructor.
+	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, 
+	 * e.g. via class constructor.
 	 * 
 	 * @param collectionURL
 	 * @param metadataFileXml
-	 * @return {@code true} in case of success and {@code false} otherwise
 	 * 
-	 * TODO: return String with the new item URL in case of success or "" otherwise
+	 * @return {@link String} with the URL of the new created entry or {@code null} in case of error.
 	 */
-	public boolean createNewEntryWithMetadata(String collectionURL, File metadataFileXml) throws IOException;
+	//TODO: implement in future releases 
+	//public String createNewEntryWithMetadata(String collectionURL, File metadataFileXml) throws IOException;
 	
 	
 	/**
-	 * Create a new item with a file and metadata in some collection, which is available for the current authentication credentials.
-	 * Metadata are described as a {@link java.util.Map}. 
+	 * Create a new item with a file and metadata in some collection, which is available 
+	 * for the current authentication credentials. Metadata are described as a {@link java.util.Map}. 
 	 * <p>
-	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, e.g. via class constructor.
+	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, 
+	 * e.g. via class constructor.
 	 * 
-	 * @param collectionURL
-	 * @param file
+	 * @param collectionURL the full URL of the collection, where the export (ingest) will be done 
+	 * @param file a file as a package with one or more files inside (e.g. zip-file) or a binary file 
+	 * 			which will be exported
+	 * @param unpackZip a flag which decides, if zip-file will be unpacked in the repository (unpackZip = {@code true},
+	 * 			a new item will include in this case all files of the zip-archive) or zip-file will be exported 
+	 * 			as a binary file (unpackZip = {@code false}, a new item will include only 1 file - the zip-archive 
+	 * 			as a binary file). 
 	 * @param metadataMap
-	 * @return {@code true} in case of success and {@code false} otherwise
 	 * 
-	 * TODO: return String with the new item URL in case of success or "" otherwise
+	 * @return {@link String} with the URL of the new created entry or {@code null} in case of error.
 	 */
-	public boolean createNewEntryWithFileAndMetadata(String collectionURL, File file, Map<String, List<String>> metadataMap) throws IOException;
+	public String createNewEntryWithFileAndMetadata(String collectionURL, File file, boolean unpackZip, Map<String, List<String>> metadataMap) throws IOException;
 	
 	
 	/**
