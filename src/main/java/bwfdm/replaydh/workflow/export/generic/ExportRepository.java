@@ -1,4 +1,4 @@
-package bwfdm.replaydh.workflow.export.dspace.refactor;
+package bwfdm.replaydh.workflow.export.generic;
 
 import java.io.File;
 import java.io.IOException;
