@@ -18,76 +18,46 @@
  */
 package bwfdm.replaydh.workflow.export.dspace.refactor;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.swordapp.client.AuthCredentials;
-
-import bwfdm.replaydh.workflow.export.generic.SwordExporter;
+import bwfdm.replaydh.workflow.export.generic.ExportRepository;
 
 /**
- * The class consists implementation of some general purpose DSpace-specific methods.
- * It should be used as a parent for further child-classes as e.g. DSpace_v6, Dspace_v5.
+ * DSpace-specific common methods.
+ * Implementation of the interface should be done in further classes such as e.g. DSpace_v6, DSpace_v5.
  * 
  * @author Volodymyr Kushnarenko
- *
  */
-public abstract class DSpaceRepository extends SwordExporter implements ExportRepository{
-
-	protected DSpaceRepository(AuthCredentials authCredentials) {
-		super(authCredentials);
-	}
-
-
-	private static final Logger log = LoggerFactory.getLogger(DSpaceRepository.class);
-		
-	
-	/*
-	 * -------------------------------
-	 * General DSpace specific methods
-	 * -------------------------------
-	 */
-	
+public interface DSpaceRepository extends ExportRepository {
 	
 	/**
-	 * Get a list of communities for the collection Specific only for DSpace-6.
+	 * Get a list of communities for the provided collection.
 	 *  
-	 * @param collectionURL - URL of the collection as {@link String}
+	 * @param collectionURL - a {@link String} with the URL of the collection. 
+	 * 			<b>IMPORTANT:</b> implementation of the method should take into consideration 
+	 * 			if URL is for SWORD (e.g. substring "/swordv2/collection/" inside) 
+	 * 			or for REST API (e.g. "/rest/collections/" substring inside).   
 	 * 
 	 * @return a {@code List<String>} of communities (0 or more communities are
-	 *         possible) or {@code null} if the collection was not found
+	 *         	possible) or {@code null} in case of error.
 	 */
-	public abstract List<String> getCommunitiesForCollection(String collectionURL);
+	public List<String> getCommunitiesForCollection(String collectionURL);
 	
 	
 	/**
 	 * Get collections, which are available for the current authentication credentials, and show their full name
-	 * (e.g. for DSpace-repository it means "community/subcommunity/collection", where '/' is the full name separator)
+	 * (e.g. for DSpace-repository it means "community/subcommunity/collection", where "/" is the fullNameSeparator)
 	 * <p>
 	 * Could be, that the current credentials have an access only for some specific collections.
 	 * <p>
-	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, e.g. via class constructor.
+	 * <b>IMPORTANT:</b> credentials are used implicitly. Definition of the credentials must be done in other place, e.g. via class constructor.
 	 *  
-	 * @param nameSeparator
-	 * @return Map of Strings, where key="Collection full URL", value="Collection full name", or empty Map if there are not available collections.
+	 * @param fullNameSeparator a {@link String} separator between collections and communities (e.g. "/"). 
+	 * 			It could be also used as a separator for further parsing of the the collection's full name. 
+	 * @return Map of Strings, where key = "collection full URL", value = "collection full name" 
+	 * 			(it could be also empty if there are not available collections) or {@code null} in case of error.
 	 */
-	public abstract Map<String, String> getAvailableCollectionsWithFullName(String fullNameSeparator);
+	public Map<String, String> getAvailableCollectionsWithFullName(String fullNameSeparator);
 
-	
-	/**
-	 * Create a new item with a file only (without metadata) in some collection, which is available for the current authentication credentials.
-	 * <p>
-	 * IMPORTANT: credentials are used implicitly. Definition of the credentials must be done in other place, e.g. via class constructor.
-	 * 
-	 * @param collectionURL
-	 * @param file
-	 * @return {@code true} in case of success and {@code false} otherwise 
-	 */
-	// TODO: return String with the new item URL in case of success or "" otherwise
-	public abstract boolean createNewEntryWithFile(String collectionURL, File file) throws IOException;
-			
 }
