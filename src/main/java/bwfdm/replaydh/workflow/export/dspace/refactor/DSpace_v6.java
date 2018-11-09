@@ -18,6 +18,8 @@
  */
 package bwfdm.replaydh.workflow.export.dspace.refactor;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,17 +68,23 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	protected String hierarchyURL;
 	protected String restTestURL;
 
-	CloseableHttpClient client;
+	CloseableHttpClient httpClient;
 
 	public DSpace_v6(String serviceDocumentURL, String restURL, String adminUser, String standardUser, char[] adminPassword) {
 
 		super(SwordExporter.createAuthCredentials(adminUser, adminPassword, standardUser));
 		
+		requireNonNull(serviceDocumentURL);
+		requireNonNull(restURL);
+		requireNonNull(adminUser);
+		requireNonNull(standardUser);
+		requireNonNull(adminPassword);
+		
 		this.setServiceDocumentURL(serviceDocumentURL);
 		this.setAllRestURLs(restURL);
 
 		// HttpClient which ignores the ssl certificate
-		this.client = WebUtils.createHttpClientWithSSLSupport();
+		this.httpClient = WebUtils.createHttpClientWithSSLSupport();
 
 		// TODO: original version, without ignoring of ssl certificate
 		// this.client = HttpClientBuilder.create().build();	
@@ -96,6 +104,9 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 
 	
 	public void setAllRestURLs(String restURL) {
+		
+		requireNonNull(restURL);
+		
 		this.restURL = restURL;
 		this.communitiesURL = this.restURL + "/communities";
 		this.collectionsURL = this.restURL + "/collections";
@@ -111,7 +122,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 */
 	public boolean isRestAccessible() {
 
-		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.restTestURL, RequestType.GET,
+		final CloseableHttpResponse response = WebUtils.getResponse(this.httpClient, this.restTestURL, RequestType.GET,
 				APPLICATION_JSON, APPLICATION_JSON);
 		if ((response != null) && (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK)) {
 			WebUtils.closeResponse(response);
@@ -125,12 +136,8 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	}
 
 	
-	
-	
-	
 	/**
-	 * Private method with logic. Get a list of communities for the current collection.
-	 * Specific only for DSpace-6.
+	 * Get a list of communities for the current collection. Specific only for DSpace-6.
 	 * <p>
 	 * REST and SWORD requests are used. ServiceDocument must be received already.
 	 * 
@@ -145,6 +152,11 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	protected List<String> getCommunitiesForCollection(String collectionURL, ServiceDocument serviceDocument,
 			HierarchyObject hierarchy, CollectionObject[] existedCollectionObjects) {
 
+		requireNonNull(collectionURL);
+		requireNonNull(serviceDocument);
+		requireNonNull(hierarchy);
+		requireNonNull(existedCollectionObjects);
+		
 		String collectionHandle = getCollectionHandle(collectionURL, serviceDocument, existedCollectionObjects);
 		if (collectionHandle == null) {
 			return null;
@@ -171,7 +183,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 */
 	protected HierarchyObject getHierarchyObject() {
 
-		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.hierarchyURL, RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
+		final CloseableHttpResponse response = WebUtils.getResponse(this.httpClient, this.hierarchyURL, RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
 		final HierarchyObject hierarchy = JsonUtils.jsonStringToObject(WebUtils.getResponseEntityAsString(response), HierarchyObject.class);
 		WebUtils.closeResponse(response);
 		return hierarchy;
@@ -189,17 +201,18 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 */
 	public String getCollectionHandle(String collectionURL) {
 
+		requireNonNull(collectionURL);
+		
 		ServiceDocument serviceDocument = super.getServiceDocument(this.serviceDocumentURL);
 
 		// Get all collections via REST to check, if swordCollectionPath contains a REST-handle
 		CollectionObject[] existedCollectionObjects = getAllCollectionObjects();
-
 		return getCollectionHandle(collectionURL, serviceDocument, existedCollectionObjects);
 	}
 
 	
 	/**
-	 * Private method with logic. Get a collection handle based on the collection URL.
+	 * Get a collection handle based on the collection URL. Private method with logic.
 	 * <p>
 	 * REST and SWORDv2 requests are used. ServiceDocument must be already retrieved.
 	 * 
@@ -212,6 +225,10 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	protected String getCollectionHandle(String collectionURL, ServiceDocument serviceDocument,
 			CollectionObject[] existedCollections) {
 
+		requireNonNull(collectionURL);
+		requireNonNull(serviceDocument);
+		requireNonNull(existedCollections);
+		
 		String swordCollectionPath = ""; // collectionURL without a hostname and port
 
 		for (SWORDWorkspace workspace : serviceDocument.getWorkspaces()) {
@@ -225,7 +242,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		// Compare REST-handle and swordCollectionPath
 		for (CollectionObject collection : existedCollections) {
 			if (swordCollectionPath.contains(collection.handle)) {
-				return collection.handle;
+				return collection.handle; //return collection handle
 			}
 		}
 		return null; // collectionURL was not found
@@ -239,7 +256,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 */
 	protected CollectionObject[] getAllCollectionObjects() {
 
-		final CloseableHttpResponse response = WebUtils.getResponse(this.client, this.collectionsURL, RequestType.GET,
+		final CloseableHttpResponse response = WebUtils.getResponse(this.httpClient, this.collectionsURL, RequestType.GET,
 				APPLICATION_JSON, APPLICATION_JSON);
 		final CollectionObject[] collections = JsonUtils
 				.jsonStringToObject(WebUtils.getResponseEntityAsString(response), CollectionObject[].class);
@@ -247,7 +264,200 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		return collections;
 	}
 	
+	
+	/**
+	 * Private method which can use different request types. See
+	 * {@link SwordRequestType}.
+	 * 
+	 * @param url - collection URL (with "collection" substring inside) or item URL (with "edit" substring inside)
+	 * 				where to to export (or edit) metadata 
+	 * @param metadataMap - metadata as a Map
+	 * @param swordRequestType - object of {@link SwordRequestType}
+	 *
+	 * @return {@link SwordResponse} object
+	 * 
+	 * @throws {@link IOException}
+	 * @throws {@link SWORDClientException}
+	 * @throws {@link SWORDError}
+	 * @throws {@link ProtocolViolationException}
+	 */
+	protected SwordResponse exportMetadata(String url, Map<String, List<String>> metadataMap,
+			SwordRequestType swordRequestType)throws IOException, SWORDClientException, SWORDError, ProtocolViolationException {
 
+		return super.exportElement(url, swordRequestType, SwordExporter.MIME_FORMAT_ATOM_XML,
+				UriRegistry.PACKAGE_BINARY, null, metadataMap);
+	}
+
+	
+	/**
+	 * Private method which can use different request types. See
+	 * {@link SwordRequestType}.
+	 * 
+	 * @param url - collection URL (with "collection" substring inside) or item URL (with "edit" substring inside)
+	 * 				where to to export (or edit) metadata
+	 * @param metadataFileXML 
+	 * 			  - file in XML-format (ATOM format of the metadata description) and
+	 *            	with an XML-extension  
+	 * @param swordRequestType - object of {@link SwordRequestType}
+	 * 
+	 * @return {@code true} if case of success and {@code false} otherwise
+	 */
+	protected SwordResponse exportMetadata(String url, File metadataFileXML, SwordRequestType swordRequestType) 
+				throws IOException, SWORDClientException, SWORDError, ProtocolViolationException{
+
+		// Check if file has an XML-extension
+		String ext = super.getFileExtension(metadataFileXML.getName()).toLowerCase();
+		if (!ext.equals("xml")) {
+			log.error("Wrong metadata file extension: {} : Supported extension is: {}",	ext, "xml");
+			throw new ProtocolViolationException("Wrong metadta file extension: " + ext + " : Supported extension is: xml");
+		}
+
+		String mimeFormat = SwordExporter.MIME_FORMAT_ATOM_XML;
+		String packageFormat = super.getPackageFormat(metadataFileXML.getName());
+		return super.exportElement(url, swordRequestType, mimeFormat, packageFormat, metadataFileXML, null);
+	}
+	
+	
+	/**
+	 * Export (create) a new entry with a file in some collection, which is available.
+	 * <p>
+	 * IMPORTANT: authentication credentials are used implicitly. 
+	 * Definition of the credentials is realized via the class constructor.
+	 *
+	 * @param collectionURL the full URL of the collection, where the export (ingest) will be done 
+	 * @param file an archive file with one or more files inside (e.g. ZIP-file as a standard) or a binary file 
+	 * 			which will be exported.
+	 * @param unpackFileIfArchive should be used for archive files (e.g. ZIP). A flag which decides, 
+	 * 			if the exported archive will be unpacked in the repository ({@code true} value,
+	 * 			new entry will include in this case all files of the archive file) or archive will be exported 
+	 * 			as a binary file ({@code false} value, new entry will include only 1 file - the exported archive
+	 * 			as a binary file). <b>NOTE:</b> if unpacking is not supported by the repository, 
+	 * 			please use {@code false} value.
+	 *
+	 * @return {@link String} with the URL of the new created entry or {@code null} in case of error.	
+	 *
+	 * @throws IOException
+	 */
+	public String exportNewEntryWithFile(String collectionUrl, File file, boolean unpackFileIfArchive) throws IOException {
+
+		requireNonNull(collectionUrl);
+		requireNonNull(file);
+		requireNonNull(unpackFileIfArchive);
+		
+		String mimeFormat = SwordExporter.MIME_FORMAT_ZIP; // for every file type, to publish even "XML" files as a normal file
+		String packageFormat = SwordExporter.getPackageFormat(file.getName(), unpackFileIfArchive); // unpack zip-archive or export as a binary 
+		
+		try {
+			SwordResponse response = super.exportElement(collectionUrl, SwordRequestType.DEPOSIT, mimeFormat, packageFormat, file, null);
+			return response.getLocation();
+		} catch (SWORDClientException | SWORDError | ProtocolViolationException e) {
+			log.error("Exception by exporting new entry with file only: {}: {}", e.getClass().getSimpleName(), e.getMessage());
+			return null;
+		}
+	}
+
+	
+	/**
+	 * TODO: move method declaration and javadoc to the SwordExporter abstract class.
+	 * 
+	 * Create new entry with metadata only (without any file) in some collection.
+	 * Metadata are described as a XML-file.
+	 * <p>
+	 * IMPORTANT: authentication credentials are used implicitly. 
+	 * Definition of the credentials is realized via the class constructor.
+	 *
+	 * @param collectionURL holds the collection URL where the metadata will be exported to.
+	 * @param metadataFileXml XML-file with metadata in ATOM format.
+	 * 
+	 * @return {@link String} with the entry URL which includes "/swordv2/edit/" substring inside. 
+	 * 		This URL could be used without changes for further update of the metadata 
+	 * 		(see {@link #replaceMetadataEntry(String, Map) replaceMetadataEntry(entryURL, metadataMap)}) 
+	 * 		<p>
+	 * 		<b>IMPORTANT for Dataverse repository:</b> for further update/extension of the media part 
+	 * 		(e.g. uploaded files inside the dataset) please replace "/swordv2/edit/" substring inside the entry URL to 
+	 * 		"/swordv2/edit-media/". 
+	 * 		For more details please visit <a href="http://guides.dataverse.org/en/latest/api/sword.html">http://guides.dataverse.org/en/latest/api/sword.html</a>
+	 * 		<p>
+	 * 		<b>IMPORTANT for DSpace repository:</b> further update/extension of the media part (e.g. uploaded files)
+	 * 		via SWORD is not supported, only update of the metadata is allowed.
+	 * 
+	 * @throws IOException
+	 * @throws SWORDClientException
+	 */
+	public String createEntryWithMetadata(String collectionURL, File metadataFileXml) throws IOException, SWORDClientException{
+		
+		requireNonNull(collectionURL);
+		requireNonNull(metadataFileXml);
+		
+		try {
+			SwordResponse response = this.exportMetadata(collectionURL, metadataFileXml, SwordRequestType.DEPOSIT);
+			return response.getLocation();
+		} catch (ProtocolViolationException | SWORDError e) {
+			throw new SWORDClientException("Exception by creation of item with only metadta as XML-file: " 
+					+ e.getClass().getSimpleName() + ": " + e.getMessage());
+		}
+	}
+	
+	
+	/**
+	 * TODO: move method declaration and javadoc to the SwordExporter abstract class.
+	 * 
+	 * Create a new entry with some file and metadata in the provided collection.
+	 * Metadata are described as a XML-file.
+	 * <p>
+	 * IMPORTANT: authentication credentials are used implicitly. 
+	 * Definition of the credentials is realized via the class constructor.
+	 * <p>
+	 * For DSpace: export will be realized in 2 steps: 1 - export a file (create a new entry), 
+	 * 2 - add metadata via PUT request.
+	 * 
+	 * @param collectionURL holds the collection URL where items will be exported to, usually has "collection" substring inside
+	 * @param file holds a file which can contain one or multiple files
+	 * @param unpackZip decides whether to unpack the zipfile or places the packed zip file as uploaded data
+	 * @param metadataFileXml holds the metadata which is necessary for the ingest
+	 *
+	 * @throws IOException
+	 * @throws {@link SWORDClientException}
+	 */
+	public String createEntryWithMetadataAndFile(String collectionURL, File file, boolean unpackZip, File metadataFileXml)
+			throws IOException, SWORDClientException {
+		
+		requireNonNull(collectionURL);
+		requireNonNull(file);
+		requireNonNull(unpackZip);
+		requireNonNull(metadataFileXml);
+		
+		String mimeFormat = SwordExporter.MIME_FORMAT_ZIP; // as a common file (even for XML-file)
+		String packageFormat = SwordExporter.getPackageFormat(file.getName(), unpackZip);
+
+		try {
+			// Step 1: export file (as file or archive), without metadata
+			SwordResponse response = super.exportElement(collectionURL, SwordRequestType.DEPOSIT, mimeFormat, 
+					packageFormat, file, null); // "POST" request (DEPOSIT)
+			String editLink = response.getLocation();
+			if (editLink == null) {
+				throw new SWORDClientException("Error by exporting file and metadta as xml-file: "
+						+ "after the file export the item URL for editing (as a response) is null. "
+						+ "Not possible to add metadata as the next step.");
+			}
+			
+			// Step 2: add metadata (as a XML-file)
+			response = this.exportMetadata(editLink, metadataFileXml, SwordRequestType.REPLACE);
+																						// "PUT" request (REPLACE) 
+																						// to overwrite some previous
+																						// automatically generated 
+																						// metadata
+			return response.getLocation();
+	
+			// NOTE: if replace order (step 1: export metadata, step 2: export file) --> Bad request, ERROR 400
+			
+		} catch (ProtocolViolationException | SWORDError e) {
+			throw new SWORDClientException("Exception by exporting file and metadta as xml-file: " 
+						+ e.getClass().getSimpleName() + ": " + e.getMessage());
+		}
+	}
+		
+	
 	/*
 	 * ---------------------------------
 	 * 
@@ -262,9 +472,12 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 * 
 	 * Implementation via parsing of response String using regular expressions.
 	 */
+	//TODO: return "null" in case of error
 	@Override
 	public Map<String, String> getCollectionEntries(String collectionUrl) {
-			
+		
+		requireNonNull(collectionUrl);
+		
 		Map<String, String> entriesMap = new HashMap<String, String>();
 		
 		try {
@@ -295,84 +508,51 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 				}
 			} catch (IOException e) {
 				log.error("Exception by converting Bitstream to String: {}: {}", e.getClass().getSimpleName(), e.getMessage());
-			}
-			
+			}	
 		} catch (SWORDClientException | ProtocolViolationException | SWORDError e) {
 			log.error("Exception by getting content (request) via SWORD: {}: {}", e.getClass().getSimpleName(), e.getMessage());
 		}
-		
 		return entriesMap;
 	}
 	
 		
 	/**
 	 * {@inheritDoc}
-	 * <p>
-	 * In DSpace it means an export to some collection. SWORD-v2 protocol is used.
-	 * 
-	 * @param url - URL of the collection where to export
-	 * @param file - full path to the file for export 
-	 */
-	public void exportFile(String url, File file) throws IOException, SWORDClientException {
-
-		String mimeFormat = SwordExporter.MIME_FORMAT_ZIP; // for every file type, to publish even "XML" files as a normal file
-		String packageFormat = SwordExporter.getPackageFormat(file.getName()); // zip-archive or separate file
-		try {
-			super.exportElement(url, SwordRequestType.DEPOSIT, mimeFormat, packageFormat, file, null);
-		} catch (SWORDError | ProtocolViolationException e) {
-			throw new SWORDClientException("Exception by export file: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-		}
-	}
-
-	
-	/**
-	 * {@inheritDoc}
 	 */
 	@Override
 	public String createEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap) 
 			throws SWORDClientException {
+		
+		requireNonNull(collectionURL);
+		requireNonNull(metadataMap);
+		
 		try {
-			exportMetadataConsideringRequestType(collectionURL, metadataMap, SwordRequestType.DEPOSIT);
+			exportMetadata(collectionURL, metadataMap, SwordRequestType.DEPOSIT);
 		} catch (IOException | ProtocolViolationException | SWORDError e) {
 			throw new SWORDClientException("Exception by export metadta as Map: " + e.getClass().getSimpleName() + ": " + e.getMessage());
 		}
 		return new String();
 	}
 	
-	
+		
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Publish metadata as a XML-file in ATOM-format.
-	 * 
-	 * @param collectionURL - URL of the collection where to publish
-	 * @param metadataFileXML - file in XML-format (ATOM format of the metadata description) and
-	 *            			    with an XML-extension
-	 * @throws IOException
-	 * @throws {@link SWORDClientException}
-	 */
-	public void exportMetadata(String collectionURL, File metadataFileXML) throws IOException, SWORDClientException{
-		try {
-			exportMetadataConsideringRequestType(collectionURL, metadataFileXML, SwordRequestType.DEPOSIT);
-		} catch (ProtocolViolationException | SWORDError e) {
-			throw new SWORDClientException("Exception by export file and metadta as XML-file: " 
-					+ e.getClass().getSimpleName() + ": " + e.getMessage());
-		}
-	}
-	
-	
-	/**
-	 * {@inheritDoc}
-	 * Export will be realized via 2 steps: 1 - export a file (create a new item), 2 - add metadata via PUT request.
+	 * DSpace: export will be realized in 2 steps: 1 - export a file (create a new entry), 
+	 * 2 - add metadata via PUT request.
 	 */
 	@Override
 	public String createEntryWithMetadataAndFile(String collectionURL, File file, boolean unpackZip, Map<String, List<String>> metadataMap)
 			throws IOException, SWORDClientException {
 		
+		requireNonNull(collectionURL);
+		requireNonNull(file);
+		requireNonNull(unpackZip);
+		requireNonNull(metadataMap);
+		
 		String mimeFormat = SwordExporter.MIME_FORMAT_ZIP; // as a common file (even for XML-file)
 		String packageFormat = SwordExporter.getPackageFormat(file.getName(), unpackZip);
 		
-
 		try {
 			// Step 1: export file (as file or archive), without metadata
 			SwordResponse response = super.exportElement(collectionURL, SwordRequestType.DEPOSIT, mimeFormat, 
@@ -385,7 +565,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 			}
 			
 			// Step 2: add metadata (as a Map structure)
-			response = exportMetadataConsideringRequestType(editLink, metadataMap, SwordRequestType.REPLACE); 	
+			response = exportMetadata(editLink, metadataMap, SwordRequestType.REPLACE); 	
 																						// "PUT" request (REPLACE) 
 																						// to overwrite some previous
 																						// automatically generated 
@@ -400,130 +580,26 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		}
 		
 	}
-	
-	
-	/**
-	 * Export a file together with the metadata to some collection.
-	 * Metadata are described as a xml-file.
-	 * <p>
-	 * IMPORTANT: authentication credentials are used implicitly. Definition of the credentials is realized via the class constructor.
-	 * <p>
-	 * Export will be realized via 2 steps: 1 - export a file (create a new item), 2 - add metadata via PUT request.
-	 * 
-	 * @param collectionURL holds the collection URL where items will be exported to, usually has "collection" substring inside
-	 * @param file holds a file which can contain one or multiple files
-	 * @param metadataFileXML holds the metadata which is necessary for the ingest
-	 *
-	 * @throws @linkIOException
-	 * @throws SWORDClientException
-	 */
-	public String exportMetadataAndFile(String collectionURL, File file, File metadataFileXML)
-			throws IOException, SWORDClientException {
 		
-		String mimeFormat = SwordExporter.MIME_FORMAT_ZIP; // as a common file (even for XML-file)
-		String packageFormat = SwordExporter.getPackageFormat(file.getName());
-
-		try {
-			// Step 1: export file (as file or archive), without metadata
-			SwordResponse response = super.exportElement(collectionURL, SwordRequestType.DEPOSIT, mimeFormat, 
-					packageFormat, file, null); // "POST" request (DEPOSIT)
-			String editLink = response.getLocation();
-			if (editLink == null) {
-				throw new SWORDClientException("Error by export file and metadta as xml-file: "
-						+ "after the file export the item URL for editing (as a response) is null. "
-						+ "Not possible to add metadata as the next step.");
-			}
-			
-			// Step 2: add metadata (as a Map structure)
-			response = exportMetadataConsideringRequestType(editLink, metadataFileXML, SwordRequestType.REPLACE);
-																						// "PUT" request (REPLACE) 
-																						// to overwrite some previous
-																						// automatically generated 
-																						// metadata
-			return response.getLocation();
-	
-			// NOTE: if replace order (step 1: export metadata, step 2: export file) --> Bad request, ERROR 400
-			
-		} catch (ProtocolViolationException | SWORDError e) {
-			throw new SWORDClientException("Exception by export file and metadta as xml-file: " 
-						+ e.getClass().getSimpleName() + ": " + e.getMessage());
-		}
-		
-	}
-	
-	
-	/**
-	 * Private method which can use different request types. See
-	 * {@link SwordRequestType}.
-	 * 
-	 * @param url - collection URL (with "collection" substring inside) or item URL (with "edit" substring inside)
-	 * 				where to to export (or edit) metadata 
-	 * @param metadataMap - metadata as a Map
-	 * @param swordRequestType - object of {@link SwordRequestType}
-	 *
-	 * @return {@link SwordResponse} object
-	 * 
-	 * @throws {@link IOException}
-	 * @throws {@link SWORDClientException}
-	 * @throws {@link SWORDError}
-	 * @throws {@link ProtocolViolationException}
-	 */
-	protected SwordResponse exportMetadataConsideringRequestType(String url, Map<String, List<String>> metadataMap,
-			SwordRequestType swordRequestType)throws IOException, SWORDClientException, SWORDError, ProtocolViolationException {
-
-		return super.exportElement(url, swordRequestType, SwordExporter.MIME_FORMAT_ATOM_XML,
-				UriRegistry.PACKAGE_BINARY, null, metadataMap);
-	}
-
-	
-	/**
-	 * Private method which can use different request types. See
-	 * {@link SwordRequestType}.
-	 * 
-	 * @param url - collection URL (with "collection" substring inside) or item URL (with "edit" substring inside)
-	 * 				where to to export (or edit) metadata
-	 * @param metadataFileXML 
-	 * 			  - file in XML-format (ATOM format of the metadata description) and
-	 *            	with an XML-extension  
-	 * @param swordRequestType - object of {@link SwordRequestType}
-	 * 
-	 * @return {@code true} if case of success and {@code false} otherwise
-	 */
-	protected SwordResponse exportMetadataConsideringRequestType(String url, File metadataFileXML, SwordRequestType swordRequestType) 
-				throws IOException, SWORDClientException, SWORDError, ProtocolViolationException{
-
-		// Check if file has an XML-extension
-		String ext = super.getFileExtension(metadataFileXML.getName()).toLowerCase();
-		if (!ext.equals("xml")) {
-			log.error("Wrong metadata file extension: {} : Supported extension is: {}",	ext, "xml");
-			throw new ProtocolViolationException("Wrong metadta file extension: " + ext + " : Supported extension is: xml");
-		}
-
-		String mimeFormat = SwordExporter.MIME_FORMAT_ATOM_XML;
-		String packageFormat = super.getPackageFormat(metadataFileXML.getName());
-		return super.exportElement(url, swordRequestType, mimeFormat, packageFormat, metadataFileXML, null);
-	}
-	
 	
 	/*
-	 * ---------------------------------------
+	 * -----------------------------------------
 	 * 
-	 * DSpaceRepository methods implementation
+	 * DSpaceRepository interface implementation
 	 * 
-	 * ---------------------------------------
+	 * -----------------------------------------
 	 */
 	
 	
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * For DSpace-v6 the REST and SWORD requests will be used.
+	 * <p>
+	 * DSpace-v6: REST and SWORD requests will be used.
 	 */
 	@Override
 	public List<String> getCommunitiesForCollection(String collectionURL) {
 
 		ServiceDocument serviceDocument = super.getServiceDocument(this.serviceDocumentURL);
-
 		HierarchyObject hierarchy = getHierarchyObject();
 		CollectionObject[] existedCollectionObjects = getAllCollectionObjects();
 
@@ -533,8 +609,8 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	
 	/**
 	 * {@inheritDoc}
-	 * 
-	 * In DSpace-v6 SWORD and REST are used. 
+	 * <p>
+	 * DSpace-v6: REST and SWORD requests will be used. 
 	 */
 	@Override
 	public Map<String, String> getAvailableCollectionsWithFullName(String fullNameSeparator) {
@@ -574,10 +650,10 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 * {@inheritDoc}
 	 * <p>
 	 * For DSpace it is done by access to the Service Document via SWORD-protocol
-	 * and checking an access to the REST-interface.
+	 * and checking an access to the REST-API.
 	 * 
-	 * @return {@code true} if service document and REST are accessible, and
-	 *         {@code false} if not (e.g. by Error 403).
+	 * @return {@code true} if service document and REST-API are accessible, and
+	 *         {@code false} otherwise (e.g. by Error 403).
 	 */
 	@Override
 	public boolean isRepositoryAccessible() {
@@ -589,7 +665,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 * {@inheritDoc}
 	 * <p>
 	 * In DSpace it will be checked via access to the service document
-	 * (SWORD-protocol)
+	 * (SWORD-protocol).
 	 */
 	@Override
 	public boolean hasRegisteredCredentials() {
@@ -623,6 +699,8 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	
 	/**
 	 * {@inheritDoc}
+	 * <p>
+	 * DSpace-v6: SWORD requests will be done.
 	 */
 	@Override
 	public Map<String, String> getAvailableCollections() {
@@ -633,82 +711,35 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	
 	/**
 	 * {@inheritDoc}
+	 * <p>
+	 * DSpace-v6: SWORD requests will be done.
 	 */
-	@Override
-	public boolean createNewEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap) {
-		
-		try {
-			this.exportMetadata(collectionURL, metadataMap);
-		} catch (SWORDClientException e) {
-			log.error("Exception by creation of new entry with metadata as Map.", e);
-			return false;
-		}
-		return true;
-	}
-
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean createNewEntryWithMetadata(String collectionURL, File metadataFileXml) throws IOException {
-		
-		try {
-			this.exportMetadata(collectionURL, metadataFileXml);
-		} catch (SWORDClientException e) {
-			log.error("Exception by creation of new entry with metadata as xml-file.", e);
-			return false;
-		}
-		return true;
-	}
-
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean createNewEntryWithFileAndMetadata(String collectionURL, File file,
-			Map<String, List<String>> metadataMap) throws IOException {
-
-		try {
-			this.exportMetadataAndFile(collectionURL, file, metadataMap);
-		} catch (SWORDClientException e) {
-			log.error("Exception by creation of new entry with file and metadata as Map.", e);
-			return false;
-		}
-		return true;
-	}
-
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean createNewEntryWithFileAndMetadata(String collectionURL, File file, File metadataFileXml)
-			throws IOException {
-
-		try {
-			this.exportMetadataAndFile(collectionURL, file, metadataFileXml);
-		} catch (SWORDClientException e) {
-			log.error("Exception by creation of new entry with file and metadata as xml-file.", e);
-			return false;
-		}
-		return true;
-	}
-
 	@Override
 	public String exportNewEntryWithMetadata(String collectionURL, Map<String, List<String>> metadataMap) {
-		// TODO Auto-generated method stub
-		return null;
+		try {
+			return this.createEntryWithMetadata(collectionURL, metadataMap);
+		} catch (SWORDClientException e) {
+			log.error("Exception by creation of new entry with metadata as Map.", e);
+			return null;
+		}
 	}
 
+	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * DSpace-v6: SWORD requests will be done.
+	 */
 	@Override
 	public String exportNewEntryWithFileAndMetadata(String collectionURL, File file, boolean unpackFileIfArchive,
 			Map<String, List<String>> metadataMap) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		
+		try {
+			return this.createEntryWithMetadataAndFile(collectionURL, file, unpackFileIfArchive, metadataMap);
+		} catch (SWORDClientException e) {
+			log.error("Exception by creation of new entry with file and metadata as Map.", e);
+			return null;
+		}
 	}
-
-
 
 }
