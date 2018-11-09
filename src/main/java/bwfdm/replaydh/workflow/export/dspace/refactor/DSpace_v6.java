@@ -35,6 +35,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.Content;
+import org.swordapp.client.DepositReceipt;
 import org.swordapp.client.ProtocolViolationException;
 import org.swordapp.client.SWORDClientException;
 import org.swordapp.client.SWORDCollection;
@@ -274,18 +275,24 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 * @param metadataMap - metadata as a Map
 	 * @param swordRequestType - object of {@link SwordRequestType}
 	 *
-	 * @return {@link SwordResponse} object
+	 * @return {@link String} with the URL to edit the entry (with "edit" substring inside)
 	 * 
 	 * @throws {@link IOException}
 	 * @throws {@link SWORDClientException}
 	 * @throws {@link SWORDError}
 	 * @throws {@link ProtocolViolationException}
 	 */
-	protected SwordResponse exportMetadata(String url, Map<String, List<String>> metadataMap,
+	protected String exportMetadata(String url, Map<String, List<String>> metadataMap,
 			SwordRequestType swordRequestType)throws IOException, SWORDClientException, SWORDError, ProtocolViolationException {
 
-		return super.exportElement(url, swordRequestType, SwordExporter.MIME_FORMAT_ATOM_XML,
+		SwordResponse response = super.exportElement(url, swordRequestType, SwordExporter.MIME_FORMAT_ATOM_XML, 
 				UriRegistry.PACKAGE_BINARY, null, metadataMap);
+		
+		if(response instanceof DepositReceipt) {
+			return ((DepositReceipt)response).getEditLink().getHref();
+		} else {
+			return response.getLocation(); 
+		}
 	}
 
 	
@@ -301,6 +308,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 * @param swordRequestType - object of {@link SwordRequestType}
 	 * 
 	 * @return {@code true} if case of success and {@code false} otherwise
+	 * TODO: return String with edit link
 	 */
 	protected SwordResponse exportMetadata(String url, File metadataFileXML, SwordRequestType swordRequestType) 
 				throws IOException, SWORDClientException, SWORDError, ProtocolViolationException{
@@ -526,12 +534,11 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		requireNonNull(collectionURL);
 		requireNonNull(metadataMap);
 		
-		try {
-			exportMetadata(collectionURL, metadataMap, SwordRequestType.DEPOSIT);
+		try {			
+			return exportMetadata(collectionURL, metadataMap, SwordRequestType.DEPOSIT);			
 		} catch (IOException | ProtocolViolationException | SWORDError e) {
 			throw new SWORDClientException("Exception by export metadta as Map: " + e.getClass().getSimpleName() + ": " + e.getMessage());
 		}
-		return new String();
 	}
 	
 		
@@ -565,12 +572,12 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 			}
 			
 			// Step 2: add metadata (as a Map structure)
-			response = exportMetadata(editLink, metadataMap, SwordRequestType.REPLACE); 	
+			return exportMetadata(editLink, metadataMap, SwordRequestType.REPLACE); 	
 																						// "PUT" request (REPLACE) 
 																						// to overwrite some previous
 																						// automatically generated 
 																						// metadata 
-			return response.getLocation();
+//TODO			return response.getLocation();
 			
 			// NOTE: if replace order (step 1: export metadata, step 2: export file) --> Bad request, ERROR 400
 			
