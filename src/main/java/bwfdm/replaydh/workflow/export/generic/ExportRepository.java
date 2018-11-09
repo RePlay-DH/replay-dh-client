@@ -83,6 +83,8 @@ public interface ExportRepository {
 	 * @param metadataFileXml metadata as a xml-file in dublin core (DC) format.
 	 * 
 	 * @return {@link String} with the URL of the new created entry or {@code null} in case of error.
+	 * 
+	 * @throws IOException
 	 */
 	//TODO: activate in future releases
 	//TODO: differentiate between dublin core (DC) and METS formats
@@ -109,6 +111,8 @@ public interface ExportRepository {
 	 * 		value = {@link List} with the metadata field values (e.g. {"Author-1", "Author-2", ... }). 
 	 * 
 	 * @return {@link String} with the URL of the new created entry or {@code null} in case of error.
+	 * 
+	 * @throws IOException
 	 */
 	public String exportNewEntryWithFileAndMetadata(String collectionURL, File file, 
 				boolean unpackFileIfArchive, Map<String, List<String>> metadataMap) throws IOException;
@@ -132,7 +136,9 @@ public interface ExportRepository {
 	 * 			please use {@code false} value.
 	 * @param metadataFileXml metadata as a xml-file in dublin core (DC) format.
 	 * 
-	 * @return {@link String} with the URL of the new created entry or {@code null} in case of error. 
+	 * @return {@link String} with the URL of the new created entry or {@code null} in case of error.
+	 * 
+	 * @throws IOException
 	 */
 	//TODO: activate in future releases
 	//TODO: differentiate between dublin core (DC) and METS formats
