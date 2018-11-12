@@ -90,8 +90,8 @@ public abstract class SwordExporter {
 	 * Get package format basing on the file name.
 	 * E.g. {@code UriRegistry.PACKAGE_SIMPLE_ZIP} or {@code UriRegistry.PACKAGE_BINARY}
 	 *
-	 * @param fileName {@link String} with the file name
-	 * @return {@link String}
+	 * @param fileName {@link String} with the file name (not a full path)
+	 * @return {@link String} with the package format
 	 */
 	public static String getPackageFormat(String fileName) {
 		String extension = getFileExtension(fileName);
@@ -100,6 +100,25 @@ public abstract class SwordExporter {
 			return UriRegistry.PACKAGE_SIMPLE_ZIP;
 		}
 		return UriRegistry.PACKAGE_BINARY;
+	}
+	
+	
+	/**
+	 * Get package format basing on the file name and "unpackZip" flag.
+	 * E.g. {@code UriRegistry.PACKAGE_SIMPLE_ZIP} or {@code UriRegistry.PACKAGE_BINARY}
+	 *
+	 * @param fileName {@link String} with the file name (not a full path)
+	 * @param unpackZip a flag, if the package should be unpacked ({@code true}) 
+	 * 			in the repository or not ({@code false}) 
+	 * @return {@link String} with the package format
+	 */
+	public static String getPackageFormat(String fileName, boolean unpackZip) {
+		
+		String packageFormat = getPackageFormat(fileName);
+		if (packageFormat.equals(UriRegistry.PACKAGE_SIMPLE_ZIP) && !unpackZip) {
+			return UriRegistry.PACKAGE_BINARY;
+		}
+		return packageFormat; 
 	}
 	
 	
@@ -277,10 +296,16 @@ public abstract class SwordExporter {
 	 * @param file {@link File} for export
 	 * @param metadataMap {@link Map} of metadata for export
 	 *
-	 * @return <pre>{@link SwordResponse} object or {@code null} in case of error.
+	 * @return {@link SwordResponse} object or {@code null} in case of error.
+	 * 		   <pre>
 	 * 		   If request type is {@code SwordRequestType.DEPOSIT}, please cast the returned object to {@code DepositReceipt},
 	 * 		   you can check it via e.g. {@code instanceof} operator.
 	 *  	   If request type is {@code SwordRequestType.REPLACE}, the casting is not needed.
+	 *  	
+	 *  	   <b>IMPORTANT:</b> by request type {@code SwordRequestType.REPLACE} there is no warranty,
+	 *  	   that all fields of the {@link SwordResponse} object are initialized, so for the current moment
+	 *  	   only status code field is available, all other fields are {@code null} (e.g. "Location" field).
+	 *  	   In case of {@code SwordRequestType.DEPOSIT} request type such problems were not found.
 	 *  	   </pre>
 	 * @throws ProtocolViolationException
 	 * @throws SWORDError
