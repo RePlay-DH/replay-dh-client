@@ -522,17 +522,17 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 			try {
 				String response = IOUtils.readStream(content.getInputStream());
 				
-				Pattern entryPattern = Pattern.compile("<entry>(.+?)</entry>"); //e.g. "<entry>some_entry_with_other_tags_inside</entry>
+				Pattern entryPattern = Pattern.compile("<entry>(.+?)</entry>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<entry>some_entry_with_other_tags_inside</entry>
 				Matcher entryMatcher = entryPattern.matcher(response);
 				
 				// Find all entries
 				while(entryMatcher.find()) {
 					String entryString = entryMatcher.group(1);
 					
-					Pattern idPattern = Pattern.compile("<id>(.+?)</id>"); //e.g. "<id>https://some_link</id>"
+					Pattern idPattern = Pattern.compile("<id>(.+?)</id>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<id>https://some_link</id>"
 					Matcher idMatcher = idPattern.matcher(entryString);
 					
-					Pattern titlePattern = Pattern.compile("<title.+?>(.+?)</title>"); //e.g. "<title type="text">some_title</title>" 
+					Pattern titlePattern = Pattern.compile("<title.+?>(.+?)</title>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<title type="text">some_title</title>" 
 					Matcher titleMatcher = titlePattern.matcher(entryString);
 					
 					// Find id and title
