@@ -519,6 +519,14 @@ public class RDHGui extends AbstractRDHTool {
 		}
 	}
 
+	private Interval windowUptime(Window window) {
+		Interval uptime = null;
+		if(window instanceof RDHFrame) {
+			uptime = ((RDHFrame)window).getClientProperty(UPTIME_PROPERTY);
+		}
+		return uptime;
+	}
+
 	/**
 	 * Closes the given window, removes it from the list
 	 * of open windows and either {@link #disposeGracefully(Window) disposes}
@@ -533,10 +541,7 @@ public class RDHGui extends AbstractRDHTool {
 			lastHiddenWindow = window;
 			window.setVisible(false);
 
-			Interval uptime = null;
-			if(window instanceof RDHFrame) {
-				uptime = ((RDHFrame)window).getClientProperty(UPTIME_PROPERTY);
-			}
+			Interval uptime = windowUptime(window);
 
 			logStat(StatEntry.withData(StatType.UI_CLOSE, GuiStats.WINDOW,
 					uptime==null ? "0" : uptime.stop().asDurationString()));
@@ -578,9 +583,18 @@ public class RDHGui extends AbstractRDHTool {
 		GuiUtils.checkEDT();
 
 		if(lastHiddenWindow!=null) {
-			lastHiddenWindow.setVisible(true);
-			openWindows.add(lastHiddenWindow);
+			Window window = lastHiddenWindow;
 			lastHiddenWindow = null;
+
+			window.setVisible(true);
+			openWindows.add(window);
+
+			logStat(StatEntry.ofType(StatType.UI_OPEN, GuiStats.WINDOW));
+
+			Interval uptime = windowUptime(window);
+			if(uptime!=null) {
+				uptime.start();
+			}
 		}
 	}
 
