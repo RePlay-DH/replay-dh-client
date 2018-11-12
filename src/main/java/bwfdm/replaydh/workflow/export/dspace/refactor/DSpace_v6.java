@@ -267,7 +267,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	
 	
 	/**
-	 * Private method which can use different request types. See
+	 * Export metadata only to some already existed entry (via edit-URL, @link {@link SwordRequestType}) or create a Private method which can use different request types. See
 	 * {@link SwordRequestType}.
 	 * 
 	 * @param url - collection URL (with "collection" substring inside) or item URL (with "edit" substring inside)
@@ -282,16 +282,24 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 * @throws {@link SWORDError}
 	 * @throws {@link ProtocolViolationException}
 	 */
-	protected String exportMetadata(String url, Map<String, List<String>> metadataMap,
+	protected String exportMetadataAsMap(String url, Map<String, List<String>> metadataMap,
 			SwordRequestType swordRequestType)throws IOException, SWORDClientException, SWORDError, ProtocolViolationException {
 
 		SwordResponse response = super.exportElement(url, swordRequestType, SwordExporter.MIME_FORMAT_ATOM_XML, 
 				UriRegistry.PACKAGE_BINARY, null, metadataMap);
 		
 		if(response instanceof DepositReceipt) {
-			return ((DepositReceipt)response).getEditLink().getHref();
+			return ((DepositReceipt)response).getEditLink().getHref(); //response from DEPOSIT request
 		} else {
-			return response.getLocation(); 
+			//FIXME: 	
+			//current implementation of SWORD-Client library returns in case of "REPLACE" request
+			//the SwordResponse object only with the actual status code, 
+			//"Location" link and other fields are "null". That's why to avoid misunderstanding, 
+			//when "Location" link is null we return just an input-url (which also should be the "edit" url 
+			//in case of REPLACE request) 
+			//			
+			String editURL = response.getLocation(); //should be a string with the edit URL ("/swordv2/edit/" substring inside)
+			return ((editURL != null) ? editURL : url); // return input-url if "Location" link is null
 		}
 	}
 
@@ -307,10 +315,14 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 *            	with an XML-extension  
 	 * @param swordRequestType - object of {@link SwordRequestType}
 	 * 
-	 * @return {@code true} if case of success and {@code false} otherwise
-	 * TODO: return String with edit link
+	 * @return {@link String} with the URL to edit the entry (with "edit" substring inside)
+	 * 
+	 * @throws {@link IOException}
+	 * @throws {@link SWORDClientException}
+	 * @throws {@link SWORDError}
+	 * @throws {@link ProtocolViolationException}
 	 */
-	protected SwordResponse exportMetadata(String url, File metadataFileXML, SwordRequestType swordRequestType) 
+	protected String exportMetadataAsFile(String url, File metadataFileXML, SwordRequestType swordRequestType) 
 				throws IOException, SWORDClientException, SWORDError, ProtocolViolationException{
 
 		// Check if file has an XML-extension
@@ -322,7 +334,21 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 
 		String mimeFormat = SwordExporter.MIME_FORMAT_ATOM_XML;
 		String packageFormat = super.getPackageFormat(metadataFileXML.getName());
-		return super.exportElement(url, swordRequestType, mimeFormat, packageFormat, metadataFileXML, null);
+		SwordResponse response = super.exportElement(url, swordRequestType, mimeFormat, packageFormat, metadataFileXML, null);
+		
+		if(response instanceof DepositReceipt) {
+			return ((DepositReceipt)response).getEditLink().getHref(); //response from DEPOSIT request
+		} else {
+			//FIXME: 	
+			//current implementation of SWORD-Client library returns in case of "REPLACE" request
+			//the SwordResponse object only with the actual status code, 
+			//"Location" link and other fields are "null". That's why to avoid misunderstanding, 
+			//when "Location" link is null we return just an input-url (which also should be the "edit" url 
+			//in case of REPLACE request) 
+			//			
+			String editURL = response.getLocation(); //should be a string with the edit URL ("/swordv2/edit/" substring inside)
+			return ((editURL != null) ? editURL : url); // return input-url if "Location" link is null
+		}
 	}
 	
 	
@@ -357,7 +383,11 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		
 		try {
 			SwordResponse response = super.exportElement(collectionUrl, SwordRequestType.DEPOSIT, mimeFormat, packageFormat, file, null);
-			return response.getLocation();
+			if(response instanceof DepositReceipt) {
+				return ((DepositReceipt)response).getEditLink().getHref(); // "edit" URL from the DEPOSIT receipt
+			} else {
+				return null; // for current moment we should receipt a DepositReceipt object. If not, that something went wrong. 
+			}
 		} catch (SWORDClientException | SWORDError | ProtocolViolationException e) {
 			log.error("Exception by exporting new entry with file only: {}: {}", e.getClass().getSimpleName(), e.getMessage());
 			return null;
@@ -398,8 +428,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		requireNonNull(metadataFileXml);
 		
 		try {
-			SwordResponse response = this.exportMetadata(collectionURL, metadataFileXml, SwordRequestType.DEPOSIT);
-			return response.getLocation();
+			return exportMetadataAsFile(collectionURL, metadataFileXml, SwordRequestType.DEPOSIT);
 		} catch (ProtocolViolationException | SWORDError e) {
 			throw new SWORDClientException("Exception by creation of item with only metadta as XML-file: " 
 					+ e.getClass().getSimpleName() + ": " + e.getMessage());
@@ -450,12 +479,9 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 			}
 			
 			// Step 2: add metadata (as a XML-file)
-			response = this.exportMetadata(editLink, metadataFileXml, SwordRequestType.REPLACE);
-																						// "PUT" request (REPLACE) 
-																						// to overwrite some previous
-																						// automatically generated 
-																						// metadata
-			return response.getLocation();
+			//
+			// "PUT" request (REPLACE) is used to overwrite some previous automatically generated metadata
+			return exportMetadataAsFile(editLink, metadataFileXml, SwordRequestType.REPLACE);
 	
 			// NOTE: if replace order (step 1: export metadata, step 2: export file) --> Bad request, ERROR 400
 			
@@ -535,7 +561,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		requireNonNull(metadataMap);
 		
 		try {			
-			return exportMetadata(collectionURL, metadataMap, SwordRequestType.DEPOSIT);			
+			return exportMetadataAsMap(collectionURL, metadataMap, SwordRequestType.DEPOSIT);			
 		} catch (IOException | ProtocolViolationException | SWORDError e) {
 			throw new SWORDClientException("Exception by export metadta as Map: " + e.getClass().getSimpleName() + ": " + e.getMessage());
 		}
@@ -572,13 +598,10 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 			}
 			
 			// Step 2: add metadata (as a Map structure)
-			return exportMetadata(editLink, metadataMap, SwordRequestType.REPLACE); 	
-																						// "PUT" request (REPLACE) 
-																						// to overwrite some previous
-																						// automatically generated 
-																						// metadata 
-//TODO			return response.getLocation();
-			
+			//
+			//"PUT" request (REPLACE) is used to overwrite some previous automatically generated metadata
+			return exportMetadataAsMap(editLink, metadataMap, SwordRequestType.REPLACE);
+						
 			// NOTE: if replace order (step 1: export metadata, step 2: export file) --> Bad request, ERROR 400
 			
 		} catch (ProtocolViolationException | SWORDError e) {
