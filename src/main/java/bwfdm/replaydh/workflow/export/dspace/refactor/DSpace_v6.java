@@ -90,6 +90,26 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		// TODO: original version, without ignoring of ssl certificate
 		// this.client = HttpClientBuilder.create().build();	
 	}
+	
+	public DSpace_v6(String serviceDocumentURL, String restURL, String userName, char[] userPassword) {
+	
+		super(SwordExporter.createAuthCredentials(userName, userPassword));
+		
+		requireNonNull(serviceDocumentURL);
+		requireNonNull(restURL);
+		requireNonNull(userName);
+		requireNonNull(userPassword);
+		
+		this.setServiceDocumentURL(serviceDocumentURL);
+		this.setAllRestURLs(restURL);
+
+		// HttpClient which ignores the ssl certificate
+		this.httpClient = WebUtils.createHttpClientWithSSLSupport();
+
+		// TODO: original version, without ignoring of ssl certificate
+		// this.client = HttpClientBuilder.create().build();
+	}
+	
 
 	/*
 	 * ----------------------- 
