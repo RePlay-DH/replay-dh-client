@@ -16,7 +16,7 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.workflow.export.dspace.refactor;
+package bwfdm.replaydh.workflow.export.dspace;
 
 import java.util.List;
 import java.util.Map;

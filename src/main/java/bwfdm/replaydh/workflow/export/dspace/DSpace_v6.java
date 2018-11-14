@@ -16,7 +16,7 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.workflow.export.dspace.refactor;
+package bwfdm.replaydh.workflow.export.dspace;
 
 import static java.util.Objects.requireNonNull;
 
@@ -46,9 +46,9 @@ import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
 import bwfdm.replaydh.io.IOUtils;
+import bwfdm.replaydh.workflow.export.dspace.WebUtils.RequestType;
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.CollectionObject;
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.HierarchyObject;
-import bwfdm.replaydh.workflow.export.dspace.refactor.WebUtils.RequestType;
 import bwfdm.replaydh.workflow.export.generic.SwordExporter;
 
 

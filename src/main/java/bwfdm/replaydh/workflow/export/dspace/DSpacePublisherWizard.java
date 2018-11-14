@@ -79,8 +79,6 @@ import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
-import bwfdm.replaydh.workflow.export.dspace.refactor.DSpaceRepository;
-import bwfdm.replaydh.workflow.export.dspace.refactor.DSpace_v6;
 import bwfdm.replaydh.workflow.export.generic.ExportRepository;
 
 public class DSpacePublisherWizard {
