@@ -36,6 +36,11 @@ The following table lists currently supported parameters:
 | -workspace &lt;file&gt;     | path string | -Dclient.workspace.path=&lt;file&gt; | Path to the currently active working directory. |
 | -D&lt;key&gt;=&lt;value&gt; | strings     | -                                    | Allows to override client settings (this is a basic java command line feature and listed here simply for the sake of completeness, as the client reads in the full set of currently set Java properties as base of the internal settings, with higher priority that the read in config file). |
 
+### Known Issues
+
+- Closing the client in ways other than *File>>Exit* from the main window menu results in configurations and other data not bein stored properly. Please for now stick to this way of closing the client.
+- Repeatedly closing and reopening the client main window when tray support is active results in an exception.
+
 ### License
 
 The client code is licensed under MIT
