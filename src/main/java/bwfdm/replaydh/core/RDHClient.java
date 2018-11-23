@@ -244,6 +244,10 @@ public class RDHClient {
 
 	private final Interval clientRuntime = new Interval();
 
+	private final Thread shutdownHook;
+
+	private final Thread mainThread;
+
 	/**
 	 * Creates a new  client using provided options.
 	 *
@@ -251,6 +255,8 @@ public class RDHClient {
 	 * @throws RDHLifecycleException
 	 */
 	public RDHClient(String[] args) throws RDHLifecycleException {
+
+		mainThread = Thread.currentThread();
 
 		this.args = args.clone();
 		this.options = new Options();
@@ -298,6 +304,29 @@ public class RDHClient {
 			userFolder = Paths.get(userPath);
 			createUserFolderIfMissing = false;
 		}
+
+		shutdownHook = new Thread("client-shutdown") {
+			@Override
+			public void run() {
+
+				// Sanity check against getting called after regular shutdown sequence
+				synchronized (lock) {
+					if(!active) {
+						return;
+					}
+				}
+
+				// Initiate shutdown sequence
+				shutdown();
+
+				// Await clean shutdown
+				try {
+					mainThread.join();
+				} catch (InterruptedException e) {
+					// ignore, nothing we can do about it at this point
+				}
+			}
+		};
 	}
 
 	private static void readArguments(String[] args, Options options) {
@@ -546,6 +575,16 @@ public class RDHClient {
 		return debug;
 	}
 
+	public void resetWorkspace() {
+		JGitAdapter git = gitAdapter.value();
+
+		if(isVerbose()) {
+			log.info("Resetting workspace");
+		}
+
+		git.disconnectGit();
+	}
+
 	/**
 	 * Expects an existing workspace managed by the RePlay-DH client to
 	 * be located at the specified {@link Path}.
@@ -557,7 +596,7 @@ public class RDHClient {
 		JGitAdapter git = gitAdapter.value();
 
 		if(isVerbose()) {
-			log.info("Loading workspace at location: {}",workspacePath);
+			log.info("Loading workspace at location: {}", workspacePath);
 		}
 
 		Workspace workspace = null;
@@ -608,6 +647,8 @@ public class RDHClient {
 	private void boot() throws RDHLifecycleException {
 
 		synchronized (lock) {
+
+			Runtime.getRuntime().addShutdownHook(shutdownHook);
 
 			clientRuntime.start();
 

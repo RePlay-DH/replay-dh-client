@@ -108,7 +108,6 @@ import bwfdm.replaydh.ui.helper.PassiveTextArea;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.icons.IconRegistry;
 import bwfdm.replaydh.ui.icons.Resolution;
-import bwfdm.replaydh.ui.metadata.MetadataManagerPanel;
 import bwfdm.replaydh.ui.workflow.AddWorkflowSchemaWizard;
 import bwfdm.replaydh.ui.workflow.AddWorkflowSchemaWizard.AddWorkflowSchemaContext;
 import bwfdm.replaydh.ui.workflow.FileIgnoreEditor;
@@ -176,8 +175,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 	private final WorkflowGraph workflowGraph;
 
 	private final WorkspaceTrackerPanel workspaceTrackerPanel;
-
-	private final MetadataManagerPanel metadataManagerPanel;
 
 	private final ActionManager actionManager;
 	private final ActionManager.ActionMapper actionMapper;
@@ -285,7 +282,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		workflowGraph = new WorkflowGraph(environment);
 		workspaceTrackerPanel = new WorkspaceTrackerPanel(environment);
-		metadataManagerPanel = new MetadataManagerPanel(environment);
 
 		tabbedPane = new JTabbedPane();
 
@@ -302,14 +298,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				workspaceTrackerPanel,
 				rm.get("replaydh.ui.core.mainPanel.tabs.fileTracker.description"),
 				1);
-
-		//TODO for now we keep the metadata manager hidden, as it is not really functional wrt the rest of the client
-//		tabbedPane.insertTab(
-//				rm.get("replaydh.ui.core.mainPanel.tabs.metadataManager.name"),
-//				ir.getIcon("Documents-icon.png", Resolution.forSize(32)),
-//				metadataManagerPanel,
-//				rm.get("replaydh.ui.core.mainPanel.tabs.metadataManager.description"),
-//				2);
 
 		// Not the cleanest way, but ensure we don't overgrow
 		tabbedPane.setPreferredSize(new Dimension(700, 500));

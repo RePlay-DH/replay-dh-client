@@ -67,6 +67,7 @@ import javax.swing.table.TableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
+
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
@@ -1389,14 +1390,14 @@ public class DataversePublisherWizard {
 		}
 
 		private void refreshNextEnabled() {
-			boolean nextEnabled = true;
 
+			boolean nextEnabled = true;
 
 			nextEnabled &= refreshBorder(elementsofproperty.get("creator"));
 			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDescription.getTextfield());
 			nextEnabled &= checkAndUpdateBorder(eDate.getTextfield());
-			
+
 			if ((eLicense.getTextfield().getText().equals("CC0")) || (eLicense.getTextfield().getText().equals("NONE"))) {
 				GuiUtils.toggleChangeableBorder(eLicense.getTextfield(),false);
 				nextEnabled &=true;
