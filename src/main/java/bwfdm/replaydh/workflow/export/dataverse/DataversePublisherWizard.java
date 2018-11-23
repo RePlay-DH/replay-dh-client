@@ -66,6 +66,7 @@ import javax.swing.table.TableModel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.swordapp.client.AuthCredentials;
 
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
@@ -127,7 +128,7 @@ public class DataversePublisherWizard {
 
 		private String chosenDataset;
 		private String jsonObjectWithMetadata;
-
+		
 		public boolean isReplaceMetadataAllowed() {
 			return replaceMetadataAllowed;
 		}
@@ -164,7 +165,7 @@ public class DataversePublisherWizard {
 		public String getCollectionURL() {
 			return collectionURL;
 		}
-		public DataverseRepository getPublicationRepository() {
+		public DataverseRepository_v4 getPublicationRepository() {
 			return publicationRepository;
 		}
 		public Map<String, String> getAvailableCollections() {
@@ -366,7 +367,6 @@ public class DataversePublisherWizard {
 
 		private Map<String, String> availableCollections;
 		private DataverseRepository_v4 publicationRepository;
-
 		/**
 		 * Check the connection via REST-interface.
 		 * Sets the global flag {@code restOK=true} if connection is working, and {@code restOK=false} otherwise
@@ -384,7 +384,7 @@ public class DataversePublisherWizard {
 					}
 
 					//Exchange "http://" and "https://" if REST is not accessible
-					if(!publicationRepository.isSwordAccessible()) {
+					if(!publicationRepository.isSwordAccessible(serviceDocumentURL)) {
 						// If the exchange did not help, move to the previous condition
 						swordOK = false;
 						return swordOK;
@@ -474,7 +474,7 @@ public class DataversePublisherWizard {
 										//and provide messages in case of error
 
 			pAPIkey = new JPasswordField();
-
+			
 			GuiUtils.prepareChangeableBorder(tfUrl);
 			GuiUtils.prepareChangeableBorder(pAPIkey);
 
@@ -512,6 +512,7 @@ public class DataversePublisherWizard {
 			checkLoginButton = new JButton(rm.get("replaydh.wizard.dataversePublisher.chooseRepository.loginButton"));
 			checkLoginButton.setEnabled(false);
 			checkLoginButton.addActionListener(new ActionListener() {
+
 				@Override
 				public void actionPerformed(ActionEvent e) {
 
@@ -522,7 +523,8 @@ public class DataversePublisherWizard {
 					}
 
 					serviceDocumentURL = createServiceDocumentURL(tfUrl.getText());
-					publicationRepository = new DataverseRepository_v4(serviceDocumentURL, pAPIkey.getPassword());
+					AuthCredentials authCredentials = new AuthCredentials(String.valueOf(pAPIkey.getPassword()), "null");
+					publicationRepository = new DataverseRepository_v4(authCredentials,serviceDocumentURL);
 					// Prepare GUI for the repository requests
 					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseRepository.waitMessage"));
 					loginOK = false;
@@ -619,8 +621,13 @@ public class DataversePublisherWizard {
 			noAvailableCollectionsMessage.setVisible(context.getAvailableCollections().isEmpty());
 
 			// Remove selection and disable "next" button
-			collectionsComboBox.setSelectedIndex(-1);
-			setNextEnabled(false);
+			if (context.getAvailableCollections().isEmpty()) {
+				collectionsComboBox.setSelectedIndex(-1);
+				setNextEnabled(false);
+			} else {
+				collectionsComboBox.setSelectedIndex(0);
+				setNextEnabled(true);
+			}
 		};
 
 		@Override
@@ -672,7 +679,7 @@ public class DataversePublisherWizard {
 			"replaydh.wizard.dataversePublisher.chooseDataset.description") {
 
 		private JComboBox<String> collectionsComboBox;
-		private JTextArea noAvailableCollectionsMessage;
+		private JTextArea noAvailableDatasetsMessage;
 
 		private CollectionEntry collectionEntries;
 
@@ -691,41 +698,54 @@ public class DataversePublisherWizard {
 
 			collectionsComboBox.addItem(rm.get("replaydh.wizard.dataversePublisher.chooseDataset.create"));
 
-			collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
-
-			for(String value: collectionEntries.getValuesForDatasets()) {
-				collectionsComboBox.addItem(value);
-			}
-
-			// Display the error message if there are no collections available
-			noAvailableCollectionsMessage.setVisible(context.availableDatasetsInCollection.isEmpty());
-
 			// Remove selection and disable "next" button
-			collectionsComboBox.setSelectedIndex(-1);
-			setNextEnabled(false);
+			//collectionsComboBox.setSelectedIndex(-1);
+			//setNextEnabled(false);
 		};
 
 		private void checkFilesAvailable(DataversePublisherContext context) {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
-
+				boolean filesAvailable;
 				@Override
 				protected Boolean doInBackground() throws Exception {
-					boolean filesAvailable = false;
-					if (context.getPublicationRepository().getDatasetsInDataverseCollection(context.collectionURL) != null) {
-						context.availableDatasetsInCollection=context.getPublicationRepository().getDatasetsInDataverseCollection(context.collectionURL);
+					filesAvailable = false;
+					if (!(context.getPublicationRepository().getCollectionEntries(context.collectionURL).isEmpty())) {
+						context.availableDatasetsInCollection=context.getPublicationRepository().getCollectionEntries(context.collectionURL);
 						filesAvailable=true;
 					}
 					return filesAvailable;
 				}
-
+				
+				@Override
+				protected void done() {
+					if (filesAvailable) {
+						collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
+						for (String value : collectionEntries.getValuesForDatasets()) {
+							collectionsComboBox.addItem(value);
+						}
+						collectionsComboBox.setSelectedIndex(0);
+						setNextEnabled(true);
+						noAvailableDatasetsMessage.setText(ResourceManager.getInstance()
+								.get("replaydh.wizard.dataversePublisher.chooseDataset.datasetsMessage"));
+					} else {
+						// Display the error message if there are no collections available
+						collectionEntries = null;
+						noAvailableDatasetsMessage.setText(ResourceManager.getInstance()
+								.get("replaydh.wizard.dataversePublisher.chooseDataset.noDatasetsMessage"));
+					}
+				}
 			};
 			executeWorkerWithTimeout(worker, timeOut, "Exception by exchanging http/https");
 		}
 
 		@Override
 		public Page<DataversePublisherContext> next(RDHEnvironment environment, DataversePublisherContext context) {
-			context.chosenDataset = collectionEntries.getKeyForDatasets(collectionsComboBox.getSelectedItem().toString());
+			if (collectionEntries != null) {
+				context.chosenDataset = collectionEntries.getKeyForDatasets(collectionsComboBox.getSelectedItem().toString());
+			} else {
+				context.chosenDataset = null;
+			}
 			return CHOOSE_FILES;
 		}
 
@@ -740,8 +760,8 @@ public class DataversePublisherWizard {
 				}
 			});
 
-			noAvailableCollectionsMessage = GuiUtils.createTextArea(ResourceManager.getInstance()
-					.get("replaydh.wizard.dataversePublisher.chooseCollection.noCollectionsMessage"));
+			noAvailableDatasetsMessage = GuiUtils.createTextArea(ResourceManager.getInstance()
+					.get("replaydh.wizard.dataversePublisher.chooseDataset.noDatasetsMessage"));
 
 			return FormBuilder.create()
 					.columns("fill:pref:grow")
@@ -749,7 +769,7 @@ public class DataversePublisherWizard {
 					.padding(Paddings.DLU4)
 					.add(new JLabel(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseDataset.collectionLabel"))).xy(1, 1)
 					.add(collectionsComboBox).xy(1, 3)
-					.add(noAvailableCollectionsMessage).xy(1, 5)
+					.add(noAvailableDatasetsMessage).xy(1, 5)
 					.build();
 		}
 
@@ -1013,11 +1033,13 @@ public class DataversePublisherWizard {
 				clearGUI();
 				createNewDataset(environment, context);
 				replaceMetadata.setSelected(false);
+				replaceMetadata.setEnabled(false);
 			} else {
 				clearGUI();
 				resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
 				getJSONObject(environment, context);
 				replaceMetadata.setSelected(true);
+				replaceMetadata.setEnabled(true);
 			}
 
 
@@ -1131,14 +1153,20 @@ public class DataversePublisherWizard {
 							case "subject":
 								if (subjects == null) {
 									subjects = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
+									int numbersToAdd=elementsofproperty.get("subject").size();
+									if ((numbersToAdd == 1) && (elementsofproperty.get("subject").get(0).getTextfield().getText().equals(""))) {
+										numbersToAdd=0;
+									}
 									for (int index=0; index < subjects.size(); index++) {
 										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"]");
-										if (index+1 < subjects.size()) {
-											GUIElement element = createGUIElement("subject");
-											elementsofproperty.get("subject").add(element);
-											element.getTextfield().getDocument().addDocumentListener(adapter);
+										if (!(propertyvalue.equals("N/A"))) {
+											if ((subjects.size()+numbersToAdd) > elementsofproperty.get("subject").size()) {
+												GUIElement element = createGUIElement("subject");
+												elementsofproperty.get("subject").add(element);
+												element.getTextfield().getDocument().addDocumentListener(adapter);
+											}
+											elementsofproperty.get("subject").get(index+numbersToAdd).getTextfield().setText(propertyvalue);
 										}
-										elementsofproperty.get("subject").get(index).getTextfield().setText(propertyvalue);
 									}
 								}
 								refreshPanel("subject");
@@ -1147,14 +1175,19 @@ public class DataversePublisherWizard {
 								if (keywords == null) {
 									keywords = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
 									int numbersToAdd=elementsofproperty.get("subject").size();
+									if ((numbersToAdd == 1) && (elementsofproperty.get("subject").get(0).getTextfield().getText().equals(""))) {
+										numbersToAdd=0;
+									}
 									for (int index=0; index < keywords.size(); index++) {
 										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"].keywordValue.value");
-										if (index < keywords.size()) {
-											GUIElement element = createGUIElement("subject");
-											elementsofproperty.get("subject").add(element);
-											element.getTextfield().getDocument().addDocumentListener(adapter);
+										if (!(propertyvalue.equals("N/A"))) {
+											if ((keywords.size()+numbersToAdd) > elementsofproperty.get("subject").size()) {
+												GUIElement element = createGUIElement("subject");
+												elementsofproperty.get("subject").add(element);
+												element.getTextfield().getDocument().addDocumentListener(adapter);
+											}
+											elementsofproperty.get("subject").get(index+numbersToAdd).getTextfield().setText(propertyvalue);
 										}
-										elementsofproperty.get("subject").get(index+numbersToAdd).getTextfield().setText(propertyvalue);
 									}
 								}
 								refreshPanel("subject");
@@ -1357,8 +1390,8 @@ public class DataversePublisherWizard {
 		}
 
 		private void refreshNextEnabled() {
-			boolean nextEnabled = true;
 
+			boolean nextEnabled = true;
 
 			nextEnabled &= refreshBorder(elementsofproperty.get("creator"));
 			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());

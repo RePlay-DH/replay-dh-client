@@ -34,6 +34,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -78,14 +79,15 @@ import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
+import bwfdm.replaydh.workflow.export.generic.ExportRepository;
 
 public class DSpacePublisherWizard {
 
 	private static final Logger log = LoggerFactory.getLogger(DSpacePublisherWizard.class);
 
-	public static Wizard<DSpacePublisherContext> getWizard(Window parent, RDHEnvironment environment) {
+	public static Wizard<DSpaceExporterContext> getWizard(Window parent, RDHEnvironment environment) {
 		@SuppressWarnings("unchecked")
-		Wizard<DSpacePublisherContext> wizard = new Wizard<>(
+		Wizard<DSpaceExporterContext> wizard = new Wizard<>(
 				parent, "dspacePublisher", ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.title"),
 				environment/*, FINISH /*<-- TEST*/ , CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
@@ -94,7 +96,7 @@ public class DSpacePublisherWizard {
 	/**
 	 * Context for the wizard
 	 */
-	public static final class DSpacePublisherContext{
+	public static final class DSpaceExporterContext{
 
 		final WorkflowExportInfo exportInfo;
 
@@ -108,10 +110,10 @@ public class DSpacePublisherWizard {
 		String userLogin;
 		Map<String, String> availableCollections;
 		List<File> filesToPublish;
-		PublicationRepository publicationRepository;
+		ExportRepository exportRepository;
 		MetadataObject metadataObject;
 
-		public DSpacePublisherContext(WorkflowExportInfo exportInfo) {
+		public DSpaceExporterContext(WorkflowExportInfo exportInfo) {
 			this.exportInfo = requireNonNull(exportInfo);
 		}
 
@@ -129,8 +131,8 @@ public class DSpacePublisherWizard {
 		public String getUserLogin() {
 			return userLogin;
 		}
-		public PublicationRepository getPublicationRepository() {
-			return publicationRepository;
+		public ExportRepository getExportRepository() {
+			return exportRepository;
 		}
 		public Map<String, String> getAvailableCollections() {
 			return availableCollections;
@@ -149,7 +151,8 @@ public class DSpacePublisherWizard {
 
 	public static final class MetadataObject{
 
-		Map<String, String> mapDoublinCoreToMetadata;
+		//TODO: Map<String, List<String>>
+		Map<String, List<String>> mapDoublinCoreToMetadata;
 		Map<String, String> mapDoublinCoreToLabel;
 
 		/**
@@ -157,7 +160,7 @@ public class DSpacePublisherWizard {
 		 * <p>
 		 * Should be used for the publication to the repository.
 		 */
-		public Map<String, String> getMapDoublinCoreToMetadata(){
+		public Map<String, List<String>> getMapDoublinCoreToMetadata(){
 			if(mapDoublinCoreToMetadata != null){
 				return mapDoublinCoreToMetadata;
 			} else {
@@ -170,11 +173,12 @@ public class DSpacePublisherWizard {
 		 * <p>
 		 * Should be used ONLY for the representation of the metadata.
 		 */
-		public Map<String, String> getMapLabelToMetadata(){
+		//TODO: Map<String, List<String>>
+		public Map<String, List<String>> getMapLabelToMetadata(){
 
-			Map<String, String> metadataMap = new HashMap<>();
+			Map<String, List<String>> metadataMap = new HashMap<>();
 			if((mapDoublinCoreToMetadata != null) && (mapDoublinCoreToLabel != null)) {
-				for(Map.Entry<String, String> entryDoublinCoreToMetadata: mapDoublinCoreToMetadata.entrySet()) {
+				for(Map.Entry<String, List<String>> entryDoublinCoreToMetadata: mapDoublinCoreToMetadata.entrySet()) {
 					for(Map.Entry<String, String> entryDoublinCoreToLabel: mapDoublinCoreToLabel.entrySet()) {
 						if(entryDoublinCoreToLabel.getKey().equals(entryDoublinCoreToMetadata.getKey())) {
 							metadataMap.put(entryDoublinCoreToLabel.getValue(), entryDoublinCoreToMetadata.getValue());
@@ -242,10 +246,10 @@ public class DSpacePublisherWizard {
 	}
 
 	/**
-	 * Create the service document url based on the original publication repository url
+	 * Create service document url based on the original export repository URL
 	 *
-	 * @param url
-	 * @return
+	 * @param url {@link String} with original publication repository URL
+	 * @return {@link String} string with the URL
 	 */
 	private static String createServiceDocumentURL(String url) {
 		String sdURL = getHostURL(url);
@@ -265,7 +269,7 @@ public class DSpacePublisherWizard {
 	}
 
 	/**
-	 * Create the rest-url based on the original publication repository url
+	 * Create the rest-url based on the original export repository url
 	 * @param url
 	 * @return
 	 */
@@ -331,7 +335,7 @@ public class DSpacePublisherWizard {
 
 	/**
 	 * Representation of the collection of <String, String> in the ComboBox
-	 * @author vk
+	 * @author Volodymyr Kushnarenko
 	 */
 	private static class CollectionEntry{
 
@@ -354,8 +358,8 @@ public class DSpacePublisherWizard {
 	 * Abstract class for the wizard page
 	 * @author Volodymyr Kushnarenko
 	 */
-	private static abstract class DSpacePublisherStep extends AbstractWizardStep<DSpacePublisherContext> {
-		protected DSpacePublisherStep(String id, String titleKey, String descriptionKey) {
+	private static abstract class DSpaceExporterStep extends AbstractWizardStep<DSpaceExporterContext> {
+		protected DSpaceExporterStep(String id, String titleKey, String descriptionKey) {
 			super(id, titleKey, descriptionKey);
 		}
 	}
@@ -363,11 +367,12 @@ public class DSpacePublisherWizard {
 	/**
 	 * 1st. page - choose repository and check the user registration
 	 */
-	private static final DSpacePublisherStep CHOOSE_REPOSITORY = new DSpacePublisherStep(
+	private static final DSpaceExporterStep CHOOSE_REPOSITORY = new DSpaceExporterStep(
 			"chooseRepository",
 			"replaydh.wizard.dspacePublisher.chooseRepository.title",
 			"replaydh.wizard.dspacePublisher.chooseRepository.description") {
-
+		//TODO: replace publisher to exporter (see above)
+		
 		private JTextField tfUrl;
 		private JTextField tfUserLogin;
 		private JPasswordField pfUserPassword;
@@ -384,14 +389,14 @@ public class DSpacePublisherWizard {
 		private long timeOut; //in seconds
 
 		private Map<String, String> availableCollections;
-		private PublicationRepository publicationRepository;
+		private ExportRepository exportRepository;
 
 		/**
 		 * Check the connection via REST-interface.
 		 * Sets the global flag {@code restOK=true} if connection is working, and {@code restOK=false} otherwise
-		 * @param publicationRepository
+		 * @param dspaceRepository
 		 */
-		private void checkAndCorrectRestURL(DSpace_v6 publicationRepository) {
+		private void checkAndCorrectRestURL(DSpace_v6 dspaceRepository) {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
 
@@ -416,18 +421,18 @@ public class DSpacePublisherWizard {
 						return false;
 					}
 					String correctedRestURL = new String(restURL);
-					publicationRepository.setAllRestURLs(correctedRestURL);
+					dspaceRepository.setAllRestURLs(correctedRestURL);
 
 					//Exchange "http://" and "https://" if REST is not accessible
-					if(!publicationRepository.isRestAccessible()) {
+					if(!dspaceRepository.isRestAccessible()) {
 						exchangeHttpHttps(correctedRestURL);
 						// If the exchange did not help, move to the previous condition
-						if(!publicationRepository.isRestAccessible()) {
+						if(!dspaceRepository.isRestAccessible()) {
 							if(restURL == null) {
 								return false; //not really needed here
 							}
 							correctedRestURL = new String(restURL);
-							publicationRepository.setAllRestURLs(correctedRestURL);
+							dspaceRepository.setAllRestURLs(correctedRestURL);
 							restOK = false;
 							restURL = String.valueOf(correctedRestURL.toCharArray());
 							return restOK;
@@ -468,18 +473,22 @@ public class DSpacePublisherWizard {
 		 * Repository request is realized as a worker in background, not EDT.
 		 * Sets the global flag {@code loginOK=true} if login is correct, and {@code loginOK=false} otherwise
 		 *
-		 * @param publicationRepository
+		 * @param exportRepository
 		 * @param userLogin
 		 */
-		private void checkUserRegistrationAndGetCollections(PublicationRepository publicationRepository, String userLogin) {
+		private void checkUserRegistrationAndGetCollections(ExportRepository exportRepository) {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
 
 				@Override
 				protected Boolean doInBackground() throws Exception {
 					//Thread.sleep(20000); //for test, to imitate a long task and provocate termination on timeout
-					loginOK = publicationRepository.isUserRegistered(userLogin);
-					availableCollections = publicationRepository.getUserAvailableCollectionsWithFullName(userLogin, " -- ");
+					loginOK = exportRepository.hasRegisteredCredentials();
+					if(exportRepository instanceof DSpaceRepository) {
+						availableCollections = ((DSpaceRepository)exportRepository).getAvailableCollectionsWithFullName(" -- ");
+					} else {
+						availableCollections = exportRepository.getAvailableCollections();
+					}
 					return loginOK;
 				}
 
@@ -514,7 +523,7 @@ public class DSpacePublisherWizard {
 		}
 
 		@Override
-		public Page<DSpacePublisherContext> next(RDHEnvironment environment, DSpacePublisherContext context) {
+		public Page<DSpaceExporterContext> next(RDHEnvironment environment, DSpaceExporterContext context) {
 
 			// Save context:
 			context.repositoryURL = getHostURL(tfUrl.getText());
@@ -523,13 +532,13 @@ public class DSpacePublisherWizard {
 			context.userSubmissionsURL = createUserSubmissionsURL(tfUrl.getText());
 			context.userLogin = tfUserLogin.getText();
 			context.availableCollections = availableCollections;
-			context.publicationRepository = publicationRepository;
+			context.exportRepository = exportRepository;
 
 			return CHOOSE_COLLECTION;
 		}
 
 		@Override
-		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
+		public void refresh(RDHEnvironment environment, DSpaceExporterContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 
 			if(environment != null) {
@@ -611,7 +620,7 @@ public class DSpacePublisherWizard {
 					restURL = createRestURL(tfUrl.getText());
 					serviceDocumentURL = createServiceDocumentURL(tfUrl.getText());
 
-					publicationRepository = new DSpace_v6(serviceDocumentURL,
+					exportRepository = new DSpace_v6(serviceDocumentURL,
 															restURL,
 															tfUserLogin.getText(),
 															pfUserPassword.getPassword()
@@ -626,9 +635,9 @@ public class DSpacePublisherWizard {
 					SwingUtilities.invokeLater(new Runnable() {
 				        @Override
 						public void run() {
-				        	checkAndCorrectRestURL((DSpace_v6)publicationRepository);
+				        	checkAndCorrectRestURL((DSpace_v6)exportRepository);
 				        	if(restOK) {
-				        		checkUserRegistrationAndGetCollections(publicationRepository, tfUserLogin.getText());
+				        		checkUserRegistrationAndGetCollections(exportRepository);
 				        		if(loginOK) {
 				        			statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.successMessage"));
 									setNextEnabled(true);
@@ -680,7 +689,7 @@ public class DSpacePublisherWizard {
 	/**
 	 * 2nd. page - choose collection, where to publish
 	 */
-	private static final DSpacePublisherStep CHOOSE_COLLECTION = new DSpacePublisherStep(
+	private static final DSpaceExporterStep CHOOSE_COLLECTION = new DSpaceExporterStep(
 			"chooseCollection",
 			"replaydh.wizard.dspacePublisher.chooseCollection.title",
 			"replaydh.wizard.dspacePublisher.chooseCollection.description") {
@@ -689,7 +698,7 @@ public class DSpacePublisherWizard {
 		private JTextArea noAvailableCollectionsMessage;
 
 		@Override
-		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
+		public void refresh(RDHEnvironment environment, DSpaceExporterContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 
 			// Update combobox with collections
@@ -707,7 +716,7 @@ public class DSpacePublisherWizard {
 		};
 
 		@Override
-		public Page<DSpacePublisherContext> next(RDHEnvironment environment, DSpacePublisherContext context) {
+		public Page<DSpaceExporterContext> next(RDHEnvironment environment, DSpaceExporterContext context) {
 			// Store collection url
 			context.collectionURL = ((CollectionEntry)collectionsComboBox.getSelectedItem()).getEntry().getKey();
 
@@ -743,7 +752,7 @@ public class DSpacePublisherWizard {
 	/**
 	 * 3rd. page - choose files for publishing
 	 */
-	private static final DSpacePublisherStep CHOOSE_FILES = new DSpacePublisherStep(
+	private static final DSpaceExporterStep CHOOSE_FILES = new DSpaceExporterStep(
 			"chooseFiles",
 			"replaydh.wizard.dspacePublisher.chooseFiles.title",
 			"replaydh.wizard.dspacePublisher.chooseFiles.description") {
@@ -827,7 +836,7 @@ public class DSpacePublisherWizard {
 		}
 
 		@Override
-		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
+		public void refresh(RDHEnvironment environment, DSpaceExporterContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 
 			localEnvironment = environment;
@@ -844,7 +853,7 @@ public class DSpacePublisherWizard {
 		};
 
 		@Override
-		public Page<DSpacePublisherContext> next(RDHEnvironment environment, DSpacePublisherContext context) {
+		public Page<DSpaceExporterContext> next(RDHEnvironment environment, DSpaceExporterContext context) {
 
 			// Add files to the context
 			context.filesToPublish = new ArrayList<File>();
@@ -913,7 +922,7 @@ public class DSpacePublisherWizard {
 	/**
 	 * 4th. page - edit metadata
 	 */
-	private static final DSpacePublisherStep EDIT_METADATA = new DSpacePublisherStep(
+	private static final DSpaceExporterStep EDIT_METADATA = new DSpaceExporterStep(
 			"editMetadata",
 			"replaydh.wizard.dspacePublisher.editMetadata.title",
 			"replaydh.wizard.dspacePublisher.editMetadata.description") {
@@ -933,7 +942,7 @@ public class DSpacePublisherWizard {
 		private DateFormat format;
 
 		@Override
-		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
+		public void refresh(RDHEnvironment environment, DSpaceExporterContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 
 			//TODO: use it to fill in the text fields with not null values. Should be used later, when we use some metadata-schema
@@ -965,7 +974,7 @@ public class DSpacePublisherWizard {
 		};
 
 		@Override
-		public Page<DSpacePublisherContext> next(RDHEnvironment environment, DSpacePublisherContext context) {
+		public Page<DSpaceExporterContext> next(RDHEnvironment environment, DSpaceExporterContext context) {
 
 			ResourceManager rm = ResourceManager.getInstance();
 
@@ -975,19 +984,19 @@ public class DSpacePublisherWizard {
 			context.metadataObject.mapDoublinCoreToLabel = new HashMap<>();
 
 			// Title
-			context.metadataObject.mapDoublinCoreToMetadata.put("title", tfTitle.getText());
+			context.metadataObject.mapDoublinCoreToMetadata.put("title", Arrays.asList(tfTitle.getText()));
 			context.metadataObject.mapDoublinCoreToLabel.put("title", rm.get("replaydh.wizard.dspacePublisher.editMetadata.titleLabel"));
 
 			// Description
-			context.metadataObject.mapDoublinCoreToMetadata.put("description", tfDescription.getText());
+			context.metadataObject.mapDoublinCoreToMetadata.put("description", Arrays.asList(tfDescription.getText()));
 			context.metadataObject.mapDoublinCoreToLabel.put("description", rm.get("replaydh.wizard.dspacePublisher.editMetadata.descriptionLabel"));
 
 			// Creator
-			context.metadataObject.mapDoublinCoreToMetadata.put("creator", tfCreator.getText());
+			context.metadataObject.mapDoublinCoreToMetadata.put("creator", Arrays.asList(tfCreator.getText()));
 			context.metadataObject.mapDoublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dspacePublisher.editMetadata.creatorLabel"));
 
 			// Publication year
-			context.metadataObject.mapDoublinCoreToMetadata.put("issued", tfPublicationYear.getText());
+			context.metadataObject.mapDoublinCoreToMetadata.put("issued", Arrays.asList(tfPublicationYear.getText()));
 			context.metadataObject.mapDoublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dspacePublisher.editMetadata.publicationYearLabel"));
 
 //			// Not used (reserved) metadata fields
@@ -1100,7 +1109,7 @@ public class DSpacePublisherWizard {
 	/**
 	 * Last page - entry point for the publication
 	 */
-	private static final DSpacePublisherStep FINISH = new DSpacePublisherStep(
+	private static final DSpaceExporterStep FINISH = new DSpaceExporterStep(
 			"finish",
 			"replaydh.wizard.dspacePublisher.finish.title",
 			"replaydh.wizard.dspacePublisher.finish.description") {
@@ -1113,7 +1122,7 @@ public class DSpacePublisherWizard {
 		private JTextArea messageArea;
 
 		@Override
-		public void refresh(RDHEnvironment environment, DSpacePublisherContext context) {
+		public void refresh(RDHEnvironment environment, DSpaceExporterContext context) {
 			super.refresh(environment, context); //call parent "refresh"
 
 			// Repository URL
@@ -1149,8 +1158,12 @@ public class DSpacePublisherWizard {
 			// Metadata
 			String strMetadata = "";
 			if(context.getMetadataObject() != null) {
-				for(Map.Entry<String, String> entry: context.getMetadataObject().getMapLabelToMetadata().entrySet()) {
-					strMetadata += entry.getKey() + ": " + entry.getValue() + "\n";
+				for(Map.Entry<String, List<String>> entry: context.getMetadataObject().getMapLabelToMetadata().entrySet()) {
+					strMetadata += entry.getKey();
+					for(String metadataEntry: entry.getValue()) {
+						strMetadata += ": " + metadataEntry;
+					}
+					strMetadata += "\n";
 				}
 			}
 			if(!strMetadata.equals("")) {
@@ -1165,7 +1178,7 @@ public class DSpacePublisherWizard {
 		};
 
 		@Override
-		public Page<DSpacePublisherContext> next(RDHEnvironment environment, DSpacePublisherContext context) {
+		public Page<DSpaceExporterContext> next(RDHEnvironment environment, DSpaceExporterContext context) {
 			return null;
 		}
 

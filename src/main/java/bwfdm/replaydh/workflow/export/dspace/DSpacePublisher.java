@@ -46,7 +46,8 @@ import bwfdm.replaydh.ui.helper.AbstractDialogWorker;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.workflow.export.ResourcePublisher;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
-import bwfdm.replaydh.workflow.export.dspace.DSpacePublisherWizard.DSpacePublisherContext;
+import bwfdm.replaydh.workflow.export.dspace.DSpacePublisherWizard.DSpaceExporterContext;
+import bwfdm.replaydh.workflow.export.generic.ExportRepository;
 
 /**
  * @author Markus Gärtner
@@ -78,14 +79,14 @@ public class DSpacePublisher implements ResourcePublisher {
 		GuiUtils.checkNotEDT();
 
 		RDHEnvironment environment = exportInfo.getEnvironment();
-		DSpacePublisherContext context = new DSpacePublisherContext(exportInfo);
+		DSpaceExporterContext context = new DSpaceExporterContext(exportInfo);
 
 		log.info("DSpace publication, calling wizard");
 
 		if(showDSpacePublisherWizard(null, environment, context)) {
 			
 			// Check if some context field are null
-			if((context.getPublicationRepository() == null) || (context.getMetadataObject() == null)) {
+			if((context.getExportRepository() == null) || (context.getMetadataObject() == null)) {
 				return;
 			}
 
@@ -114,7 +115,7 @@ public class DSpacePublisher implements ResourcePublisher {
 	/**
 	 * @see RDHMainPanel#doChangeWorkspace()
 	 */
-	public static boolean showDSpacePublisherWizard(Component owner, RDHEnvironment environment, DSpacePublisherContext context) {
+	public static boolean showDSpacePublisherWizard(Component owner, RDHEnvironment environment, DSpaceExporterContext context) {
 
 		boolean wizardDone = false;
 
@@ -123,7 +124,7 @@ public class DSpacePublisher implements ResourcePublisher {
 			ancestorWindow = SwingUtilities.getWindowAncestor(owner);
 		}
 
-		try(Wizard<DSpacePublisherContext> wizard = DSpacePublisherWizard.getWizard(
+		try(Wizard<DSpaceExporterContext> wizard = DSpacePublisherWizard.getWizard(
 				ancestorWindow, environment)) {
 
 			wizard.startWizard(context);
@@ -141,11 +142,11 @@ public class DSpacePublisher implements ResourcePublisher {
 		
 		protected final Logger log = LoggerFactory.getLogger(DSpacePublisher.class);
 			
-		private final DSpacePublisherContext context;
+		private final DSpaceExporterContext context;
 		private final String rdhPrefix = "RePlay-DH_publication_"; //TODO: as property?
 		private boolean finishOK;
 
-		public DSpacePublisherWorker(Window owner, DSpacePublisherContext context) {
+		public DSpacePublisherWorker(Window owner, DSpaceExporterContext context) {
 			super(owner, ResourceManager.getInstance().get("replaydh.dialogs.dspacePublication.title"),
 					CancellationPolicy.CANCEL_INTERRUPT);
 
@@ -182,7 +183,7 @@ public class DSpacePublisher implements ResourcePublisher {
 		@Override
 		protected Boolean doInBackground() throws Exception {
 			
-			PublicationRepository repository = context.getPublicationRepository();
+			ExportRepository repository = context.getExportRepository();
 			boolean result = false;
 			
 			if(!context.getFilesToPublish().isEmpty()) {
@@ -202,8 +203,9 @@ public class DSpacePublisher implements ResourcePublisher {
 				}
 				
 				// Start publication process
-				result = repository.publishFileAndMetadata(context.getUserLogin(), context.getCollectionURL(), zipFile, context.getMetadataObject().getMapDoublinCoreToMetadata());
-				
+				//TODO: Map<String, List<String>>
+				String editUrl = repository.exportNewEntryWithFileAndMetadata(context.collectionURL, zipFile, true, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				result = (editUrl != null);
 				// Delete zip-file
 				try {
 					FileUtils.delete(zipFile); 				
@@ -214,8 +216,9 @@ public class DSpacePublisher implements ResourcePublisher {
 			} else {
 				
 				// Publication: metadata only
-				
-				result = repository.publishMetadata(context.getUserLogin(), context.getCollectionURL(), context.getMetadataObject().getMapDoublinCoreToMetadata());
+				//TODO: Map<String, List<String>>
+				String editUrl = repository.exportNewEntryWithMetadata(context.getCollectionURL(), context.getMetadataObject().getMapDoublinCoreToMetadata());
+				result = (editUrl != null);
 			}
 			
 			return Boolean.valueOf(result);
