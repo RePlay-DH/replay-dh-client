@@ -367,10 +367,10 @@ public final class WorkflowUIUtils {
 		for(LocalFileObject fileObject : files) {
 			Resource resource = fileObject.getResource();
 
-			if(resource==null) {
+			//if(resource==null) {
 				// Just a dummy, we'll convert if needed anyway
-				resource = DefaultResource.withIdentifiers(fileObject.getIdentifiers());
-			}
+			resource = DefaultResource.withIdentifiers(fileObject.getIdentifiers());
+			//}
 
 			resource = WorkflowUtils.derive(resource, type);
 

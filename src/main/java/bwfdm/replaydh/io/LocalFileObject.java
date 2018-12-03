@@ -158,7 +158,7 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 					// Make sure we can handle files outside current workspace
 					Path workspace = environment.getWorkspace().getFolder();
 					if(file.startsWith(workspace)) {
-						file = workspace.relativize(file);
+						//file = workspace.relativize(file);
 						disambiguationContext = workspace.toString();
 					}
 
@@ -166,7 +166,7 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 
 					// Add PATH identifier
 					fileObject.identifiers.add(new Identifier(schema.getDefaultPathIdentifierType(),
-							file.toString(), disambiguationContext));
+							file.toAbsolutePath().toString(), disambiguationContext));
 
 					if(fileObject.checksum!=null) {
 						// Add CHECKSUM identifier

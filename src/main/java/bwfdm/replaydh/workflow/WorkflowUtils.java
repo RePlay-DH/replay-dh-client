@@ -151,7 +151,7 @@ public class WorkflowUtils {
 	public static Resource deriveResource(Identifiable source) {
 		Resource resource;
 
-		if(source.getType()==Type.PERSON) {
+		if(source.getType()==Type.RESOURCE) {
 			resource = (Resource) source;
 		} else {
 			resource = DefaultResource.uniqueResource();
@@ -164,7 +164,7 @@ public class WorkflowUtils {
 	public static Tool deriveTool(Identifiable source) {
 		Tool tool;
 
-		if(source.getType()==Type.PERSON) {
+		if(source.getType()==Type.TOOL) {
 			tool = (Tool) source;
 		} else {
 			tool = DefaultTool.uniqueTool();
