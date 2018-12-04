@@ -43,12 +43,14 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import javax.swing.AbstractButton;
@@ -1823,7 +1825,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		private void filterFiles(Set<LocalFileObject> files, long sizeLimit, Set<LocalFileObject> buffer) {
 
-			if(files!=null && !files.isEmpty()) {
+			if(!files.isEmpty()) {
 				for(LocalFileObject file :files) {
 					long size;
 
@@ -1856,6 +1858,34 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			filterFiles(modifiedFiles, sizeLimit, modifiedFilesToIgnore);
 		}
 
+		private final Predicate<Path> NO_FILTER = p -> false;
+
+		private void filterEmptyOrHiddenFiles() {
+
+			// Nothing to do if we don't have any new files
+			if(filesToAdd.isEmpty()) {
+				return;
+			}
+
+			Predicate<Path> filter = NO_FILTER;
+
+			if(environment.getBoolean(RDHProperty.GIT_IGNORE_EMPTY)) {
+				filter = filter.or(IOUtils::isEmpty);
+			}
+
+			if(environment.getBoolean(RDHProperty.GIT_IGNORE_HIDDEN)) {
+				filter = filter.or(IOUtils::isHidden);
+			}
+
+			if(filter!=NO_FILTER) {
+				for(Iterator<LocalFileObject> it=filesToAdd.iterator(); it.hasNext();) {
+					if(filter.test(it.next().getFile())) {
+						it.remove();
+					}
+				}
+			}
+		}
+
 		/**
 		 * @see javax.swing.SwingWorker#doInBackground()
 		 */
@@ -1872,6 +1902,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				if(!collectFiles()) {
 					return Boolean.FALSE;
 				}
+
+				filterEmptyOrHiddenFiles();
 
 				filterLargeFiles();
 

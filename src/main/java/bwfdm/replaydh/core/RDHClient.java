@@ -319,7 +319,12 @@ public class RDHClient {
 				// Initiate shutdown sequence
 				shutdown();
 
-				// Await clean shutdown
+				/*
+				 *  Await clean shutdown
+				 *
+				 *  Depending on the situation this hook gets called under,
+				 *  we might not be able to wait arbitrarily long.
+				 */
 				try {
 					mainThread.join();
 				} catch (InterruptedException e) {
