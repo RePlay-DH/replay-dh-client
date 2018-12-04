@@ -1791,7 +1791,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 						newResources.add(resource);
 					}
 
-					newStep.addOutput((Resource) resource);
+					newStep.addOutput(resource);
 				}
 			}
 
