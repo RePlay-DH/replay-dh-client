@@ -490,8 +490,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		};
 
-		worker.execute();
 		dialog.setVisible(true);
+		worker.execute();
 
 		Object value = pane.getValue();
 		if(value instanceof Integer && ((Integer)value).intValue()==JOptionPane.CANCEL_OPTION) {
