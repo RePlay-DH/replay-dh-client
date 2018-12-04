@@ -151,7 +151,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	/**
 	 * The single workflow representing the content of our git working directory.
 	 */
-	private DelegatingWorkflow workflow;
+	private GitBackedWorkflow workflow;
 
 	/**
 	 * Our access to lower level git content/functionality.
@@ -284,7 +284,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		git = newGit;
 		revWalk = new RevWalk(newGit.getRepository());
 		// Start with an initially empty workflow
-		workflow = new DelegatingWorkflow(workspace.getSchema());
+		workflow = new GitBackedWorkflow(workspace.getSchema());
 		workflow.setTitle(config.getProperty(RDHInfoProperty.TITLE));
 		workflow.setDescription(config.getProperty(RDHInfoProperty.DESCRIPTION));
 
@@ -1572,6 +1572,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 */
 	private void setPendingStep(WorkflowStep step) {
 		requireNonNull(step);
+		checkArgument("Step already added", !step.isAdded());
 
 		synchronized (gitLock) {
 			if(pendingStep!=null)
@@ -1685,49 +1686,48 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * @throws IOException
 	 * @throws GitException
 	 */
-	private void commitPendingStep() throws IOException, GitException {
+	private void commitPendingStep(WorkflowStep step) throws IOException, GitException {
+		requireNonNull(step);
+
 		synchronized (gitLock) {
 			checkState("No active workflow", workflow!=null);
 
-			WorkflowStep step = pendingStep;
-			if(step!=null) {
-				try {
+			try {
 
-					// Serialize step and create metadata payload
-					String message = createCommitMessage(step);
+				// Serialize step and create metadata payload
+				String message = createCommitMessage(step);
 
-					// New branch if we need to create one
-					Ref newBranch = null;
-					final WorkflowStep previous = WorkflowUtils.previous(pendingStep);
-					// If preceding step already has outgoing actions, we need to branch
-					if(workflow.getNextStepCount(previous)>0) {
-						newBranch = createNewBranch(head());
-					}
-
-					// We assume all files to have been added to the index already
-					CommitCommand command = git.commit()
-							.setMessage(message)
-							.setAll(true);
-
-					ExecutionResult<RevCommit> result = executeCommand(command);
-					if(result.hasFailed()) {
-						// Make sure we clean up "temporary" branch in case commit failed
-						if(newBranch!=null) {
-							deleteBranch(newBranch);
-						}
-						throw new GitException("Failed to commit pending step: "+pendingStep.getId(), result.exception);
-					} else {
-						saveId(step, result.result);
-
-						// Tell listeners that "something" has changed with the step
-						workflow.fireWorkflowStepChanged(step);
-					}
-
-					// Make sure other entities get informed of the changes
-					clearStatusInfo();
-				} finally {
-					pendingStep = null;
+				// New branch if we need to create one
+				Ref newBranch = null;
+				final WorkflowStep previous = WorkflowUtils.previous(step);
+				// If preceding step already has outgoing actions, we need to branch
+				if(workflow.getNextStepCount(previous)>1) {
+					newBranch = createNewBranch(head());
 				}
+
+				// We assume all files to have been added to the index already
+				CommitCommand command = git.commit()
+						.setMessage(message)
+						.setAll(true);
+
+				ExecutionResult<RevCommit> result = executeCommand(command);
+				if(result.hasFailed()) {
+					// Make sure we clean up "temporary" branch in case commit failed
+					if(newBranch!=null) {
+						deleteBranch(newBranch);
+					}
+					throw new GitException("Failed to commit pending step: "+pendingStep.getId(), result.exception);
+				} else {
+					saveId(step, result.result);
+
+					// Tell listeners that "something" has changed with the step
+					workflow.fireWorkflowStepChanged(step);
+				}
+
+				// Make sure other entities get informed of the changes
+				clearStatusInfo();
+			} finally {
+				pendingStep = null;
 			}
 		}
 	}
@@ -2174,13 +2174,13 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * @author Markus Gärtner
 	 *
 	 */
-	private class DelegatingWorkflow extends DefaultWorkflow {
+	private class GitBackedWorkflow extends DefaultWorkflow {
 
 		private final AtomicBoolean skeletonLoaded = new AtomicBoolean(false);
 
 		private boolean ignoreEventRequests = false;
 
-		DelegatingWorkflow(WorkflowSchema schema) {
+		GitBackedWorkflow(WorkflowSchema schema) {
 			super(schema);
 		}
 
@@ -2305,7 +2305,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 				// Perform the git action(s)
 				try {
-					commitPendingStep();
+					commitPendingStep(pendingStep);
 
 					success = true;
 				} catch (IOException | GitException e) {
