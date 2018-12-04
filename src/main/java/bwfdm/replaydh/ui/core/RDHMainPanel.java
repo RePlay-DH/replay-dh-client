@@ -131,6 +131,7 @@ import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.WorkflowStep;
 import bwfdm.replaydh.workflow.impl.DefaultResource;
 import bwfdm.replaydh.workflow.resolver.IdentifiableResolver;
+import bwfdm.replaydh.workflow.schema.IdentifierType;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
 /**
@@ -1717,20 +1718,27 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			return newStep;
 		}
 
-		private void applyCachedResources(WorkflowStep step) {
+		private void applyCachedResources(WorkflowStep step, Set<Identifiable> newResources) {
 			ResourceCache cache = environment.getClient().getResourceCache();
 
-			Collection<CacheEntry> newResources = cache.getCacheEntries();
-
-			for(CacheEntry entry : newResources) {
+			Collection<CacheEntry> cachedResources = cache.getCacheEntries();
+			boolean found=false;
+			for(CacheEntry entry : cachedResources) {
+				found=false;
 				switch (entry.getRole()) {
 				case INPUT:
 					step.addInput(entry.getResource());
 					break;
 
 				case OUTPUT:
-					step.addOutput(entry.getResource());
-
+					for(Identifiable resource : newResources) {
+						if(resource.getIdentifier(IdentifierType.PATH).equals(entry.getResource().getIdentifier(IdentifierType.PATH))) {
+							found=true;
+						}
+					}
+					if (found == false) {
+						step.addOutput(entry.getResource());
+					}
 					break;
 
 				case TOOL:
@@ -1769,7 +1777,13 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					Resource resource = fileObject.getResource();
 
 					// Otherwise create a new resource and only accept resources as "output"
-					if(resource.hasIdentifiers() == false || !Resource.class.isInstance(resource)) {
+					if(resource == null || !Resource.class.isInstance(resource)) {
+						resource = DefaultResource.uniqueResource();
+
+						fileObject.getIdentifiers().forEach(resource::addIdentifier);
+
+						newResources.add(resource);
+					} else if (resource.hasIdentifiers() == false) {
 						resource = DefaultResource.uniqueResource();
 
 						fileObject.getIdentifiers().forEach(resource::addIdentifier);
@@ -1903,7 +1917,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					Set<Identifiable> newResources = addFilesAsOutput(newStep);
 
 					// Add all the previously cached resources
-					applyCachedResources(newStep);
+					applyCachedResources(newStep, newResources);
 
 					/*
 					 *  Start the part where the user gets involved.
