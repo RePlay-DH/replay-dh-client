@@ -819,6 +819,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	Window window = SwingUtilities.getWindowAncestor(scrollablePanel);
     	if(window!=null) {
     		window.revalidate();
+    		window.repaint();
     	}
 
     	scrollablePanel.requestFocusInWindow(); //put focus somewhere in Window, just to remove the focus from other JTextComponents
