@@ -730,6 +730,22 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		return GuiUtils.showEditorDialogWithControl(frame, editor, title, true);
 	}
 
+	private static final Predicate<Path> NO_FILTER = p -> false;
+
+	private Predicate<Path> getBasicIgnoreFilter() {
+		Predicate<Path> filter = NO_FILTER;
+
+		if(environment.getBoolean(RDHProperty.GIT_IGNORE_EMPTY)) {
+			filter = filter.or(IOUtils::isEmpty);
+		}
+
+		if(environment.getBoolean(RDHProperty.GIT_IGNORE_HIDDEN)) {
+			filter = filter.or(IOUtils::isHidden);
+		}
+
+		return filter;
+	}
+
 	/**
 	 * Compact outline for file tracker status in the right control area.
 	 *
@@ -819,7 +835,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				timeLabel.setText(timeText);
 
 				int totalFileCount = 0;
-				totalFileCount += updateLabel(newFilesLabel, TrackingStatus.UNKNOWN);
+				totalFileCount += updateFilterableLabel(newFilesLabel, TrackingStatus.UNKNOWN);
 				totalFileCount += updateLabel(missingFilesLabel, TrackingStatus.MISSING);
 				totalFileCount += updateLabel(modifiedFilesLabel, TrackingStatus.MODIFIED);
 				totalFileCount += updateLabel(corruptedFilesLabel, TrackingStatus.CORRUPTED);
@@ -856,6 +872,15 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		}
 
+		private Set<Path> filesForStatus(TrackingStatus status) {
+			try {
+				return fileTracker.getFilesForStatus(status);
+			} catch (TrackerException e) {
+				log.error("Failed to query file tracker for files with status: "+status, e);
+				return null;
+			}
+		}
+
 		private int updateLabel(JLabel label, TrackingStatus status) {
 			int fileCount = fileCountForStatus(status);
 			String text = fileCount<0 ? NA : String.valueOf(fileCount);
@@ -863,6 +888,38 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			label.setText(text);
 
 			return fileCount;
+		}
+
+		private int updateFilterableLabel(JLabel label, TrackingStatus status) {
+			Set<Path> files = filesForStatus(status);
+
+			String text = NA;
+
+			if(files!=null) {
+				int fileCount = files.size();
+				int filtered = 0;
+
+				Predicate<Path> filter = getBasicIgnoreFilter();
+				if(filter!=NO_FILTER) {
+					filtered = (int) files.stream()
+							.filter(filter)
+							.count();
+
+					fileCount -= filtered;
+				}
+
+				text = String.valueOf(fileCount);
+
+				if(filtered>0) {
+					text = ResourceManager.getInstance().get(
+							"replaydh.panels.workspaceTracker.filteredFiles",
+							fileCount, filtered);
+				}
+			}
+
+			label.setText(text);
+
+			return files.size();
 		}
 
 		/**
@@ -1858,8 +1915,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			filterFiles(modifiedFiles, sizeLimit, modifiedFilesToIgnore);
 		}
 
-		private final Predicate<Path> NO_FILTER = p -> false;
-
 		private void filterEmptyOrHiddenFiles() {
 
 			// Nothing to do if we don't have any new files
@@ -1867,15 +1922,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				return;
 			}
 
-			Predicate<Path> filter = NO_FILTER;
-
-			if(environment.getBoolean(RDHProperty.GIT_IGNORE_EMPTY)) {
-				filter = filter.or(IOUtils::isEmpty);
-			}
-
-			if(environment.getBoolean(RDHProperty.GIT_IGNORE_HIDDEN)) {
-				filter = filter.or(IOUtils::isHidden);
-			}
+			Predicate<Path> filter = getBasicIgnoreFilter();
 
 			if(filter!=NO_FILTER) {
 				for(Iterator<LocalFileObject> it=filesToAdd.iterator(); it.hasNext();) {
