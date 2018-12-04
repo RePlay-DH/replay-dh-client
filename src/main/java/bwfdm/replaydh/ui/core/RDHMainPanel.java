@@ -1777,19 +1777,11 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					Resource resource = fileObject.getResource();
 
 					// Otherwise create a new resource and only accept resources as "output"
-					if(resource == null || !Resource.class.isInstance(resource)) {
-						resource = DefaultResource.uniqueResource();
+					resource = DefaultResource.uniqueResource();
 
-						fileObject.getIdentifiers().forEach(resource::addIdentifier);
+					fileObject.getIdentifiers().forEach(resource::addIdentifier);
 
-						newResources.add(resource);
-					} else if (resource.hasIdentifiers() == false) {
-						resource = DefaultResource.uniqueResource();
-
-						fileObject.getIdentifiers().forEach(resource::addIdentifier);
-
-						newResources.add(resource);
-					}
+					newResources.add(resource);
 
 					newStep.addOutput(resource);
 				}
