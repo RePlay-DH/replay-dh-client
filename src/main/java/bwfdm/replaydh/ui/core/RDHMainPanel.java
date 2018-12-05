@@ -1291,7 +1291,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 
 		private void showPreferencesDialog() {
-			PreferencesDialog.showDialog(environment, RDHMainPanel.this);
+			PreferencesDialog.showDialog(environment, GuiUtils.getFrame(RDHMainPanel.this));
 		}
 
 		private void openWorkspaceFolder() {

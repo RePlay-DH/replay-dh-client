@@ -765,7 +765,7 @@ public class GuiUtils {
 		convertedTooltip = convertedTooltip.replaceAll(
 				"\\n\\r|\\r\\n|\\n|\\r", "<br>");
 		if(prependHTML && convertedTooltip.length()!=tooltip.length()) {
-			tooltip = "<html>"+convertedTooltip;
+			tooltip = HTML_TAG+convertedTooltip;
 		}
 
 		return tooltip;
