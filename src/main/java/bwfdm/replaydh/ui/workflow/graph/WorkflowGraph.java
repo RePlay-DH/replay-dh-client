@@ -685,7 +685,6 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 
 		if(isBuilding.compareAndSet(false, true)) {
 			try {
-				graph.setModel(new mxGraphModel());
 				layout.doLayout();
 			} finally {
 				isBuilding.set(false);
