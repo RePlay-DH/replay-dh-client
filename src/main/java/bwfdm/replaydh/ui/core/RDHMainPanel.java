@@ -1789,7 +1789,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 				case OUTPUT:
 					step.addOutput(entry.getResource());
-
 					break;
 
 				case TOOL:

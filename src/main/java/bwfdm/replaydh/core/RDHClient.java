@@ -653,6 +653,10 @@ public class RDHClient {
 
 		synchronized (lock) {
 
+//			if(debug) {
+//				java.util.logging.Logger.getLogger("bwfdm.replaydh").setLevel(Level.FINEST);
+//			}
+
 			Runtime.getRuntime().addShutdownHook(shutdownHook);
 
 			clientRuntime.start();
