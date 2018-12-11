@@ -1998,6 +1998,18 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		// Treat our initial commit special
 		final RevCommit initialCommit = resolve(GitUtils.TAG_SOURCE);
 
+		if(isVerbose()) {
+			StringBuilder sb = new StringBuilder("----- Commits for graph -----");
+			for(RevCommit commit : commits) {
+				sb.append("\n  ").append(commit);
+			}
+			sb.append('\n');
+			sb.append("initial:  ").append(initialCommit).append('\n');
+			sb.append("---------------------------------");
+
+			log.info(sb.toString());
+		}
+
 //		// Lookup to see which commits start a new branch
 //		final Map<RevCommit, String> branchPointers = getBranchPointers();
 
@@ -2006,14 +2018,19 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 			// Sanity check against duplicate step creation (should normally never happen)
 			if(lookupStep(commit)!=null) {
+				if(isVerbose()) {
+					log.info("Redundant graph node for commit: {}", commit);
+				}
 				continue;
 			}
 
 			WorkflowStep step;
 
 			if(commit.equals(initialCommit)) {
+//				log.info("Detected initial step commit {}", commit);
 				step = workflow.getInitialStepDirect();
 			} else {
+//				log.info("Proper step commit {}", commit);
 				step = workflow.createWorkflowStep();
 			}
 
@@ -2106,6 +2123,10 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 				// A pending workflow step won't have any commit assigned to it
 				if(commit==null) {
 					return;
+				}
+
+				if(isVerbose()) {
+					log.info("Loading step for commit {}", commit);
 				}
 
 				String message = commit.getFullMessage();
@@ -2281,15 +2302,27 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		 * method, so prevent super class from automatically changing it during regular
 		 * method calls.
 		 *
-		 * @see bwfdm.replaydh.workflow.impl.DefaultWorkflow#autoAssignActiveStepOnAdd()
+		 * @see bwfdm.replaydh.workflow.impl.DefaultWorkflow#isAutoAssignActiveStepOnAdd()
 		 */
 		@Override
-		protected boolean autoAssignActiveStepOnAdd() {
+		protected boolean isAutoAssignActiveStepOnAdd() {
 			return false;
 		}
 
 		/**
-		 * Calls the super method and then delegates to the {@link JGitAdapter} to
+		 * Our workflow is purely virtual and derived from the git repository content.
+		 * We therefore solely rely on the metadta stored there to be the "single source of
+		 * truth". No meddling with ids there!
+		 *
+		 * @see bwfdm.replaydh.workflow.impl.DefaultWorkflow#isEnsureUniqueStepIdOnAdd()
+		 */
+		@Override
+		protected boolean isEnsureUniqueStepIdOnAdd() {
+			return false;
+		}
+
+		/**
+		 * Finalizes the pending step and then delegates to the {@link JGitAdapter} to
 		 * commit pending changes.
 		 *
 		 * @see bwfdm.replaydh.workflow.impl.DefaultWorkflow#endTransaction()
@@ -2302,6 +2335,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			// If transaction got cancelled, we have nothing to do here
 			if(pendingStep!=null) {
 				boolean success = false;
+
+				// Finalize the step data
+				ensureUniqueStepId(pendingStep);
 
 				// Perform the git action(s)
 				try {

@@ -157,7 +157,7 @@ public class DefaultWorkflow implements Workflow {
 		return id;
 	}
 
-	private void checkUniqueId(String id) {
+	void checkUniqueId(String id) {
 		if(idLookup.containsKey(id))
 			throw new IllegalArgumentException("Duplicate id: "+id);
 	}
@@ -610,7 +610,7 @@ public class DefaultWorkflow implements Workflow {
 		if(result) {
 			fireWorkflowStepAdded(target);
 
-			if(autoAssignActiveStepOnAdd()) {
+			if(isAutoAssignActiveStepOnAdd()) {
 
 				WorkflowStep oldActiveStep = getActiveStep();
 
@@ -643,8 +643,9 @@ public class DefaultWorkflow implements Workflow {
 
 			// Id not initialized yet -> create a fresh one
 			if(id==null || UNSET_ID.equals(id)) {
-				id = acceptOrCreateNewId(null);
-				target.setId(id);
+				if(isEnsureUniqueStepIdOnAdd()) {
+					ensureUniqueStepId(target);
+				}
 			} else {
 				// If id has been set already, we expect it to be unique!
 				checkUniqueId(id);
@@ -653,6 +654,21 @@ public class DefaultWorkflow implements Workflow {
 //		}
 
 		return true;
+	}
+
+	protected boolean isEnsureUniqueStepIdOnAdd() {
+		return true;
+	}
+
+	protected void ensureUniqueStepId(WorkflowStep step) {
+
+		String id = step.getId();
+
+		// Id not initialized yet -> create a fresh one
+		if(id==null || UNSET_ID.equals(id)) {
+			id = acceptOrCreateNewId(null); //TODO reset id to null if UNSET
+			step.setId(id);
+		}
 	}
 
 	/**
@@ -775,7 +791,7 @@ public class DefaultWorkflow implements Workflow {
 	 *
 	 * @return
 	 */
-	protected boolean autoAssignActiveStepOnAdd() {
+	protected boolean isAutoAssignActiveStepOnAdd() {
 		return true;
 	}
 
