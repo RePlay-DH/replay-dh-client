@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.workflow;
@@ -1088,107 +1088,109 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
      */
     private void copyWorkflowStepParameters(final WorkflowStep workflowStepSource, WorkflowStep workflowStepDestination) {
 
-    	// Title
-   		workflowStepDestination.setTitle(workflowStepSource.getTitle());
-   		if(workflowStepDestination.getTitle() == null) {
-   			workflowStepDestination.setTitle(""); //replace null value to "", to avoid possible null pointer exception
-   		}
+    	workflowStepDestination.copyFrom(workflowStepSource);
 
-    	// Description
-   		workflowStepDestination.setDescription(workflowStepSource.getDescription());
-   		if(workflowStepDestination.getDescription() == null) {
-   			workflowStepDestination.setDescription(""); //replace null value to "", to avoid possible null pointer exception
-   		}
-
-    	// Persons
-    	for(Person person: workflowStepDestination.getPersons()) {
-    		workflowStepDestination.removePerson(person); //remove all persons in the destination workflow step
-    	}
-    	for(Person personOrig: workflowStepSource.getPersons()) {
-    		DefaultPerson person = DefaultPerson.uniquePerson();
-
-    		if(personOrig.getDescription() != null) {
-    			person.setDescription(personOrig.getDescription());
-    		}
-    		if(personOrig.getRole() != null) {
-    			person.setRole(personOrig.getRole());
-    		}
-    		//FIXME: is it OK when we change systemID?
-//    		if(personOrig.getSystemId() != null) {
-//    			person.setSystemId(personOrig.getSystemId());
+//    	// Title
+//   		workflowStepDestination.setTitle(workflowStepSource.getTitle());
+//   		if(workflowStepDestination.getTitle() == null) {
+//   			workflowStepDestination.setTitle(""); //replace null value to "", to avoid possible null pointer exception
+//   		}
+//
+//    	// Description
+//   		workflowStepDestination.setDescription(workflowStepSource.getDescription());
+//   		if(workflowStepDestination.getDescription() == null) {
+//   			workflowStepDestination.setDescription(""); //replace null value to "", to avoid possible null pointer exception
+//   		}
+//
+//    	// Persons
+//    	for(Person person: workflowStepDestination.getPersons()) {
+//    		workflowStepDestination.removePerson(person); //remove all persons in the destination workflow step
+//    	}
+//    	for(Person personOrig: workflowStepSource.getPersons()) {
+//    		DefaultPerson person = DefaultPerson.uniquePerson();
+//
+//    		if(personOrig.getDescription() != null) {
+//    			person.setDescription(personOrig.getDescription());
 //    		}
-    		for(Identifier identifier: personOrig.getIdentifiers()) {
-    			person.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
-    		}
-    		workflowStepDestination.addPerson(person);
-    	}
-
-    	// Tool
-    	DefaultTool tool = null;
-    	if(workflowStepSource.getTool()!=null) {
-	    	tool = DefaultTool.uniqueTool();
-	    	if(workflowStepSource.getTool().getDescription() != null) {
-	    		tool.setDescription(workflowStepSource.getTool().getDescription());
-	    	}
-	    	if(workflowStepSource.getTool().getEnvironment() != null) {
-	    		tool.setEnvironment(workflowStepSource.getTool().getEnvironment());
-	    	}
-	    	if(workflowStepSource.getTool().getParameters() != null) {
-	    		tool.setParameters(workflowStepSource.getTool().getParameters());
-	    	}
-	    	if(workflowStepSource.getTool().getResourceType() != null) {
-	    		tool.setResourceType(workflowStepSource.getTool().getResourceType());
-	    	}
-//	    	if(workflowStepSource.getTool().getSystemId() != null) {
-//	    		tool.setSystemId(workflowStepSource.getTool().getSystemId());
+//    		if(personOrig.getRole() != null) {
+//    			person.setRole(personOrig.getRole());
+//    		}
+//    		//FIXME: is it OK when we change systemID?
+////    		if(personOrig.getSystemId() != null) {
+////    			person.setSystemId(personOrig.getSystemId());
+////    		}
+//    		for(Identifier identifier: personOrig.getIdentifiers()) {
+//    			person.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
+//    		}
+//    		workflowStepDestination.addPerson(person);
+//    	}
+//
+//    	// Tool
+//    	DefaultTool tool = null;
+//    	if(workflowStepSource.getTool()!=null) {
+//	    	tool = DefaultTool.uniqueTool();
+//	    	if(workflowStepSource.getTool().getDescription() != null) {
+//	    		tool.setDescription(workflowStepSource.getTool().getDescription());
 //	    	}
-	    	for(Identifier identifier: workflowStepSource.getTool().getIdentifiers()) {
-	    		tool.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
-	    	}
-    	}
-	    workflowStepDestination.setTool(tool);
-
-    	// INPUT resources
-    	for(Resource input: workflowStepDestination.getInput()) {
-    		workflowStepDestination.removeInput(input); // remove all input resources from the destination workflow step
-    	}
-    	for(Resource inputOrig: workflowStepSource.getInput()) {
-    		DefaultResource input = DefaultResource.uniqueResource();
-    		if(inputOrig.getDescription() != null) {
-    			input.setDescription(inputOrig.getDescription());
-    		}
-    		if(inputOrig.getResourceType() != null) {
-    			input.setResourceType(inputOrig.getResourceType());
-    		}
-//    		if(inputOrig.getSystemId() != null) {
-//    			input.setSystemId(inputOrig.getSystemId());
+//	    	if(workflowStepSource.getTool().getEnvironment() != null) {
+//	    		tool.setEnvironment(workflowStepSource.getTool().getEnvironment());
+//	    	}
+//	    	if(workflowStepSource.getTool().getParameters() != null) {
+//	    		tool.setParameters(workflowStepSource.getTool().getParameters());
+//	    	}
+//	    	if(workflowStepSource.getTool().getResourceType() != null) {
+//	    		tool.setResourceType(workflowStepSource.getTool().getResourceType());
+//	    	}
+////	    	if(workflowStepSource.getTool().getSystemId() != null) {
+////	    		tool.setSystemId(workflowStepSource.getTool().getSystemId());
+////	    	}
+//	    	for(Identifier identifier: workflowStepSource.getTool().getIdentifiers()) {
+//	    		tool.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
+//	    	}
+//    	}
+//	    workflowStepDestination.setTool(tool);
+//
+//    	// INPUT resources
+//    	for(Resource input: workflowStepDestination.getInput()) {
+//    		workflowStepDestination.removeInput(input); // remove all input resources from the destination workflow step
+//    	}
+//    	for(Resource inputOrig: workflowStepSource.getInput()) {
+//    		DefaultResource input = DefaultResource.uniqueResource();
+//    		if(inputOrig.getDescription() != null) {
+//    			input.setDescription(inputOrig.getDescription());
 //    		}
-    		for(Identifier identifier: inputOrig.getIdentifiers()) {
-    			input.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
-    		}
-    		workflowStepDestination.addInput(input);
-    	}
-
-    	// OUTPUT resources
-    	for(Resource output: workflowStepDestination.getOutput()) {
-    		workflowStepDestination.removeOutput(output); // remove all output resources from the destination workflow step
-    	}
-    	for(Resource outputOrig: workflowStepSource.getOutput()) {
-    		DefaultResource output = DefaultResource.uniqueResource();
-    		if(outputOrig.getDescription() != null) {
-    			output.setDescription(outputOrig.getDescription());
-    		}
-    		if(outputOrig.getResourceType() != null) {
-    			output.setResourceType(outputOrig.getResourceType());
-    		}
-//    		if(outputOrig.getSystemId() != null) {
-//    			output.setSystemId(outputOrig.getSystemId());
+//    		if(inputOrig.getResourceType() != null) {
+//    			input.setResourceType(inputOrig.getResourceType());
 //    		}
-    		for(Identifier identifier: outputOrig.getIdentifiers()) {
-    			output.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
-    		}
-    		workflowStepDestination.addOutput(output);
-    	}
+////    		if(inputOrig.getSystemId() != null) {
+////    			input.setSystemId(inputOrig.getSystemId());
+////    		}
+//    		for(Identifier identifier: inputOrig.getIdentifiers()) {
+//    			input.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
+//    		}
+//    		workflowStepDestination.addInput(input);
+//    	}
+//
+//    	// OUTPUT resources
+//    	for(Resource output: workflowStepDestination.getOutput()) {
+//    		workflowStepDestination.removeOutput(output); // remove all output resources from the destination workflow step
+//    	}
+//    	for(Resource outputOrig: workflowStepSource.getOutput()) {
+//    		DefaultResource output = DefaultResource.uniqueResource();
+//    		if(outputOrig.getDescription() != null) {
+//    			output.setDescription(outputOrig.getDescription());
+//    		}
+//    		if(outputOrig.getResourceType() != null) {
+//    			output.setResourceType(outputOrig.getResourceType());
+//    		}
+////    		if(outputOrig.getSystemId() != null) {
+////    			output.setSystemId(outputOrig.getSystemId());
+////    		}
+//    		for(Identifier identifier: outputOrig.getIdentifiers()) {
+//    			output.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
+//    		}
+//    		workflowStepDestination.addOutput(output);
+//    	}
     }
 
 
