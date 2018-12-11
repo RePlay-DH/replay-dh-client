@@ -488,7 +488,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 			@Override
 			protected void done() {
-				dialog.setVisible(false);
+				dialog.dispose();
 			}
 		};
 
