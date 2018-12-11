@@ -138,4 +138,32 @@ public class DefaultTool extends DefaultResource implements Tool {
 	public String toString() {
 		return String.format("Tool@[identifiers=%s type=%s environment='%s' parameters='%S']", identifiers(), getResourceType(), environment, parameters);
 	}
+
+    /**
+     * {@inheritDoc}
+     *
+     * In addition to the fields copied by the super method, this implementation
+     * also copies over the {@link #getEnvironment() environment} and
+     * {@link #getParameters() parameters} if available.
+     *
+     * @see bwfdm.replaydh.workflow.Resource#copyFrom(bwfdm.replaydh.workflow.Identifiable)
+     */
+    @Override
+	public void copyFrom(Identifiable source) {
+    	super.copyFrom(source);
+
+    	if(source instanceof Tool) {
+    		Tool other = (Tool) source;
+
+    		String environment = other.getEnvironment();
+    		if(environment!=null) {
+    			setEnvironment(environment);
+    		}
+
+    		String parameters = other.getParameters();
+    		if(parameters!=null) {
+    			setParameters(parameters);
+    		}
+    	}
+    }
 }

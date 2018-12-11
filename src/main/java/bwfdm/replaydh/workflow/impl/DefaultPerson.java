@@ -55,6 +55,26 @@ public class DefaultPerson extends AbstractIdentifiable implements Person {
 	}
 
 	/**
+     * {@inheritDoc}
+     *
+     * In addition to the fields copied by the super method, this implementation
+     * also copies over the {@link #getRole() role} if available.
+     *
+	 * @see bwfdm.replaydh.workflow.Identifiable#copyFrom(bwfdm.replaydh.workflow.Identifiable)
+	 */
+	@Override
+	public void copyFrom(Identifiable source) {
+		super.copyFrom(source);
+
+		if(source instanceof Person) {
+			String role = ((Person)source).getRole();
+			if(role!=null) {
+				setRole(role);
+			}
+		}
+	}
+
+	/**
 	 * @see bwfdm.replaydh.workflow.Identifiable#getType()
 	 */
 	@Override

@@ -224,10 +224,7 @@ public interface Identifiable {
      *
      * @param source
      */
-    default void copyFrom(Identifiable source) {
-    	setDescription(source.getDescription());
-    	source.forEachIdentifier(this::addIdentifier); // Identifier is a value object class, so we can reuse instances
-    }
+    void copyFrom(Identifiable source);
 
     /**
      * The physical type an identifiable can represent.

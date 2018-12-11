@@ -116,4 +116,24 @@ public class DefaultResource extends AbstractIdentifiable implements Resource {
 	public String toString() {
 		return String.format("Resource@[identifiers=%s, type=%s]", identifiers(), resourceType);
 	}
+
+    /**
+     * {@inheritDoc}
+     *
+     * In addition to the fields copied by the super method, this implementation
+     * also copies over the {@link #getResourceType() resource type} if available.
+     *
+     * @see bwfdm.replaydh.workflow.Identifiable#copyFrom(bwfdm.replaydh.workflow.Identifiable)
+     */
+    @Override
+	public void copyFrom(Identifiable source) {
+    	super.copyFrom(source);
+
+    	if(source instanceof Resource) {
+    		String resourceType = ((Resource)source).getResourceType();
+    		if(resourceType!=null) {
+    			setResourceType(resourceType);
+    		}
+    	}
+    }
 }
