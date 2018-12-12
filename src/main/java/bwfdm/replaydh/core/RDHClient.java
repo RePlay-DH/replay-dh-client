@@ -791,35 +791,42 @@ public class RDHClient {
 //		}
 	}
 
+	/**
+	 * For now uses the {@link IdentifiableResolver#NOOP_RESOLVER} as a workaround
+	 * for the previous mess.
+	 * @return
+	 */
 	private IdentifiableResolver createResourceResolver() {
 
 		synchronized (lock) {
-			Path rootFolder = null;
-
-			String savedRootFolder = getEnvironment().getProperty(RDHProperty.CLIENT_IDENTIFIER_CACHE_ROOT_FOLDER);
-			if(savedRootFolder!=null) {
-				rootFolder = Paths.get(savedRootFolder);
-			}
-
-			if(rootFolder==null) {
-				try {
-					rootFolder = ensureUserFolder(UserFolder.IDENTIFIERS);
-				} catch (IOException e) {
-					throw new RDHException("Unable to create default directory for identifier cache", e);
-				}
-			}
-
-			if(!Files.isDirectory(rootFolder, LinkOption.NOFOLLOW_LINKS))
-				throw new RDHException("Identifier cache root folder must point to a directory: "+rootFolder);
-
-			IdentifiableResolver resolver = LocalIdentifiableResolver.newBuilder()
-					.autoPerformCacheSerialization(true)
-					.resourceProvider(FileResourceProvider.getSharedInstance())
-					.folder(rootFolder)
-					.useDefaultSerialization()
-					.build();
-
-			return addAndStartTool(resolver);
+//			Path rootFolder = null;
+//
+//			String savedRootFolder = getEnvironment().getProperty(RDHProperty.CLIENT_IDENTIFIER_CACHE_ROOT_FOLDER);
+//			if(savedRootFolder!=null) {
+//				rootFolder = Paths.get(savedRootFolder);
+//			}
+//
+//			if(rootFolder==null) {
+//				try {
+//					rootFolder = ensureUserFolder(UserFolder.IDENTIFIERS);
+//				} catch (IOException e) {
+//					throw new RDHException("Unable to create default directory for identifier cache", e);
+//				}
+//			}
+//
+//			if(!Files.isDirectory(rootFolder, LinkOption.NOFOLLOW_LINKS))
+//				throw new RDHException("Identifier cache root folder must point to a directory: "+rootFolder);
+//
+//			IdentifiableResolver resolver = LocalIdentifiableResolver.newBuilder()
+//					.autoPerformCacheSerialization(true)
+//					.resourceProvider(FileResourceProvider.getSharedInstance())
+//					.folder(rootFolder)
+//					.useDefaultSerialization()
+//					.build();
+//
+//			return addAndStartTool(resolver);
+			
+			return IdentifiableResolver.NOOP_RESOLVER;
 		}
 	}
 
