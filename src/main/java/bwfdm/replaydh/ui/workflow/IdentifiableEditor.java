@@ -358,7 +358,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		}
 
 		// Special handling of single item edits
-		if(identifiers.size()==1) {
+		if(!hasMultipleResources()) {
 			identifiers.iterator().next().state = EditState.IGNORED;
 		}
 
@@ -371,7 +371,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	@Override
 	public void applyEdit() {
 		// Special handling of single item edits
-		if(identifiers.size()==1) {
+		if(!hasMultipleResources()) {
 			onDoneButtonClicked(null); //TODO we should rework the signature sof all the onXXXClicked methods here
 		}
 
@@ -516,7 +516,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			taDescription.setText(null);
 			cbRoleType.setSelectedItem(null);
 		} else {
-			proxy.state = EditState.EDITING;
+			if(hasMultipleResources())
+				proxy.state = EditState.EDITING;
 
 			Identifiable identifiable = proxy.getTarget();
 
@@ -651,7 +652,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 	private void selectNextIdentifier() {
 
-		if(identifiers.size()>1) {
+		if(hasMultipleResources()) {
 			int currentIndex = identifiableList.getSelectedIndex();
 			if(currentIndex!=-1 && currentIndex<identifiers.size()-1) {
 				GuiUtils.invokeEDTLater(() -> identifiableList.setSelectedIndex(currentIndex+1));
