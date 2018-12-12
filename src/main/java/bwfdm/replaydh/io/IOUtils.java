@@ -280,4 +280,22 @@ public class IOUtils {
 			log.error("Failed to close resource", e);
 		}
 	}
+
+	public static boolean isEmpty(Path path) {
+		try {
+			return Files.size(path)==0;
+		} catch (IOException e) {
+			// If we can't determine size, assume file is not empty
+			return false;
+		}
+	}
+
+	public static boolean isHidden(Path path) {
+		try {
+			return Files.isHidden(path);
+		} catch (IOException e) {
+			// If we can't determine 'hidden' state, assume file is not empty
+			return false;
+		}
+	}
 }

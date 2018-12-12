@@ -104,7 +104,7 @@ public class ExtensionListCellRenderer extends DefaultListCellRenderer {
 
 		super.getListCellRendererComponent(list, label, index, isSelected, cellHasFocus);
 
-		setToolTipText(GuiUtils.toUnwrappedSwingTooltip(tooltip));
+		setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 		setIcon(icon);
 
 		return this;

@@ -38,8 +38,7 @@ The following table lists currently supported parameters:
 
 ### Known Issues
 
-- Closing the client in ways other than *File>>Exit* from the main window menu results in configurations and other data not bein stored properly. Please for now stick to this way of closing the client.
-- Repeatedly closing and reopening the client main window when tray support is active results in an exception.
+Nothing major for now...
 
 ### License
 

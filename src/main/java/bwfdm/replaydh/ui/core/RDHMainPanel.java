@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -731,6 +732,22 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		return GuiUtils.showEditorDialogWithControl(frame, editor, title, true);
 	}
 
+	private static final Predicate<Path> NO_FILTER = p -> false;
+
+	private Predicate<Path> getBasicIgnoreFilter() {
+		Predicate<Path> filter = NO_FILTER;
+
+		if(environment.getBoolean(RDHProperty.GIT_IGNORE_EMPTY)) {
+			filter = filter.or(IOUtils::isEmpty);
+		}
+
+		if(environment.getBoolean(RDHProperty.GIT_IGNORE_HIDDEN)) {
+			filter = filter.or(IOUtils::isHidden);
+		}
+
+		return filter;
+	}
+
 	/**
 	 * Compact outline for file tracker status in the right control area.
 	 *
@@ -820,7 +837,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				timeLabel.setText(timeText);
 
 				int totalFileCount = 0;
-				totalFileCount += updateLabel(newFilesLabel, TrackingStatus.UNKNOWN);
+				totalFileCount += updateFilterableLabel(newFilesLabel, TrackingStatus.UNKNOWN);
 				totalFileCount += updateLabel(missingFilesLabel, TrackingStatus.MISSING);
 				totalFileCount += updateLabel(modifiedFilesLabel, TrackingStatus.MODIFIED);
 				totalFileCount += updateLabel(corruptedFilesLabel, TrackingStatus.CORRUPTED);
@@ -857,6 +874,15 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		}
 
+		private Set<Path> filesForStatus(TrackingStatus status) {
+			try {
+				return fileTracker.getFilesForStatus(status);
+			} catch (TrackerException e) {
+				log.error("Failed to query file tracker for files with status: "+status, e);
+				return null;
+			}
+		}
+
 		private int updateLabel(JLabel label, TrackingStatus status) {
 			int fileCount = fileCountForStatus(status);
 			String text = fileCount<0 ? NA : String.valueOf(fileCount);
@@ -864,6 +890,38 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			label.setText(text);
 
 			return fileCount;
+		}
+
+		private int updateFilterableLabel(JLabel label, TrackingStatus status) {
+			Set<Path> files = filesForStatus(status);
+
+			String text = NA;
+
+			if(files!=null) {
+				int fileCount = files.size();
+				int filtered = 0;
+
+				Predicate<Path> filter = getBasicIgnoreFilter();
+				if(filter!=NO_FILTER) {
+					filtered = (int) files.stream()
+							.filter(filter)
+							.count();
+
+					fileCount -= filtered;
+				}
+
+				text = String.valueOf(fileCount);
+
+				if(filtered>0) {
+					text = ResourceManager.getInstance().get(
+							"replaydh.panels.workspaceTracker.filteredFiles",
+							fileCount, filtered);
+				}
+			}
+
+			label.setText(text);
+
+			return files.size();
 		}
 
 		/**
@@ -1109,7 +1167,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		private void showCacheDialog(Role role, URI uri) {
 			//TODO implement actual dialog
-			GuiUtils.showDefaultInfo(null, "Dialog for describing URL resource");
+			GuiUtils.showDefaultInfo(null, "Dialog for describing URL resource (coming soon)");
 		}
 
 		@Override
@@ -1235,7 +1293,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 
 		private void showPreferencesDialog() {
-			PreferencesDialog.showDialog(environment, RDHMainPanel.this);
+			PreferencesDialog.showDialog(environment, GuiUtils.getFrame(RDHMainPanel.this));
 		}
 
 		private void openWorkspaceFolder() {
@@ -1731,10 +1789,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					break;
 
 				case OUTPUT:
-
-					if (!filter.test(entry.getResource())) {
-						step.addOutput(entry.getResource());
-					}
+					step.addOutput(entry.getResource());
 					break;
 
 				case TOOL:
@@ -1828,7 +1883,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		private void filterFiles(Set<LocalFileObject> files, long sizeLimit, Set<LocalFileObject> buffer) {
 
-			if(files!=null && !files.isEmpty()) {
+			if(!files.isEmpty()) {
 				for(LocalFileObject file :files) {
 					long size;
 
@@ -1861,6 +1916,24 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			filterFiles(modifiedFiles, sizeLimit, modifiedFilesToIgnore);
 		}
 
+		private void filterEmptyOrHiddenFiles() {
+
+			// Nothing to do if we don't have any new files
+			if(filesToAdd.isEmpty()) {
+				return;
+			}
+
+			Predicate<Path> filter = getBasicIgnoreFilter();
+
+			if(filter!=NO_FILTER) {
+				for(Iterator<LocalFileObject> it=filesToAdd.iterator(); it.hasNext();) {
+					if(filter.test(it.next().getFile())) {
+						it.remove();
+					}
+				}
+			}
+		}
+
 		/**
 		 * @see javax.swing.SwingWorker#doInBackground()
 		 */
@@ -1877,6 +1950,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				if(!collectFiles()) {
 					return Boolean.FALSE;
 				}
+
+				filterEmptyOrHiddenFiles();
 
 				filterLargeFiles();
 

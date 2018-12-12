@@ -27,6 +27,7 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -102,6 +103,7 @@ import bwfdm.replaydh.ui.helper.Editor;
 import bwfdm.replaydh.ui.helper.EditorControl;
 import bwfdm.replaydh.ui.icons.Resolution;
 import bwfdm.replaydh.utils.Mutable;
+import bwfdm.replaydh.utils.StringWrapper;
 import bwfdm.replaydh.utils.xml.HtmlUtils;
 
 /**
@@ -749,11 +751,63 @@ public class GuiUtils {
 
 	private static final String HTML_TAG = "<html>";
 
-	public static String toUnwrappedSwingTooltip(String tooltip) {
-		return toUnwrappedSwingTooltip(tooltip, true);
+	/**
+	 * A default limit for characters per line before a linebreak should be forced.
+	 * Chosen to be {@code 70}.
+	 */
+	public static final int DEFAULT_LINE_LIMIT = 70;
+
+	public static final String HTML_LINEBREAK = "<br>";
+
+	private static final StringWrapper plainTextWrapper = new StringWrapper()
+			.linebreak(HTML_LINEBREAK)
+			.header(HTML_TAG);
+
+	/**
+	 * Splits a text into lines with at most {@link #DEFAULT_LINE_LIMIT 70} characters.
+	 * Linebreaks will be realized with the {@link #HTML_LINEBREAK &lt;br&gt; tag} and
+	 * the text will have the {@code <html>} starting tag prepended in case it is missing.
+	 *
+	 * @param tooltip
+	 * @return
+	 */
+	public static String toSwingTooltip(String tooltip) {
+		if(tooltip==null || tooltip.isEmpty()) {
+			return null;
+		}
+		if(tooltip.startsWith(HTML_TAG)) {
+			return tooltip;
+		}
+
+		synchronized (plainTextWrapper) {
+			return plainTextWrapper.wrap(tooltip);
+		}
 	}
 
-	public static String toUnwrappedSwingTooltip(String tooltip, boolean prependHTML) {
+	public static String toSwingTooltip(String tooltip, JComponent component, int limit) {
+		if(tooltip==null || tooltip.isEmpty()) {
+			return null;
+		}
+		if(tooltip.startsWith(HTML_TAG)) {
+			return tooltip;
+		}
+
+		final FontMetrics fm = component.getFontMetrics(component.getFont());
+		int avgWidth = fm.getMaxAdvance();
+		if(avgWidth==-1) {
+			avgWidth = fm.charWidth('X');
+		}
+
+		return new StringWrapper()
+				.limit(limit)
+				.measure(s -> fm.stringWidth(s.toString()))
+				.averageCharWidth(avgWidth)
+				.linebreak(HTML_LINEBREAK)
+				.header(HTML_TAG)
+				.wrap(tooltip);
+	}
+
+	public static String toUnwrappedSwingTooltip(String tooltip, boolean prependHtml) {
 		if(tooltip==null || tooltip.isEmpty()) {
 			return null;
 		}
@@ -763,18 +817,18 @@ public class GuiUtils {
 
 		String convertedTooltip = HtmlUtils.escapeHTML(tooltip);
 		convertedTooltip = convertedTooltip.replaceAll(
-				"\\n\\r|\\r\\n|\\n|\\r", "<br>");
-		if(prependHTML && convertedTooltip.length()!=tooltip.length()) {
-			tooltip = "<html>"+convertedTooltip;
+				"\\r\\n|\\n|\\r", "<br>");
+		if(prependHtml && convertedTooltip.length()!=tooltip.length()) {
+			convertedTooltip = HTML_TAG+convertedTooltip;
 		}
 
-		return tooltip;
+		return convertedTooltip;
 	}
 
     public static Component createInfoComponent(String text, boolean center, Icon icon) {
     	JLabel label = new JLabel();
 
-    	label.setText(toUnwrappedSwingTooltip(text));
+    	label.setText(toSwingTooltip(text));
 
     	label.setFont(label.getFont().deriveFont(14f));
 

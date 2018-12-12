@@ -163,6 +163,24 @@ public enum RDHProperty {
 	GIT_MAX_FILESIZE("git.maxFileSize", "25MB"),
 
 	/**
+	 * Flag to indicate that any files with a size of {@code 0} bytes
+	 * should be excuded from tracking.
+	 * <p>
+	 * The default value for this property is {@code true}.
+	 */
+	GIT_IGNORE_EMPTY("git.ignoreEmpty", true),
+
+	/**
+	 * Flag to indicate that any files marked as hidden should be
+	 * excluded from tracking. Note that deactivating this property
+	 * might cause the client to start including files that are used
+	 * by the operating system as metadata storage.
+	 * <p>
+	 * The default value for this property is {@code true}.
+	 */
+	GIT_IGNORE_HIDDEN("git.ignoreHidden", true),
+
+	/**
 	 * Boolean flag to indicate whether or not the git adapter
 	 * should attach additional internal information to the
 	 * workflow steps it creates out of git commits.

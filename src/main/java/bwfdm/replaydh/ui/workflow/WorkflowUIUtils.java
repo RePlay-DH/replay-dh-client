@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.workflow;
@@ -50,6 +50,8 @@ import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
+import bwfdm.replaydh.ui.icons.IconRegistry;
+import bwfdm.replaydh.ui.icons.Resolution;
 import bwfdm.replaydh.utils.Label;
 import bwfdm.replaydh.utils.Mutable.MutableObject;
 import bwfdm.replaydh.workflow.Identifiable;
@@ -109,6 +111,16 @@ public final class WorkflowUIUtils {
 
 		private static final long serialVersionUID = -1514081471047843359L;
 
+		private final Icon blankIcon = GuiUtils.getBlankIcon(16, 16);
+		private final Icon pendingIcon = IconRegistry.getGlobalRegistry()
+				.getIcon("help_contents.gif", Resolution.forSize(16));
+		private final Icon doneIcon = IconRegistry.getGlobalRegistry()
+				.getIcon("translate.png", Resolution.forSize(16));
+		private final Icon ignoredIcon = IconRegistry.getGlobalRegistry()
+				.getIcon("never_translate.png", Resolution.forSize(16));
+		private final Icon editingIcon = IconRegistry.getGlobalRegistry()
+				.getIcon("write_obj.gif", Resolution.forSize(16));
+
 		/**
 		 * @see javax.swing.DefaultListCellRenderer#getListCellRendererComponent(javax.swing.JList, java.lang.Object, int, boolean, boolean)
 		 */
@@ -122,12 +134,33 @@ public final class WorkflowUIUtils {
 			if(value instanceof IdentifiableEditor.EditProxy) {
 				IdentifiableEditor.EditProxy proxy = (IdentifiableEditor.EditProxy) value;
 
-				//TODO
+				Identifiable target = proxy.getTarget();
+
+				Identifier identifier = Identifiable.getBestIdentifier(target);
+
+				if(identifier!=null) {
+					value = identifier.getId();
+					tooltip = identifier.getType().getName()+":";
+					if(identifier.getContext()!=null) {
+						tooltip += "\n"+identifier.getContext();
+					}
+					tooltip += "\n"+identifier.getId();
+				}
+
+				if(proxy.isIgnored()) {
+					icon = ignoredIcon;
+				} else if(proxy.isDone()) {
+					icon = doneIcon;
+				} else  if(proxy.isEditing()) {
+					icon = editingIcon;
+				} else {
+					icon = pendingIcon;
+				}
 			}
 
 			super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
-			setToolTipText(tooltip);
+			setToolTipText(GuiUtils.toUnwrappedSwingTooltip(tooltip, true));
 			setIcon(icon);
 
 			return this;

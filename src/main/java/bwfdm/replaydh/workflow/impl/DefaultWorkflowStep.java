@@ -21,6 +21,7 @@ package bwfdm.replaydh.workflow.impl;
 import static java.util.Objects.requireNonNull;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -110,6 +111,47 @@ public class DefaultWorkflowStep implements WorkflowStep {
 		return properties;
 	}
 
+	private static String nonNull(String s) {
+		return s==null ? "" : s;
+	}
+
+	private static void clear(Collection<?> col) {
+		if(col!=null) {
+			col.clear();
+		}
+	}
+
+	private static void clear(Map<?,?> map) {
+		if(map!=null) {
+			map.clear();
+		}
+	}
+
+	@Override
+	public void copyFrom(WorkflowStep source) {
+
+		// Reset all buffer collections
+		clear(input);
+		clear(output);
+		clear(persons);
+		tool = null;
+		clear(properties);
+
+		// Directly assign simply fields
+		id = source.getId();
+		title = nonNull(source.getTitle());
+		description = nonNull(source.getDescription());
+
+		// Copy over collection content via clones
+		source.getInput().forEach(r -> addInput(DefaultResource.copyResource(r)));
+		source.getOutput().forEach(r -> addOutput(DefaultResource.copyResource(r)));
+		source.getPersons().forEach(p -> addPerson(DefaultPerson.copyPerson(p)));
+		if(source.getTool()!=null) {
+			setTool(DefaultTool.copyTool(source.getTool()));
+		}
+		source.getProperties().forEach((k, v) -> setProperty(k, v));
+	}
+
 	/**
 	 * @see bwfdm.replaydh.workflow.WorkflowStep#getId()
 	 */
@@ -123,15 +165,19 @@ public class DefaultWorkflowStep implements WorkflowStep {
 	 */
 	@Override
 	public void setId(String id) {
-		if(id!=null && Objects.equals(this.id, id)) {
+		requireNonNull(id);
+
+		if(Objects.equals(this.id, id)) {
 			return;
 		}
 
-		String oldId = this.id;
-
 		if(added) {
-			id = workflow.acceptOrCreateNewId(id);
+//			id = workflow.acceptOrCreateNewId(id);
+			//TODO maybe check if id is non-null first?
+			workflow.checkUniqueId(id);
 		}
+
+		String oldId = this.id;
 
 		this.id = id;
 
@@ -328,6 +374,8 @@ public class DefaultWorkflowStep implements WorkflowStep {
 
 		if(!output(true).add(resource))
 			throw new IllegalArgumentException("Duplicate output resource: "+resource);
+
+//		System.out.println(hashCode()+" Adding output:"+resource);
 
 		if(added) {
 			workflow.fireWorkflowStepPropertyChanged(this, WorkflowListener.PROPERTY_OUTPUT);

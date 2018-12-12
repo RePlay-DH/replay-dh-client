@@ -216,6 +216,17 @@
 		<parameter id="class" value="bwfdm.replaydh.ui.config.tabs.GeneralPreferencesTab" />
 	</extension>
 	
+	<extension id="TrackingPreferencesTab" plugin-id="bwfdm.replaydh.core" point-id="PreferencesTab">
+		<doc>
+			<doc-text>
+				Groups all the settings for git and workflow tracking
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.trackingPreferencesTab.name" />
+		<parameter id="description" value="replaydh.plugins.trackingPreferencesTab.description" />
+		<parameter id="class" value="bwfdm.replaydh.ui.config.tabs.TrackingPreferencesTab" />
+	</extension>
+	
 	<!-- EXPORTERS -->
 	
 	<extension id="RawMetadataExporter" plugin-id="bwfdm.replaydh.core" point-id="WorkflowExporter">

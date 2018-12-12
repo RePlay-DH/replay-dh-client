@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.workflow;
@@ -206,6 +206,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		identifiableList = new JList<>(new DefaultListModel<>());
 		identifiableList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		identifiableList.setCellRenderer(new WorkflowUIUtils.EditProxyCellRenderer());
+		identifiableList.addListSelectionListener(this);
 		JScrollPane leftScrollPane = new JScrollPane(identifiableList);
 
 		// TOP AREA
@@ -357,7 +358,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		}
 
 		// Special handling of single item edits
-		if(identifiers.size()==1) {
+		if(!hasMultipleResources()) {
 			identifiers.iterator().next().state = EditState.IGNORED;
 		}
 
@@ -369,6 +370,11 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	 */
 	@Override
 	public void applyEdit() {
+		// Special handling of single item edits
+		if(!hasMultipleResources()) {
+			onDoneButtonClicked(null); //TODO we should rework the signature sof all the onXXXClicked methods here
+		}
+
 		editingItem.clear();
 		editingItem.addAll(identifiers);
 	}
@@ -495,7 +501,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 		if(currentIdentifiable!=null && hasMultipleResources()) {
 			if(currentIdentifiable.state==EditState.EDITING) {
-				//TODO ???
+				currentIdentifiable.state = EditState.BLANK;
+				//TODO should we ask the user for confirmation or rely on visual cues in the list?
 			}
 		}
 
@@ -509,6 +516,9 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			taDescription.setText(null);
 			cbRoleType.setSelectedItem(null);
 		} else {
+			if(hasMultipleResources())
+				proxy.state = EditState.EDITING;
+
 			Identifiable identifiable = proxy.getTarget();
 
 			// Pick default identifier for title
@@ -545,6 +555,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 				addIdentifierPanel(identifier);
 			}
 		}
+
+		identifiableList.repaint();
 
 		refreshTitle();
 		refreshControl();
@@ -620,11 +632,33 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	}
 
 	private void onDoneButtonClicked(ActionEvent ae) {
-		//TODO
+		currentIdentifiable.getTarget().setDescription(taDescription.getText());
+		currentIdentifiable.state = EditState.DONE;
+
+		selectNextIdentifier();
+
+		refreshControl();
 	}
 
 	private void onIgnoreButtonClicked(ActionEvent ae) {
+		currentIdentifiable.state = EditState.IGNORED;
+
+		selectNextIdentifier();
+
 		//TODO
+
+		refreshControl();
+	}
+
+	private void selectNextIdentifier() {
+
+		if(hasMultipleResources()) {
+			int currentIndex = identifiableList.getSelectedIndex();
+			if(currentIndex!=-1 && currentIndex<identifiers.size()-1) {
+				GuiUtils.invokeEDTLater(() -> identifiableList.setSelectedIndex(currentIndex+1));
+			}
+			identifiableList.repaint();
+		}
 	}
 
 	private void onRoleTypeComboBoxClicked(ActionEvent ae) {
@@ -846,6 +880,10 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		public boolean isIgnored() {
 			return state.compareTo(EditState.IGNORED)>=0;
 		}
+
+		public boolean isEditing() {
+			return state==EditState.EDITING;
+		}
 	}
 
 	/**
@@ -913,7 +951,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 			// In tooltip always present the entire identifier
 			String tooltip = identifier.getType().getDescription()+"\n\n"+identifier.getId();
-			label.setToolTipText(GuiUtils.toUnwrappedSwingTooltip(tooltip));
+			label.setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 			add(label, BorderLayout.CENTER);
 
 			JButton button = new JButton(IconRegistry.getGlobalRegistry().getIcon(

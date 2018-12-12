@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -106,11 +107,10 @@ public class WorkflowAnonymiser {
 
 		WorkflowStep newStep = target.createWorkflowStep();
 
-		newStep.setId(source.getId());
-		newStep.setTitle(anonymiseText(source.getTitle()));
-		newStep.setDescription(anonymiseText(source.getDescription()));
-
-		newStep.setRecordingTime(source.getRecordingTime());
+		Optional.ofNullable(source.getId()).ifPresent(newStep::setId);
+		Optional.ofNullable(anonymiseText(source.getTitle())).ifPresent(newStep::setTitle);
+		Optional.ofNullable(anonymiseText(source.getTitle())).ifPresent(newStep::setDescription);
+		Optional.ofNullable(source.getRecordingTime()).ifPresent(newStep::setRecordingTime);
 
 		Map<String, String> properties = source.getProperties();
 		if(properties!=null && !properties.isEmpty()) {
@@ -119,7 +119,7 @@ public class WorkflowAnonymiser {
 			}
 		}
 
-		newStep.setTool(anonymise(source.getTool()));
+		Optional.ofNullable(anonymise(source.getTool())).ifPresent(newStep::setTool);
 
 		for(Resource input : source.getInput()) {
 			newStep.addInput(anonymise(input));
