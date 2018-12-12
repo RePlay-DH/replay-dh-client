@@ -91,7 +91,7 @@ public class TooltipTreeCellRenderer extends DefaultTreeCellRenderer {
 
 		setIcon(icon);
 
-		setToolTipText(GuiUtils.toUnwrappedSwingTooltip(tooltip));
+		setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 
 		return this;
 	}

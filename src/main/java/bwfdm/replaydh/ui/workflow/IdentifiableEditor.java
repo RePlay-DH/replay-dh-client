@@ -913,7 +913,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 			// In tooltip always present the entire identifier
 			String tooltip = identifier.getType().getDescription()+"\n\n"+identifier.getId();
-			label.setToolTipText(GuiUtils.toUnwrappedSwingTooltip(tooltip));
+			label.setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 			add(label, BorderLayout.CENTER);
 
 			JButton button = new JButton(IconRegistry.getGlobalRegistry().getIcon(

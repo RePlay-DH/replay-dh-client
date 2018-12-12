@@ -443,7 +443,7 @@ public class ActionManager {
 	}
 
 	protected String processActionDescription(String description) {
-		return GuiUtils.toUnwrappedSwingTooltip(description);
+		return GuiUtils.toSwingTooltip(description);
 	}
 
 	public ActionSet getActionSet(String id) {

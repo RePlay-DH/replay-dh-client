@@ -605,7 +605,7 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 			String title = workflow.getTitle();
 
 			text = text+" - "+title;
-			tooltip = GuiUtils.toUnwrappedSwingTooltip(workflow.getDescription());
+			tooltip = GuiUtils.toSwingTooltip(workflow.getDescription());
 		}
 
 		lWorkflowTitle.setText(text);
