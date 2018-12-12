@@ -1165,7 +1165,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		private void showCacheDialog(Role role, URI uri) {
 			//TODO implement actual dialog
-			GuiUtils.showDefaultInfo(null, "Dialog for describing URL resource");
+			GuiUtils.showDefaultInfo(null, "Dialog for describing URL resource (coming soon)");
 		}
 
 		@Override
