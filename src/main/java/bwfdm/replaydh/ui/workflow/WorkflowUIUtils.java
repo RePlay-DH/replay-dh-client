@@ -19,8 +19,12 @@
 package bwfdm.replaydh.ui.workflow;
 
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Frame;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -36,6 +40,7 @@ import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
@@ -50,6 +55,8 @@ import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
+import bwfdm.replaydh.ui.icons.IconRegistry;
+import bwfdm.replaydh.ui.icons.Resolution;
 import bwfdm.replaydh.utils.Label;
 import bwfdm.replaydh.utils.Mutable.MutableObject;
 import bwfdm.replaydh.workflow.Identifiable;
@@ -141,6 +148,8 @@ public final class WorkflowUIUtils {
 	public static Identifier showIdentifierDialog(Component parent, String title,
 			IdentifierSchema schema, Predicate<? super IdentifierType> filter) {
 
+		IconRegistry ir = IconRegistry.getGlobalRegistry();
+		
 		ResourceManager rm = ResourceManager.getInstance();
 
 		final JButton bOk = new JButton(rm.get("replaydh.labels.ok"));
@@ -149,6 +158,12 @@ public final class WorkflowUIUtils {
 		final JComboBox<IdentifierTypeProxy> cbType = createIdentifierTypeComboBox(schema, filter);
 
 		final JTextField tfId = GuiUtils.autoSelectFullContent(new JTextField());
+		
+		final JFileChooser fc = new JFileChooser();
+		
+		final JButton chooseFile = new JButton(ir.getIcon("add_obj.gif", Resolution.forSize(16)));
+		chooseFile.setPreferredSize(new Dimension(24, 24));
+		chooseFile.setToolTipText(rm.get("replaydh.labels.choose.file.tip"));
 
 		final Runnable checkInput = () -> {
 			String text = tfId.getText();
@@ -159,12 +174,18 @@ public final class WorkflowUIUtils {
 			if(type instanceof String) {
 				inputValid &= !((String)type).isEmpty();
 			}
+			
+			if((cbType.getSelectedItem().toString().equals("Path")) || (cbType.getSelectedItem().toString().equals("Checksum"))) {
+				chooseFile.setVisible(true);
+			} else {
+				chooseFile.setVisible(false);
+			}
 
 			bOk.setEnabled(inputValid);
 		};
 
 		cbType.addActionListener(a -> checkInput.run());
-
+		
 		tfId.getDocument().addDocumentListener(new DocumentAdapter() {
 			@Override
 			public void anyUpdate(DocumentEvent e) {
@@ -187,12 +208,13 @@ public final class WorkflowUIUtils {
 		JTextArea taInfo = GuiUtils.createTextArea(rm.get("replaydh.ui.editor.identifiable.addIdentifier.description"));
 
 		JPanel panel = FormBuilder.create()
-				.columns("pref:grow, 4dlu, pref:grow")
+				.columns("pref:grow, 4dlu, pref:grow, 4dlu, pref")
 				.rows("max(pref;20dlu), 7dlu, pref, $lg, pref, 6dlu, pref")
 				.columnGroups(new int[] {1,3})
 				.add(taInfo).xyw(1, 1, 3, "fill, top")
 				.addLabel(rm.get("replaydh.labels.type")).xy(1, 3, "left, center")
 				.add(cbType).xy(3, 3, "fill, center")
+				.add(chooseFile).xy(5, 3, "right, center")
 				.addLabel(rm.get("replaydh.labels.name")).xy(1, 5, "left, center")
 				.add(tfId).xy(3, 5, "fill, center")
 				.add(bOk).xy(1, 7, "right, bottom")
@@ -227,6 +249,31 @@ public final class WorkflowUIUtils {
 			dialog.setVisible(false);
 		});
 
+		chooseFile.addActionListener(a -> {
+			int returnVal;
+			File file = null;
+			if(cbType.getSelectedItem().toString().equals("Path")) {
+				returnVal=fc.showDialog(panel, rm.get("replaydh.labels.select.file"));
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					file = fc.getSelectedFile();
+					tfId.setText(file.getPath().toString());
+				}
+			} else if (cbType.getSelectedItem().toString().equals("Checksum")){
+				returnVal=fc.showDialog(panel, rm.get("replaydh.labels.select.checksum"));
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					file = fc.getSelectedFile();
+					LocalFileObject fileObject = new LocalFileObject(Paths.get(file.getPath()));
+					try {
+						LocalFileObject.ensureOrValidateChecksum(fileObject);
+					} catch (IOException | InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					tfId.setText(fileObject.getChecksum().toString());
+				}
+			}
+		});
+		
 		checkInput.run();
 		dialog.setVisible(true);
 
