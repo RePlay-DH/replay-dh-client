@@ -50,6 +50,8 @@ import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
+import bwfdm.replaydh.ui.icons.IconRegistry;
+import bwfdm.replaydh.ui.icons.Resolution;
 import bwfdm.replaydh.utils.Label;
 import bwfdm.replaydh.utils.Mutable.MutableObject;
 import bwfdm.replaydh.workflow.Identifiable;
@@ -109,6 +111,16 @@ public final class WorkflowUIUtils {
 
 		private static final long serialVersionUID = -1514081471047843359L;
 
+		private final Icon blankIcon = GuiUtils.getBlankIcon(16, 16);
+		private final Icon pendingIcon = IconRegistry.getGlobalRegistry()
+				.getIcon("help_contents.gif", Resolution.forSize(16));
+		private final Icon doneIcon = IconRegistry.getGlobalRegistry()
+				.getIcon("translate.png", Resolution.forSize(16));
+		private final Icon ignoredIcon = IconRegistry.getGlobalRegistry()
+				.getIcon("never_translate.png", Resolution.forSize(16));
+		private final Icon editingIcon = IconRegistry.getGlobalRegistry()
+				.getIcon("write_obj.gif", Resolution.forSize(16));
+
 		/**
 		 * @see javax.swing.DefaultListCellRenderer#getListCellRendererComponent(javax.swing.JList, java.lang.Object, int, boolean, boolean)
 		 */
@@ -133,6 +145,16 @@ public final class WorkflowUIUtils {
 						tooltip += "\n"+identifier.getContext();
 					}
 					tooltip += "\n"+identifier.getId();
+				}
+
+				if(proxy.isIgnored()) {
+					icon = ignoredIcon;
+				} else if(proxy.isDone()) {
+					icon = doneIcon;
+				} else  if(proxy.isEditing()) {
+					icon = editingIcon;
+				} else {
+					icon = pendingIcon;
 				}
 			}
 

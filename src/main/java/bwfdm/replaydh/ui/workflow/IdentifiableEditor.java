@@ -206,6 +206,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		identifiableList = new JList<>(new DefaultListModel<>());
 		identifiableList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		identifiableList.setCellRenderer(new WorkflowUIUtils.EditProxyCellRenderer());
+		identifiableList.addListSelectionListener(this);
 		JScrollPane leftScrollPane = new JScrollPane(identifiableList);
 
 		// TOP AREA
@@ -500,7 +501,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 		if(currentIdentifiable!=null && hasMultipleResources()) {
 			if(currentIdentifiable.state==EditState.EDITING) {
-				//TODO ???
+				currentIdentifiable.state = EditState.BLANK;
+				//TODO should we ask the user for confirmation or rely on visual cues in the list?
 			}
 		}
 
@@ -514,6 +516,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			taDescription.setText(null);
 			cbRoleType.setSelectedItem(null);
 		} else {
+			proxy.state = EditState.EDITING;
+
 			Identifiable identifiable = proxy.getTarget();
 
 			// Pick default identifier for title
@@ -550,6 +554,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 				addIdentifierPanel(identifier);
 			}
 		}
+
+		identifiableList.repaint();
 
 		refreshTitle();
 		refreshControl();
@@ -627,12 +633,31 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	private void onDoneButtonClicked(ActionEvent ae) {
 		currentIdentifiable.getTarget().setDescription(taDescription.getText());
 		currentIdentifiable.state = EditState.DONE;
+
+		selectNextIdentifier();
+
+		refreshControl();
 	}
 
 	private void onIgnoreButtonClicked(ActionEvent ae) {
 		currentIdentifiable.state = EditState.IGNORED;
 
+		selectNextIdentifier();
+
 		//TODO
+
+		refreshControl();
+	}
+
+	private void selectNextIdentifier() {
+
+		if(identifiers.size()>1) {
+			int currentIndex = identifiableList.getSelectedIndex();
+			if(currentIndex!=-1 && currentIndex<identifiers.size()-1) {
+				GuiUtils.invokeEDTLater(() -> identifiableList.setSelectedIndex(currentIndex+1));
+			}
+			identifiableList.repaint();
+		}
 	}
 
 	private void onRoleTypeComboBoxClicked(ActionEvent ae) {
@@ -853,6 +878,10 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 		public boolean isIgnored() {
 			return state.compareTo(EditState.IGNORED)>=0;
+		}
+
+		public boolean isEditing() {
+			return state==EditState.EDITING;
 		}
 	}
 
