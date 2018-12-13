@@ -7,6 +7,8 @@ Integrated Tool for tracking, versioning and publishing workflows.
 - Export metadata or data from your workflow in various formats
 - Publish directly to institutional repositories such as [DSpace](https://www.duraspace.org/dspace/ "DSpace's Homepage") from within the client
 
+See the original [project homepage](https://www.ub.uni-stuttgart.de/replay/) for additional information and associated publications.
+
 ### Setup
 
 The RePlay-DH Client does not require installation of any local software other than Java version 8 or newer. To begin using the client, download one of the [releases](https://github.com/RePlay-DH/replay-dh-client/releases) available in the code section on our GitHub page (or alternatively you can also build and package the client locally with maven).
@@ -33,6 +35,10 @@ The following table lists currently supported parameters:
 | -dir &lt;file&gt;           | path string | -Duser.folder=&lt;file&gt;           | Path to the client folder where settings and other client internal informations get stored. |
 | -workspace &lt;file&gt;     | path string | -Dclient.workspace.path=&lt;file&gt; | Path to the currently active working directory. |
 | -D&lt;key&gt;=&lt;value&gt; | strings     | -                                    | Allows to override client settings (this is a basic java command line feature and listed here simply for the sake of completeness, as the client reads in the full set of currently set Java properties as base of the internal settings, with higher priority that the read in config file). |
+
+### Known Issues
+
+Nothing major for now...
 
 ### License
 

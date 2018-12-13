@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.workflow;
@@ -79,7 +79,7 @@ public class AddWorkflowSchemaWizard {
 	public static Wizard<AddWorkflowSchemaContext> getWizard(Window parent, RDHEnvironment environment) {
 		@SuppressWarnings("unchecked")
 		Wizard<AddWorkflowSchemaContext> wizard = new Wizard<>(
-				parent, ResourceManager.getInstance().get("replaydh.wizard.addWorkflowSchema.title"),
+				parent, "addWorkflowSchema", ResourceManager.getInstance().get("replaydh.wizard.addWorkflowSchema.title"),
 				environment, SELECT_SOURCE_FILE, VALIDATE_SCHEMA, DEFINE_TARGET_FILE, FINISH);
 
 		return wizard;
@@ -130,8 +130,8 @@ public class AddWorkflowSchemaWizard {
 	 *
 	 */
 	private static abstract class AddWorkflowSchemaStep extends AbstractWizardStep<AddWorkflowSchemaContext> {
-		protected AddWorkflowSchemaStep(String titleKey, String descriptionKey) {
-			super(titleKey, descriptionKey);
+		protected AddWorkflowSchemaStep(String id, String titleKey, String descriptionKey) {
+			super(id, titleKey, descriptionKey);
 		}
 	}
 
@@ -140,6 +140,7 @@ public class AddWorkflowSchemaWizard {
 	 * Let user provide the file that should be loaded
 	 */
 	private static final AddWorkflowSchemaStep SELECT_SOURCE_FILE = new AddWorkflowSchemaStep(
+			"selectSourceFile",
 			"replaydh.wizard.addWorkflowSchema.selectSourceFile.title",
 			"replaydh.wizard.addWorkflowSchema.selectSourceFile.description") {
 
@@ -201,6 +202,7 @@ public class AddWorkflowSchemaWizard {
 	 * Check if duplicate key -> consistency
 	 */
 	private static final AddWorkflowSchemaStep VALIDATE_SCHEMA = new AddWorkflowSchemaStep(
+			"validateSchema",
 			"replaydh.wizard.addWorkflowSchema.validateSchema.title",
 			"replaydh.wizard.addWorkflowSchema.validateSchema.message") {
 
@@ -561,6 +563,7 @@ public class AddWorkflowSchemaWizard {
 	 * Let user pick a name for the target file in our schema folder
 	 */
 	private static final AddWorkflowSchemaStep DEFINE_TARGET_FILE = new AddWorkflowSchemaStep(
+			"defineTargetFile",
 			"replaydh.wizard.addWorkflowSchema.defineTargetFile.title",
 			"replaydh.wizard.addWorkflowSchema.defineTargetFile.description") {
 
@@ -683,6 +686,7 @@ public class AddWorkflowSchemaWizard {
 	 * Just some wrapup
 	 */
 	private static final AddWorkflowSchemaStep FINISH = new AddWorkflowSchemaStep(
+			"finish",
 			"replaydh.wizard.addWorkflowSchema.finish.title",
 			"replaydh.wizard.addWorkflowSchema.finish.description") {
 

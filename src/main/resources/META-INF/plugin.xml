@@ -149,9 +149,83 @@
 				</doc-text>
 			</doc>
 		</parameter-def>
+	</extension-point>
+			
+	<extension-point id="PreferencesGroup" parent-point-id="Localizable" 
+			parent-plugin-id="bwfdm.replaydh.core">
+		<doc>
+			<doc-text>
+				Allows for grouping of preferences tabs in a dialog.
+				
+				Note that if no 'parent' group is defined, this group will be 
+				placed under the root group.
+			</doc-text>
+		</doc>
+		<parameter-def id="parent" type="extension-id" custom-data="bwfdm.replaydh.core@PreferencesGroup"  multiplicity="none-or-one">
+			<doc>
+				<doc-text>
+					Parent group to place this group under. May be omitted
+					to place this group under the global root group.
+				</doc-text>
+			</doc>
+		</parameter-def>
+	</extension-point>
+			
+	<extension-point id="PreferencesTab" parent-point-id="Localizable" 
+			parent-plugin-id="bwfdm.replaydh.core">
+		<doc>
+			<doc-text>
+				Allows for registration of components for the preferences dialog
+				of the client. Registered extensions will be listed as tabs and
+				loaded lazily when the user decides to open their content.
+				
+				Special note on the localization key for the "path" property:
+				Strings will be split using the dot symbol '.' as delimiter
+				and extracted elements are used to form the tree structure.
+			</doc-text>
+		</doc>
+		<parameter-def id="group" type="extension-id" custom-data="bwfdm.replaydh.core@PreferencesGroup"  multiplicity="none-or-one">
+			<doc>
+				<doc-text>
+					The group to place the tab under in a GUI. If this parameter is undefined,
+					the tab will be placed under the root node.
+				</doc-text>
+			</doc>
+		</parameter-def>
+		<parameter-def id="class">
+			<doc>
+				<doc-text>
+					Tab class itself, needs to implement bwfdm.replaydh.ui.config.PreferencesTab interface!
+				</doc-text>
+			</doc>
+		</parameter-def>
 	</extension-point>	
 	
 	<!-- Standard Extensions -->
+	
+	<!-- PREFERENCES -->
+	
+	<extension id="GeneralPreferencesTab" plugin-id="bwfdm.replaydh.core" point-id="PreferencesTab">
+		<doc>
+			<doc-text>
+				Groups all the general top-level settings in one place.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.generalPreferencesTab.name" />
+		<parameter id="description" value="replaydh.plugins.generalPreferencesTab.description" />
+		<parameter id="class" value="bwfdm.replaydh.ui.config.tabs.GeneralPreferencesTab" />
+	</extension>
+	
+	<extension id="TrackingPreferencesTab" plugin-id="bwfdm.replaydh.core" point-id="PreferencesTab">
+		<doc>
+			<doc-text>
+				Groups all the settings for git and workflow tracking
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.trackingPreferencesTab.name" />
+		<parameter id="description" value="replaydh.plugins.trackingPreferencesTab.description" />
+		<parameter id="class" value="bwfdm.replaydh.ui.config.tabs.TrackingPreferencesTab" />
+	</extension>
 	
 	<!-- EXPORTERS -->
 	
@@ -255,6 +329,21 @@
 		<parameter id="description" value="replaydh.plugins.DSpacePublisher.description" />
 		<parameter id="class" value="bwfdm.replaydh.workflow.export.dspace.DSpacePublisher" />
 		<!-- <parameter id="icon" value="dspace-logo.png" /> -->
+		
+		<parameter id="type" value="object" />
+		<parameter id="workflowScope" value="all" />
+		<parameter id="objectScope" value="all" />
+	</extension>
+	
+	<extension id="DataversePublisher" plugin-id="bwfdm.replaydh.core" point-id="ResourcePublisher">
+		<doc>
+			<doc-text>
+				Exporter to publish data from a workflow into a Dataverse repository.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.DataversePublisher.name" />
+		<parameter id="description" value="replaydh.plugins.DataversePublisher.description" />
+		<parameter id="class" value="bwfdm.replaydh.workflow.export.dataverse.DataversePublisher" />
 		
 		<parameter id="type" value="object" />
 		<parameter id="workflowScope" value="all" />

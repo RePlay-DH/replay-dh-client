@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.core;
@@ -41,31 +41,37 @@ public enum RDHProperty {
 	CLIENT_WORKSPACE_PATH("client.workspace.path"),
 
 	/**
-	 * ;-separated list of previous workspace paths.
+	 * semicolon-separated list of previous workspace paths.
 	 */
 	CLIENT_WORKSPACE_HISTORY("client.workspace.history"),
 
-	CLIENT_WORKSPACE_TRACKER_ACTIVE("client.workspace.tracker.active"),
-	CLIENT_WORKSPACE_TRACKER_INTERVAL("client.workspace.tracker.interval"),
+	CLIENT_WORKSPACE_TRACKER_ACTIVE("client.workspace.tracker.active", false),
+	CLIENT_WORKSPACE_TRACKER_INTERVAL("client.workspace.tracker.interval", 60),
 
 	/**
 	 * Flag to indicate whether the UI should hide additional
 	 * or redundant help information that's usually required
 	 * for new or unexperienced users.
 	 */
-	CLIENT_EXPERT_MODE("client.expertMode"),
+	CLIENT_EXPERT_MODE("client.expertMode", false),
 
 	/**
 	 * Flag to indicate that the application should not use the
 	 * {@link SystemTray tray area} even when it is supported
 	 * on the operating system.
 	 */
-	CLIENT_UI_TRAY_DISABLED("client.ui.trayDisabled"),
+	CLIENT_UI_TRAY_DISABLED("client.ui.trayDisabled", false),
+
+	/**
+	 * Flag to indicate that the client's main window should
+	 * always stay o ntop of other windows when not minimized.
+	 */
+	CLIENT_UI_ALWAYS_ON_TOP("client.ui.alwaysOnTop", false),
 
 	/**
 	 * Language setting for the client
 	 */
-	CLIENT_LOCALE("client.locale"),
+	CLIENT_LOCALE("client.locale", "en"),
 
 	/**
 	 * Optional root folder for the centralized storage of
@@ -91,23 +97,29 @@ public enum RDHProperty {
 	 */
 	CLIENT_USERNAME("client.username"),
 
+	/**
+	 * Flag to indicate that the client should collect usage statistics
+	 * and log them at a default location.
+	 */
+	CLIENT_COLLECT_STATS("client.collectStats", true),
+
 	// Internal properties used to setup localization, logging, etc...
 
-	INTERN_RESOURCES_REPORT_MISSING("intern.resources.reportMissing"),
+	INTERN_RESOURCES_REPORT_MISSING("intern.resources.reportMissing", true),
 
-	INTERN_RESOURCES_RETURN_ABSENT_KEYS("intern.resources.returnAbsentKeys"),
+	INTERN_RESOURCES_RETURN_ABSENT_KEYS("intern.resources.returnAbsentKeys", true),
 
 	INTERN_EXECUTOR_MAX_THREADS("intern.executor.maxThreads"),
-	INTERN_EXECUTOR_LIMIT_TO_CORES("intern.executor.limitToCores"),
+	INTERN_EXECUTOR_LIMIT_TO_CORES("intern.executor.limitToCores", false),
 
-	INTERN_VERBOSE("intern.verbose"),
+	INTERN_VERBOSE("intern.verbose", false),
 
 	/**
 	 * Boolean flag to start the client in debug or developer mode.
 	 * <p>
 	 * The default value for this property is {@code false}.
 	 */
-	INTERN_DEBUG("intern.debug"),
+	INTERN_DEBUG("intern.debug", false),
 	/**
 	 * Name of the configurations file inside the designated client folder.
 	 */
@@ -121,7 +133,7 @@ public enum RDHProperty {
 	 */
 	INTERN_CLIENT_FOLDER("client.folder"),
 
-	INTERN_FORCE_WELCOME_DIALOG("intern.forceWelcomeDialog"),
+	INTERN_FORCE_WELCOME_DIALOG("intern.forceWelcomeDialog", false),
 
 	// Git properties used for interaction with JGit
 	//TODO make JGitAdapter use these properties
@@ -141,11 +153,32 @@ public enum RDHProperty {
 	/**
 	 * Maximum size of a file to be included in version control
 	 * by git. Files above this threshold will be ignored automatically.
+	 * A value of 0, no matter the unit used, will result in no automatic
+	 * size checks be performed!
 	 * <p>
 	 * Format: xxx&lt;unit&gt; with unit being one of <code>MB, GB, TB</code>
-	 *
+	 * <p>
+	 * The default value for this property is {@code 25MB}.
 	 */
-	GIT_MAX_FILESIZE("git.maxFileSize"),
+	GIT_MAX_FILESIZE("git.maxFileSize", "25MB"),
+
+	/**
+	 * Flag to indicate that any files with a size of {@code 0} bytes
+	 * should be excuded from tracking.
+	 * <p>
+	 * The default value for this property is {@code true}.
+	 */
+	GIT_IGNORE_EMPTY("git.ignoreEmpty", true),
+
+	/**
+	 * Flag to indicate that any files marked as hidden should be
+	 * excluded from tracking. Note that deactivating this property
+	 * might cause the client to start including files that are used
+	 * by the operating system as metadata storage.
+	 * <p>
+	 * The default value for this property is {@code true}.
+	 */
+	GIT_IGNORE_HIDDEN("git.ignoreHidden", true),
 
 	/**
 	 * Boolean flag to indicate whether or not the git adapter
@@ -154,7 +187,7 @@ public enum RDHProperty {
 	 * <p>
 	 * The default value for this property is {@code false}.
 	 */
-	GIT_ATTACH_INFO_TO_STEPS("git.attachInfoToSteps"),
+	GIT_ATTACH_INFO_TO_STEPS("git.attachInfoToSteps", false),
 
 	/**
 	 * Boolean flag to indicate that the client should not report
@@ -162,7 +195,7 @@ public enum RDHProperty {
 	 * <p>
 	 * The default value for this property is {@code false}.
 	 */
-	GIT_IGNORE_MISSING_METADATA("git.ignoreMissingMetadata"),
+	GIT_IGNORE_MISSING_METADATA("git.ignoreMissingMetadata", false),
 
 	// Properties defining elicitation of process metadata
 
@@ -183,12 +216,26 @@ public enum RDHProperty {
 
 	DSPACE_REPOSITORY_URL("dspace.repository.url"),
 	DSPACE_REPOSITORY_NAME("dspace.repository.name"),
+
+	DATAVERSE_REPOSITORY_URL("dataverse.repository.url"),
+	DATAVERSE_REPOSITORY_NAME("dataverse.repository.name"),
 	;
 
 	private final String key;
+	private final Object defaultValue;
 
 	private RDHProperty(String key) {
+		this(key, null);
+	}
+
+	private RDHProperty(String key, Object defaultValue) {
 		this.key = requireNonNull(key);
+		this.defaultValue = defaultValue;
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends Object> T getDefaultValue() {
+		return (T) defaultValue;
 	}
 
 	public String getKey() {

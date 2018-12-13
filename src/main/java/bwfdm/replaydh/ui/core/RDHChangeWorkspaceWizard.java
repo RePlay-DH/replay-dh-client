@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.core;
@@ -25,6 +25,7 @@ import java.awt.Component;
 import java.awt.Font;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -81,7 +82,7 @@ public abstract class RDHChangeWorkspaceWizard {
 	public static Wizard<ChangeWorkspaceContext> getWizard(Window parent, RDHEnvironment environment) {
 		@SuppressWarnings("unchecked")
 		Wizard<ChangeWorkspaceContext> wizard = new Wizard<>(
-				parent, ResourceManager.getInstance().get("replaydh.wizard.changeWorkspace.title"),
+				parent, "changeWorkspace", ResourceManager.getInstance().get("replaydh.wizard.changeWorkspace.title"),
 				environment, SELECT_WORKSPACE, NEW_WORKSPACE, VALIDATE_WORKSPACE, SCHEMA, DESCRIPTION, FINISH);
 
 		return wizard;
@@ -97,7 +98,7 @@ public abstract class RDHChangeWorkspaceWizard {
 			requireNonNull(workspacesProperty);
 
 			// Fetch raw definitions
-			String[] paths = workspacesProperty.split(";");
+			String[] paths = workspacesProperty.split(File.pathSeparator);
 
 			// Translate into proper paths
 			Path[] workspaces = new Path[paths.length];
@@ -154,8 +155,8 @@ public abstract class RDHChangeWorkspaceWizard {
 	 *
 	 */
 	private static abstract class ChangeWorkspaceStep extends AbstractWizardStep<ChangeWorkspaceContext> {
-		protected ChangeWorkspaceStep(String titleKey, String descriptionKey) {
-			super(titleKey, descriptionKey);
+		protected ChangeWorkspaceStep(String id, String titleKey, String descriptionKey) {
+			super(id, titleKey, descriptionKey);
 		}
 	}
 
@@ -164,6 +165,7 @@ public abstract class RDHChangeWorkspaceWizard {
 	 * First step - allow user to select a workspace from history
 	 */
 	private static final ChangeWorkspaceStep SELECT_WORKSPACE = new ChangeWorkspaceStep(
+			"selectWorkspace",
 			"replaydh.wizard.changeWorkspace.selectWorkspace.title",
 			"replaydh.wizard.changeWorkspace.selectWorkspace.description") {
 
@@ -295,6 +297,7 @@ public abstract class RDHChangeWorkspaceWizard {
 	 * Ask user for desired new workspace
 	 */
 	private static final ChangeWorkspaceStep NEW_WORKSPACE = new ChangeWorkspaceStep(
+			"newWorkspace",
 			"replaydh.wizard.changeWorkspace.newWorkspace.title",
 			"replaydh.wizard.changeWorkspace.newWorkspace.description") {
 
@@ -383,6 +386,7 @@ public abstract class RDHChangeWorkspaceWizard {
 	 * </ol>
 	 */
 	private static final ChangeWorkspaceStep VALIDATE_WORKSPACE = new ChangeWorkspaceStep(
+			"validateWorkspace",
 			"replaydh.wizard.changeWorkspace.validateWorkspace.title",
 			"replaydh.wizard.changeWorkspace.validateWorkspace.description") {
 
@@ -661,6 +665,7 @@ public abstract class RDHChangeWorkspaceWizard {
 	 * Let user select workflow schema for the workspace
 	 */
 	private static final ChangeWorkspaceStep SCHEMA = new ChangeWorkspaceStep(
+			"selectSchema",
 			"replaydh.wizard.changeWorkspace.selectSchema.title",
 			"replaydh.wizard.changeWorkspace.selectSchema.description") {
 
@@ -726,6 +731,7 @@ public abstract class RDHChangeWorkspaceWizard {
 	 * Let user select workflow schema for the workspace
 	 */
 	private static final ChangeWorkspaceStep DESCRIPTION = new ChangeWorkspaceStep(
+			"describeWorkflow",
 			"replaydh.wizard.changeWorkspace.describeWorkflow.title",
 			"replaydh.wizard.changeWorkspace.describeWorkflow.description") {
 
@@ -813,6 +819,7 @@ public abstract class RDHChangeWorkspaceWizard {
 	 * Wrap up info
 	 */
 	private static final ChangeWorkspaceStep FINISH = new ChangeWorkspaceStep(
+			"changeWorkspace",
 			"replaydh.wizard.changeWorkspace.finish.title",
 			"replaydh.wizard.changeWorkspace.finish.description") {
 

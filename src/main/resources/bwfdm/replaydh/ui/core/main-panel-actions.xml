@@ -27,6 +27,11 @@
 	<action id="replaydh.ui.core.mainPanel.toggleDetails"
 		name="${id}.name" desc="${id}.description" />
 	
+	<!-- Toggle Always on Top -->
+	<action id="replaydh.ui.core.mainPanel.toggleAlwaysOnTop" type="toggle"
+		name="${id}.name" desc="${id}.description"
+		icon="icons8-pin-64.png" sicon="icons8-unpin-64.png" />
+		
 	<!-- Change Workspace -->
 	<action id="replaydh.ui.core.mainPanel.changeWorkspace"
 		name="${id}.name" desc="${id}.description" licon="Documents-icon.png" />
@@ -43,6 +48,30 @@
 	<action id="replaydh.ui.core.mainPanel.clearResourceCache"
 		name="${id}.name" desc="${id}.description" icon="clear_co.gif" />
 	
+	<!-- Show About Dialog -->
+	<action id="replaydh.ui.core.mainPanel.about"
+		name="${id}.name" desc="${id}.description" />
+	
+	<!-- Show Preferences Dialog -->
+	<action id="replaydh.ui.core.mainPanel.preferences"
+		name="${id}.name" desc="${id}.description" />
+		
+	<!-- Export Statistics -->
+	<action id="replaydh.ui.core.mainPanel.exportStatistics"
+		name="${id}.name" desc="${id}.description" />
+		
+	<!-- Reset Statistics -->
+	<action id="replaydh.ui.core.mainPanel.resetStatistics"
+		name="${id}.name" desc="${id}.description" />
+	
+	<!-- Exit Client -->
+	<action id="replaydh.ui.core.mainPanel.exit"
+		name="${id}.name" desc="${id}.description" />
+		
+	<!-- Restart Client -->
+	<action id="replaydh.ui.core.mainPanel.restart"
+		name="${id}.name" desc="${id}.description" />
+	
 	<!-- ToolBar List for header area -->
 	<action-list id="replaydh.ui.core.mainPanel.menuBarList">
 		<action-list id="replaydh.ui.core.mainPanel.menuBarList.file" name="${id}.name">
@@ -51,16 +80,24 @@
 			<separator />
 			<item type="action" value="replaydh.ui.core.mainPanel.openWorkspaceFolder" />
 			<separator />
-			<action id="replaydh.ui.core.mainPanel.exit" name="${id}.name" desc="${id}.description" />
+			<item type="action" value="replaydh.ui.core.mainPanel.restart" />
+			<item type="action" value="replaydh.ui.core.mainPanel.exit" />
+		</action-list>
+		<action-list id="replaydh.ui.core.mainPanel.menuBarList.tools" name="${id}.name">
+			<item type="action" value="replaydh.ui.core.mainPanel.exportStatistics" />
+			<item type="action" value="replaydh.ui.core.mainPanel.resetStatistics" />
 		</action-list>
 		<action-list id="replaydh.ui.core.mainPanel.menuBarList.window" name="${id}.name">
-			<action id="replaydh.ui.core.mainPanel.showMetadataManager" name="${id}.name" desc="${id}.description" />
+			<item type="action" value="replaydh.ui.core.mainPanel.preferences" />
 			<separator/>
 			<item type="action" value="replaydh.ui.core.mainPanel.toggleDetails" />
 		</action-list>
 		<action-list id="replaydh.ui.core.mainPanel.menuBarList.help" name="${id}.name">
-			<action id="replaydh.ui.core.mainPanel.about" name="${id}.name" desc="${id}.description" />
+			<separator/>
+			<item type="action" value="replaydh.ui.core.mainPanel.about" />
 		</action-list>
+		<item type="glue" />
+		<item type="action" value="replaydh.ui.core.mainPanel.toggleAlwaysOnTop" />
 	</action-list>
 	
 </actions>

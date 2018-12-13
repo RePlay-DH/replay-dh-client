@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.workflow.impl;
@@ -157,7 +157,7 @@ public class DefaultWorkflow implements Workflow {
 		return id;
 	}
 
-	private void checkUniqueId(String id) {
+	void checkUniqueId(String id) {
 		if(idLookup.containsKey(id))
 			throw new IllegalArgumentException("Duplicate id: "+id);
 	}
@@ -572,7 +572,6 @@ public class DefaultWorkflow implements Workflow {
 	/**
 	 * @see bwfdm.replaydh.workflow.Workflow#addWorkflowStep(bwfdm.replaydh.workflow.WorkflowStep)
 	 */
-	@Deprecated
 	@Override
 	public boolean addWorkflowStep(WorkflowStep source, WorkflowStep target) {
 		requireNonNull(source);
@@ -611,7 +610,7 @@ public class DefaultWorkflow implements Workflow {
 		if(result) {
 			fireWorkflowStepAdded(target);
 
-			if(autoAssignActiveStepOnAdd()) {
+			if(isAutoAssignActiveStepOnAdd()) {
 
 				WorkflowStep oldActiveStep = getActiveStep();
 
@@ -630,25 +629,46 @@ public class DefaultWorkflow implements Workflow {
 
 		setHead(source, false);
 
+//		boolean isTargetKnown = node(target, false, false)!=null;
+
 		// Now link the two nodes in our lookup
 		addLink(source, target);
-		target.addNotify();
 
-		setHead(target, getNextStepCount(target)==0);
+//		if(!isTargetKnown) {
+			target.addNotify();
 
-		String id = target.getId();
+			setHead(target, getNextStepCount(target)==0);
+
+			String id = target.getId();
+
+			// Id not initialized yet -> create a fresh one
+			if(id==null || UNSET_ID.equals(id)) {
+				if(isEnsureUniqueStepIdOnAdd()) {
+					ensureUniqueStepId(target);
+				}
+			} else {
+				// If id has been set already, we expect it to be unique!
+				checkUniqueId(id);
+				idChanged(target, null, id);
+			}
+//		}
+
+		return true;
+	}
+
+	protected boolean isEnsureUniqueStepIdOnAdd() {
+		return true;
+	}
+
+	protected void ensureUniqueStepId(WorkflowStep step) {
+
+		String id = step.getId();
 
 		// Id not initialized yet -> create a fresh one
 		if(id==null || UNSET_ID.equals(id)) {
-			id = acceptOrCreateNewId(null);
-			target.setId(id);
-		} else {
-			// If id has been set already, we expect it to be unique!
-			checkUniqueId(id);
-			idChanged(target, null, id);
+			id = acceptOrCreateNewId(null); //TODO reset id to null if UNSET
+			step.setId(id);
 		}
-
-		return true;
 	}
 
 	/**
@@ -762,12 +782,26 @@ public class DefaultWorkflow implements Workflow {
 		// no-op
 	}
 
-	protected boolean autoAssignActiveStepOnAdd() {
+	/**
+	 * Hook for subclasses to signal whether or not the default implementation
+	 * should automatically assign a newly added workflow step as the currently
+	 * {@link #getActiveStep() active} step. If this method returns {@code false}
+	 * the subclass implementation is responsible for correctly setting the active
+	 * step whenever it deems a change necessary.
+	 *
+	 * @return
+	 */
+	protected boolean isAutoAssignActiveStepOnAdd() {
 		return true;
 	}
 
 	// FILL METHODS
 
+	/**
+	 * Wraps the given {@link WorkflowStep step} into a new {@link Node}.
+	 * Subclasses can override this method to either change the actual node
+	 * class used or to perform additional setup work.
+	 */
 	protected Node<WorkflowStep> newNode(WorkflowStep content) {
 		return new Node<>(content);
 	}

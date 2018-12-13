@@ -77,6 +77,7 @@ import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.actions.ActionList.EntryType;
 import bwfdm.replaydh.ui.helper.ModifiedFlowLayout;
 import bwfdm.replaydh.ui.helper.WeakHandler;
@@ -433,9 +434,16 @@ public class ActionManager {
 				action.putValue(Action.NAME, getResourceManager().get(name));
 
 			String description = (String)action.getValue(Action.SHORT_DESCRIPTION);
-			if(description!=null)
-				action.putValue(Action.SHORT_DESCRIPTION, getResourceManager().get(description));
+			if(description!=null) {
+				description = getResourceManager().get(description);
+				description = processActionDescription(description);
+				action.putValue(Action.SHORT_DESCRIPTION, description);
+			}
 		}
+	}
+
+	protected String processActionDescription(String description) {
+		return GuiUtils.toSwingTooltip(description);
 	}
 
 	public ActionSet getActionSet(String id) {
@@ -1948,8 +1956,13 @@ public class ActionManager {
 		 */
 		@Override
 		public Component feedAction(Component container, Action a, String groupId) {
-			// not supported by menu bars
-			return null;
+			JMenuBar menuBar = (JMenuBar) container;
+
+			AbstractButton button = createButton(a, groupId, container);
+			button.setHorizontalTextPosition(SwingConstants.CENTER);
+	        button.setVerticalTextPosition(SwingConstants.BOTTOM);
+
+			return menuBar.add(button);
 		}
 
 		/**
@@ -1984,8 +1997,8 @@ public class ActionManager {
 		 */
 		@Override
 		public Component feedGlue(Component container) {
-			// not supported
-			return null;
+			JMenuBar menuBar = (JMenuBar) container;
+			return menuBar.add(Box.createHorizontalGlue());
 		}
 
 	}

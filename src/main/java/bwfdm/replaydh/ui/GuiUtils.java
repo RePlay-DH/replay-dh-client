@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui;
@@ -27,6 +27,7 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -51,6 +52,8 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,6 +80,8 @@ import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
@@ -93,9 +98,12 @@ import com.jgoodies.forms.factories.Paddings;
 import bwfdm.replaydh.core.PluginEngine;
 import bwfdm.replaydh.core.RDHException;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Editor;
 import bwfdm.replaydh.ui.helper.EditorControl;
 import bwfdm.replaydh.ui.icons.Resolution;
+import bwfdm.replaydh.utils.Mutable;
+import bwfdm.replaydh.utils.StringWrapper;
 import bwfdm.replaydh.utils.xml.HtmlUtils;
 
 /**
@@ -183,6 +191,29 @@ public class GuiUtils {
 				throw new RDHException("Failed to switch execution to EDT", t);
 			}
 		}
+	}
+
+	public static <T extends Object> T invokeEDTAndWait(Supplier<T> task) {
+		if(SwingUtilities.isEventDispatchThread()) {
+			return task.get();
+		} else {
+			try {
+				final Mutable<T> result = new Mutable.MutableObject<>();
+				SwingUtilities.invokeAndWait(() -> result.set(task.get()));
+				return result.get();
+			} catch (InvocationTargetException | InterruptedException e) {
+				Throwable t = e;
+				if(t instanceof InvocationTargetException) {
+					t = e.getCause();
+				}
+				throw new RDHException("Failed to switch execution to EDT", t);
+			}
+		}
+	}
+
+	public static <T extends Object, R extends Object> R invokeEDTAndWait(Function<T,R> task, T input) {
+		Supplier<R> wrapper = () -> task.apply(input);
+		return invokeEDTAndWait(wrapper);
 	}
 
 	/**
@@ -372,6 +403,16 @@ public class GuiUtils {
 		showErrorDialog(parent, null, null, t);
 	}
 
+	public static String errorText(Throwable t) {
+
+		StringWriter sw = new StringWriter(250);
+		try(PrintWriter pw = new PrintWriter(sw)) {
+			t.printStackTrace(pw);
+		}
+
+		return sw.toString();
+	}
+
 	public static void showErrorDialog(Component parent, String title, String message, Throwable t) {
 
 		if(title==null) {
@@ -416,20 +457,10 @@ public class GuiUtils {
 				.add(infoLabel).xyw(1, 1, 5);
 
 		if(t!=null) {
-			JTextArea textArea = new JTextArea();
-			textArea.setEditable(false);
-			textArea.setFont(UIManager.getFont("Label.font")); //$NON-NLS-1$
-			textArea.setForeground(UIManager.getColor("Label.foreground")); //$NON-NLS-1$
-			textArea.setBackground(UIManager.getColor("Label.background")); //$NON-NLS-1$
+			String content = errorText(t);
+			JTextArea textArea = createTextArea(content);
+			textArea.setLineWrap(false);
 			textArea.setBorder(defaultContentBorder);
-//			textArea.setLineWrap(true);
-//			textArea.setWrapStyleWord(true);
-
-			StringWriter sw = new StringWriter(250);
-			try(PrintWriter pw = new PrintWriter(sw)) {
-				t.printStackTrace(pw);
-			}
-			textArea.setText(sw.toString());
 
 			JScrollPane scrollPane = new JScrollPane(textArea);
 			scrollPane.setPreferredSize(new Dimension(400, 300));
@@ -720,11 +751,63 @@ public class GuiUtils {
 
 	private static final String HTML_TAG = "<html>";
 
-	public static String toUnwrappedSwingTooltip(String tooltip) {
-		return toUnwrappedSwingTooltip(tooltip, true);
+	/**
+	 * A default limit for characters per line before a linebreak should be forced.
+	 * Chosen to be {@code 70}.
+	 */
+	public static final int DEFAULT_LINE_LIMIT = 70;
+
+	public static final String HTML_LINEBREAK = "<br>";
+
+	private static final StringWrapper plainTextWrapper = new StringWrapper()
+			.linebreak(HTML_LINEBREAK)
+			.header(HTML_TAG);
+
+	/**
+	 * Splits a text into lines with at most {@link #DEFAULT_LINE_LIMIT 70} characters.
+	 * Linebreaks will be realized with the {@link #HTML_LINEBREAK &lt;br&gt; tag} and
+	 * the text will have the {@code <html>} starting tag prepended in case it is missing.
+	 *
+	 * @param tooltip
+	 * @return
+	 */
+	public static String toSwingTooltip(String tooltip) {
+		if(tooltip==null || tooltip.isEmpty()) {
+			return null;
+		}
+		if(tooltip.startsWith(HTML_TAG)) {
+			return tooltip;
+		}
+
+		synchronized (plainTextWrapper) {
+			return plainTextWrapper.wrap(tooltip);
+		}
 	}
 
-	public static String toUnwrappedSwingTooltip(String tooltip, boolean prependHTML) {
+	public static String toSwingTooltip(String tooltip, JComponent component, int limit) {
+		if(tooltip==null || tooltip.isEmpty()) {
+			return null;
+		}
+		if(tooltip.startsWith(HTML_TAG)) {
+			return tooltip;
+		}
+
+		final FontMetrics fm = component.getFontMetrics(component.getFont());
+		int avgWidth = fm.getMaxAdvance();
+		if(avgWidth==-1) {
+			avgWidth = fm.charWidth('X');
+		}
+
+		return new StringWrapper()
+				.limit(limit)
+				.measure(s -> fm.stringWidth(s.toString()))
+				.averageCharWidth(avgWidth)
+				.linebreak(HTML_LINEBREAK)
+				.header(HTML_TAG)
+				.wrap(tooltip);
+	}
+
+	public static String toUnwrappedSwingTooltip(String tooltip, boolean prependHtml) {
 		if(tooltip==null || tooltip.isEmpty()) {
 			return null;
 		}
@@ -734,18 +817,18 @@ public class GuiUtils {
 
 		String convertedTooltip = HtmlUtils.escapeHTML(tooltip);
 		convertedTooltip = convertedTooltip.replaceAll(
-				"\\n\\r|\\r\\n|\\n|\\r", "<br>");
-		if(prependHTML && convertedTooltip.length()!=tooltip.length()) {
-			tooltip = "<html>"+convertedTooltip;
+				"\\r\\n|\\n|\\r", "<br>");
+		if(prependHtml && convertedTooltip.length()!=tooltip.length()) {
+			convertedTooltip = HTML_TAG+convertedTooltip;
 		}
 
-		return tooltip;
+		return convertedTooltip;
 	}
 
     public static Component createInfoComponent(String text, boolean center, Icon icon) {
     	JLabel label = new JLabel();
 
-    	label.setText(toUnwrappedSwingTooltip(text));
+    	label.setText(toSwingTooltip(text));
 
     	label.setFont(label.getFont().deriveFont(14f));
 
@@ -761,21 +844,6 @@ public class GuiUtils {
     	}
 
     	return label;
-    }
-
-    /**
-     * Create a list of textFields, which has the same size as a list of labels
-     * @param labelsList
-     * @param textFieldSize
-     * @return a list of textFields
-     */
-    public static List<JTextField> createTextFieldsListForLabels(List<JLabel> labelsList, int textFieldSize){
-
-        List<JTextField> textFieldsList = new ArrayList<JTextField>();
-        for(JLabel lab : labelsList){
-                textFieldsList.add(new JTextField(textFieldSize));
-        }
-        return textFieldsList;
     }
 
     public static Component createInfoDisplay(String message, Throwable t, boolean displayFullStack) {
@@ -896,6 +964,60 @@ public class GuiUtils {
     	}
 
     	comp.setBorder(border);
+    }
+
+    public static DocumentListener addErrorFeedback(final JTextComponent component, final String regex) {
+    	prepareChangeableBorder(component);
+
+    	final Matcher matcher = regex==null ? null : Pattern.compile(regex).matcher("");
+
+    	DocumentAdapter listener = new DocumentAdapter() {
+    		/**
+    		 * @see bwfdm.replaydh.ui.helper.DocumentAdapter#anyUpdate(javax.swing.event.DocumentEvent)
+    		 */
+    		@Override
+    		public void anyUpdate(DocumentEvent e) {
+
+    			String text = component.getText();
+
+    			boolean valid;
+
+    			if(matcher!=null) {
+    				valid = matcher.reset(text).matches();
+    			} else {
+    				valid = text!=null && !text.trim().isEmpty();
+    			}
+
+    			toggleChangeableBorder(component, !valid);
+    		}
+    	};
+
+    	component.getDocument().addDocumentListener(listener);
+    	listener.anyUpdate(null);
+
+    	return listener;
+    }
+
+    public static DocumentListener addErrorFeedback(final JTextComponent component, final Predicate<String> test) {
+    	prepareChangeableBorder(component);
+
+    	DocumentAdapter listener = new DocumentAdapter() {
+    		/**
+    		 * @see bwfdm.replaydh.ui.helper.DocumentAdapter#anyUpdate(javax.swing.event.DocumentEvent)
+    		 */
+    		@Override
+    		public void anyUpdate(DocumentEvent e) {
+
+    			String text = component.getText();
+
+    			toggleChangeableBorder(component, !test.test(text));
+    		}
+    	};
+
+    	component.getDocument().addDocumentListener(listener);
+    	listener.anyUpdate(null);
+
+    	return listener;
     }
 
 	private static class UndecoratedTabbedPaneUI extends BasicTabbedPaneUI {

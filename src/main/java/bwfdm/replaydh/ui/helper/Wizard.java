@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.helper;
@@ -48,6 +48,10 @@ import com.jgoodies.forms.factories.Paddings;
 
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.stats.Interval;
+import bwfdm.replaydh.stats.StatEntry;
+import bwfdm.replaydh.stats.StatType;
+import bwfdm.replaydh.ui.GuiStats;
 import bwfdm.replaydh.ui.GuiUtils;
 
 /**
@@ -150,9 +154,16 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 	 */
 	private E context;
 
-	public Wizard(Window parent, String wizardTitle, RDHEnvironment environment, @SuppressWarnings("unchecked") Page<E>...pages) {
+	private static final Dimension DEFAULT_DIALOG_SIZE = new Dimension(700, 650);
+
+	private final String statLabel;
+
+	private final Interval wizardUptime = new Interval();
+
+	public Wizard(Window parent, String statLabel, String wizardTitle, RDHEnvironment environment, @SuppressWarnings("unchecked") Page<E>...pages) {
 		super(parent, wizardTitle);
 
+		this.statLabel = requireNonNull(statLabel);
 		this.environment = requireNonNull(environment);
 
 		requireNonNull(pages);
@@ -244,7 +255,7 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 
 		getContentPane().add(mainPanel);
 		pack();
-		setMinimumSize(new Dimension(600, 400));
+		setMinimumSize(new Dimension(DEFAULT_DIALOG_SIZE));
 	}
 
 	private JLabel createLabel(int fontSize, boolean bold, int hAlign, int vAlign) {
@@ -269,6 +280,11 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		setNextActivePage(0);
 
 		setLocationRelativeTo(null);
+
+		wizardUptime.start();
+		environment.getClient().getStatLog().log(StatEntry.withData(StatType.UI_OPEN, GuiStats.WIZARD, statLabel));
+
+		refreshPageUI();
 
 		setVisible(true);
 	}
@@ -466,6 +482,12 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		// Stop showing the dialog
 		setVisible(false);
 		dispose();
+
+		environment.getClient().getStatLog().log(
+				StatEntry.withData(StatType.UI_CLOSE, GuiStats.WIZARD, statLabel,
+						wizardUptime.stop().asDurationString()));
+
+		wizardUptime.reset();
 	}
 
 	private class Handler implements WizardControl<E> {
@@ -483,12 +505,20 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 
 				// Only continue with a valid next page
 				if(nextPage!=null) {
+
+					environment.getClient().getStatLog().log(
+							StatEntry.withData(StatType.UI_ACTION, GuiStats.WIZARD_PAGE_NEXT, statLabel, nextPage.getId()));
+
 					setPage(nextPage);
 				}
 			}
 		}
 
 		private void doPrevious(ActionEvent ae) {
+
+			environment.getClient().getStatLog().log(
+					StatEntry.withData(StatType.UI_ACTION, GuiStats.WIZARD_PAGE_PREV, statLabel, activePage().getId()));
+
 			activePage().cancel(environment, context);
 
 			// Discard current page and go back once
@@ -499,6 +529,10 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		}
 
 		private void doCancel(ActionEvent ae) {
+
+			environment.getClient().getStatLog().log(
+					StatEntry.withData(StatType.UI_ACTION, GuiStats.WIZARD_CANCEL, statLabel));
+
 			Wizard.this.stopWizard(true);
 		}
 
@@ -545,6 +579,11 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		 * Title to identify this page/step
 		 */
 		String getTitle();
+
+		/**
+		 * Non-localized identifier of the page
+		 */
+		String getId();
 
 		/**
 		 * Short description on what to do on this page

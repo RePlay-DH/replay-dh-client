@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import bwfdm.replaydh.core.AbstractRDHTool;
+import bwfdm.replaydh.core.RDHClient;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHException;
 import bwfdm.replaydh.core.RDHLifecycleException;
@@ -59,6 +60,10 @@ import bwfdm.replaydh.io.TrackerAdapter;
 import bwfdm.replaydh.io.TrackerException;
 import bwfdm.replaydh.io.TrackingStatus;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.stats.Interval;
+import bwfdm.replaydh.stats.StatEntry;
+import bwfdm.replaydh.stats.StatType;
+import bwfdm.replaydh.ui.GuiStats;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.actions.ActionManager;
 import bwfdm.replaydh.ui.actions.ConditionResolver;
@@ -76,6 +81,8 @@ public class RDHGui extends AbstractRDHTool {
 	private static final Logger log = LoggerFactory.getLogger(RDHGui.class);
 
 	private static final Dimension MIN_WINDOW_SIZE = new Dimension(450, 300);
+
+	private static final String UPTIME_PROPERTY = "uptime";
 
 	/**
 	 * Storage of windows that are currently showing and have been
@@ -105,6 +112,8 @@ public class RDHGui extends AbstractRDHTool {
 	 * a client shutdown once the last window closes.
 	 */
 	private final ShutdownHandler shutdownHandler = new ShutdownHandler();
+
+	private final Interval trayUptime = new Interval();
 
 	/**
 	 * @throws RDHLifecycleException
@@ -163,7 +172,7 @@ public class RDHGui extends AbstractRDHTool {
 	 * settings.
 	 */
 	public boolean isCanUseSystemTray() {
-		return canUseSystemTray;
+		return canUseSystemTray && !getEnvironment().getBoolean(RDHProperty.CLIENT_UI_TRAY_DISABLED, false);
 	}
 
 	/**
@@ -187,7 +196,7 @@ public class RDHGui extends AbstractRDHTool {
 		RDHEnvironment environment = getEnvironment();
 
 		return environment.getProperty(RDHProperty.CLIENT_USERNAME)==null
-				|| environment.getBoolean(RDHProperty.INTERN_FORCE_WELCOME_DIALOG, false);
+				|| environment.getBoolean(RDHProperty.INTERN_FORCE_WELCOME_DIALOG);
 	}
 
 	private void rebuildPreviousWorkspace() {
@@ -222,6 +231,8 @@ public class RDHGui extends AbstractRDHTool {
 					"replaydh.dialogs.workspaceError.accessFailed", workspacePath);
 
 			GuiUtils.showError(null, title, message);
+
+			environment.getClient().resetWorkspace();
 		}
 	}
 
@@ -253,7 +264,7 @@ public class RDHGui extends AbstractRDHTool {
 					}
 
 					GuiUtils.showInfo(null, ResourceManager.getInstance().get("replaydh.canceledSetup"));
-					invokeShutdown();
+					invokeShutdown(false);
 					return;
 				} else {
 					// Everything went fine, finalize setup
@@ -308,6 +319,11 @@ public class RDHGui extends AbstractRDHTool {
 
 		frame.addWindowListener(shutdownHandler);
 
+		Interval uptime = new Interval().start();
+		frame.putClientProperty(UPTIME_PROPERTY, uptime);
+
+		logStat(StatEntry.ofType(StatType.UI_OPEN, GuiStats.WINDOW));
+
 		frame.setVisible(true);
 	}
 
@@ -331,7 +347,7 @@ public class RDHGui extends AbstractRDHTool {
 		return location;
 	}
 
-	public void invokeShutdown() {
+	public void invokeShutdown(boolean restart) {
 		// Prevent concurrent attempts to shutdown the client
 		if(shutdownRequestActive.compareAndSet(false, true)) {
 
@@ -354,7 +370,12 @@ public class RDHGui extends AbstractRDHTool {
 				 *  shutting down.
 				 */
 				if(hasEnvironment()) {
-					getEnvironment().getClient().shutdown();
+					RDHClient client = getEnvironment().getClient();
+					if(restart) {
+						client.restart();
+					} else {
+						client.shutdown();
+					}
 				}
 			} finally {
 				// Usually this code will never be reached when the client actually shuts down
@@ -458,6 +479,9 @@ public class RDHGui extends AbstractRDHTool {
 
 		// Inform user about tray icon functionality
 		showDefaultTrayInfo();
+
+		trayUptime.start();
+		logStat(StatEntry.ofType(StatType.UI_OPEN, GuiStats.TRAY));
 	}
 
 	private void showDefaultTrayInfo() {
@@ -487,11 +511,24 @@ public class RDHGui extends AbstractRDHTool {
 			SystemTray.getSystemTray().remove(trayIcon);
 
 			trayIcon = null;
+
+			logStat(StatEntry.withData(StatType.UI_CLOSE, GuiStats.TRAY,
+					trayUptime.stop().asDurationString()));
+
+			trayUptime.reset();
 		}
 	}
 
+	private Interval windowUptime(Window window) {
+		Interval uptime = null;
+		if(window instanceof RDHFrame) {
+			uptime = ((RDHFrame)window).getClientProperty(UPTIME_PROPERTY);
+		}
+		return uptime;
+	}
+
 	/**
-	 * CLoses the given window, removes it from the list
+	 * Closes the given window, removes it from the list
 	 * of open windows and either {@link #disposeGracefully(Window) disposes}
 	 * off it or "closes it to tray" if the tray area is supported and
 	 * the window was the last visible main window for the client.
@@ -504,10 +541,21 @@ public class RDHGui extends AbstractRDHTool {
 			lastHiddenWindow = window;
 			window.setVisible(false);
 
+			Interval uptime = windowUptime(window);
+
+			logStat(StatEntry.withData(StatType.UI_CLOSE, GuiStats.WINDOW,
+					uptime==null ? "0" : uptime.stop().asDurationString()));
+
+			// Make sure we can use the same interval instance again if the frame gets re-shown
+			if(uptime!=null) {
+				uptime.reset();
+			}
+
 			if(openWindows.isEmpty()) {
 				showTrayIcon();
 			}
 		} else {
+			//TODO ask user confirmation in case this is the last window and we would otherwise shutdown the client
 			disposeGracefully(window);
 		}
 	}
@@ -535,9 +583,18 @@ public class RDHGui extends AbstractRDHTool {
 		GuiUtils.checkEDT();
 
 		if(lastHiddenWindow!=null) {
-			lastHiddenWindow.setVisible(true);
-			openWindows.add(lastHiddenWindow);
+			Window window = lastHiddenWindow;
 			lastHiddenWindow = null;
+
+			window.setVisible(true);
+			openWindows.add(window);
+
+			logStat(StatEntry.ofType(StatType.UI_OPEN, GuiStats.WINDOW));
+
+			Interval uptime = windowUptime(window);
+			if(uptime!=null) {
+				uptime.start();
+			}
 		}
 	}
 
@@ -547,6 +604,8 @@ public class RDHGui extends AbstractRDHTool {
 		} else {
 			//TODO find some other non-invasive way of displaying the info
 		}
+
+		//TODO log stat
 	}
 
 	private class Handler extends TrackerAdapter {
@@ -582,7 +641,7 @@ public class RDHGui extends AbstractRDHTool {
 		}
 
 		private void exitClient(ActionEvent ae) {
-			invokeShutdown();
+			invokeShutdown(false);
 		}
 
 		private void restoreClient(ActionEvent ae) {
@@ -633,7 +692,7 @@ public class RDHGui extends AbstractRDHTool {
 		@Override
 		public void windowClosed(WindowEvent e) {
 			if(openWindows.isEmpty()) {
-				invokeShutdown();
+				invokeShutdown(false);
 			}
 		}
 	}

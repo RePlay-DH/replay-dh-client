@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.git;
@@ -126,7 +126,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Note that JGit allows working directory and index to be located at different areas
 	 * of a file system.
 	 */
-	public static final String CENTRAL_GIT_FOLDER_PROPERTY = ""; //TODO
+	public static final String CENTRAL_GIT_FOLDER_PROPERTY = ""; //TODO provide proper name here
 
 	private static final String NODE_PROPERTY_COMMIT_ID = "commitID";
 
@@ -151,7 +151,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	/**
 	 * The single workflow representing the content of our git working directory.
 	 */
-	private DelegatingWorkflow workflow;
+	private GitBackedWorkflow workflow;
 
 	/**
 	 * Our access to lower level git content/functionality.
@@ -192,8 +192,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 	private final List<TrackerListener> trackerListeners = new CopyOnWriteArrayList<>();
 
-	private boolean attachInternalInfoToSteps;
-
 	/**
 	 * Package-private so that the {@link GitArchiveExporter}
 	 * can use it for interaction with git.
@@ -218,8 +216,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		if(!super.start(environment)) {
 			return false;
 		}
-
-		attachInternalInfoToSteps = environment.getBoolean(RDHProperty.GIT_ATTACH_INFO_TO_STEPS, false);
 
 		return true;
 	}
@@ -288,7 +284,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		git = newGit;
 		revWalk = new RevWalk(newGit.getRepository());
 		// Start with an initially empty workflow
-		workflow = new DelegatingWorkflow(workspace.getSchema());
+		workflow = new GitBackedWorkflow(workspace.getSchema());
 		workflow.setTitle(config.getProperty(RDHInfoProperty.TITLE));
 		workflow.setDescription(config.getProperty(RDHInfoProperty.DESCRIPTION));
 
@@ -337,11 +333,11 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Currently we report the .git metadata folder, but in the future
 	 * we might want to change that to the working directory?
 	 */
-	private static File reportLocation(Repository repo) {
+	private File reportLocation(Repository repo) {
 		return repo.getDirectory();
 	}
 
-	private static void verifyGit(final Git git, final Workspace workspace, boolean createSource)
+	private void verifyGit(final Git git, final Workspace workspace, boolean createSource)
 			throws IOException, GitException {
 
 		final Repository repo = git.getRepository();
@@ -389,6 +385,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 				// The serialized info to be used as git commit message
 				final String message = serializeInfo(currentInfo);
+
+				// If required, include an empty .gitignore file in the initial commit
+				ensureGitignoreFile(git);
 
 				RevCommit commit;
 
@@ -443,7 +442,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		properties.setProperty(RDHInfoProperty.SCHEMA_ID, workspace.getSchema().getId());
 		copyProperty(properties, workspace, RDHInfoProperty.TITLE);
 		copyProperty(properties, workspace, RDHInfoProperty.DESCRIPTION);
-		//TODO do we also want to store user and organization info here?
 
 		return properties;
 	}
@@ -694,7 +692,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * and has been closed a result of this method call.
 	 *
 	 */
-	private void disconnectGit() {
+	public void disconnectGit() {
 		synchronized (gitLock) {
 			log.info("Disconnecting from git: {}", git==null ? "<none>" : reportLocation(git.getRepository()));
 
@@ -731,55 +729,10 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 				pendingStep = null;
 				workflowLoaded = false;
-				clearStatusInfo(); //TODO do this at the end or before we clear the current workflow?
+				clearStatusInfo();
 			}
 		}
 	}
-
-//	/**
-//	 * @see bwfdm.replaydh.core.RDHTool#stop(RDHEnvironment)
-//	 */
-//	@Override
-//	public void stop(RDHEnvironment environment) {
-//		environment.removePropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, this);
-//
-//		super.stop(environment);
-//	}
-
-//	@Override
-//	public void propertyChange(PropertyChangeEvent evt) {
-//
-//		// Ignore all property changes other than workspace
-//		if(!RDHEnvironment.NAME_WORKSPACE.equals(evt.getPropertyName())) {
-//			return;
-//		}
-//
-//		final Workspace workspace = (Workspace) evt.getNewValue();
-//
-//		synchronized (gitLock) {
-//
-//			if(workspace!=null) {
-//				Path workspacePath = workspace.getFolder();
-//				Path gitDir = getGitDir(workspacePath);
-//
-//				// If we're already working on the given workspace, don't bother rebuilding
-//				if(isCurrentGit(gitDir)) {
-//					return;
-//				}
-//			}
-//
-//			// Always try to disconnect from a potential former git repository to enter a "clean" state
-//			disconnectGit();
-//
-//			// Only if a new workspace has been selected do we need to make a fresh connection attempt
-//			if(workspace!=null) {
-//				connectGitAndLoadWorkspace(workspacePath)
-//
-//				if(!connectGitAndLoadWorkspace(workspace))
-//					throw new GitException("Recent attempt to connect to local git failed");
-//			}
-//		}
-//	}
 
 	/**
 	 * The workflow graph will be backed by this git such that each transaction
@@ -803,24 +756,66 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			if(git==null) {
 				return null;
 			} else {
-				return getRootFolder();
+				return getRootFolder(git);
 			}
 		}
 	}
 
 	/**
-	 * Returns the absolute path to the internal git repository
+	 * Returns the absolute path to the specified git repository.
 	 */
-	private Path getRootFolder() {
-		return git.getRepository().getWorkTree().toPath().toAbsolutePath(); //TODO do we need absolute path?
+	private Path getRootFolder(Git git) {
+		return git.getRepository().getWorkTree().toPath().toAbsolutePath();
 	}
 
 	/**
-	 * Returns location of default file that contains git rules
-	 * for ignoring files.
+	 * Returns location of the repository specific default file that contains
+	 * git rules for ignoring files.
 	 */
-	private Path getGitignoreFile() {
-		return getRootFolder().resolve(GitUtils.DEFAULT_IGNORE_FILE_NAME);
+	private Path getGitignoreFile(Git git) {
+		return getRootFolder(git).resolve(GitUtils.DEFAULT_IGNORE_FILE_NAME);
+	}
+
+	/**
+	 * Checks whether the default .gitignore file is already present in the
+	 * repository, creating it if necessary.
+	 * @return {@code true} iff the .gitignore file had to be created.
+	 * @throws IOException in case any of the underlying file operations fail
+	 * @throws GitException
+	 */
+	private void ensureGitignoreFile(Git git) throws IOException, GitException {
+		Path ignoreFile = getGitignoreFile(git);
+		boolean shouldCreate = Files.notExists(ignoreFile, LinkOption.NOFOLLOW_LINKS);
+
+		if(shouldCreate) {
+			Files.createFile(ignoreFile);
+			try(Writer writer = Files.newBufferedWriter(ignoreFile, StandardCharsets.UTF_8))  {
+				writer.write("########################################################");
+				writer.write("# This file contains ignore rules for the underlying   #");
+				writer.write("# Git repository. Entries are managed by the RePlay-DH #");
+				writer.write("# client automatically depending on user actions via   #");
+				writer.write("# the graphical interface.                             #");
+				writer.write("#                                                      #");
+				writer.write("#   Do NOT modify this file manually unless you know   #");
+				writer.write("#              EXACTLY what you're doing!              #");
+				writer.write("########################################################");
+			}
+		}
+
+		final Repository repo = git.getRepository();
+
+		try {
+			Path root = getRootFolder(git);
+			git.add()
+				.addFilepattern(toRelativeGitPath(ignoreFile, root))
+				.call();
+
+			log.info("Created default ignore file {} in repo {}", ignoreFile, reportLocation(repo));
+		} catch(GitAPIException e) {
+			throw new GitException(String.format(
+					"Failed to create default ignore file %s for repo %s",
+					ignoreFile, reportLocation(repo)), e);
+		}
 	}
 
 	/**
@@ -976,21 +971,30 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 	@Override
 	public Set<Path> getFilesForStatus(TrackingStatus status) throws TrackerException {
-		Status gitStatus = lastStatus;
 		LazyCollection<Path> result = LazyCollection.lazySet();
+		synchronized (gitLock) {
+			Status gitStatus = lastStatus;
 
-		if(gitStatus!=null) {
-			final Path root = getRootFolder();
-			final Consumer<String> resolver = path -> {
-				result.add(root.resolve(gitToSystemPath(path)));
-			};
+			if(gitStatus!=null) {
+				final Path root = getRootFolder(git);
+				final Consumer<String> resolver = path -> {
+					result.add(root.resolve(gitToSystemPath(path)));
+				};
 
-			collectFilesForStatus(gitStatus, status, resolver);
+				collectFilesForStatus(gitStatus, status, resolver);
+			}
 		}
 
 		return result.getAsSet();
 	}
 
+	/**
+	 * Need to be called under {@code gitLock} lock!
+	 * @param gitStatus
+	 * @param status
+	 * @param action
+	 * @throws TrackerException
+	 */
 	private void collectFilesForStatus(Status gitStatus, TrackingStatus status, Consumer<? super String> action)
 			throws TrackerException {
 
@@ -1031,6 +1035,12 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		}
 	}
 
+	/**
+	 * Needs to be called under {@code gitLock} lock!
+	 * @param str
+	 * @return
+	 * @throws IOException
+	 */
 	private TreeWalk prepareTreeWalk(String str) throws IOException {
 		RevCommit commit = resolve(str);
 		RevTree tree = commit.getTree();
@@ -1060,40 +1070,43 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 		boolean hasFiles = false;
 
-		Status gitStatus = lastStatus;
-		if(gitStatus!=null) {
+		synchronized (gitLock) {
+			Status gitStatus = lastStatus;
+			if(gitStatus!=null) {
 
-			for(TrackingStatus status : ss) {
-				switch (status) {
-				case IGNORED: hasFiles |= !gitStatus.getIgnoredNotInIndex().isEmpty(); break;
-				case UNKNOWN: hasFiles |= !gitStatus.getUntracked().isEmpty(); break;
-				case MISSING: hasFiles |= !gitStatus.getMissing().isEmpty(); break;
-				case MODIFIED: hasFiles |= !gitStatus.getModified().isEmpty() || !gitStatus.getChanged().isEmpty(); break;
-				case CORRUPTED: hasFiles |= !gitStatus.getConflicting().isEmpty(); break;
+				for(TrackingStatus status : ss) {
+					switch (status) {
+					case IGNORED: hasFiles |= !gitStatus.getIgnoredNotInIndex().isEmpty(); break;
+					case UNKNOWN: hasFiles |= !gitStatus.getUntracked().isEmpty(); break;
+					case MISSING: hasFiles |= !gitStatus.getMissing().isEmpty(); break;
+					case MODIFIED: hasFiles |= !gitStatus.getModified().isEmpty() || !gitStatus.getChanged().isEmpty(); break;
+					case CORRUPTED: hasFiles |= !gitStatus.getConflicting().isEmpty(); break;
 
-				case TRACKED: {
-					try(TreeWalk treeWalk = prepareTreeWalk(Constants.HEAD)) {
-						walk : while(treeWalk.next()) {
-							if(treeWalk.isSubtree()) {
-								treeWalk.enterSubtree();
-							} else {
-								hasFiles = true;
-								break walk;
+					case TRACKED: {
+						try(TreeWalk treeWalk = prepareTreeWalk(Constants.HEAD)) {
+							walk : while(treeWalk.next()) {
+								if(treeWalk.isSubtree()) {
+									treeWalk.enterSubtree();
+								} else {
+									hasFiles = true;
+									break walk;
+								}
 							}
+						} catch(IOException e) {
+							throw new TrackerException("Failed to access JGit TreeWalk to check for tracked files", e);
 						}
-					} catch(IOException e) {
-						throw new TrackerException("Failed to access JGit TreeWalk to check for tracked files", e);
+					} break;
+
+					default:
+						throw new TrackerException("Unknown or unsupported tracking status: "+status);
 					}
-				} break;
 
-				default:
-					throw new TrackerException("Unknown or unsupported tracking status: "+status);
-				}
-
-				if(hasFiles) {
-					break;
+					if(hasFiles) {
+						break;
+					}
 				}
 			}
+
 		}
 
 		return hasFiles;
@@ -1114,37 +1127,40 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 		int fileCount = 0;
 
-		Status gitStatus = lastStatus;
-		if(gitStatus!=null) {
+		synchronized (gitLock) {
+			Status gitStatus = lastStatus;
+			if(gitStatus!=null) {
 
-			for(TrackingStatus status : ss) {
-				switch (status) {
-				case IGNORED: fileCount += gitStatus.getIgnoredNotInIndex().size(); break;
-				case UNKNOWN: fileCount += gitStatus.getUntracked().size(); break;
-				case MISSING: fileCount += gitStatus.getMissing().size(); break;
-				case MODIFIED: fileCount += gitStatus.getModified().size() + gitStatus.getChanged().size(); break;
-				case CORRUPTED: fileCount += gitStatus.getConflicting().size(); break;
+				for(TrackingStatus status : ss) {
+					switch (status) {
+					case IGNORED: fileCount += gitStatus.getIgnoredNotInIndex().size(); break;
+					case UNKNOWN: fileCount += gitStatus.getUntracked().size(); break;
+					case MISSING: fileCount += gitStatus.getMissing().size(); break;
+					case MODIFIED: fileCount += gitStatus.getModified().size() + gitStatus.getChanged().size(); break;
+					case CORRUPTED: fileCount += gitStatus.getConflicting().size(); break;
 
-				case TRACKED: {
-					try(TreeWalk treeWalk = prepareTreeWalk(Constants.HEAD)) {
-						int count = 0;
-						while(treeWalk.next()) {
-							if(treeWalk.isSubtree()) {
-								treeWalk.enterSubtree();
-							} else {
-								count++;
+					case TRACKED: {
+						try(TreeWalk treeWalk = prepareTreeWalk(Constants.HEAD)) {
+							int count = 0;
+							while(treeWalk.next()) {
+								if(treeWalk.isSubtree()) {
+									treeWalk.enterSubtree();
+								} else {
+									count++;
+								}
 							}
+							fileCount += count;
+						} catch(IOException e) {
+							throw new TrackerException("Failed to access JGit TreeWalk to count tracked files", e);
 						}
-						fileCount += count;
-					} catch(IOException e) {
-						throw new TrackerException("Failed to access JGit TreeWalk to count tracked files", e);
-					}
-				} break;
+					} break;
 
-				default:
-					throw new TrackerException("Unknown or unsupported tracking status: "+status);
+					default:
+						throw new TrackerException("Unknown or unsupported tracking status: "+status);
+					}
 				}
 			}
+
 		}
 
 		return fileCount;
@@ -1152,20 +1168,22 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 	@Override
 	public Map<Path, TrackingStatus> getFilesForStatus(Set<TrackingStatus> statuses) throws TrackerException {
-		Status gitStatus = lastStatus;
 		Map<Path, TrackingStatus> result = new HashMap<>();
+		synchronized (gitLock) {
+			Status gitStatus = lastStatus;
 
-		if(gitStatus!=null) {
-			final Path root = getRootFolder();
+			if(gitStatus!=null) {
+				final Path root = getRootFolder(git);
 
-			for(TrackingStatus status : statuses) {
-				final Consumer<String> resolver = path -> {
-					result.put(root.resolve(gitToSystemPath(path)), status);
-				};
+				for(TrackingStatus status : statuses) {
+					final Consumer<String> resolver = path -> {
+						result.put(root.resolve(gitToSystemPath(path)), status);
+					};
 
-				collectFilesForStatus(gitStatus, status, resolver);
+					collectFilesForStatus(gitStatus, status, resolver);
+				}
+
 			}
-
 		}
 
 		return result;
@@ -1177,18 +1195,23 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		requireNonNull(action);
 		checkArgument("Set of files is empty", !files.isEmpty());
 
-		switch (action) {
-		case ADD:
-			return startTrackingFiles(files);
+		synchronized (gitLock) {
+			switch (action) {
+			case ADD:
+				return startTrackingFiles(files);
 
-		case REMOVE:
-			return stopTrackingFiles(files, true);
+			case REMOVE:
+				return stopTrackingFiles(files, true);
 
-		case IGNORE:
-			return ignoreFiles(files);
+			case IGNORE:
+				return ignoreFiles(files);
 
-		default:
-			throw new TrackerException("Unknown or unsupported tracking action: "+action);
+			case NONE:
+				return resetFileTracking(files);
+
+			default:
+				throw new TrackerException("Unknown or unsupported tracking action: "+action);
+			}
 		}
 	}
 
@@ -1196,6 +1219,8 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Converts given {@link Path files} into Strings usable for git commands
 	 * and calls the given {@link Consumer gitPathAction}. For any file that
 	 * resides outside the repository, the {@code leftoverAction} is performed.
+	 * <p>
+	 * Needs to be called under {@code gitLock} lock!
 	 *
 	 * @param files
 	 * @param gitPathAction
@@ -1204,7 +1229,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	private void prepareFiles(Set<Path> files, BiConsumer<? super Path, ? super String> gitPathAction,
 			Consumer<? super Path> leftoverAction) {
 
-		final Path root = getRootFolder();
+		final Path root = getRootFolder(git);
 
 		for(Path file : files) {
 			String gitPath = toRelativeGitPath(file, root);
@@ -1226,6 +1251,11 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			return systemToGitPath(relativeFile.toString());
 		}
 
+	}
+
+	private Set<Path> resetFileTracking(Set<Path> files) {
+		//TODO implement: remove tracking or revoke ignore status for the given files
+		throw new UnsupportedOperationException();
 	}
 
 	private Set<Path> startTrackingFiles(Set<Path> files) {
@@ -1276,6 +1306,12 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		return leftovers.getAsSet();
 	}
 
+	/**
+	 * Needs to be called under {@code gitLock} lock!
+	 * @param files
+	 * @return
+	 * @throws TrackerException
+	 */
 	private Set<Path> ignoreFiles(Set<Path> files) throws TrackerException {
 		requireNonNull(files);
 		checkArgument("Set of files is empty", !files.isEmpty());
@@ -1308,16 +1344,16 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			stopTrackingFiles(filesToRemove, false);
 		}
 
-		// From here on we'll only interact with .gitignore
+		// From here on we'll only interact with the ignore file
 
-		// We're assuming one global .gitignore file that only our client is manipulating
+		// We're assuming one global ignore file that only our client is manipulating
 		IgnoreNode ignoreNode;
 		try {
 			ignoreNode = getDefaultIgnoreRules();
 		} catch (IOException e) {
 			throw new TrackerException("Failed to load ignore rules", e);
 		}
-		final Path root = getRootFolder();
+		final Path root = getRootFolder(git);
 		// Files that failed to be converted into local git paths or couldn't be added to ignore file
 		LazyCollection<Path> leftovers = LazyCollection.lazySet(files.size());
 		// Properly transformed local git paths that haven't been ignored previously
@@ -1366,34 +1402,37 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		return result.getAsSet();
 	}
 
+	/**
+	 * Needs to be called under {@code gitLock} lock!
+	 * @param pathsToIgnore
+	 * @throws IOException
+	 */
 	private void appendIgnoreRules(List<String> pathsToIgnore) throws IOException {
 		checkArgument("List of paths to ignroe must not be empty", !pathsToIgnore.isEmpty());
 
 		Collections.sort(pathsToIgnore);
 
-		synchronized (gitLock) {
-			Path ignoreFile = getGitignoreFile();
+		Path ignoreFile = getGitignoreFile(git);
 
-			try(Writer writer = Files.newBufferedWriter(ignoreFile, Constants.CHARSET,
-					StandardOpenOption.WRITE,
-					StandardOpenOption.CREATE,
-					StandardOpenOption.APPEND)) {
+		try(Writer writer = Files.newBufferedWriter(ignoreFile, Constants.CHARSET,
+				StandardOpenOption.WRITE,
+				StandardOpenOption.CREATE,
+				StandardOpenOption.APPEND)) {
 
+			writer.append(System.lineSeparator());
+			writer.append("# ignored on "+LocalDateTime.now());
+			writer.append(System.lineSeparator());
+
+			for(String path : pathsToIgnore) {
+				writer.append(path);
 				writer.append(System.lineSeparator());
-				writer.append("# ignored on "+LocalDateTime.now());
-				writer.append(System.lineSeparator());
-
-				for(String path : pathsToIgnore) {
-					writer.append(path);
-					writer.append(System.lineSeparator());
-				}
 			}
 		}
 	}
 
 	private IgnoreNode getDefaultIgnoreRules() throws IOException {
 		synchronized (gitLock) {
-			Path ignoreFile = getGitignoreFile();
+			Path ignoreFile = getGitignoreFile(git);
 			IgnoreNode ignoreNode = new IgnoreNode();
 			try(InputStream in = Files.newInputStream(ignoreFile)) {
 				ignoreNode.parse(in);
@@ -1439,11 +1478,13 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 */
 	@Override
 	public TrackingStatus getStatusForFile(Path file) throws TrackerException {
-		final Status status = ensureUpdatedStatus();
-		final Path root = getRootFolder();
-		final String path = systemToGitPath(root.relativize(file).toString());
+		synchronized (gitLock) {
+			final Status status = ensureUpdatedStatus();
+			final Path root = getRootFolder(git);
+			final String path = systemToGitPath(root.relativize(file).toString());
 
-		return lookupFileStatus(status, path);
+			return lookupFileStatus(status, path);
+		}
 	}
 
 	/**
@@ -1452,15 +1493,18 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 */
 	@Override
 	public Map<Path, TrackingStatus> getSatusForFiles(Set<Path> files) throws TrackerException {
-		final Status status = ensureUpdatedStatus();
 		final Map<Path, TrackingStatus> result = new HashMap<>(files.size());
 
-		final Path root = getRootFolder();
+		synchronized (gitLock) {
 
-		for(Path file : files) {
-			String path = toRelativeGitPath(file, root);
+			final Status status = ensureUpdatedStatus();
+			final Path root = getRootFolder(git);
 
-			result.put(file, lookupFileStatus(status, path));
+			for(Path file : files) {
+				String path = toRelativeGitPath(file, root);
+
+				result.put(file, lookupFileStatus(status, path));
+			}
 		}
 
 		return result;
@@ -1472,20 +1516,23 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 */
 	@Override
 	public EnumMap<TrackingStatus, Set<Path>> getStatusBreakdown(Set<Path> files) throws TrackerException {
-		final Status status = ensureUpdatedStatus();
 		final EnumMap<TrackingStatus, Set<Path>> result = new EnumMap<>(TrackingStatus.class);
-		final Path root = getRootFolder();
 
-		for(Path file : files) {
-			String path = toRelativeGitPath(file, root);
-			TrackingStatus s = lookupFileStatus(status, path);
+		synchronized (gitLock) {
+			final Status status = ensureUpdatedStatus();
+			final Path root = getRootFolder(git);
 
-			Set<Path> buffer = result.get(s);
-			if(buffer==null) {
-				buffer = new HashSet<>();
-				result.put(s, buffer);
+			for(Path file : files) {
+				String path = toRelativeGitPath(file, root);
+				TrackingStatus s = lookupFileStatus(status, path);
+
+				Set<Path> buffer = result.get(s);
+				if(buffer==null) {
+					buffer = new HashSet<>();
+					result.put(s, buffer);
+				}
+				buffer.add(file);
 			}
-			buffer.add(file);
 		}
 
 		for(TrackingStatus s : TrackingStatus.values()) {
@@ -1525,6 +1572,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 */
 	private void setPendingStep(WorkflowStep step) {
 		requireNonNull(step);
+		checkArgument("Step already added", !step.isAdded());
 
 		synchronized (gitLock) {
 			if(pendingStep!=null)
@@ -1533,8 +1581,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			pendingStep = step;
 		}
 	}
-
-	//TODO add checkConnected() method
 
 	public WorkflowStep getPendingStep() {
 		synchronized (gitLock) {
@@ -1640,49 +1686,48 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * @throws IOException
 	 * @throws GitException
 	 */
-	private void commitPendingStep() throws IOException, GitException {
+	private void commitPendingStep(WorkflowStep step) throws IOException, GitException {
+		requireNonNull(step);
+
 		synchronized (gitLock) {
 			checkState("No active workflow", workflow!=null);
 
-			WorkflowStep step = pendingStep;
-			if(step!=null) {
-				try {
+			try {
 
-					// Serialize step and create metadata payload
-					String message = createCommitMessage(step);
+				// Serialize step and create metadata payload
+				String message = createCommitMessage(step);
 
-					// New branch if we need to create one
-					Ref newBranch = null;
-					final WorkflowStep previous = WorkflowUtils.previous(pendingStep);
-					// If preceding step already has outgoing actions, we need to branch
-					if(workflow.getNextStepCount(previous)>0) {
-						newBranch = createNewBranch(head());
-					}
-
-					// We assume all files to have been added to the index already
-					CommitCommand command = git.commit()
-							.setMessage(message)
-							.setAll(true);
-
-					ExecutionResult<RevCommit> result = executeCommand(command);
-					if(result.hasFailed()) {
-						// Make sure we clean up "temporary" branch in case commit failed
-						if(newBranch!=null) {
-							deleteBranch(newBranch);
-						}
-						throw new GitException("Failed to commit pending step: "+pendingStep.getId(), result.exception);
-					} else {
-						saveId(step, result.result);
-
-						// Tell listeners that "something" has changed with the step
-						workflow.fireWorkflowStepChanged(step);
-					}
-
-					// Make sure other entities get informed of the changes
-					clearStatusInfo();
-				} finally {
-					pendingStep = null;
+				// New branch if we need to create one
+				Ref newBranch = null;
+				final WorkflowStep previous = WorkflowUtils.previous(step);
+				// If preceding step already has outgoing actions, we need to branch
+				if(workflow.getNextStepCount(previous)>1) {
+					newBranch = createNewBranch(head());
 				}
+
+				// We assume all files to have been added to the index already
+				CommitCommand command = git.commit()
+						.setMessage(message)
+						.setAll(true);
+
+				ExecutionResult<RevCommit> result = executeCommand(command);
+				if(result.hasFailed()) {
+					// Make sure we clean up "temporary" branch in case commit failed
+					if(newBranch!=null) {
+						deleteBranch(newBranch);
+					}
+					throw new GitException("Failed to commit pending step: "+pendingStep.getId(), result.exception);
+				} else {
+					saveId(step, result.result);
+
+					// Tell listeners that "something" has changed with the step
+					workflow.fireWorkflowStepChanged(step);
+				}
+
+				// Make sure other entities get informed of the changes
+				clearStatusInfo();
+			} finally {
+				pendingStep = null;
 			}
 		}
 	}
@@ -1953,6 +1998,18 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		// Treat our initial commit special
 		final RevCommit initialCommit = resolve(GitUtils.TAG_SOURCE);
 
+		if(isVerbose()) {
+			StringBuilder sb = new StringBuilder("----- Commits for graph -----");
+			for(RevCommit commit : commits) {
+				sb.append("\n  ").append(commit);
+			}
+			sb.append('\n');
+			sb.append("initial:  ").append(initialCommit).append('\n');
+			sb.append("---------------------------------");
+
+			log.info(sb.toString());
+		}
+
 //		// Lookup to see which commits start a new branch
 //		final Map<RevCommit, String> branchPointers = getBranchPointers();
 
@@ -1961,14 +2018,19 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 			// Sanity check against duplicate step creation (should normally never happen)
 			if(lookupStep(commit)!=null) {
+				if(isVerbose()) {
+					log.info("Redundant graph node for commit: {}", commit);
+				}
 				continue;
 			}
 
 			WorkflowStep step;
 
 			if(commit.equals(initialCommit)) {
+//				log.info("Detected initial step commit {}", commit);
 				step = workflow.getInitialStepDirect();
 			} else {
+//				log.info("Proper step commit {}", commit);
 				step = workflow.createWorkflowStep();
 			}
 
@@ -2063,6 +2125,10 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 					return;
 				}
 
+				if(isVerbose()) {
+					log.info("Loading step for commit {}", commit);
+				}
+
 				String message = commit.getFullMessage();
 
 				if(workflow.getInitialStepDirect()==step) {
@@ -2085,45 +2151,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 							throw new GitException("Failed to read process metadata from commit message for "+commit, e);
 					}
 
-					//TODO verify
 					getEnvironment().getClient().getResourceResolver().update(step);
 				}
 
-//				// Finally add some internal info
-//				if(attachInternalInfoToSteps) {
-//					StringBuilder info = new StringBuilder();
-//
-//					try {
-//						// Load branches for commit
-//						List<Ref> branches = git.branchList().setContains(commit.name()).call();
-//						if(!branches.isEmpty()) {
-//							info.append("-- Branches ---").append(System.lineSeparator());
-//							for(Ref branch : branches) {
-//								info.append(branch.getName()).append(System.lineSeparator());
-//							}
-//						}
-//
-//						// Test
-//						Map<ObjectId, String> map = git.nameRev().addPrefix("refs/heads").add(commit).call();
-//						if(!map.isEmpty()) {
-//							info.append("--- RevNames ---").append(System.lineSeparator());
-//							for(Entry<ObjectId, String> entry : map.entrySet()) {
-//								info.append(entry.getKey()).append(" -> ")
-//									.append(entry.getValue()).append(System.lineSeparator());
-//							}
-//						}
-//					} catch(GitAPIException | MissingObjectException | JGitInternalException e) {
-//						throw new GitException("Failed to compute internal info for commit: "+commit, e);
-//					}
-//
-//					if(info.length()>0) {
-//						String oldInfo = step.getProperty(WorkflowStep.PROPERTY_INTERNAL_INFO);
-//						if(oldInfo!=null) {
-//							info.insert(0, oldInfo).append(System.lineSeparator());
-//						}
-//						step.setProperty(WorkflowStep.PROPERTY_INTERNAL_INFO, info.toString());
-//					}
-//				}
 			} finally {
 				workflow.setIgnoreEventRequests(false);
 			}
@@ -2165,13 +2195,13 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * @author Markus Gärtner
 	 *
 	 */
-	private class DelegatingWorkflow extends DefaultWorkflow {
+	private class GitBackedWorkflow extends DefaultWorkflow {
 
 		private final AtomicBoolean skeletonLoaded = new AtomicBoolean(false);
 
 		private boolean ignoreEventRequests = false;
 
-		DelegatingWorkflow(WorkflowSchema schema) {
+		GitBackedWorkflow(WorkflowSchema schema) {
 			super(schema);
 		}
 
@@ -2206,6 +2236,12 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 				super.fireWorkflowStepPropertyChanged(step, propertyName);
 		}
 
+		/**
+		 * Shortcut method for internal use by {@link JGitAdapter} only.
+		 * <p>
+		 * Exposes a proxy to {@link #addWorkflowStepImpl(WorkflowStep, WorkflowStep)}
+		 * for package private access.
+		 */
 		boolean addWorkflowStepDirect(WorkflowStep source, WorkflowStep target) {
 			return super.addWorkflowStepImpl(source, target);
 		}
@@ -2229,6 +2265,11 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			setActiveStepImpl(step);
 		}
 
+		/**
+		 * Shortcut method for internal use by {@link JGitAdapter} only.
+		 * Exposes a proxy to {@link #getInitialStepUnchecked()}
+		 * for package private access.
+		 */
 		WorkflowStep getInitialStepDirect() {
 			return getInitialStepUnchecked();
 		}
@@ -2244,7 +2285,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 				return false;
 			}
 
-			//TODO perform the git stuff and rollback if it fails
+			// Perform Git level actions
 			try {
 				checkout(step);
 			} catch (IOException | GitException e) {
@@ -2261,15 +2302,27 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		 * method, so prevent super class from automatically changing it during regular
 		 * method calls.
 		 *
-		 * @see bwfdm.replaydh.workflow.impl.DefaultWorkflow#autoAssignActiveStepOnAdd()
+		 * @see bwfdm.replaydh.workflow.impl.DefaultWorkflow#isAutoAssignActiveStepOnAdd()
 		 */
 		@Override
-		protected boolean autoAssignActiveStepOnAdd() {
+		protected boolean isAutoAssignActiveStepOnAdd() {
 			return false;
 		}
 
 		/**
-		 * Calls the super method and then delegates to the {@link JGitAdapter} to
+		 * Our workflow is purely virtual and derived from the git repository content.
+		 * We therefore solely rely on the metadta stored there to be the "single source of
+		 * truth". No meddling with ids there!
+		 *
+		 * @see bwfdm.replaydh.workflow.impl.DefaultWorkflow#isEnsureUniqueStepIdOnAdd()
+		 */
+		@Override
+		protected boolean isEnsureUniqueStepIdOnAdd() {
+			return false;
+		}
+
+		/**
+		 * Finalizes the pending step and then delegates to the {@link JGitAdapter} to
 		 * commit pending changes.
 		 *
 		 * @see bwfdm.replaydh.workflow.impl.DefaultWorkflow#endTransaction()
@@ -2283,9 +2336,12 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			if(pendingStep!=null) {
 				boolean success = false;
 
+				// Finalize the step data
+				ensureUniqueStepId(pendingStep);
+
 				// Perform the git action(s)
 				try {
-					commitPendingStep();
+					commitPendingStep(pendingStep);
 
 					success = true;
 				} catch (IOException | GitException e) {
@@ -2304,6 +2360,14 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 				fireActiveWorkflowStepChanged(oldActiveStep, pendingStep);
 			}
+		}
+
+		/**
+		 * @see bwfdm.replaydh.workflow.impl.DefaultWorkflow#addWorkflowStep(bwfdm.replaydh.workflow.WorkflowStep, bwfdm.replaydh.workflow.WorkflowStep)
+		 */
+		@Override
+		public boolean addWorkflowStep(WorkflowStep source, WorkflowStep target) {
+			throw new UnsupportedOperationException();
 		}
 
 		/**

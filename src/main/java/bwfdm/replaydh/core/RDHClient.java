@@ -32,6 +32,8 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +43,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -71,12 +74,17 @@ import bwfdm.replaydh.git.JGitAdapter;
 import bwfdm.replaydh.git.RDHInfoProperty;
 import bwfdm.replaydh.io.FileTracker;
 import bwfdm.replaydh.io.IOUtils;
+import bwfdm.replaydh.io.resources.FileResource;
 import bwfdm.replaydh.io.resources.FileResourceProvider;
 import bwfdm.replaydh.metadata.MetadataBuilder;
 import bwfdm.replaydh.metadata.MetadataRecord;
 import bwfdm.replaydh.metadata.MetadataRepository;
 import bwfdm.replaydh.metadata.basic.file.FileMetadataRepository;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.stats.Interval;
+import bwfdm.replaydh.stats.StatEntry;
+import bwfdm.replaydh.stats.StatLog;
+import bwfdm.replaydh.stats.StatType;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.core.RDHGui;
 import bwfdm.replaydh.utils.Label;
@@ -121,7 +129,7 @@ public class RDHClient {
 	static {
 		Thread.setDefaultUncaughtExceptionHandler(uncaughtExceptionHandler);
 
-		// TODO does EDT exception handling still require this workaround to catch exceptions when in modal dialog?
+		// Does EDT exception handling still require this workaround to catch exceptions when in modal dialog?
 		System.setProperty("sun.awt.exception.handler",	uncaughtExceptionHandler.getClass().getName());
 	}
 
@@ -134,15 +142,7 @@ public class RDHClient {
 			throw new IllegalAccessError("Not allowed to invoke main method more than once per JVM session");
 
 		try {
-
-			// Copy all system properties into our options
-			Options options = new Options();
-			System.getProperties().forEach((key, value) -> options.put((String) key, value));
-			readArguments(args, options);
-
-//			System.out.println(options);
-
-			client = new RDHClient(options);
+			client = new RDHClient(args);
 
 			// If the boot sequence finishes without errors we're good to show UI
 			client.boot();
@@ -159,55 +159,10 @@ public class RDHClient {
 			// RDHLifecycleException is just a wrapper, so use its message and cause for logging
 			log.error("Error in default client lifecycle: {}", e.getMessage(), e.getCause());
 		} catch(Exception e) {
-			log.error("Unexpected error during client startup", e);
+			log.error("Unexpected error during client lifecycle", e);
 		}
 
 		//TODO show errors as dialog!
-	}
-
-	private static void readArguments(String[] args, Options options) {
-		for(int i=0; i<args.length; i++) {
-			switch (args[i]) {
-			case "-v":
-				addOption(options, RDHProperty.INTERN_VERBOSE, Boolean.TRUE);
-				break;
-
-			case "-dev":
-				addOption(options, RDHProperty.INTERN_DEBUG, Boolean.TRUE);
-				break;
-
-			case "-config":
-				addOption(options, RDHProperty.INTERN_CONFIG_FILE, args[++i]);
-				break;
-
-			case "-dir":
-				addOption(options, RDHProperty.INTERN_USER_FOLDER, args[++i]);
-				break;
-
-			case "-workspace":
-				addOption(options, RDHProperty.CLIENT_WORKSPACE_PATH, args[++i]);
-				break;
-
-			//TODO
-
-			default: {
-				String arg = args[i];
-				if(arg.startsWith("-D")) {
-					int eqIndex = arg.indexOf('=', 3);
-					if(eqIndex!=-1 && eqIndex<arg.length()-1) {
-						options.put(arg.substring(2, eqIndex), arg.substring(eqIndex+1));
-					}
-					break;
-				}
-
-				throw new RDHException("Unknown paramater or malformed option: "+args[i]);
-			}
-			}
-		}
-	}
-
-	private static void addOption(Options options, RDHProperty property, Object value) {
-		options.put(property.getKey(), value.toString());
 	}
 
 	public static RDHClient client() {
@@ -220,8 +175,6 @@ public class RDHClient {
 		return client!=null;
 	}
 
-	//TODO storage for RDHTool instances
-
 	private final Map<RDHTool, ToolLifecycleState> tools = new IdentityHashMap<>();
 
 	private final List<ToolLifecycleListener> toolLifecycleListeners = new CopyOnWriteArrayList<>();
@@ -230,6 +183,8 @@ public class RDHClient {
 	 * Startup options (saved so we can use them for shutdown as well)
 	 */
 	private final Options options;
+
+	private final String[] args;
 
 	private final Lazy<JGitAdapter> gitAdapter = Lazy.create(this::createGitAdapter, true);;
 
@@ -254,6 +209,8 @@ public class RDHClient {
 
 	private final Lazy<PluginEngine> pluginEngine = Lazy.create(this::createPluginEngine, true);
 
+	private final Lazy<StatLog> statLog = Lazy.create(this::createStatLog, true);
+
 	private final boolean verbose;
 
 	private final boolean debug;
@@ -272,11 +229,24 @@ public class RDHClient {
 
 	private volatile boolean active = false;
 
+	/**
+	 * Flag indicating a requested restart.
+	 * Note that this value can only ever change from
+	 * {@code false} to {@code true}!
+	 */
+	private volatile boolean doRestart = false;
+
 	private final String configFilename;
 
 	private final Object terminationLock = new Object();
 
 	private final Properties appInfo;
+
+	private final Interval clientRuntime = new Interval();
+
+	private final Thread shutdownHook;
+
+	private final Thread mainThread;
 
 	/**
 	 * Creates a new  client using provided options.
@@ -284,8 +254,17 @@ public class RDHClient {
 	 * @param options
 	 * @throws RDHLifecycleException
 	 */
-	public RDHClient(Options options) throws RDHLifecycleException {
-		requireNonNull(options);
+	public RDHClient(String[] args) throws RDHLifecycleException {
+
+		mainThread = Thread.currentThread();
+
+		this.args = args.clone();
+		this.options = new Options();
+
+		// Copy all system properties into our settings
+		System.getProperties().forEach((key, value) -> options.put((String) key, value));
+
+		readArguments(args, options);
 
 		appInfo = new Properties();
 		try(InputStream in = RDHClient.class.getResourceAsStream("app.ini");
@@ -326,8 +305,76 @@ public class RDHClient {
 			createUserFolderIfMissing = false;
 		}
 
-		// Defensive copying of supplied options so we keep a read-only static set
-		this.options = options.clone();
+		shutdownHook = new Thread("client-shutdown") {
+			@Override
+			public void run() {
+
+				// Sanity check against getting called after regular shutdown sequence
+				synchronized (lock) {
+					if(!active) {
+						return;
+					}
+				}
+
+				// Initiate shutdown sequence
+				shutdown();
+
+				/*
+				 *  Await clean shutdown
+				 *
+				 *  Depending on the situation this hook gets called under,
+				 *  we might not be able to wait arbitrarily long.
+				 */
+				try {
+					mainThread.join();
+				} catch (InterruptedException e) {
+					// ignore, nothing we can do about it at this point
+				}
+			}
+		};
+	}
+
+	private static void readArguments(String[] args, Options options) {
+		for(int i=0; i<args.length; i++) {
+			switch (args[i]) {
+			case "-v":
+				addOption(options, RDHProperty.INTERN_VERBOSE, Boolean.TRUE);
+				break;
+
+			case "-dev":
+				addOption(options, RDHProperty.INTERN_DEBUG, Boolean.TRUE);
+				break;
+
+			case "-config":
+				addOption(options, RDHProperty.INTERN_CONFIG_FILE, args[++i]);
+				break;
+
+			case "-dir":
+				addOption(options, RDHProperty.INTERN_USER_FOLDER, args[++i]);
+				break;
+
+			case "-workspace":
+				addOption(options, RDHProperty.CLIENT_WORKSPACE_PATH, args[++i]);
+				break;
+
+			default: {
+				String arg = args[i];
+				if(arg.startsWith("-D")) {
+					int eqIndex = arg.indexOf('=', 3);
+					if(eqIndex!=-1 && eqIndex<arg.length()-1) {
+						options.put(arg.substring(2, eqIndex), arg.substring(eqIndex+1));
+					}
+					break;
+				}
+
+				throw new RDHException("Unknown paramater or malformed option: "+args[i]);
+			}
+			}
+		}
+	}
+
+	private static void addOption(Options options, RDHProperty property, Object value) {
+		options.put(property.getKey(), value.toString());
 	}
 
 	private void delegateLogOutput() throws RDHLifecycleException {
@@ -508,6 +555,10 @@ public class RDHClient {
 		return schemaManager.value();
 	}
 
+	public StatLog getStatLog() {
+		return statLog.value();
+	}
+
 	/**
 	 * Returns the client component responsible for managing the
 	 * graphical user interface (GUI) of this client.
@@ -529,6 +580,16 @@ public class RDHClient {
 		return debug;
 	}
 
+	public void resetWorkspace() {
+		JGitAdapter git = gitAdapter.value();
+
+		if(isVerbose()) {
+			log.info("Resetting workspace");
+		}
+
+		git.disconnectGit();
+	}
+
 	/**
 	 * Expects an existing workspace managed by the RePlay-DH client to
 	 * be located at the specified {@link Path}.
@@ -540,7 +601,7 @@ public class RDHClient {
 		JGitAdapter git = gitAdapter.value();
 
 		if(isVerbose()) {
-			log.info("Loading workspace at location: {}",workspacePath);
+			log.info("Loading workspace at location: {}", workspacePath);
 		}
 
 		Workspace workspace = null;
@@ -592,6 +653,14 @@ public class RDHClient {
 
 		synchronized (lock) {
 
+//			if(debug) {
+//				java.util.logging.Logger.getLogger("bwfdm.replaydh").setLevel(Level.FINEST);
+//			}
+
+			Runtime.getRuntime().addShutdownHook(shutdownHook);
+
+			clientRuntime.start();
+
 			// Make sure our user folder structure is valid and existing
 			if(!Files.exists(userFolder)) {
 				if(createUserFolderIfMissing) {
@@ -606,13 +675,12 @@ public class RDHClient {
 			}
 
 			// Before anything verbose is started we need to delegate logs to custom files
-			delegateLogOutput(); //FIXME correct location/time to do this?
+			delegateLogOutput();
 
 			if(verbose) {
 				log.info("User folder: {}", userFolder);
 				log.info("Client options: {}", options);
 			}
-			//TODO use options to check what to actually do
 
 			// Load localization (until here the resource manager will default to system settings)
 			loadResourceManager();
@@ -634,6 +702,8 @@ public class RDHClient {
 			} catch(Exception e) {
 				throw new RDHLifecycleException("Failed to start tools", e);
 			}
+
+			getStatLog().log(StatEntry.ofType(StatType.INTERNAL_BEGIN, ClientStats.SESSION));
 
 			// Publish info about started tools (this way tools can get to know each other)
 			try {
@@ -721,35 +791,42 @@ public class RDHClient {
 //		}
 	}
 
+	/**
+	 * For now uses the {@link IdentifiableResolver#NOOP_RESOLVER} as a workaround
+	 * for the previous mess.
+	 * @return
+	 */
 	private IdentifiableResolver createResourceResolver() {
 
 		synchronized (lock) {
-			Path rootFolder = null;
-
-			String savedRootFolder = getEnvironment().getProperty(RDHProperty.CLIENT_IDENTIFIER_CACHE_ROOT_FOLDER);
-			if(savedRootFolder!=null) {
-				rootFolder = Paths.get(savedRootFolder);
-			}
-
-			if(rootFolder==null) {
-				try {
-					rootFolder = ensureUserFolder(UserFolder.IDENTIFIERS);
-				} catch (IOException e) {
-					throw new RDHException("Unable to create default directory for identifier cache", e);
-				}
-			}
-
-			if(!Files.isDirectory(rootFolder, LinkOption.NOFOLLOW_LINKS))
-				throw new RDHException("Identifier cache root folder must point to a directory: "+rootFolder);
-
-			IdentifiableResolver resolver = LocalIdentifiableResolver.newBuilder()
-					.autoPerformCacheSerialization(true)
-					.resourceProvider(FileResourceProvider.getSharedInstance())
-					.folder(rootFolder)
-					.useDefaultSerialization()
-					.build();
-
-			return addAndStartTool(resolver);
+//			Path rootFolder = null;
+//
+//			String savedRootFolder = getEnvironment().getProperty(RDHProperty.CLIENT_IDENTIFIER_CACHE_ROOT_FOLDER);
+//			if(savedRootFolder!=null) {
+//				rootFolder = Paths.get(savedRootFolder);
+//			}
+//
+//			if(rootFolder==null) {
+//				try {
+//					rootFolder = ensureUserFolder(UserFolder.IDENTIFIERS);
+//				} catch (IOException e) {
+//					throw new RDHException("Unable to create default directory for identifier cache", e);
+//				}
+//			}
+//
+//			if(!Files.isDirectory(rootFolder, LinkOption.NOFOLLOW_LINKS))
+//				throw new RDHException("Identifier cache root folder must point to a directory: "+rootFolder);
+//
+//			IdentifiableResolver resolver = LocalIdentifiableResolver.newBuilder()
+//					.autoPerformCacheSerialization(true)
+//					.resourceProvider(FileResourceProvider.getSharedInstance())
+//					.folder(rootFolder)
+//					.useDefaultSerialization()
+//					.build();
+//
+//			return addAndStartTool(resolver);
+			
+			return IdentifiableResolver.NOOP_RESOLVER;
 		}
 	}
 
@@ -776,7 +853,6 @@ public class RDHClient {
 
 			FileMetadataRepository.Builder builder = FileMetadataRepository.newBuilder();
 
-			//TODO configure builder
 			builder.rootFolder(rootFolder);
 			builder.useDublinCore();
 			builder.useDublinCoreNameGenerator();
@@ -852,7 +928,7 @@ public class RDHClient {
 			LocalSchemaManager.Builder builder = LocalSchemaManager.newBuilder();
 			builder.setIncludeSharedDefaultSchema(true);
 
-			// We try to ensure user folder related lookup first, sicne that one can fail
+			// We try to ensure user folder related lookup first, since that one can fail
 			try {
 				builder.addFolder(ensureUserFolder(UserFolder.SCHEMAS));
 			} catch (IOException e) {
@@ -887,6 +963,22 @@ public class RDHClient {
 		}
 	}
 
+	private StatLog createStatLog() {
+		synchronized (lock) {
+			Path folder;
+			try {
+				folder = ensureUserFolder(UserFolder.STATS);
+			} catch (IOException e) {
+				throw new RDHException("Unable to create default directory for usage statistics", e);
+			}
+//			String baseName = "usagestats-"+LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+			String baseName = "usage_stats.txt";
+			Path logFile = folder.resolve(baseName);
+
+			return addAndStartTool(new StatLog(new FileResource(logFile)));
+		}
+	}
+
 	private void loadResourceManager() {
 		final RDHEnvironment environment = getEnvironment();
 
@@ -906,36 +998,6 @@ public class RDHClient {
 
 		this.resourceManager = resourceManager;
 	}
-
-//	private void loadWorkflowSchema() {
-//
-//		Path schemaFile = null;
-//
-//		String savedSchemaFile = getEnvironment().getProperty(RDHProperty.WORKFLOW_SCHEMA_LOCATION);
-//		if(savedSchemaFile!=null) {
-//			schemaFile = Paths.get(savedSchemaFile);
-//		}
-//
-//		if(schemaFile==null) {
-//			schemaFile = getUserFile(DEFAULT_SCHEMA_FILE);
-//		}
-//
-//		if(Files.exists(schemaFile, LinkOption.NOFOLLOW_LINKS)) {
-//			try {
-//				IOResource resource = new FileResource(schemaFile, AccessMode.READ);
-//				resource.prepare();
-//				workflowSchema = WorkflowSchemaXml.readSchema(resource);
-//			} catch (ExecutionException | IOException e) {
-//				throw new RDHException("Failed to load workflow schema definition from file: "+schemaFile, e);
-//			}
-//		}
-//
-//		try {
-//			workflowSchema = WorkflowSchema.getDefaultSchema();
-//		} catch (ExecutionException e) {
-//			throw new RDHException("Failed to load internal default workflow schema", e.getCause());
-//		}
-//	}
 
 	private void collectTools() {
 		//TODO collect and instantiate additional tools
@@ -1051,8 +1113,6 @@ public class RDHClient {
 		}
 	}
 
-	//TODO implement a restart function?
-
 	/**
 	 * Causes the client to terminate by continuing the shutdown section
 	 * of the main method.
@@ -1067,6 +1127,11 @@ public class RDHClient {
 		synchronized (terminationLock) {
 			terminationLock.notifyAll();
 		}
+	}
+
+	public void restart() {
+		doRestart = true;
+		shutdown();
 	}
 
 	/**
@@ -1093,7 +1158,10 @@ public class RDHClient {
 		synchronized (lock) {
 			checkState("Client already shut down", active);
 
-			log.info("Client shutdown initiated");
+			log.info("Client shutdown initiated. Restart requested: {}", doRestart ? "yes" : "no");
+
+			getStatLog().log(StatEntry.withData(StatType.INTERNAL_END, ClientStats.SESSION,
+					clientRuntime.stop().asDurationString()));
 
 			List<ErrorDescription> errors = new ArrayList<>();
 
@@ -1151,10 +1219,10 @@ public class RDHClient {
 				executorService.shutdown();
 				if(!executorService.isTerminated()) {
 					try {
-						log.info("Terminating executor service");
+						log.info("Terminating executor service (this may take a while)");
 						// Multiple log entries are an indicator for problematic pending tasks
 						while(!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
-							log.warn("Termination of executor service timed out");
+							log.warn("Termination of executor service timed out...");
 						}
 					} catch (InterruptedException e) {
 						errors.add(new ErrorDescription(e, "Termination of executor service interrupted"));
@@ -1165,6 +1233,13 @@ public class RDHClient {
 			// From here on the environment will be unusable
 			environment.dispose();
 
+			/*
+			 * Finally show an error dialog in case we encountered any issues so far.
+			 * Note that from this point on any exception that also kills the UI
+			 * means that the client can finish shutting down in an "orderly" fashion
+			 * as no additional threads keep the VM alive (at least once the last window
+			 * closes...).
+			 */
 			if(!errors.isEmpty()) {
 				log.info("Client shutdown encountered {} errors", errors.size());
 
@@ -1193,7 +1268,75 @@ public class RDHClient {
 
 			// Maybe move this flag switch up a bit?
 			active = false;
+
+			/*
+			 *  If we are instructed to restart the client, now is
+			 *  the time to create a new process and let the current one end.
+			 */
+			if(doRestart) {
+				try {
+					invokeRestart();
+				} catch (IOException e) {
+					log.error("Failed to restart client", e);
+
+					//TODO maybe also show a notification dialog?
+				}
+			}
 		}
+	}
+
+	private void invokeRestart() throws IOException {
+
+		log.info("Initiating restart...");
+
+		RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+
+		Path jarFile = IOUtils.getJarFile();
+		boolean isJar = jarFile.getFileName().toString().endsWith(".jar");
+
+		List<String> command = new ArrayList<>();
+
+		command.add("java");
+
+		String classpath = System.getProperty("java.class.path");
+		if(!isJar) {
+			classpath += System.getProperty("path.separator")+jarFile.toString();
+		}
+
+		Collections.addAll(command, "-cp", classpath);
+
+		// Add all VM arguments prior to the client parameters
+		if(isJar) {
+			command.addAll(runtime.getInputArguments());
+		}
+
+		// Add jar target if applicable
+		if(isJar) {
+			String jarName = jarFile.getFileName().toString();
+			Collections.addAll(command, "-jar", jarName);
+		} else {
+			// If no jar available (run in an IDE maybe?) directly start the client class
+			command.add(RDHClient.class.getName());
+		}
+
+		// Now add the client arguments
+		Collections.addAll(command, args);
+
+		Process process = new ProcessBuilder(command)
+				.inheritIO()
+				.directory(null) // inherit current working directory
+				.start();
+
+		try {
+			// Give the new process a little time for startup
+			process.waitFor(2, TimeUnit.SECONDS);
+		} catch (InterruptedException ignore) {
+			// no-op
+		}
+
+		log.info("New client process started, alive={} ... exiting current session", process.isAlive());
+
+		// From here on the current process will end gracefully
 	}
 
 	public static class ErrorDescription {
@@ -1252,8 +1395,6 @@ public class RDHClient {
 
 		addTool0(tool);
 	}
-
-	//TODO maybe add methods to register tools via classname+classloader ?
 
 	private <T extends RDHTool> T addTool0(T tool) {
 		if(!trySetState(tool, ToolLifecycleState.UNKNOWN, ToolLifecycleState.INACTIVE))
@@ -1405,7 +1546,6 @@ public class RDHClient {
 
 			@Override
 			public Thread newThread(Runnable r) {
-				//TODO maybe also use a custom thread group
 				// Per default we just use a base name and append thread counter
 				Thread t = new Thread(r, "replay-dh-worker-"+threadCounter.incrementAndGet());
 				t.setUncaughtExceptionHandler(uncaughtExceptionHandler);

@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.workflow.resolver;
@@ -21,6 +21,7 @@ package bwfdm.replaydh.workflow.resolver;
 import static bwfdm.replaydh.utils.RDHUtils.checkArgument;
 import static java.util.Objects.requireNonNull;
 
+import java.beans.PropertyChangeListener;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,9 +29,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import bwfdm.replaydh.core.RDHEnvironment;
+import bwfdm.replaydh.core.RDHLifecycleException;
 import bwfdm.replaydh.core.RDHTool;
 import bwfdm.replaydh.utils.LookupResult;
 import bwfdm.replaydh.workflow.Identifiable;
+import bwfdm.replaydh.workflow.Identifiable.Type;
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
@@ -186,4 +190,77 @@ public interface IdentifiableResolver extends RDHTool {
 	 * @return
 	 */
 	Iterator<Identifiable> identifiablesForType(Identifiable.Type type);
+
+	public static final IdentifiableResolver NOOP_RESOLVER = new IdentifiableResolver() {
+
+		@Override
+		public void removePropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+			// no-op
+		}
+
+		@Override
+		public void removePropertyChangeListener(PropertyChangeListener listener) {
+			// no-op
+		}
+
+		@Override
+		public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+			// no-op
+		}
+
+		@Override
+		public void addPropertyChangeListener(PropertyChangeListener listener) {
+			// no-op
+		}
+
+		@Override
+		public void stop(RDHEnvironment environment) throws RDHLifecycleException {
+			// no-op
+		}
+
+		@Override
+		public boolean start(RDHEnvironment environment) throws RDHLifecycleException {
+			return true;
+		}
+
+		@Override
+		public void update(Set<? extends Identifiable> identifiables) {
+			// no-op
+		}
+
+		@Override
+		public void unregister(Set<? extends Identifiable> identifiables) {
+			// no-op
+		}
+
+		@Override
+		public void unlock() {
+			// no-op
+		}
+
+		@Override
+		public List<LookupResult<Identifiable, Set<Identifier>>> resolve(int candidateLimit, Set<Identifier> identifiers) {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public void register(Set<? extends Identifiable> identifiables) {
+			// no-op
+		}
+
+		@Override
+		public <I extends Identifiable> I lookup(UUID systemId) {
+			return null;
+		}
+
+		@Override
+		public void lock() {
+			// no-op
+		}
+
+		@Override
+		public Iterator<Identifiable> identifiablesForType(Type type) {
+			return null;
+		}
+	};
 }

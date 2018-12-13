@@ -1,33 +1,39 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.core;
 
+import static bwfdm.replaydh.utils.RDHUtils.checkState;
 import static java.util.Objects.requireNonNull;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Locale.Category;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -211,7 +217,7 @@ public class RDHEnvironment implements PropertyChangeSource {
 	}
 
 	public synchronized String getProperty(RDHProperty property) {
-		return getProperty(property.getKey(), null);
+		return getProperty(property.getKey(), property.getDefaultValue());
 	}
 
 	public synchronized String getProperty(RDHProperty property, String defaultValue) {
@@ -220,6 +226,11 @@ public class RDHEnvironment implements PropertyChangeSource {
 
 	public synchronized boolean getBoolean(RDHProperty property, boolean defaultValue) {
 		return getBoolean(property.getKey(), defaultValue);
+	}
+
+	public synchronized boolean getBoolean(RDHProperty property) {
+		Object defaultValue = property.getDefaultValue();
+		return getBoolean(property.getKey(), defaultValue==null ? false : (boolean)defaultValue);
 	}
 
 	public synchronized boolean getBoolean(String key, boolean defaultValue) {
@@ -231,6 +242,11 @@ public class RDHEnvironment implements PropertyChangeSource {
 		return getInteger(property.getKey(), defaultValue);
 	}
 
+	public synchronized int getInteger(RDHProperty property) {
+		Object defaultValue = property.getDefaultValue();
+		return getInteger(property.getKey(), defaultValue==null ? 0 : (int)defaultValue);
+	}
+
 	public synchronized int getInteger(String key, int defaultValue) {
 		String value = getProperty(key);
 		return value!=null ? Integer.parseInt(value) : defaultValue;
@@ -238,6 +254,11 @@ public class RDHEnvironment implements PropertyChangeSource {
 
 	public synchronized double getDouble(RDHProperty property, double defaultValue) {
 		return getDouble(property.getKey(), defaultValue);
+	}
+
+	public synchronized double getDouble(RDHProperty property) {
+		Object defaultValue = property.getDefaultValue();
+		return getDouble(property.getKey(), defaultValue==null ? 0D : (double)defaultValue);
 	}
 
 	public synchronized double getDouble(String key, double defaultValue) {
@@ -312,14 +333,27 @@ public class RDHEnvironment implements PropertyChangeSource {
 //		changeSupport.firePropertyChange(NAME_WORKSPACE_PATH, oldWorkspacePath, workspacePath);
 //	}
 
+	synchronized void discardWorkspace() {
+		checkState("No workspace to reset", workspace!=null);
+
+		// Notify listeners about the general change
+		changeSupport.firePropertyChange(NAME_WORKSPACE, workspace, null);
+
+		// Now synchronize the workspace history
+		Path path = workspace.getFolder();
+		String entryToRemove = path.toString();
+
+		adjustHistory(entryToRemove, false);
+
+		this.workspace = null;
+	}
+
 	synchronized void setWorkspace(Workspace workspace) {
+		requireNonNull(workspace);
 
 		if(Objects.equals(this.workspace, workspace)) {
 			return;
 		}
-
-//		if(!Objects.equals(workspacePath, workspace.getFolder()))
-//			throw new RDHException("Cannot change workspace instance to a new location before changing the worpsace path");
 
 		Workspace oldWorkspace = this.workspace;
 		this.workspace = workspace;
@@ -330,22 +364,48 @@ public class RDHEnvironment implements PropertyChangeSource {
 		// Now synchronize the workspace history
 		Path path = workspace.getFolder();
 		String newEntry = path.toString();
+
+		adjustHistory(newEntry, true);
+	}
+
+	private void adjustHistory(String path, boolean append) {
+		requireNonNull(path);
+
 		String history = getProperty(RDHProperty.CLIENT_WORKSPACE_HISTORY);
 		String newHistory = null;
 		if(history!=null) {
-			if(!history.contains(newEntry)) {
+			List<String> entries = new ArrayList<>();
 
-				newHistory = history+";"+newEntry;
+			Collections.addAll(entries, history.split(File.pathSeparator));
 
-				if(client.isVerbose()) {
-					log.info("Added {} to workspace history", newEntry);
+			for(Iterator<String> it = entries.iterator(); it.hasNext();) {
+				String entry = it.next();
+				if(entry.equals(path)) {
+					if(append) {
+						return;
+					} else {
+						it.remove();
+						if(client.isVerbose()) {
+							log.info("Removed {} from workspace history", entry);
+						}
+						break;
+					}
 				}
 			}
-		} else {
-			newHistory = newEntry;
+
+			if(append) {
+				entries.add(path);
+				if(client.isVerbose()) {
+					log.info("Added {} to workspace history", path);
+				}
+			}
+
+			newHistory = String.join(File.pathSeparator, entries);
+		} else if (append){
+			newHistory = path;
 
 			if(client.isVerbose()) {
-				log.info("Initialized workspace history with path {}", newEntry);
+				log.info("Initialized workspace history with path {}", path);
 			}
 		}
 
@@ -379,10 +439,18 @@ public class RDHEnvironment implements PropertyChangeSource {
 	}
 
 	public synchronized void setProperties(Map<String, String> properties) {
-		//TODO change this so that we only copy over "new" properties
+
+		// Detect all the properties that are actually different
+		Set<String> keys = new HashSet<>();
+		for(Entry<String, String> entry : properties.entrySet()) {
+			String currentValue = this.properties.getProperty(entry.getKey());
+			if(!Objects.equals(entry.getValue(), currentValue)) {
+				keys.add(entry.getKey());
+			}
+		}
+
 		this.properties.putAll(properties);
-		// Special case: we report the entirety of out properties to have changed
-		Set<String> keys = new HashSet<>(properties.keySet());
+
 		changeSupport.firePropertyChange(NAME_PROPERTIES, null, keys);
 	}
 
@@ -428,6 +496,14 @@ public class RDHEnvironment implements PropertyChangeSource {
 	@Override
 	public void removePropertyChangeListener(String propertyName, PropertyChangeListener listener) {
 		changeSupport.removePropertyChangeListener(propertyName, listener);
+	}
+
+	public void addPropertyChangeListener(RDHProperty property, PropertyChangeListener listener) {
+		changeSupport.addPropertyChangeListener(prefixedPropertyKey(property.getKey()), listener);
+	}
+
+	public void removePropertyChangeListener(RDHProperty property, PropertyChangeListener listener) {
+		changeSupport.removePropertyChangeListener(prefixedPropertyKey(property.getKey()), listener);
 	}
 
 	/**

@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.core;
@@ -31,8 +31,11 @@ import java.awt.Frame;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Window;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -40,18 +43,22 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
@@ -81,14 +88,21 @@ import bwfdm.replaydh.core.RDHProperty;
 import bwfdm.replaydh.core.Workspace;
 import bwfdm.replaydh.git.JGitAdapter;
 import bwfdm.replaydh.io.FileTracker;
+import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.io.TrackerException;
 import bwfdm.replaydh.io.TrackerListener;
 import bwfdm.replaydh.io.TrackingAction;
 import bwfdm.replaydh.io.TrackingStatus;
+import bwfdm.replaydh.io.resources.FileResource;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.stats.Interval;
+import bwfdm.replaydh.stats.StatEntry;
+import bwfdm.replaydh.stats.StatType;
+import bwfdm.replaydh.ui.GuiStats;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.actions.ActionManager;
+import bwfdm.replaydh.ui.config.PreferencesDialog;
 import bwfdm.replaydh.ui.core.RDHChangeWorkspaceWizard.ChangeWorkspaceContext;
 import bwfdm.replaydh.ui.core.ResourceDragController.Mode;
 import bwfdm.replaydh.ui.helper.CloseableUI;
@@ -97,16 +111,15 @@ import bwfdm.replaydh.ui.helper.PassiveTextArea;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.icons.IconRegistry;
 import bwfdm.replaydh.ui.icons.Resolution;
-import bwfdm.replaydh.ui.metadata.MetadataManagerPanel;
 import bwfdm.replaydh.ui.workflow.AddWorkflowSchemaWizard;
 import bwfdm.replaydh.ui.workflow.AddWorkflowSchemaWizard.AddWorkflowSchemaContext;
+import bwfdm.replaydh.ui.workflow.FileIgnoreEditor;
+import bwfdm.replaydh.ui.workflow.FileIgnoreEditor.FileIgnoreConfiguration;
 import bwfdm.replaydh.ui.workflow.WorkflowStepUIEditor;
 import bwfdm.replaydh.ui.workflow.WorkflowUIUtils;
 import bwfdm.replaydh.ui.workflow.WorkspaceTrackerPanel;
 import bwfdm.replaydh.ui.workflow.graph.WorkflowGraph;
 import bwfdm.replaydh.ui.workflow.graph.WorkflowStepShape;
-import bwfdm.replaydh.utils.LazyCollection;
-import bwfdm.replaydh.utils.MutablePrimitives.MutableBoolean;
 import bwfdm.replaydh.utils.RDHUtils;
 import bwfdm.replaydh.utils.annotation.Experimental;
 import bwfdm.replaydh.workflow.Identifiable;
@@ -121,6 +134,7 @@ import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.WorkflowStep;
 import bwfdm.replaydh.workflow.impl.DefaultResource;
 import bwfdm.replaydh.workflow.resolver.IdentifiableResolver;
+import bwfdm.replaydh.workflow.schema.IdentifierType;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
 /**
@@ -166,8 +180,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 	private final WorkspaceTrackerPanel workspaceTrackerPanel;
 
-	private final MetadataManagerPanel metadataManagerPanel;
-
 	private final ActionManager actionManager;
 	private final ActionManager.ActionMapper actionMapper;
 
@@ -192,6 +204,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 	private boolean isExpanded = false;
 
 	private final Handler handler;
+
+	private final PropertyChangeListener fileTrackerChangeListener;
+	private final PropertyChangeListener environmentChangeListener;
 
 	/**
 	 * Link to current background updater task.
@@ -221,12 +236,17 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		RDHClient client = environment.getClient();
 
 		handler = new Handler();
+		fileTrackerChangeListener = handler::onFileTrackerPropertyChange;
+		environmentChangeListener = handler::onEnvironmentPropertyChange;
 
 		workflowSource = client.getWorkflowSource();
 		fileTracker = client.getFileTracker();
-		fileTracker.addPropertyChangeListener(JGitAdapter.NAME_WORKFLOW, handler);
+		fileTracker.addPropertyChangeListener(JGitAdapter.NAME_WORKFLOW, fileTrackerChangeListener);
+
+		environment.addPropertyChangeListener(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, environmentChangeListener);
 
 		resourceCache = client.getResourceCache();
+		resourceCache.addCacheListener(handler);
 
 		// Load our basic actions
 		actionManager = getSharedActionManager().derive();
@@ -266,7 +286,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		workflowGraph = new WorkflowGraph(environment);
 		workspaceTrackerPanel = new WorkspaceTrackerPanel(environment);
-		metadataManagerPanel = new MetadataManagerPanel(environment);
 
 		tabbedPane = new JTabbedPane();
 
@@ -283,13 +302,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				workspaceTrackerPanel,
 				rm.get("replaydh.ui.core.mainPanel.tabs.fileTracker.description"),
 				1);
-
-		tabbedPane.insertTab(
-				rm.get("replaydh.ui.core.mainPanel.tabs.metadataManager.name"),
-				ir.getIcon("Documents-icon.png", Resolution.forSize(32)),
-				metadataManagerPanel,
-				rm.get("replaydh.ui.core.mainPanel.tabs.metadataManager.description"),
-				2);
 
 		// Not the cleanest way, but ensure we don't overgrow
 		tabbedPane.setPreferredSize(new Dimension(700, 500));
@@ -346,7 +358,13 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			handler.schedulePeriodicFileTrackerUpdate();
 		}
 
+		addHierarchyListener(handler);
+
 		showInitialOutline();
+	}
+
+	private void logStat(StatEntry entry) {
+		environment.getClient().getStatLog().log(entry);
 	}
 
 	private boolean isVerbose() {
@@ -471,7 +489,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 			@Override
 			protected void done() {
-				dialog.setVisible(false);
+				dialog.dispose();
 			}
 		};
 
@@ -501,14 +519,20 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.addStep", handler::addWorkflowStep);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.exit", handler::exitClient);
+		actionMapper.mapTask("replaydh.ui.core.mainPanel.restart", handler::restartClient);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.about", handler::showAboutDialog);
+		actionMapper.mapTask("replaydh.ui.core.mainPanel.preferences", handler::showPreferencesDialog);
 
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.openWorkspaceFolder", handler::openWorkspaceFolder);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.clearResourceCache", handler::clearResourceCache);
 
+		actionMapper.mapTask("replaydh.ui.core.mainPanel.exportStatistics", handler::exportStatistics);
+		actionMapper.mapTask("replaydh.ui.core.mainPanel.resetStatistics", handler::resetStatistics);
+
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.updateStatus", handler::scheduleSingleFileTrackerUpdate);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.cancelUpdate", handler::cancelFileTrackerUpdate);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.toggleDetails", handler::toggleDetails);
+		actionMapper.mapToggle("replaydh.ui.core.mainPanel.toggleAlwaysOnTop", handler::toggleAlwaysOnTop);
 		actionMapper.mapToggle("replaydh.ui.core.mainPanel.toggleTrackerActive", handler::toggleTrackerStatus);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.changeWorkspace", handler::changeWorkspace);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.importWorkflowSchema", handler::importWorkflowSchema);
@@ -552,7 +576,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		boolean taskRunning = task!=null && !task.isDone();
 		boolean canUpdate = !taskRunning;
 		boolean canCancel = taskRunning && executingUpdate;
-		boolean timerActive = task!=null && !task.isDone() && task.getDelay(TimeUnit.MILLISECONDS)>0L;
+		boolean timerActive = taskRunning && task.getDelay(TimeUnit.MILLISECONDS)>0L;
 
 		boolean canOpenWorkspace = Desktop.isDesktopSupported() && environment.getWorkspace()!=null;
 
@@ -574,6 +598,15 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		refreshActions();
 	}
 
+	private boolean setAlwaysOnTop(boolean alwaysOnTop) {
+		Window window = SwingUtilities.getWindowAncestor(RDHMainPanel.this);
+		if(window!=null) {
+			window.setAlwaysOnTop(alwaysOnTop);
+		}
+
+		return window!=null;
+	}
+
 	/**
 	 * @see bwfdm.replaydh.ui.helper.CloseableUI#close()
 	 */
@@ -583,7 +616,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		CloseableUI.tryClose(workflowGraph, workspaceTrackerPanel, fileTrackerPanel, fileCachePanel);
 		actionMapper.dispose();
 
-		fileTracker.removePropertyChangeListener(JGitAdapter.NAME_WORKFLOW, handler);
+		removeHierarchyListener(handler);
+		fileTracker.removePropertyChangeListener(JGitAdapter.NAME_WORKFLOW, fileTrackerChangeListener);
+		environment.removePropertyChangeListener(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, environmentChangeListener);
 
 		// Finally make sure our background task gets canceled
 		handler.cancelFileTrackerUpdate();
@@ -653,9 +688,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 	}
 
 	/**
-	 *
-	 * @param filesToAdd
-	 * @param filesToRemove
+	 * Present the user with an editor for managing the content of
+	 * a new workflow step.
 	 */
 	private boolean interactiveCommit(WorkflowStep newStep) {
 		GuiUtils.checkEDT();
@@ -668,6 +702,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		boolean opSuccess = false;
 		String title = ResourceManager.getInstance().get("replaydh.ui.core.mainPanel.addStep.name");
 
+		Interval uptime = new Interval().start();
+		logStat(StatEntry.withData(StatType.UI_OPEN, GuiStats.DIALOG_ADD_STEP, newStep.getId()));
 		try {
 			opSuccess = GuiUtils.showEditorDialogWithControl(frame, editor, title, true);
 		} catch(Exception e) {
@@ -675,9 +711,41 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			GuiUtils.showErrorDialog(frame,
 					"replaydh.panels.workflow.dialogs.errorTitle",
 					"replaydh.panels.workflow.dialogs.addWorkflowStepFailed", e);
+		} finally {
+			logStat(StatEntry.withData(StatType.UI_CLOSE, GuiStats.DIALOG_ADD_STEP,
+					newStep.getId(), String.valueOf(opSuccess),
+					uptime.stop().asDurationString()));
 		}
 
 		return opSuccess;
+	}
+
+	private boolean interactiveFilterFiles(FileIgnoreConfiguration configuration) {
+
+		FileIgnoreEditor editor = new FileIgnoreEditor();
+
+		editor.setEditingItem(configuration);
+
+		Frame frame = (Frame) SwingUtilities.getAncestorOfClass(Frame.class, this);
+		String title = ResourceManager.getInstance().get("replaydh.ui.editor.ignoreFiles.title");
+
+		return GuiUtils.showEditorDialogWithControl(frame, editor, title, true);
+	}
+
+	private static final Predicate<Path> NO_FILTER = p -> false;
+
+	private Predicate<Path> getBasicIgnoreFilter() {
+		Predicate<Path> filter = NO_FILTER;
+
+		if(environment.getBoolean(RDHProperty.GIT_IGNORE_EMPTY)) {
+			filter = filter.or(IOUtils::isEmpty);
+		}
+
+		if(environment.getBoolean(RDHProperty.GIT_IGNORE_HIDDEN)) {
+			filter = filter.or(IOUtils::isHidden);
+		}
+
+		return filter;
 	}
 
 	/**
@@ -769,7 +837,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				timeLabel.setText(timeText);
 
 				int totalFileCount = 0;
-				totalFileCount += updateLabel(newFilesLabel, TrackingStatus.UNKNOWN);
+				totalFileCount += updateFilterableLabel(newFilesLabel, TrackingStatus.UNKNOWN);
 				totalFileCount += updateLabel(missingFilesLabel, TrackingStatus.MISSING);
 				totalFileCount += updateLabel(modifiedFilesLabel, TrackingStatus.MODIFIED);
 				totalFileCount += updateLabel(corruptedFilesLabel, TrackingStatus.CORRUPTED);
@@ -806,6 +874,15 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		}
 
+		private Set<Path> filesForStatus(TrackingStatus status) {
+			try {
+				return fileTracker.getFilesForStatus(status);
+			} catch (TrackerException e) {
+				log.error("Failed to query file tracker for files with status: "+status, e);
+				return null;
+			}
+		}
+
 		private int updateLabel(JLabel label, TrackingStatus status) {
 			int fileCount = fileCountForStatus(status);
 			String text = fileCount<0 ? NA : String.valueOf(fileCount);
@@ -813,6 +890,38 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			label.setText(text);
 
 			return fileCount;
+		}
+
+		private int updateFilterableLabel(JLabel label, TrackingStatus status) {
+			Set<Path> files = filesForStatus(status);
+
+			String text = NA;
+
+			if(files!=null) {
+				int fileCount = files.size();
+				int filtered = 0;
+
+				Predicate<Path> filter = getBasicIgnoreFilter();
+				if(filter!=NO_FILTER) {
+					filtered = (int) files.stream()
+							.filter(filter)
+							.count();
+
+					fileCount -= filtered;
+				}
+
+				text = String.valueOf(fileCount);
+
+				if(filtered>0) {
+					text = ResourceManager.getInstance().get(
+							"replaydh.panels.workspaceTracker.filteredFiles",
+							fileCount, filtered);
+				}
+			}
+
+			label.setText(text);
+
+			return files.size();
 		}
 
 		/**
@@ -1058,7 +1167,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		private void showCacheDialog(Role role, URI uri) {
 			//TODO implement actual dialog
-			GuiUtils.showDefaultInfo(null, "Dialog for describing URL resource");
+			GuiUtils.showDefaultInfo(null, "Dialog for describing URL resource (coming soon)");
 		}
 
 		@Override
@@ -1122,13 +1231,27 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 	}
 
-	private class Handler implements PropertyChangeListener {
+	private class Handler implements HierarchyListener, CacheListener {
+
+		private final Interval fileTrackerUptime = new Interval();
 
 		/**
-		 * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
+		 * @see java.awt.event.HierarchyListener#hierarchyChanged(java.awt.event.HierarchyEvent)
 		 */
 		@Override
-		public void propertyChange(PropertyChangeEvent evt) {
+		public void hierarchyChanged(HierarchyEvent e) {
+			if(e.getID()!=HierarchyEvent.HIERARCHY_CHANGED) {
+				return;
+			}
+
+			if((e.getChangeFlags() & HierarchyEvent.PARENT_CHANGED) != 0) {
+				boolean alwaysOnTop = environment.getBoolean(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP);
+				actionManager.setSelected(alwaysOnTop, "replaydh.ui.core.mainPanel.toggleAlwaysOnTop");
+				setAlwaysOnTop(alwaysOnTop);
+			}
+		}
+
+		private void onFileTrackerPropertyChange(PropertyChangeEvent evt) {
 
 			switch (evt.getPropertyName()) {
 			case JGitAdapter.NAME_WORKFLOW:
@@ -1140,16 +1263,37 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		}
 
+		private void onEnvironmentPropertyChange(PropertyChangeEvent evt) {
+			String propertyName = RDHEnvironment.unpackPropertyName(evt.getPropertyName());
+
+			if(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP.getKey().equals(propertyName)) {
+				boolean newAlwaysOnTop = Boolean.parseBoolean((String) evt.getNewValue());
+				setAlwaysOnTop(newAlwaysOnTop);
+			}
+		}
+
 		private void exitClient() {
 			if(isVerbose()) {
 				log.info("User requested client shutdown");
 			}
 
-			environment.getClient().getGui().invokeShutdown();
+			environment.getClient().getGui().invokeShutdown(false);
+		}
+
+		private void restartClient() {
+			if(isVerbose()) {
+				log.info("User requested client restart");
+			}
+
+			environment.getClient().getGui().invokeShutdown(true);
 		}
 
 		private void showAboutDialog() {
 			AboutDialog.showDialog(SwingUtilities.getWindowAncestor(controlPanel));
+		}
+
+		private void showPreferencesDialog() {
+			PreferencesDialog.showDialog(environment, GuiUtils.getFrame(RDHMainPanel.this));
 		}
 
 		private void openWorkspaceFolder() {
@@ -1166,6 +1310,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				return;
 			}
 
+			logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.OPEN_WORKSPACE));
+
 			try {
 				Desktop.getDesktop().open(workspace.getFolder().toFile());
 			} catch (IOException e) {
@@ -1176,7 +1322,106 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 
 		private void clearResourceCache() {
-			//TODO ask user for confirmation and then clear cache
+
+			if(resourceCache.isEmpty()) {
+				return;
+			}
+
+			ResourceManager rm = ResourceManager.getInstance();
+			Collection<CacheEntry> entries = resourceCache.getCacheEntries();
+
+			String message = rm.get("replaydh.ui.core.mainPanel.clearCache.message", entries.size());
+			String title = rm.get("replaydh.ui.core.mainPanel.clearCache.title");
+			if(JOptionPane.showConfirmDialog(getRootPane(), message, title,
+					JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION) {
+
+				logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.CLEAR_CACHE));
+
+				resourceCache.clear();
+			}
+		}
+
+		private void exportStatistics() {
+
+			ResourceManager rm = ResourceManager.getInstance();
+
+			JFileChooser fileChooser = new JFileChooser();
+			fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+			fileChooser.setAcceptAllFileFilterUsed(true);
+			fileChooser.setDialogType(JFileChooser.SAVE_DIALOG);
+
+			if(fileChooser.showDialog(getRootPane(), rm.get("replaydh.labels.select"))
+					==JFileChooser.APPROVE_OPTION) {
+
+				final File desto = fileChooser.getSelectedFile();
+				if(desto==null) {
+					return;
+				}
+
+				new SwingWorker<Object, Object>() {
+
+					@Override
+					protected Object doInBackground() throws Exception {
+						environment.getClient().getStatLog().export(new FileResource(desto.toPath()));
+						return null;
+					}
+
+					@Override
+					protected void done() {
+						boolean success = false;
+
+						try {
+							get();
+							success = true;
+						} catch (InterruptedException e) {
+							// ignore
+						} catch (ExecutionException e) {
+							GuiUtils.beep();
+							GuiUtils.showErrorDialog(getRootPane(), e.getCause());
+						}
+
+						if(success) {
+							JOptionPane.showMessageDialog(getRootPane(),
+									rm.get("replaydh.ui.core.mainPanel.exportStatistics.success",
+											RDHUtils.toPathString(desto.toPath(), 45)),
+									rm.get("replaydh.ui.core.mainPanel.exportStatistics.title"),
+									JOptionPane.INFORMATION_MESSAGE);
+						}
+					};
+				}.execute();
+			}
+		}
+
+		private void resetStatistics() {
+
+			ResourceManager rm = ResourceManager.getInstance();
+
+			String message = rm.get("replaydh.ui.core.mainPanel.resetStatistics.message");
+			String title = rm.get("replaydh.ui.core.mainPanel.resetStatistics.title");
+			if(JOptionPane.showConfirmDialog(getRootPane(), message, title,
+					JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION) {
+
+				new SwingWorker<Object, Object>() {
+
+					@Override
+					protected Object doInBackground() throws Exception {
+						environment.getClient().getStatLog().reset();
+						return null;
+					}
+
+					@Override
+					protected void done() {
+						try {
+							get();
+						} catch (InterruptedException e) {
+							// ignore
+						} catch (ExecutionException e) {
+							GuiUtils.beep();
+							GuiUtils.showErrorDialog(getRootPane(), e.getCause());
+						}
+					};
+				}.execute();
+			}
 		}
 
 		private void addWorkflowStep() {
@@ -1201,6 +1446,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				if(getOrClearUpdateTask()!=null) {
 					return;
 				}
+
+				logStat(StatEntry.ofType(StatType.UI_ACTION, GuiStats.UPDATE_TRACKER));
 
 				// Schedule to refresh task once
 				updateTask = environment.getClient().getExecutorService().schedule(
@@ -1228,6 +1475,11 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 				log.debug("Stopping file tracker update task");
 
+				logStat(StatEntry.withData(StatType.INTERNAL_END, GuiStats.UPDATE_TRACKER,
+						fileTrackerUptime.stop().asDurationString()));
+
+				fileTrackerUptime.reset();
+
 				updateTask.cancel(true);
 			}
 
@@ -1235,7 +1487,13 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 
 		private void toggleDetails() {
+			logStat(StatEntry.ofType(StatType.UI_ACTION,
+					isExpanded ? GuiStats.WINDOW_COLLAPSE : GuiStats.WINDOW_EXPAND));
 			toggleSize(!isExpanded);
+		}
+
+		private void toggleAlwaysOnTop(boolean alwaysOnTop) {
+			environment.setProperty(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, Boolean.toString(alwaysOnTop));
 		}
 
 		private void changeWorkspace() {
@@ -1285,7 +1543,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			if(wizardDone) {
 				loadWorkspace(context);
 			} else if(exitOnCancel) {
-				SwingUtilities.invokeLater(() -> environment.getClient().getGui().invokeShutdown());
+				SwingUtilities.invokeLater(() -> environment.getClient().getGui().invokeShutdown(false));
 			}
 		}
 
@@ -1387,6 +1645,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 				log.debug("Starting file tracker update task with period of {} seconds", period);
 
+				fileTrackerUptime.start();
+				logStat(StatEntry.ofType(StatType.INTERNAL_BEGIN, GuiStats.UPDATE_TRACKER));
+
 				// Schedule to refresh task to run on a non-gui thread
 				updateTask = environment.getClient().getExecutorService().scheduleAtFixedRate(
 						this::executeFileTrackerUpdate,
@@ -1424,6 +1685,34 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				GuiUtils.invokeEDT(RDHMainPanel.this::refreshActions);
 			}
 		}
+
+		private void anyCacheChange() {
+			GuiUtils.invokeEDT(RDHMainPanel.this::refreshActions);
+		}
+
+		/**
+		 * @see bwfdm.replaydh.workflow.ResourceCache.CacheListener#entryAdded(bwfdm.replaydh.workflow.ResourceCache.CacheEntry)
+		 */
+		@Override
+		public void entryAdded(CacheEntry entry) {
+			anyCacheChange();
+		}
+
+		/**
+		 * @see bwfdm.replaydh.workflow.ResourceCache.CacheListener#entryRemoved(bwfdm.replaydh.workflow.ResourceCache.CacheEntry)
+		 */
+		@Override
+		public void entryRemoved(CacheEntry entry) {
+			anyCacheChange();
+		}
+
+		/**
+		 * @see bwfdm.replaydh.workflow.ResourceCache.CacheListener#cacheCleared()
+		 */
+		@Override
+		public void cacheCleared() {
+			anyCacheChange();
+		}
 	}
 
 	/**
@@ -1433,12 +1722,15 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 	 */
 	private class InteractiveCommitTask extends SwingWorker<Boolean, LocalFileObject> {
 
-		private Set<LocalFileObject> filesToAdd = null;
-		private Set<LocalFileObject> filesToRemove = null;
-		private Set<LocalFileObject> modifiedFiles = null;
+		private final Set<LocalFileObject> filesToAdd = new HashSet<>();
+		private final Set<LocalFileObject> filesToRemove = new HashSet<>();
+		private final Set<LocalFileObject> modifiedFiles = new HashSet<>();
+
+		private final Set<LocalFileObject> newFilesToIgnore = new HashSet<>();
+		private final Set<LocalFileObject> modifiedFilesToIgnore = new HashSet<>();
 
 		/**
-		 * THe newly created workflow step.
+		 * The newly created workflow step.
 		 * Guaranteed to be non-null if the task finishes
 		 * without errors.
 		 */
@@ -1459,15 +1751,15 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 
 			if(fileTracker.hasFilesForStatus(TrackingStatus.UNKNOWN)) {
-				filesToAdd = resolveFiles(TrackingStatus.UNKNOWN);
+				resolveFiles(TrackingStatus.UNKNOWN, filesToAdd);
 			}
 
 			if(fileTracker.hasFilesForStatus(TrackingStatus.MISSING)) {
-				filesToRemove = resolveFiles(TrackingStatus.MISSING);
+				resolveFiles(TrackingStatus.MISSING, filesToRemove);
 			}
 
 			if(fileTracker.hasFilesForStatus(TrackingStatus.MODIFIED)) {
-				modifiedFiles = resolveFiles(TrackingStatus.MODIFIED);
+				resolveFiles(TrackingStatus.MODIFIED, modifiedFiles);
 			}
 
 			return true;
@@ -1486,20 +1778,20 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			return newStep;
 		}
 
-		private void applyCachedResources(WorkflowStep step) {
+		private void applyCachedResources(WorkflowStep step, Predicate<? super Identifiable> filter) {
 			ResourceCache cache = environment.getClient().getResourceCache();
 
-			Collection<CacheEntry> newResources = cache.getCacheEntries();
-
-			for(CacheEntry entry : newResources) {
+			Collection<CacheEntry> cachedResources = cache.getCacheEntries();
+			for(CacheEntry entry : cachedResources) {
 				switch (entry.getRole()) {
 				case INPUT:
 					step.addInput(entry.getResource());
 					break;
 
 				case OUTPUT:
-					step.addOutput(entry.getResource());
-
+					if (!filter.test(entry.getResource())) {
+						step.addOutput(entry.getResource());
+					}
 					break;
 
 				case TOOL:
@@ -1535,18 +1827,19 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			if(!outputFiles.isEmpty()) {
 				for(LocalFileObject fileObject : outputFiles) {
 
-					Identifiable identifiable = fileObject.getResource();
+					Resource resource = fileObject.getResource();
 
 					// Otherwise create a new resource and only accept resources as "output"
-					if(identifiable==null || !Resource.class.isInstance(identifiable)) {
-						identifiable = DefaultResource.uniqueResource();
 
-						fileObject.getIdentifiers().forEach(identifiable::addIdentifier);
-
-						newResources.add(identifiable);
+					if(resource==null) {
+						resource = DefaultResource.uniqueResource();
+						fileObject.getIdentifiers().forEach(resource::addIdentifier);
 					}
+					//TODO verify if we need to check whether or not above identifiers are already/not present
 
-					newStep.addOutput((Resource) identifiable);
+					newResources.add(resource);
+
+					newStep.addOutput(resource);
 				}
 			}
 
@@ -1559,14 +1852,23 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		 * @throws TrackerException
 		 */
 		private void persistAssociatedChanges(Set<Identifiable> newResources) throws TrackerException {
+			// Adjust file collections based on revised ignore decisions
+			filesToAdd.removeAll(newFilesToIgnore);
 
-			if(filesToAdd!=null && !filesToAdd.isEmpty()) {
-				fileTracker.applyTrackingAction(extractFiles(filesToAdd), TrackingAction.ADD);
-
+			if(!filesToAdd.isEmpty()) {
+				fileTracker.applyTrackingAction(LocalFileObject.extractFiles(filesToAdd), TrackingAction.ADD);
 			}
 
-			if(filesToRemove!=null && !filesToRemove.isEmpty()) {
-				fileTracker.applyTrackingAction(extractFiles(filesToRemove), TrackingAction.REMOVE);
+			if(!filesToRemove.isEmpty()) {
+				fileTracker.applyTrackingAction(LocalFileObject.extractFiles(filesToRemove), TrackingAction.REMOVE);
+			}
+
+			if(!newFilesToIgnore.isEmpty()) {
+				fileTracker.applyTrackingAction(LocalFileObject.extractFiles(newFilesToIgnore), TrackingAction.IGNORE);
+			}
+
+			if(!modifiedFilesToIgnore.isEmpty()) {
+				fileTracker.applyTrackingAction(LocalFileObject.extractFiles(modifiedFilesToIgnore), TrackingAction.IGNORE);
 			}
 
 			// Add new resources to the resolver
@@ -1581,61 +1883,163 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		}
 
+		private void filterFiles(Set<LocalFileObject> files, long sizeLimit, Set<LocalFileObject> buffer) {
+
+			if(!files.isEmpty()) {
+				for(LocalFileObject file :files) {
+					long size;
+
+					// We use the checksum facility for keeping size info storage closely to the file object
+					try {
+						size = Files.size(file.getFile());
+					} catch (IOException e) {
+						log.error("Failed to obtain size for file {}", file.getFile(), e);
+						continue;
+					}
+
+					if(size>=sizeLimit) {
+						buffer.add(file);
+					}
+				}
+			}
+		}
+
+		private void filterLargeFiles() {
+			// Fetch size limit from current settings
+			long sizeLimit = IOUtils.parseSize(environment.getProperty(RDHProperty.GIT_MAX_FILESIZE));
+
+			// Special case: if limit is 0 we will never automatically ignore files
+			if(sizeLimit==0) {
+				return;
+			}
+
+			// Check new and modified files separately
+			filterFiles(filesToAdd, sizeLimit, newFilesToIgnore);
+			filterFiles(modifiedFiles, sizeLimit, modifiedFilesToIgnore);
+		}
+
+		private void filterEmptyOrHiddenFiles() {
+
+			// Nothing to do if we don't have any new files
+			if(filesToAdd.isEmpty()) {
+				return;
+			}
+
+			Predicate<Path> filter = getBasicIgnoreFilter();
+
+			if(filter!=NO_FILTER) {
+				for(Iterator<LocalFileObject> it=filesToAdd.iterator(); it.hasNext();) {
+					if(filter.test(it.next().getFile())) {
+						it.remove();
+					}
+				}
+			}
+		}
+
 		/**
 		 * @see javax.swing.SwingWorker#doInBackground()
 		 */
 		@Override
 		protected Boolean doInBackground() throws Exception {
-			if(!collectFiles()) {
-				return Boolean.FALSE;
-			}
-
-			Workflow workflow = workflowSource.get();
 
 			// Flag signaling user confirmation
-			final MutableBoolean opSuccess = new MutableBoolean(false);
+			boolean opSuccess = false;
+			Interval runtime = new Interval().start();
 
-			workflow.beginUpdate();
 			try {
-				// Start a fresh new workflow step
-				newStep = constructStep(workflow);
+				logStat(StatEntry.ofType(StatType.INTERNAL_BEGIN, GuiStats.DIALOG_ADD_STEP));
 
-				// Add all files and collect new Identifiable instances
-				Set<Identifiable> newResources = addFilesAsOutput(newStep);
-
-				// Add all the previously
-				applyCachedResources(newStep);
-
-				// Start the part where the user gets involved
-				// BEGIN EDT
-				SwingUtilities.invokeAndWait( () -> {
-					opSuccess.setBoolean(interactiveCommit(newStep));
-				});
-				// END EDT
-
-				// Only if the user confirmed the dialog do we actually add the step and commit git changes!
-				if(opSuccess.booleanValue()) {
-					workflow.addWorkflowStep(newStep);
-
-					persistAssociatedChanges(newResources);
+				if(!collectFiles()) {
+					return Boolean.FALSE;
 				}
-			} finally {
-				workflow.endUpdate();
-			}
 
-			return opSuccess.booleanValue();
+				filterEmptyOrHiddenFiles();
+
+				filterLargeFiles();
+
+				// If necessary allow the user to revise automatically filtered files
+				if(!newFilesToIgnore.isEmpty() || !modifiedFilesToIgnore.isEmpty()) {
+					FileIgnoreConfiguration configuration = FileIgnoreEditor.newConfiguration(
+							newFilesToIgnore, modifiedFilesToIgnore);
+
+					// BEGIN EDT
+					boolean doContinue = GuiUtils.invokeEDTAndWait(
+							RDHMainPanel.this::interactiveFilterFiles, configuration);
+					// END EDT
+
+					// If user canceled here we gonna stop immediately
+					if(!doContinue) {
+						return false;
+					}
+				}
+
+
+				Workflow workflow = workflowSource.get();
+
+				workflow.beginUpdate();
+				try {
+					// Start a fresh new workflow step
+					newStep = constructStep(workflow);
+
+					// Add all files and collect new Identifiable instances
+					Set<Identifiable> newResources = addFilesAsOutput(newStep);
+
+					Set<Identifier> usedPaths = newResources.stream()
+							.map(i -> i.getIdentifier(IdentifierType.PATH))
+							.collect(Collectors.toSet());
+
+					Predicate<Identifiable> filter = identifiable -> {
+						Identifier path = identifiable.getIdentifier(IdentifierType.PATH);
+						return path!=null && usedPaths.contains(path);
+					};
+
+					//TODO use cached resources to filter automatically detected outputs (as cache can have more metadata already entered)
+
+					// Add all the previously cached resources
+					applyCachedResources(newStep, filter);
+
+					/*
+					 *  Start the part where the user gets involved.
+					 *  We do this synchronously on the event dispatch thread
+					 *  and block here until the GUI part is finished.
+					 */
+					// BEGIN EDT
+					opSuccess = GuiUtils.invokeEDTAndWait(RDHMainPanel.this::interactiveCommit, newStep);
+					// END EDT
+
+					// Only if the user confirmed the dialog do we actually add the step and commit git changes!
+					if(opSuccess) {
+
+						// First perform actions that are easily undoable
+						//TODO implement a rollback of these changes in case the next steps fails
+						persistAssociatedChanges(newResources);
+
+						// If this operation goes through, the commit is persistent
+						workflow.addWorkflowStep(newStep);
+
+						//TODO remove all resources from cache that have been used here
+					}
+				} finally {
+					workflow.endUpdate();
+				}
+
+				return opSuccess;
+			} finally {
+				String label = newStep==null ? null : newStep.getId();
+				logStat(StatEntry.withData(
+						StatType.INTERNAL_END, GuiStats.DIALOG_ADD_STEP, label,
+						String.valueOf(opSuccess), runtime.stop().asDurationString()));
+			}
 		}
 
-		private Set<LocalFileObject> resolveFiles(TrackingStatus trackingStatus) throws IOException, InterruptedException, TrackerException {
+		private void resolveFiles(TrackingStatus trackingStatus, Set<LocalFileObject> buffer) throws IOException, InterruptedException, TrackerException {
 			Set<Path> files = fileTracker.getFilesForStatus(trackingStatus);
 
 			if(files==null || files.isEmpty()) {
-				return null;
+				return;
 			}
 
 			final IdentifiableResolver resolver = environment.getClient().getResourceResolver();
-
-			LazyCollection<LocalFileObject> result = LazyCollection.lazySet();
 
 			resolver.lock();
 			try {
@@ -1652,26 +2056,11 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					if(LocalFileObject.ensureOrRefreshRecord(fileObject, environment)) {
 						publish(fileObject);
 					}
-					result.add(fileObject);
+					buffer.add(fileObject);
 				}
 			} finally {
 				resolver.unlock();
 			}
-
-			return result.getAsSet();
-		}
-
-		/**
-		 * Converts a collection of file object wrappers back into regular file path instances.
-		 */
-		private Set<Path> extractFiles(Collection<LocalFileObject> fileObjects) {
-			LazyCollection<Path> result = LazyCollection.lazySet();
-
-			for(LocalFileObject fileObject : fileObjects) {
-				result.add(fileObject.getFile());
-			}
-
-			return result.getAsSet();
 		}
 
 		/**

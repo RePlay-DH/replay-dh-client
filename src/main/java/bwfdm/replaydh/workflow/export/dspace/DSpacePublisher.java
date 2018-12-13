@@ -24,18 +24,11 @@ import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Window;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import javax.swing.SwingUtilities;
 
@@ -45,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.UserFolder;
+import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.core.RDHMainPanel;
@@ -52,7 +46,8 @@ import bwfdm.replaydh.ui.helper.AbstractDialogWorker;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.workflow.export.ResourcePublisher;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
-import bwfdm.replaydh.workflow.export.dspace.DSpacePublisherWizard.DSpacePublisherContext;
+import bwfdm.replaydh.workflow.export.dspace.DSpacePublisherWizard.DSpaceExporterContext;
+import bwfdm.replaydh.workflow.export.generic.ExportRepository;
 
 /**
  * @author Markus Gärtner
@@ -84,14 +79,14 @@ public class DSpacePublisher implements ResourcePublisher {
 		GuiUtils.checkNotEDT();
 
 		RDHEnvironment environment = exportInfo.getEnvironment();
-		DSpacePublisherContext context = new DSpacePublisherContext(exportInfo);
+		DSpaceExporterContext context = new DSpaceExporterContext(exportInfo);
 
 		log.info("DSpace publication, calling wizard");
 
 		if(showDSpacePublisherWizard(null, environment, context)) {
 			
 			// Check if some context field are null
-			if((context.getPublicationRepository() == null) || (context.getMetadataObject() == null)) {
+			if((context.getExportRepository() == null) || (context.getMetadataObject() == null)) {
 				return;
 			}
 
@@ -113,14 +108,14 @@ public class DSpacePublisher implements ResourcePublisher {
 		try {
 	        Desktop.getDesktop().browse(new URL(url).toURI());
 	    } catch (Exception ex) {
-	    	log.error("Exception by openning the browser: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+	    	log.error("Exception by openning the browser: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
 	    }
 	}
 	
 	/**
 	 * @see RDHMainPanel#doChangeWorkspace()
 	 */
-	public static boolean showDSpacePublisherWizard(Component owner, RDHEnvironment environment, DSpacePublisherContext context) {
+	public static boolean showDSpacePublisherWizard(Component owner, RDHEnvironment environment, DSpaceExporterContext context) {
 
 		boolean wizardDone = false;
 
@@ -129,7 +124,7 @@ public class DSpacePublisher implements ResourcePublisher {
 			ancestorWindow = SwingUtilities.getWindowAncestor(owner);
 		}
 
-		try(Wizard<DSpacePublisherContext> wizard = DSpacePublisherWizard.getWizard(
+		try(Wizard<DSpaceExporterContext> wizard = DSpacePublisherWizard.getWizard(
 				ancestorWindow, environment)) {
 
 			wizard.startWizard(context);
@@ -147,11 +142,11 @@ public class DSpacePublisher implements ResourcePublisher {
 		
 		protected final Logger log = LoggerFactory.getLogger(DSpacePublisher.class);
 			
-		private final DSpacePublisherContext context;
+		private final DSpaceExporterContext context;
 		private final String rdhPrefix = "RePlay-DH_publication_"; //TODO: as property?
 		private boolean finishOK;
 
-		public DSpacePublisherWorker(Window owner, DSpacePublisherContext context) {
+		public DSpacePublisherWorker(Window owner, DSpaceExporterContext context) {
 			super(owner, ResourceManager.getInstance().get("replaydh.dialogs.dspacePublication.title"),
 					CancellationPolicy.CANCEL_INTERRUPT);
 
@@ -188,7 +183,7 @@ public class DSpacePublisher implements ResourcePublisher {
 		@Override
 		protected Boolean doInBackground() throws Exception {
 			
-			PublicationRepository repository = context.getPublicationRepository();
+			ExportRepository repository = context.getExportRepository();
 			boolean result = false;
 			
 			if(!context.getFilesToPublish().isEmpty()) {
@@ -202,26 +197,28 @@ public class DSpacePublisher implements ResourcePublisher {
 				File zipFile = new File(logFolder + FileSystems.getDefault().getSeparator() +  rdhPrefix + timeStamp + ".zip");
 								
 				try {
-					packFilesToZip(context.getFilesToPublish(), zipFile, workspacePath);
+					IOUtils.packFilesToZip(context.getFilesToPublish(), zipFile, workspacePath);
 				} catch (IOException ex) {
-					log.error("Exception by addition of file to zip: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+					log.error("Exception by addition of file to zip: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
 				}
 				
 				// Start publication process
-				result = repository.publishFileAndMetadata(context.getUserLogin(), context.getCollectionURL(), zipFile, context.getMetadataObject().getMapDoublinCoreToMetadata());
-				
+				//TODO: Map<String, List<String>>
+				String editUrl = repository.exportNewEntryWithFileAndMetadata(context.collectionURL, zipFile, true, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				result = (editUrl != null);
 				// Delete zip-file
 				try {
 					FileUtils.delete(zipFile); 				
 				} catch (Exception ex) {
-					log.error("Exception by deleting the file: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+					log.error("Exception by deleting the file: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
 				}				
 				
 			} else {
 				
 				// Publication: metadata only
-				
-				result = repository.publishMetadata(context.getUserLogin(), context.getCollectionURL(), context.getMetadataObject().getMapDoublinCoreToMetadata());
+				//TODO: Map<String, List<String>>
+				String editUrl = repository.exportNewEntryWithMetadata(context.getCollectionURL(), context.getMetadataObject().getMapDoublinCoreToMetadata());
+				result = (editUrl != null);
 			}
 			
 			return Boolean.valueOf(result);
@@ -240,74 +237,6 @@ public class DSpacePublisher implements ResourcePublisher {
 		public boolean isFinishedOK() {
 			return finishOK;
 		}		
-	}
-	
-	/**
-	 * Pack a List of files to the zip-file. The basePath should be equal to the workspace directory.  
-	 * <p>
-	 * The method uses FileOutputStream, ZipOutputStream and FileInputStream inside, which will be closed automatically at the end.
-	 * 
-	 * @param filesList
-	 * @param zipFile
-	 * @param basePath
-	 * @throws IOException
-	 */
-	public static void packFilesToZip(List<File> filesList, File zipFile, String basePath) throws IOException {
-		
-		try(	FileOutputStream fos = new FileOutputStream(zipFile); //fos and zos will be closed automatically 
-				ZipOutputStream zos = new ZipOutputStream(fos)	
-		) {
-			for(File file: filesList) {
-				
-				String zipEntryName = getRelativizedPath(file.getPath(), basePath); 
-				zipEntryName = replaceNotAllowedCharacters(zipEntryName);
-								
-				try(FileInputStream fileInputStream = new FileInputStream(file)) { //fileInputStream will be closed automatically
-				
-					ZipEntry entry = new ZipEntry(zipEntryName);
-					zos.putNextEntry(entry);
-					
-					byte[] buffer = new byte[1024];
-					int length;
-					while ((length = fileInputStream.read(buffer)) >= 0) {
-						zos.write(buffer, 0, length);
-					}		
-					zos.closeEntry();
-				} // end of try. fileInputStream will be closed automatically
-			}								
-		} // end of try. fos and zos will be closed automatically. "Finally" do not needed. 
-	}
-	
-		
-	public static String replaceNotAllowedCharacters(final String str) {
-		String output = new String(str);
-
-		// Needed for Apache server!
-		output = output.replace("\\", "/");
-		output = output.replace(" ", "_"); //TODO: replace with "%20" ??
-		
-		return output;
-	}
-	
-	/**
-	 * <pre>
-	 * Get path, which is relative to some root path.
-	 * e.g.:
-	 * - absolutePath: /folder1/folder2/folder3/file.txt
-	 * - basePath: /folrder1/folder2/
-	 * - relativizedPath: folder3/file.txt
-	 * 
-	 * </pre>  
-	 * @param absolutePath
-	 * @param basePath
-	 * @return
-	 */
-	public static String getRelativizedPath(String absolutePath, String basePath) {
-		Path pathAbsolute = Paths.get(absolutePath);
-        Path pathBase = Paths.get(basePath);
-        Path pathRelative = pathBase.relativize(pathAbsolute);
-        return pathRelative.toString();
-	}
-	
+	}	
 
 }
