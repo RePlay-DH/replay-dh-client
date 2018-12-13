@@ -206,7 +206,7 @@ public final class WorkflowUIUtils {
 				inputValid &= !((String)type).isEmpty();
 			}
 			
-			if((cbType.getSelectedItem().toString().equals("Path")) || (cbType.getSelectedItem().toString().equals("Checksum"))) {
+			if((cbType.getSelectedItem().toString().equals(schema.findIdentifierType("checksum").getName())) || (cbType.getSelectedItem().toString().equals(schema.findIdentifierType("path").getName()))) {
 				chooseFile.setVisible(true);
 			} else {
 				chooseFile.setVisible(false);
@@ -283,13 +283,13 @@ public final class WorkflowUIUtils {
 		chooseFile.addActionListener(a -> {
 			int returnVal;
 			File file = null;
-			if(cbType.getSelectedItem().toString().equals("Path")) {
+			if (cbType.getSelectedItem().toString().equals(schema.findIdentifierType("path").getName())){
 				returnVal=fc.showDialog(panel, rm.get("replaydh.labels.select.file"));
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					file = fc.getSelectedFile();
 					tfId.setText(file.getPath().toString());
 				}
-			} else if (cbType.getSelectedItem().toString().equals("Checksum")){
+			} else if (cbType.getSelectedItem().toString().equals(schema.findIdentifierType("checksum").getName())) {
 				returnVal=fc.showDialog(panel, rm.get("replaydh.labels.select.checksum"));
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					file = fc.getSelectedFile();
