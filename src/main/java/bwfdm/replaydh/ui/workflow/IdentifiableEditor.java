@@ -25,6 +25,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -51,6 +52,8 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -248,7 +251,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 		bAddIdentifier = new JButton(ir.getIcon("add_obj.gif", Resolution.forSize(16)));
 		bAddIdentifier.setToolTipText(rm.get("replaydh.ui.editor.resourceCache.addIdentifier.description"));
-		bAddIdentifier.setPreferredSize(new Dimension(18, 18));
+		bAddIdentifier.setPreferredSize(new Dimension(20, 20));
 		bAddIdentifier.addActionListener(this::onAddIdentifierButtonClicked);
 
 		cbRoleType = WorkflowUIUtils.createLabelComboBox(getLabelSchema());
@@ -258,7 +261,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 		identifierPanel = new JPanel();
 		identifierPanel.setLayout(new BoxLayout(identifierPanel, BoxLayout.Y_AXIS));
-		identifierPanel.setBorder(BorderFactory.createEmptyBorder(3, 20, 3, 3));
+		identifierPanel.setBorder(BorderFactory.createEmptyBorder(3, 20, 3, 0));
 		GuiUtils.prepareChangeableBorder(identifierPanel);
 
 		titleLabel = DefaultComponentFactory.getInstance().createLabel(null);
@@ -615,7 +618,9 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	}
 
 	private void addIdentifierPanel(Identifier identifier) {
-		identifierPanel.add(new IdentifierPanel(identifier));
+		JPanel newIdPanel=new IdentifierPanel(identifier);
+		newIdPanel.setBorder(new EmptyBorder(0, 0, 3, 0));
+		identifierPanel.add(newIdPanel);
 		identifierPanel.revalidate();
 		identifierPanel.repaint();
 
@@ -957,7 +962,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			JButton button = new JButton(IconRegistry.getGlobalRegistry().getIcon(
 					"delete_obj.gif", Resolution.forSize(16)));
 			button.addActionListener(this);
-			button.setPreferredSize(new Dimension(18, 18));
+			button.setPreferredSize(new Dimension(20, 20));
 			add(button, BorderLayout.EAST);
 		}
 
