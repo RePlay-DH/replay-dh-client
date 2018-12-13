@@ -28,6 +28,9 @@ import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -63,6 +66,7 @@ import com.jgoodies.forms.factories.DefaultComponentFactory;
 import com.jgoodies.forms.factories.Forms;
 import com.jgoodies.forms.factories.Paddings;
 
+import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
@@ -704,9 +708,40 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 		// If user actually chose a valid identifier, add it and refresh UI
 		if(identifier!=null) {
-			currentIdentifiable.getTarget().addIdentifier(identifier);
-			// Currently just appends new identifiers. TODO maybe do a sorted insert?
-			addIdentifierPanel(identifier);
+			boolean addNewAllowed=true;
+			if(currentIdentifiable.getTarget().hasIdentifiers()) {
+				if((identifier.getType().getLabel().toString().equals("checksum")) && (currentIdentifiable.getTarget().getIdentifier(IdentifierType.PATH).getId() != null)) {
+					String path = currentIdentifiable.getTarget().getIdentifier(IdentifierType.PATH).getId();
+					LocalFileObject fileObject = new LocalFileObject(Paths.get(path));
+					try {
+						LocalFileObject.ensureOrValidateChecksum(fileObject);
+					} catch (IOException | InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					if(!(fileObject.getChecksum().toString().equals(identifier.getId().toString()))) {
+						addNewAllowed=false;
+					}
+				} else if((identifier.getType().getLabel().toString().equals("path")) && (currentIdentifiable.getTarget().getIdentifier(IdentifierType.CHECKSUM).getId() != null)) {
+					String checksum = currentIdentifiable.getTarget().getIdentifier(IdentifierType.CHECKSUM).getId();
+					String path = identifier.getId();
+					LocalFileObject fileObject = new LocalFileObject(Paths.get(path));
+					try {
+						LocalFileObject.ensureOrValidateChecksum(fileObject);
+					} catch (IOException | InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					if(!(fileObject.getChecksum().toString().equals(checksum))) {
+						addNewAllowed=false;
+					}
+				}
+			}
+			if (addNewAllowed == true) {
+				currentIdentifiable.getTarget().addIdentifier(identifier);
+				// Currently just appends new identifiers. TODO maybe do a sorted insert?
+				addIdentifierPanel(identifier);
+			}
 		}
 
 		refreshControl();
