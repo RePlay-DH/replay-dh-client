@@ -423,7 +423,7 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 			text = ResourceManager.getInstance().get(textKey);
 		}
 
-		contentHeader.setText(GuiUtils.toUnwrappedSwingTooltip(text));
+		contentHeader.setText(GuiUtils.toSwingTooltip(text));
 		contentHeader.setIcon(icon);
 
 		contentHeader.setVisible(text!=null || icon!=null);

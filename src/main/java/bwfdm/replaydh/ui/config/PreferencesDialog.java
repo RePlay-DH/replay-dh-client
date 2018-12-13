@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Frame;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
@@ -68,13 +69,13 @@ import bwfdm.replaydh.ui.config.PreferencesTreeModel.Node;
  */
 public class PreferencesDialog extends JDialog {
 
-	public static void showDialog(RDHEnvironment environment, Component owner) {
+	public static void showDialog(RDHEnvironment environment, Frame owner) {
 		Interval uptime = new Interval();
 		uptime.start();
 		environment.getClient().getStatLog().log(StatEntry.ofType(StatType.UI_OPEN, GuiStats.DIALOG_PREFERENCES));
 
 		try {
-			PreferencesDialog dialog = new PreferencesDialog(environment);
+			PreferencesDialog dialog = new PreferencesDialog(owner, environment);
 
 			dialog.setLocationRelativeTo(owner);
 			dialog.setVisible(true);
@@ -109,7 +110,8 @@ public class PreferencesDialog extends JDialog {
 
 	private final ChangeListener tabListener = this::onTabChange;
 
-	public PreferencesDialog(RDHEnvironment environment) {
+	public PreferencesDialog(Frame frame, RDHEnvironment environment) {
+		super(frame);
 
 		setModalityType(ModalityType.APPLICATION_MODAL);
 

@@ -45,6 +45,7 @@ import bwfdm.replaydh.workflow.Checksums.ChecksumValidationResult;
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Resource;
+import bwfdm.replaydh.workflow.impl.DefaultResource;
 import bwfdm.replaydh.workflow.resolver.IdentifiableResolver;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
@@ -146,8 +147,8 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 		synchronized (fileObject.lock) {
 			fileObject.startUpdate();
 			try {
-				needsNewIdentifiers= fileObject.identifiers.isEmpty()
-						| ensureOrValidateChecksum(fileObject);
+				needsNewIdentifiers= ensureOrValidateChecksum(fileObject)
+						|| fileObject.identifiers.isEmpty();
 
 				if(needsNewIdentifiers) {
 					fileObject.identifiers.clear();
@@ -204,8 +205,8 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 		synchronized (fileObject.lock) {
 			fileObject.startUpdate();
 			try {
-				needsNewResource = fileObject.resource==null
-						| ensureOrRefreshIdentifiers(fileObject, environment);
+				needsNewResource = ensureOrRefreshIdentifiers(fileObject, environment)
+						|| fileObject.resource==null;
 
 				if(needsNewResource) {
 					Resource resource = fileObject.resource;
@@ -228,6 +229,8 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 
 						if(resource!=null) {
 							resolver.update(Collections.singleton(resource));
+						} else {
+							resource = DefaultResource.withIdentifiers(fileObject.identifiers);
 						}
 
 					} finally {
@@ -264,8 +267,8 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 		synchronized (fileObject.lock) {
 			fileObject.startUpdate();
 			try {
-				needsNewRecord = fileObject.record==null
-						| ensureOrRefreshResource(fileObject, environment);
+				needsNewRecord = ensureOrRefreshResource(fileObject, environment)
+						|| fileObject.record==null;
 
 				if(needsNewRecord) {
 					fileObject.record = null;
