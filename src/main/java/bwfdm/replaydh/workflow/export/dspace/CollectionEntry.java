@@ -31,20 +31,13 @@ public class CollectionEntry {
 	public Set<String> getValues() {
 		Set<String> values = new TreeSet<>();
 		for(Entry<String, String> entry : entries) {
-			values.add(entry.getValue());
+			if(entry.getValue() != null) {
+				values.add(entry.getValue());
+			} else {
+				values.add("No Name");
+			}
 		}
 		return values;
-	}
-	
-	public Set<String> getValuesForDatasets() {
-		String doiEnding;
-		valuesForDatasets = new TreeSet<>();
-		for(Entry<String, String> entry : entries) {
-			doiEnding=entry.getKey().substring(entry.getKey().indexOf("doi:"), entry.getKey().length());
-			valuesForDatasets.add(entry.getValue()+" - "+doiEnding);
-			keysForDatasets.put(entry.getValue()+" - "+doiEnding, entry.getKey());
-		}
-		return valuesForDatasets;
 	}
 	
 	public String getKey(String value) {

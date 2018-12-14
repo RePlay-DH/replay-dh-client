@@ -30,8 +30,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.Content;
@@ -52,7 +62,11 @@ import bwfdm.replaydh.workflow.export.dspace.dto.v6.HierarchyObject;
 import bwfdm.replaydh.workflow.export.generic.SwordExporter;
 
 
-
+/**
+ * @author Volodymyr Kushnarenko
+ * @author Florian Fritze
+ *
+ */
 public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 
 	protected static final Logger log = LoggerFactory.getLogger(DSpace_v6.class);
@@ -68,9 +82,12 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	protected String collectionsURL;
 	protected String hierarchyURL;
 	protected String restTestURL;
+	
+	private String standardUser;
+	private String password;
 
 	CloseableHttpClient httpClient;
-
+	
 	public DSpace_v6(String serviceDocumentURL, String restURL, String adminUser, String standardUser, char[] adminPassword) {
 
 		super(SwordExporter.createAuthCredentials(adminUser, adminPassword, standardUser));
@@ -83,6 +100,9 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		
 		this.setServiceDocumentURL(serviceDocumentURL);
 		this.setAllRestURLs(restURL);
+		
+		this.standardUser=standardUser;
+		this.password=String.valueOf(adminPassword);
 
 		// HttpClient which ignores the ssl certificate
 		this.httpClient = WebUtils.createHttpClientWithSSLSupport();
@@ -102,6 +122,9 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		
 		this.setServiceDocumentURL(serviceDocumentURL);
 		this.setAllRestURLs(restURL);
+		
+		this.standardUser=userName;
+		this.password=String.valueOf(userPassword);
 
 		// HttpClient which ignores the ssl certificate
 		this.httpClient = WebUtils.createHttpClientWithSSLSupport();
@@ -552,12 +575,12 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 					Pattern idPattern = Pattern.compile("<id>(.+?)</id>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<id>https://some_link</id>"
 					Matcher idMatcher = idPattern.matcher(entryString);
 					
-					Pattern titlePattern = Pattern.compile("<title.+?>(.+?)</title>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<title type="text">some_title</title>" 
-					Matcher titleMatcher = titlePattern.matcher(entryString);
+					//Pattern titlePattern = Pattern.compile("<title.+?>(.+?)</title>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<title type="text">some_title</title>" 
+					//Matcher titleMatcher = titlePattern.matcher(entryString);
 					
 					// Find id and title
-					if(idMatcher.find() && titleMatcher.find()) { 
-						entriesMap.put(idMatcher.group(1), titleMatcher.group(1));
+					if(idMatcher.find()) { 
+						entriesMap.put(idMatcher.group(1), this.createUniqueEntryID(this.getEntryMetadata(idMatcher.group(1))));
 					}
 				}
 			} catch (IOException e) {
@@ -570,6 +593,74 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	}
 	
 		
+	/**
+	 * Parts copied from: https://www.baeldung.com/httpclient-4-basic-authentication
+	 */
+	public String getEntryMetadata(String datasetSwordLink) throws SWORDClientException, IOException {
+		if (datasetSwordLink == null) {
+			log.error("Null datasetUrl passed in to getEntryMetadata; returning null");
+			return null;
+		}
+		CredentialsProvider provider = new BasicCredentialsProvider();
+		UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(this.standardUser, this.password);
+		provider.setCredentials(AuthScope.ANY, credentials);
+
+		HttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
+
+		HttpResponse response = client.execute(new HttpGet(datasetSwordLink));
+		int statusCode = response.getStatusLine().getStatusCode();
+		
+		String responseString=null;
+		
+		if (statusCode == HttpStatus.SC_OK) {
+			HttpEntity entity = response.getEntity();
+			responseString = EntityUtils.toString(entity, "UTF-8");
+		}
+		if ((log.isDebugEnabled()) && (responseString != null)) {
+			log.debug("Connecting with" + datasetSwordLink + "was successfully");
+		}
+
+		return responseString;
+	}
+	
+	
+	public String createUniqueEntryID(String entryXML) {
+		String response=entryXML;
+		
+		String identifier=null;
+		Pattern entryPattern = Pattern.compile("<entry.+?>(.*?)</entry>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<entry>some_entry_with_other_tags_inside</entry>
+		Matcher entryMatcher = entryPattern.matcher(response);
+		
+		entryMatcher.find();
+		
+		String entryString = entryMatcher.group(1);
+		
+		Pattern availablePattern = Pattern.compile("<available.+?>(.+?)</available>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<id>https://some_link</id>"
+		Matcher availableMatcher = availablePattern.matcher(entryString);
+		
+		availableMatcher.find();
+		
+		Pattern titlePattern = Pattern.compile("<title.+?>(.+?)</title>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<title type="text">some_title</title>" 
+		Matcher titleMatcher = titlePattern.matcher(entryString);
+		
+		if(availableMatcher.group(1).toString().equals("Date Available")) {
+			Pattern updatedPattern = Pattern.compile("<updated>(.+?)</updated>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<id>https://some_link</id>"
+			Matcher updatedMatcher = updatedPattern.matcher(entryString);
+			if(updatedMatcher.find() && titleMatcher.find()) {
+				identifier=updatedMatcher.group(1)+ " - " + titleMatcher.group(1);
+			}
+		} else {
+			if(titleMatcher.find()) {
+				identifier=availableMatcher.group(1)+ " - " + titleMatcher.group(1);
+			}
+		}
+		
+		
+		
+		
+		return identifier;
+	}
+	
 	/**
 	 * {@inheritDoc}
 	 */
