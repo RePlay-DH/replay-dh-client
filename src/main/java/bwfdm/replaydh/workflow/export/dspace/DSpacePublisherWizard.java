@@ -79,8 +79,14 @@ import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
+import bwfdm.replaydh.workflow.export.dspace.CollectionEntry;
 import bwfdm.replaydh.workflow.export.generic.ExportRepository;
 
+/**
+ * @author Volodymyr Kushnarenko
+ * @author Florian Fritze
+ *
+ */
 public class DSpacePublisherWizard {
 
 	private static final Logger log = LoggerFactory.getLogger(DSpacePublisherWizard.class);
@@ -89,7 +95,7 @@ public class DSpacePublisherWizard {
 		@SuppressWarnings("unchecked")
 		Wizard<DSpaceExporterContext> wizard = new Wizard<>(
 				parent, "dspacePublisher", ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.title"),
-				environment/*, FINISH /*<-- TEST*/ , CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
+				environment , CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
 
@@ -255,10 +261,6 @@ public class DSpacePublisherWizard {
 		String sdURL = getHostURL(url);
 		sdURL += "/swordv2/servicedocument";
 
-		// Explicit replace "https://" with "http://", because of the SWORD-client, which does not support SSL-certificates
-		if(sdURL.startsWith("https://")) {
-			sdURL = sdURL.replaceFirst("https://", "http://");
-		}
 		return sdURL;
 	}
 
@@ -333,26 +335,6 @@ public class DSpacePublisherWizard {
 //		}
 //	}
 
-	/**
-	 * Representation of the collection of <String, String> in the ComboBox
-	 * @author Volodymyr Kushnarenko
-	 */
-	private static class CollectionEntry{
-
-		private Map.Entry<String, String> entry;
-		protected CollectionEntry(Map.Entry<String, String> entry) {
-			this.entry = entry;
-		}
-
-		public Map.Entry<String, String> getEntry() {
-			return entry;
-		}
-
-		@Override
-		public String toString() {
-			return entry.getValue();
-		}
-	}
 
 	/**
 	 * Abstract class for the wizard page
@@ -389,30 +371,16 @@ public class DSpacePublisherWizard {
 		private long timeOut; //in seconds
 
 		private Map<String, String> availableCollections;
-		private ExportRepository exportRepository;
+		private DSpace_v6 exportRepository;
 
 		/**
 		 * Check the connection via REST-interface.
 		 * Sets the global flag {@code restOK=true} if connection is working, and {@code restOK=false} otherwise
 		 * @param dspaceRepository
 		 */
-		private void checkAndCorrectRestURL(DSpace_v6 dspaceRepository) {
+		private void checkAndCorrectRestURL() {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
-
-				/**
-				 * Replace "http://" via "https://" and otherwise
-				 * @param url
-				 */
-				protected void exchangeHttpHttps(String url) {
-					if(url.startsWith("http://")) {
-						url = url.replaceFirst("http://", "https://");
-					} else {
-						if(url.startsWith("https://")) {
-							url = url.replaceFirst("https://", "http://");
-						}
-					}
-				}
 
 				@Override
 				protected Boolean doInBackground() throws Exception {
@@ -421,22 +389,17 @@ public class DSpacePublisherWizard {
 						return false;
 					}
 					String correctedRestURL = new String(restURL);
-					dspaceRepository.setAllRestURLs(correctedRestURL);
+					exportRepository.setAllRestURLs(correctedRestURL);
 
-					//Exchange "http://" and "https://" if REST is not accessible
-					if(!dspaceRepository.isRestAccessible()) {
-						exchangeHttpHttps(correctedRestURL);
-						// If the exchange did not help, move to the previous condition
-						if(!dspaceRepository.isRestAccessible()) {
-							if(restURL == null) {
-								return false; //not really needed here
-							}
-							correctedRestURL = new String(restURL);
-							dspaceRepository.setAllRestURLs(correctedRestURL);
-							restOK = false;
-							restURL = String.valueOf(correctedRestURL.toCharArray());
-							return restOK;
+					if(!exportRepository.isRestAccessible()) {
+						if (restURL == null) {
+							return false; // not really needed here
 						}
+						correctedRestURL = new String(restURL);
+						exportRepository.setAllRestURLs(correctedRestURL);
+						restOK = false;
+						restURL = String.valueOf(correctedRestURL.toCharArray());
+						return restOK;
 					}
 
 					restURL = String.valueOf(correctedRestURL.toCharArray());
@@ -476,18 +439,17 @@ public class DSpacePublisherWizard {
 		 * @param exportRepository
 		 * @param userLogin
 		 */
-		private void checkUserRegistrationAndGetCollections(ExportRepository exportRepository) {
+		private void checkUserRegistrationAndGetCollections() {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
 
 				@Override
 				protected Boolean doInBackground() throws Exception {
-					//Thread.sleep(20000); //for test, to imitate a long task and provocate termination on timeout
-					loginOK = exportRepository.hasRegisteredCredentials();
-					if(exportRepository instanceof DSpaceRepository) {
-						availableCollections = ((DSpaceRepository)exportRepository).getAvailableCollectionsWithFullName(" -- ");
+					if(exportRepository.isRepositoryAccessible()) {
+						availableCollections = exportRepository.getAvailableCollectionsWithFullName(" -- ");
+						loginOK=true;
 					} else {
-						availableCollections = exportRepository.getAvailableCollections();
+						loginOK=false;
 					}
 					return loginOK;
 				}
@@ -496,9 +458,7 @@ public class DSpacePublisherWizard {
 				protected void done() {
 					// Worker was finished properly
 					if(!isCancelled()) {
-						if(loginOK) {
-							checkLoginButton.setEnabled(false);
-						} else {
+						if(loginOK == false) {
 							pfUserPassword.setText("");
 							GuiUtils.toggleChangeableBorder(pfUserPassword, true); //set red border as a sign of the wrong password
 							checkLoginButton.setEnabled(false);
@@ -507,7 +467,7 @@ public class DSpacePublisherWizard {
 					}
 					// Worker was terminated (timeout or exception)
 					else {
-						loginOK = false;
+						//loginOK = false;
 						statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.terminationMessage"));
 						checkLoginButton.setEnabled(true); //in case of the Internet problem user have to click it again
 						setNextEnabled(false);
@@ -533,7 +493,10 @@ public class DSpacePublisherWizard {
 			context.userLogin = tfUserLogin.getText();
 			context.availableCollections = availableCollections;
 			context.exportRepository = exportRepository;
-
+			
+			environment.setProperty(RDHProperty.DSPACE_REPOSITORY_URL, context.repositoryURL);
+			environment.setProperty(RDHProperty.DSPACE_REPOSITORY_USERNAME, context.userLogin);
+			
 			return CHOOSE_COLLECTION;
 		}
 
@@ -543,6 +506,7 @@ public class DSpacePublisherWizard {
 
 			if(environment != null) {
 				tfUrl.setText(environment.getProperty(RDHProperty.DSPACE_REPOSITORY_URL));
+				tfUserLogin.setText(environment.getProperty(RDHProperty.DSPACE_REPOSITORY_USERNAME));
 			}
 
 			if(!loginOK) {
@@ -563,12 +527,12 @@ public class DSpacePublisherWizard {
 			ResourceManager rm = ResourceManager.getInstance();
 
 			loginOK = false;
-			restOK = false;
+			//restOK = false;
 			timeOut = 60; //seconds
 
 			//TODO: -> tfUrl.setEditable(true)
 			tfUrl = new JTextField();
-			tfUrl.setEditable(false);	//make the URL not editable for test reasons.
+			tfUrl.setEditable(true);	//make the URL not editable for test reasons.
 										//But wizard is already available to check the URL automatically
 										//and provide messages in case of error
 
@@ -579,8 +543,12 @@ public class DSpacePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfUserLogin);
 			GuiUtils.prepareChangeableBorder(pfUserPassword);
 
+			GuiUtils.toggleChangeableBorder(tfUrl, true);
+			GuiUtils.toggleChangeableBorder(tfUserLogin, true);
+			GuiUtils.toggleChangeableBorder(pfUserPassword, true);
+			
 			statusMessage = GuiUtils.createTextArea(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.pleaseLoginMessage"));
-
+			
 			DocumentAdapter adapter = new DocumentAdapter() {
 
 				@Override
@@ -603,10 +571,13 @@ public class DSpacePublisherWizard {
 			tfUrl.getDocument().addDocumentListener(adapter);
 			tfUserLogin.getDocument().addDocumentListener(adapter);
 			pfUserPassword.getDocument().addDocumentListener(adapter);
+			
+			
 
 
 			// Login button
 			checkLoginButton = new JButton(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.loginButton"));
+			checkLoginButton.setEnabled(false);
 			checkLoginButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -628,28 +599,31 @@ public class DSpacePublisherWizard {
 					// Prepare GUI for the repository requests
 					checkLoginButton.setEnabled(false);
 					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.waitMessage"));
-					restOK = false;
+					//restOK = false;
 					loginOK = false;
 
 					// Start repository requests
 					SwingUtilities.invokeLater(new Runnable() {
 				        @Override
 						public void run() {
-				        	checkAndCorrectRestURL((DSpace_v6)exportRepository);
+				        	checkAndCorrectRestURL();
 				        	if(restOK) {
-				        		checkUserRegistrationAndGetCollections(exportRepository);
-				        		if(loginOK) {
-				        			statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.successMessage"));
+				        		checkUserRegistrationAndGetCollections();
+								if (loginOK) {
+									statusMessage.setText(ResourceManager.getInstance()
+											.get("replaydh.wizard.dspacePublisher.chooseRepository.successMessage"));
 									setNextEnabled(true);
+									checkLoginButton.setEnabled(true);
 								} else {
 									setNextEnabled(false);
-					        	}
+								}
 				        	}
 				        }
 				    });
 
 				}
 			});
+			
 
 			openRepositoryButton = new JButton(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.loginInfoButton"));
 			openRepositoryButton.addActionListener(new ActionListener() {
@@ -694,31 +668,38 @@ public class DSpacePublisherWizard {
 			"replaydh.wizard.dspacePublisher.chooseCollection.title",
 			"replaydh.wizard.dspacePublisher.chooseCollection.description") {
 
-		private JComboBox<CollectionEntry> collectionsComboBox;
+		private JComboBox<String> collectionsComboBox;
 		private JTextArea noAvailableCollectionsMessage;
+		private CollectionEntry collectionEntries;
 
 		@Override
 		public void refresh(RDHEnvironment environment, DSpaceExporterContext context) {
 			super.refresh(environment, context); //call parent "refresh"
+			
+			collectionEntries = new CollectionEntry(context.getAvailableCollections().entrySet());
 
-			// Update combobox with collections
 			collectionsComboBox.removeAllItems();
-			for(Map.Entry<String, String> entry: context.getAvailableCollections().entrySet()) {
-				collectionsComboBox.addItem(new CollectionEntry(entry));
+			for(String value: collectionEntries.getValues()) {
+				collectionsComboBox.addItem(value);
 			}
 
 			// Display the error message if there are no collections available
 			noAvailableCollectionsMessage.setVisible(context.getAvailableCollections().isEmpty());
 
 			// Remove selection and disable "next" button
-			collectionsComboBox.setSelectedIndex(-1);
-			setNextEnabled(false);
+			if (context.getAvailableCollections().isEmpty()) {
+				collectionsComboBox.setSelectedIndex(-1);
+				setNextEnabled(false);
+			} else {
+				collectionsComboBox.setSelectedIndex(0);
+				setNextEnabled(true);
+			}
 		};
 
 		@Override
 		public Page<DSpaceExporterContext> next(RDHEnvironment environment, DSpaceExporterContext context) {
 			// Store collection url
-			context.collectionURL = ((CollectionEntry)collectionsComboBox.getSelectedItem()).getEntry().getKey();
+			context.collectionURL = collectionEntries.getKey(collectionsComboBox.getSelectedItem().toString());
 
 			return CHOOSE_FILES;
 		}
@@ -726,7 +707,7 @@ public class DSpacePublisherWizard {
 		@Override
 		protected JPanel createPanel() {
 
-			collectionsComboBox = new JComboBox<CollectionEntry>();
+			collectionsComboBox = new JComboBox<String>();
 			collectionsComboBox.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {

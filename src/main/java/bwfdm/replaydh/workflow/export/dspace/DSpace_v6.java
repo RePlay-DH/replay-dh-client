@@ -677,11 +677,13 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		for (String collectionUrl : collectionsMap.keySet()) {
 			List<String> communities = this.getCommunitiesForCollection(collectionUrl, serviceDocument, hierarchy, existedCollectionObjects);
 			String fullName = "";
-			for (String community : communities) {
-				fullName += community + fullNameSeparator; // add community + separator
+			if(communities != null) {
+				for (String community : communities) {
+					fullName += community + fullNameSeparator; // add community + separator
+				}
+				fullName += collectionsMap.get(collectionUrl); // add collection name (title)
+				collectionsMap.put(collectionUrl, fullName);
 			}
-			fullName += collectionsMap.get(collectionUrl); // add collection name (title)
-			collectionsMap.put(collectionUrl, fullName);
 		}
 		return collectionsMap;
 	}

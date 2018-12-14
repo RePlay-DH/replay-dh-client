@@ -215,6 +215,7 @@ public enum RDHProperty {
 	// Properties defining settings and repositories for the DSpace adapter
 
 	DSPACE_REPOSITORY_URL("dspace.repository.url"),
+	DSPACE_REPOSITORY_USERNAME("dspace.repository.username"),
 	DSPACE_REPOSITORY_NAME("dspace.repository.name"),
 
 	DATAVERSE_REPOSITORY_URL("dataverse.repository.url"),
