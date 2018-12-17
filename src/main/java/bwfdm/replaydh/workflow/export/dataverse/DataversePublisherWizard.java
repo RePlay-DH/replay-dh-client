@@ -1708,8 +1708,10 @@ public class DataversePublisherWizard {
 			JTextField textfield = new JTextField();
 			elementToAdd.setTextfield(textfield);
 			JButton button = new JButton();
+			button.addActionListener(this);
 			elementToAdd.setButton(button);
 			JButton minusbutton = new JButton();
+			minusbutton.addActionListener(this);
 			elementToAdd.setMinusbutton(minusbutton);
 			elementToAdd.create();
 			return elementToAdd;
@@ -1725,13 +1727,6 @@ public class DataversePublisherWizard {
 			String rows="pref";
 
 			int counter=0;
-			for(GUIElement oneguielement : elementsofproperty.get(metadatapropertyname)) {
-				oneguielement.getButton().removeActionListener(this);
-				if (counter > 0) {
-					oneguielement.getMinusbutton().removeActionListener(this);
-				}
-				counter++;
-			}
 
 			FormLayout layout = new FormLayout(columns,rows);
 
@@ -1784,9 +1779,6 @@ public class DataversePublisherWizard {
 						}
 					}
 				}
-				oneguielement.getButton().addActionListener(this);
-
-				oneguielement.getMinusbutton().addActionListener(this);
 
 				propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
 
@@ -1851,6 +1843,8 @@ public class DataversePublisherWizard {
 							if (elementsofproperty.get(propertyname).size() > 1) {
 								if (propertyname.equals("creator")) {
 									elementsofproperty.get(propertyname).get(buttonNumber).getTextfield().getDocument().removeDocumentListener(adapter);
+									elementsofproperty.get(propertyname).get(buttonNumber).getButton().removeActionListener(this);
+									elementsofproperty.get(propertyname).get(buttonNumber).getMinusbutton().removeActionListener(this);
 								}
 								removeElementFromPanel(propertyname,buttonNumber);
 							} else {
