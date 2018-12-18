@@ -775,8 +775,8 @@ public class DSpacePublisherWizard {
 	 */
 	private static final DSpaceExporterStep CHOOSE_DATASET = new DSpaceExporterStep(
 			"chooseDataset",
-			"replaydh.wizard.dataversePublisher.chooseDataset.title",
-			"replaydh.wizard.dataversePublisher.chooseDataset.description") {
+			"replaydh.wizard.dspacePublisher.chooseDataset.title",
+			"replaydh.wizard.dspacePublisher.chooseDataset.description") {
 
 		private JComboBox<String> collectionsComboBox;
 		private JTextArea noAvailableDatasetsMessage;
@@ -796,7 +796,7 @@ public class DSpacePublisherWizard {
 			// Update combobox with collections
 			collectionsComboBox.removeAllItems();
 
-			collectionsComboBox.addItem(rm.get("replaydh.wizard.dataversePublisher.chooseDataset.create"));
+			collectionsComboBox.addItem(rm.get("replaydh.wizard.dspacePublisher.chooseDataset.create"));
 
 			// Remove selection and disable "next" button
 			//collectionsComboBox.setSelectedIndex(-1);
@@ -827,12 +827,12 @@ public class DSpacePublisherWizard {
 						collectionsComboBox.setSelectedIndex(0);
 						setNextEnabled(true);
 						noAvailableDatasetsMessage.setText(ResourceManager.getInstance()
-								.get("replaydh.wizard.dataversePublisher.chooseDataset.datasetsMessage"));
+								.get("replaydh.wizard.dspacePublisher.chooseDataset.datasetsMessage"));
 					} else {
 						// Display the error message if there are no collections available
 						collectionEntries = null;
 						noAvailableDatasetsMessage.setText(ResourceManager.getInstance()
-								.get("replaydh.wizard.dataversePublisher.chooseDataset.noDatasetsMessage"));
+								.get("replaydh.wizard.dspacePublisher.chooseDataset.noDatasetsMessage"));
 					}
 				}
 			};
@@ -861,13 +861,13 @@ public class DSpacePublisherWizard {
 			});
 
 			noAvailableDatasetsMessage = GuiUtils.createTextArea(ResourceManager.getInstance()
-					.get("replaydh.wizard.dataversePublisher.chooseDataset.noDatasetsMessage"));
+					.get("replaydh.wizard.dspacePublisher.chooseDataset.noDatasetsMessage"));
 
 			return FormBuilder.create()
 					.columns("fill:pref:grow")
 					.rows("pref, $nlg, pref, $nlg, pref")
 					.padding(Paddings.DLU4)
-					.add(new JLabel(ResourceManager.getInstance().get("replaydh.wizard.dataversePublisher.chooseDataset.collectionLabel"))).xy(1, 1)
+					.add(new JLabel(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseDataset.collectionLabel"))).xy(1, 1)
 					.add(collectionsComboBox).xy(1, 3)
 					.add(noAvailableDatasetsMessage).xy(1, 5)
 					.build();
@@ -1136,7 +1136,7 @@ public class DSpacePublisherWizard {
 				replaceMetadata.setEnabled(false);
 			} else {
 				clearGUI();
-				resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
+				resetButton.getResetButton().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.ResetButton"));
 				getJSONObject(environment, context);
 				replaceMetadata.setSelected(true);
 				replaceMetadata.setEnabled(true);
@@ -1348,7 +1348,7 @@ public class DSpacePublisherWizard {
 			}
 			titleElements.add(eTitle.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("title", titleElements);
-			context.metadataObject.mapDublinCoreToLabel.put("title", rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("title", rm.get("replaydh.wizard.dspacePublisher.editMetadata.titleLabel"));
 
 			// Description
 			if (descriptionElements == null) {
@@ -1358,7 +1358,7 @@ public class DSpacePublisherWizard {
 			}
 			descriptionElements.add(eDescription.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("description", descriptionElements);
-			context.metadataObject.mapDublinCoreToLabel.put("description", rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("description", rm.get("replaydh.wizard.dspacePublisher.editMetadata.descriptionLabel"));
 
 			// Creator
 			if (creatorElements == null) {
@@ -1370,7 +1370,7 @@ public class DSpacePublisherWizard {
 				creatorElements.add(property);
 			}
 			context.metadataObject.mapDublinCoreToMetadata.put("creator", creatorElements);
-			context.metadataObject.mapDublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dspacePublisher.editMetadata.creatorLabel"));
 
 			// Publication year
 			/*if (issuedElements == null) {
@@ -1380,7 +1380,7 @@ public class DSpacePublisherWizard {
 			}
 			issuedElements.add(ePublicationYear.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("issued", issuedElements);
-			context.metadataObject.mapDublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));*/
+			context.metadataObject.mapDublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dspacePublisher.editMetadata.publicationYearLabel"));*/
 
 			// Not used (reserved) metadata fields
 			if (identifierElements == null) {
@@ -1390,7 +1390,7 @@ public class DSpacePublisherWizard {
 			}
 			identifierElements.add(eIdentifier.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("identifier", identifierElements);
-			context.metadataObject.mapDublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dspacePublisher.editMetadata.identifierLabel"));
 
 			if (publisherElements == null) {
 				publisherElements = new ArrayList<>();
@@ -1401,7 +1401,7 @@ public class DSpacePublisherWizard {
 				publisherElements.add(property);
 			}
 			context.metadataObject.mapDublinCoreToMetadata.put("publisher", publisherElements);
-			context.metadataObject.mapDublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dspacePublisher.editMetadata.publisherLabel"));
 
 			if (typeElements == null) {
 				typeElements = new ArrayList<>();
@@ -1410,7 +1410,7 @@ public class DSpacePublisherWizard {
 			}
 			typeElements.add(eResourceType.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("type", typeElements);
-			context.metadataObject.mapDublinCoreToLabel.put("type", rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("type", rm.get("replaydh.wizard.dspacePublisher.editMetadata.resourceTypeLabel"));
 
 			if (subjectElements == null) {
 				subjectElements = new ArrayList<>();
@@ -1421,7 +1421,7 @@ public class DSpacePublisherWizard {
 				subjectElements.add(property);
 			}
 			context.metadataObject.mapDublinCoreToMetadata.put("subject", subjectElements);
-			context.metadataObject.mapDublinCoreToLabel.put("subject", rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("subject", rm.get("replaydh.wizard.dspacePublisher.editMetadata.subjectLabel"));
 
 			if (hasVersionElements == null) {
 				hasVersionElements = new ArrayList<>();
@@ -1430,7 +1430,7 @@ public class DSpacePublisherWizard {
 			}
 			hasVersionElements.add(eVersion.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("hasVersion", hasVersionElements);
-			context.metadataObject.mapDublinCoreToLabel.put("hasVersion", rm.get("replaydh.wizard.dataversePublisher.editMetadata.versionLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("hasVersion", rm.get("replaydh.wizard.dspacePublisher.editMetadata.versionLabel"));
 
 			if (referenceElements == null) {
 				referenceElements = new ArrayList<>();
@@ -1439,7 +1439,7 @@ public class DSpacePublisherWizard {
 			}
 			referenceElements.add(eReference.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("isReferencedBy", referenceElements);
-			context.metadataObject.mapDublinCoreToLabel.put("isReferencedBy", rm.get("replaydh.wizard.dataversePublisher.editMetadata.isReferencedByLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("isReferencedBy", rm.get("replaydh.wizard.dspacePublisher.editMetadata.isReferencedByLabel"));
 
 			if (licenseElements == null) {
 				licenseElements = new ArrayList<>();
@@ -1451,7 +1451,7 @@ public class DSpacePublisherWizard {
 			}
 			licenseElements.add(eLicense.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("license", licenseElements);
-			context.metadataObject.mapDublinCoreToLabel.put("license", rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("license", rm.get("replaydh.wizard.dspacePublisher.editMetadata.LicenseLabel"));
 
 			if (dateElements == null) {
 				dateElements = new ArrayList<>();
@@ -1460,7 +1460,7 @@ public class DSpacePublisherWizard {
 			}
 			dateElements.add(eDate.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("date", dateElements);
-			context.metadataObject.mapDublinCoreToLabel.put("date", rm.get("replaydh.wizard.dataversePublisher.editMetadata.dateLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("date", rm.get("replaydh.wizard.dspacePublisher.editMetadata.dateLabel"));
 
 			if (rightsElements == null) {
 				rightsElements = new ArrayList<>();
@@ -1469,7 +1469,7 @@ public class DSpacePublisherWizard {
 			}
 			rightsElements.add(eRights.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("rights", rightsElements);
-			context.metadataObject.mapDublinCoreToLabel.put("rights", rm.get("replaydh.wizard.dataversePublisher.editMetadata.RightsLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("rights", rm.get("replaydh.wizard.dspacePublisher.editMetadata.RightsLabel"));
 
 			if (sourcesElements == null) {
 				sourcesElements = new ArrayList<>();
@@ -1481,7 +1481,7 @@ public class DSpacePublisherWizard {
 			}
 			sourcesElements.add(eSources.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("sources", sourcesElements);
-			context.metadataObject.mapDublinCoreToLabel.put("sources", rm.get("replaydh.wizard.dataversePublisher.editMetadata.sourcesLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("sources", rm.get("replaydh.wizard.dspacePublisher.editMetadata.sourcesLabel"));
 
 			context.setExportProcessMetadataAllowed(processMetadata.isSelected());
 
@@ -1530,7 +1530,7 @@ public class DSpacePublisherWizard {
 			rm = ResourceManager.getInstance();
 
 			JTextField tfTitle = new JTextField();
-			JLabel lTitle = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.titleLabel"));
+			JLabel lTitle = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.titleLabel"));
 			eTitle = new GUIElement();
 			eTitle.setTextfield(tfTitle);
 			eTitle.setLabel(lTitle);
@@ -1538,7 +1538,7 @@ public class DSpacePublisherWizard {
 			listofkeys.add("title");
 
 			JTextField tfDescription = new JTextField();
-			JLabel lDescription = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
+			JLabel lDescription = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.descriptionLabel"));
 			eDescription = new GUIElement();
 			eDescription.setTextfield(tfDescription);
 			eDescription.setLabel(lDescription);
@@ -1546,7 +1546,7 @@ public class DSpacePublisherWizard {
 			listofkeys.add("description");
 
 			JTextField tfCreator = new JTextField();
-			JLabel lCreator = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
+			JLabel lCreator = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.creatorLabel"));
 			eCreator = new GUIElement();
 			GuiUtils.prepareChangeableBorder(tfCreator);
 			eCreator.setTextfield(tfCreator);
@@ -1560,7 +1560,7 @@ public class DSpacePublisherWizard {
 
 			/*format = new SimpleDateFormat("YYYY");
 			JFormattedTextField tfPublicationYear = new JFormattedTextField(format);
-			JLabel lPubYear = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));
+			JLabel lPubYear = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.publicationYearLabel"));
 			ePublicationYear = new GUIElement();
 			ePublicationYear.setTextfield(tfPublicationYear);
 			ePublicationYear.setLabel(lPubYear);
@@ -1571,7 +1571,7 @@ public class DSpacePublisherWizard {
 			//JTextField tfDate = new JTextField();
 			format = new SimpleDateFormat("YYYY");
 			JFormattedTextField tfDate = new JFormattedTextField(format);
-			JLabel lDate = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.dateLabel"));
+			JLabel lDate = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.dateLabel"));
 			eDate = new GUIElement();
 			eDate.setTextfield(tfDate);
 			eDate.setLabel(lDate);
@@ -1579,7 +1579,7 @@ public class DSpacePublisherWizard {
 			listofkeys.add("date");
 
 			JTextField tfResourceType = new JTextField();
-			JLabel lResourceType = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.resourceTypeLabel"));
+			JLabel lResourceType = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.resourceTypeLabel"));
 			eResourceType = new GUIElement();
 			eResourceType.setTextfield(tfResourceType);
 			eResourceType.setLabel(lResourceType);
@@ -1587,7 +1587,7 @@ public class DSpacePublisherWizard {
 			listofkeys.add("resourceType");
 
 			JTextField tfIdentifier = new JTextField();
-			JLabel lIdentifier = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.identifierLabel"));
+			JLabel lIdentifier = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.identifierLabel"));
 			eIdentifier = new GUIElement();
 			eIdentifier.setTextfield(tfIdentifier);
 			eIdentifier.setLabel(lIdentifier);
@@ -1595,7 +1595,7 @@ public class DSpacePublisherWizard {
 			listofkeys.add("identifier");
 
 			JTextField tfPublisher = new JTextField();
-			JLabel lPublisher = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
+			JLabel lPublisher = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.publisherLabel"));
 			ePublisher = new GUIElement();
 			ePublisher.setTextfield(tfPublisher);
 			ePublisher.setLabel(lPublisher);
@@ -1607,7 +1607,7 @@ public class DSpacePublisherWizard {
 			listofkeys.add("publisher");
 
 			JTextField tfSubjects = new JTextField();
-			JLabel lSubjects = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
+			JLabel lSubjects = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.subjectLabel"));
 			eSubjects = new GUIElement();
 			eSubjects.setTextfield(tfSubjects);
 			eSubjects.setLabel(lSubjects);
@@ -1619,7 +1619,7 @@ public class DSpacePublisherWizard {
 			listofkeys.add("subject");
 
 			JTextField tfVersion = new JTextField();
-			JLabel lversion = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.versionLabel"));
+			JLabel lversion = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.versionLabel"));
 			eVersion = new GUIElement();
 			eVersion.setTextfield(tfVersion);
 			eVersion.setLabel(lversion);
@@ -1627,7 +1627,7 @@ public class DSpacePublisherWizard {
 			listofkeys.add("version");
 
 			JTextField tfReference = new JTextField();
-			JLabel lreference = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.isReferencedByLabel"));
+			JLabel lreference = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.isReferencedByLabel"));
 			eReference = new GUIElement();
 			eReference.setTextfield(tfReference);
 			eReference.setLabel(lreference);
@@ -1635,16 +1635,16 @@ public class DSpacePublisherWizard {
 			listofkeys.add("reference");
 
 			JTextField tfLicense = new JTextField("NONE");
-			JLabel lLicense = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));
+			JLabel lLicense = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.LicenseLabel"));
 			eLicense = new GUIElement();
 			eLicense.setTextfield(tfLicense);
-			eLicense.getTextfield().setToolTipText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.licenseToolTip"));
+			eLicense.getTextfield().setToolTipText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.licenseToolTip"));
 			eLicense.setLabel(lLicense);
 			eLicense.create();
 			listofkeys.add("license");
 
 			JTextField tfRights = new JTextField();
-			JLabel lRights = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.RightsLabel"));
+			JLabel lRights = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.RightsLabel"));
 			eRights = new GUIElement();
 			eRights.setTextfield(tfRights);
 			eRights.setLabel(lRights);
@@ -1652,7 +1652,7 @@ public class DSpacePublisherWizard {
 			listofkeys.add("rights");
 
 			JTextField tfSource = new JTextField();
-			JLabel lSource = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.sourcesLabel"));
+			JLabel lSource = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.sourcesLabel"));
 			eSources = new GUIElement();
 			eSources.setTextfield(tfSource);
 			eSources.setLabel(lSource);
@@ -1664,7 +1664,7 @@ public class DSpacePublisherWizard {
 			listofkeys.add("sources");
 
 			resetButton = new GUIElement();
-			resetButton.createResetButton(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
+			resetButton.createResetButton(rm.get("replaydh.wizard.dspacePublisher.editMetadata.ResetButton"));
 			resetButton.getResetButton().addActionListener(this);
 
 			GuiUtils.prepareChangeableBorder(tfCreator);
@@ -1673,7 +1673,7 @@ public class DSpacePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfDate);
 			GuiUtils.prepareChangeableBorder(tfLicense);
 
-			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dataversePublisher.editMetadata.infoMessage"));
+			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dspacePublisher.editMetadata.infoMessage"));
 
 			adapter = new DocumentAdapter() {
 				@Override
@@ -1688,10 +1688,10 @@ public class DSpacePublisherWizard {
 			tfDescription.getDocument().addDocumentListener(adapter);
 			tfDate.getDocument().addDocumentListener(adapter);
 
-			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
+			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dspacePublisher.editMetadata.processMetadata"));
 			processMetadata.setSelected(true);
 
-			replaceMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.replaceMetadata"));
+			replaceMetadata = new JCheckBox(rm.get("replaydh.wizard.dspacePublisher.editMetadata.replaceMetadata"));
 			replaceMetadata.setSelected(false);
 
 			builder.columns("pref:grow");
@@ -1865,16 +1865,16 @@ public class DSpacePublisherWizard {
 					if (oneguielement.getLabel().getText().equals("")) {
 						switch (metadatapropertyname) {
 						case "creator":
-							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.creatorLabel"));
 							break;
 						case "publisher":
-							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.publisherLabel"));
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.publisherLabel"));
 							break;
 						case "subject":
-							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.subjectLabel"));
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.subjectLabel"));
 							break;
 						case "sources":
-							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.sourcesLabel"));
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.sourcesLabel"));
 							break;
 						}
 					}
@@ -1964,8 +1964,8 @@ public class DSpacePublisherWizard {
 				}
 			}
 			if (source == resetButton.getResetButton()) {
-				if (resetButton.getResetButton().getText().equals(rm.get("replaydh.wizard.dataversePublisher.editMetadata.RestoreButton"))) {
-					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
+				if (resetButton.getResetButton().getText().equals(rm.get("replaydh.wizard.dspacePublisher.editMetadata.RestoreButton"))) {
+					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.ResetButton"));
 					if (myContext.chosenDataset == null) {
 						createNewDataset(myEnvironment, myContext);
 					} else {
@@ -1976,7 +1976,7 @@ public class DSpacePublisherWizard {
 					builder.getPanel().removeAll();
 					createGUI();
 					clearGUI();
-					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.RestoreButton"));
+					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.RestoreButton"));
 					Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
 					parentComponent.pack();
 				}
