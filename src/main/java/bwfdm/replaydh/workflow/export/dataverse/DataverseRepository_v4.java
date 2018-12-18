@@ -32,6 +32,11 @@ import org.swordapp.client.DepositReceipt;
 import org.swordapp.client.ProtocolViolationException;
 import org.swordapp.client.SWORDClientException;
 import org.swordapp.client.SWORDError;
+
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
+
 import bwfdm.replaydh.workflow.export.generic.SwordExporter;
 
 /**
@@ -119,8 +124,29 @@ public class DataverseRepository_v4 extends SwordExporter {
 	}
 	
 
-	public Map<String, String> getUserAvailableCollectionsWithTitle() {
-		return super.getCollections(this.getServiceDocument(serviceDocumentURL));
+	public Map<String, String> getUserAvailableCollectionsWithTitle(String repoUrl) {
+		Map<String, String> collections = new HashMap<>();
+		collections=super.getCollections(this.getServiceDocument(serviceDocumentURL));
+		for(String key : collections.keySet()) {
+			int index=key.indexOf("/dataverse/");
+			String urlEnding=key.substring(index, key.length());
+			urlEnding=urlEnding.replace("dataverse", "dataverses");
+			String fullAPIUrl=repoUrl+urlEnding;
+			try {
+				String jsonMetadata=getJSONMetadata(fullAPIUrl);
+				Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
+				String alias = JsonPath.using(conf).parse(jsonMetadata).read("$.data.alias");
+				String newValue=collections.get(key).replace(collections.get(key), collections.get(key)+" -- "+alias);
+				collections.put(key, newValue);
+			} catch (SWORDClientException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return collections;
 	}
 
 

@@ -68,6 +68,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
 
+import com.hp.hpl.jena.sparql.util.Context;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
@@ -276,6 +277,13 @@ public class DataversePublisherWizard {
 
 		return url;
 	}
+	
+	private static String createApiUrl(String url) {
+		url = getCorrectedURL(url);
+		url += "/api";
+
+		return url;
+	}
 
 	/**
 	 * Wait until worker is finished, make error message visible in case of timeout or exception
@@ -293,43 +301,6 @@ public class DataversePublisherWizard {
 		}
 	}
 
-//	/**
-//	 * Reserved class for the future, if needed.
-//	 * <p>
-//	 * Timer in background, is used to cancel the SwingWorker instance after the timeout.
-//	 * Should be called as "new Thread(new BackgroundTimer<T,V>(worker, timeOut)).start();"
-//	 * <p>
-//	 * e.g.:
-//	 * worker.execute();
-//	 * new Thread(new BackgroundTimer<Boolean, Object>(worker, timeOut)).start();
-//   *
-//	 * @author vk
-//	 *
-//	 * @param <T> the first parameter of SwingWorker
-//	 * @param <V> the second parameter of SwingWorker
-//	 */
-//	private static class BackgroundTimer<T,V> implements Runnable{
-//		private long timeOut;
-//		private SwingWorker<T,V> worker;
-//
-//		private BackgroundTimer(SwingWorker<T,V> worker, long duration) {
-//			this.timeOut = duration;
-//			this.worker = worker;
-//		}
-//
-//		@Override
-//		public void run() {
-//			try {
-//				Thread.sleep(timeOut * 1000);
-//				worker.cancel(true);
-//				return;
-//			} catch (InterruptedException e) {
-//				log.error("Exception in background timer: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-//				worker.cancel(true);
-//				return;
-//			}
-//		}
-//	}
 
 	/**
 	 * Abstract class for the wizard page
@@ -388,8 +359,8 @@ public class DataversePublisherWizard {
 						// If the exchange did not help, move to the previous condition
 						swordOK = false;
 						return swordOK;
-					} else if (publicationRepository.getUserAvailableCollectionsWithTitle() != null) {
-						availableCollections=publicationRepository.getUserAvailableCollectionsWithTitle();
+					} else if (publicationRepository.getUserAvailableCollectionsWithTitle(createApiUrl(tfUrl.getText())) != null) {
+						availableCollections=publicationRepository.getUserAvailableCollectionsWithTitle(createApiUrl(tfUrl.getText()));
 						collectionsAvailable = true;
 					}
 
