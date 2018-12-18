@@ -1448,6 +1448,7 @@ public class DataversePublisherWizard {
 			JLabel lCreator = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
 			eCreator = new GUIElement();
 			eCreator.setTextfield(tfCreator);
+			GuiUtils.prepareChangeableBorder(tfCreator);
 			eCreator.setLabel(lCreator);
 			eCreator.setButton(new JButton());
 			eCreator.getButton().addActionListener(this);
@@ -1726,8 +1727,6 @@ public class DataversePublisherWizard {
 			String columns="pref:grow";
 			String rows="pref";
 
-			int counter=0;
-
 			FormLayout layout = new FormLayout(columns,rows);
 
 
@@ -1833,6 +1832,7 @@ public class DataversePublisherWizard {
 							elementsofproperty.get(propertyname).add(element);
 							if (propertyname.equals("creator")) {
 								element.getTextfield().getDocument().addDocumentListener(adapter);
+								GuiUtils.prepareChangeableBorder(element.getTextfield());
 								refreshBorder(elementsofproperty.get(propertyname));
 							}
 							refreshPanel(propertyname);
