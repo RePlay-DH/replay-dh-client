@@ -34,7 +34,6 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -84,8 +83,7 @@ import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
-import bwfdm.replaydh.workflow.export.dataverse.GUIElement;
-import bwfdm.replaydh.workflow.export.dataverse.DataversePublisherWizard.MetadataObject;
+import bwfdm.replaydh.workflow.export.dspace.GUIElement;
 import bwfdm.replaydh.workflow.export.dspace.CollectionEntry;
 import bwfdm.replaydh.workflow.export.generic.ExportRepository;
 
@@ -102,7 +100,7 @@ public class DSpacePublisherWizard {
 		@SuppressWarnings("unchecked")
 		Wizard<DSpaceExporterContext> wizard = new Wizard<>(
 				parent, "dspacePublisher", ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.title"),
-				environment , CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_DATASET, CHOOSE_FILES, /*EDIT_METADATA,*/ FINISH);
+				environment , CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_DATASET, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
 
@@ -128,7 +126,28 @@ public class DSpacePublisherWizard {
 		
 		private Map<String, String> availableDatasetsInCollection;
 		
+		private boolean replaceMetadataAllowed;
+
 		private String chosenDataset;
+		private String jsonObjectWithMetadata;
+		
+		private boolean exportProcessMetadataAllowed;
+		
+		public void setExportProcessMetadataAllowed(boolean exportProcessMetadataAllowed) {
+			this.exportProcessMetadataAllowed = exportProcessMetadataAllowed;
+		}
+
+		public boolean isReplaceMetadataAllowed() {
+			return replaceMetadataAllowed;
+		}
+
+		public void setReplaceMetadataAllowed(boolean replaceMetadataAllowed) {
+			this.replaceMetadataAllowed = replaceMetadataAllowed;
+		}
+
+		public String getJsonObjectWithMetadata() {
+			return jsonObjectWithMetadata;
+		}
 
 		public DSpaceExporterContext(WorkflowExportInfo exportInfo) {
 			this.exportInfo = requireNonNull(exportInfo);
@@ -168,9 +187,8 @@ public class DSpacePublisherWizard {
 
 	public static final class MetadataObject{
 
-		//TODO: Map<String, List<String>>
-		Map<String, List<String>> mapDoublinCoreToMetadata;
-		Map<String, String> mapDoublinCoreToLabel;
+		Map<String, List<String>> mapDublinCoreToMetadata;
+		Map<String, String> mapDublinCoreToLabel;
 
 		/**
 		 * Get map with key=doublin.core, value=metadata.
@@ -178,8 +196,8 @@ public class DSpacePublisherWizard {
 		 * Should be used for the publication to the repository.
 		 */
 		public Map<String, List<String>> getMapDoublinCoreToMetadata(){
-			if(mapDoublinCoreToMetadata != null){
-				return mapDoublinCoreToMetadata;
+			if(mapDublinCoreToMetadata != null){
+				return mapDublinCoreToMetadata;
 			} else {
 				return new HashMap<>();
 			}
@@ -190,13 +208,12 @@ public class DSpacePublisherWizard {
 		 * <p>
 		 * Should be used ONLY for the representation of the metadata.
 		 */
-		//TODO: Map<String, List<String>>
 		public Map<String, List<String>> getMapLabelToMetadata(){
 
 			Map<String, List<String>> metadataMap = new HashMap<>();
-			if((mapDoublinCoreToMetadata != null) && (mapDoublinCoreToLabel != null)) {
-				for(Map.Entry<String, List<String>> entryDoublinCoreToMetadata: mapDoublinCoreToMetadata.entrySet()) {
-					for(Map.Entry<String, String> entryDoublinCoreToLabel: mapDoublinCoreToLabel.entrySet()) {
+			if((mapDublinCoreToMetadata != null) && (mapDublinCoreToLabel != null)) {
+				for(Map.Entry<String, List<String>> entryDoublinCoreToMetadata: mapDublinCoreToMetadata.entrySet()) {
+					for(Map.Entry<String, String> entryDoublinCoreToLabel: mapDublinCoreToLabel.entrySet()) {
 						if(entryDoublinCoreToLabel.getKey().equals(entryDoublinCoreToMetadata.getKey())) {
 							metadataMap.put(entryDoublinCoreToLabel.getValue(), entryDoublinCoreToMetadata.getValue());
 							break;
@@ -351,7 +368,7 @@ public class DSpacePublisherWizard {
 	 * Abstract class for the wizard page
 	 * @author Volodymyr Kushnarenko
 	 */
-	private static abstract class DSpaceExporterStep extends AbstractWizardStep<DSpaceExporterContext> {
+	private static abstract class DSpaceExporterStep extends AbstractWizardStep<DSpaceExporterContext> implements ActionListener {
 		protected DSpaceExporterStep(String id, String titleKey, String descriptionKey) {
 			super(id, titleKey, descriptionKey);
 		}
@@ -667,6 +684,13 @@ public class DSpacePublisherWizard {
 					.build();
 		}
 
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
 	};
 
 
@@ -737,6 +761,12 @@ public class DSpacePublisherWizard {
 					.add(collectionsComboBox).xy(1, 3)
 					.add(noAvailableCollectionsMessage).xy(1, 5)
 					.build();
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
 		}
 	};
 
@@ -841,6 +871,12 @@ public class DSpacePublisherWizard {
 					.add(collectionsComboBox).xy(1, 3)
 					.add(noAvailableDatasetsMessage).xy(1, 5)
 					.build();
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
 		}
 
 	};
@@ -959,7 +995,7 @@ public class DSpacePublisherWizard {
 				}
 			}
 
-			return FINISH;
+			return EDIT_METADATA;
 		}
 
 		@Override
@@ -1012,13 +1048,19 @@ public class DSpacePublisherWizard {
 					.add(messageArea).xyw(1, 5, 3)
 					.build();
 		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 	};
 
 
 	/**
 	 * 4th. page - edit metadata
 	 */
-	/*private static final DSpaceExporterStep EDIT_METADATA = new DSpaceExporterStep(
+	private static final DSpaceExporterStep EDIT_METADATA = new DSpaceExporterStep(
 			"editMetadata",
 			"replaydh.wizard.dspacePublisher.editMetadata.title",
 			"replaydh.wizard.dspacePublisher.editMetadata.description") {
@@ -1140,12 +1182,13 @@ public class DSpacePublisherWizard {
 				protected Boolean doInBackground() throws Exception {
 					boolean metadataAvailable = false;
 					if (context.chosenDataset != null) {
-						String doi=context.chosenDataset.substring(context.chosenDataset.indexOf("doi:"), context.chosenDataset.length());
-						String metadataUrl = createMetadataUrl(environment.getProperty(RDHProperty.DSPACE_REPOSITORY_URL),doi);
-						if (context.getExportRepository().getJSONMetadata(metadataUrl) != null) {
+						//String doi=context.chosenDataset.substring(context.chosenDataset.indexOf("doi:"), context.chosenDataset.length());
+						//String metadataUrl = createMetadataUrl(environment.getProperty(RDHProperty.DSPACE_REPOSITORY_URL),doi);
+						String metadataUrl = context.chosenDataset;
+						/*if (context.getExportRepository().getJSONMetadata(metadataUrl) != null) {
 							context.jsonObjectWithMetadata=context.getExportRepository().getJSONMetadata(metadataUrl);
 							metadataAvailable=true;
-						}
+						}*/
 					}
 					return metadataAvailable;
 				}
@@ -1340,7 +1383,7 @@ public class DSpacePublisherWizard {
 			context.metadataObject.mapDublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dataversePublisher.editMetadata.publicationYearLabel"));*/
 
 			// Not used (reserved) metadata fields
-			/*if (identifierElements == null) {
+			if (identifierElements == null) {
 				identifierElements = new ArrayList<>();
 			} else {
 				identifierElements.clear();
@@ -1505,6 +1548,7 @@ public class DSpacePublisherWizard {
 			JTextField tfCreator = new JTextField();
 			JLabel lCreator = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.creatorLabel"));
 			eCreator = new GUIElement();
+			GuiUtils.prepareChangeableBorder(tfCreator);
 			eCreator.setTextfield(tfCreator);
 			eCreator.setLabel(lCreator);
 			eCreator.setButton(new JButton());
@@ -1525,7 +1569,7 @@ public class DSpacePublisherWizard {
 			listofkeys.add("year");*/
 
 			//JTextField tfDate = new JTextField();
-			/*format = new SimpleDateFormat("YYYY");
+			format = new SimpleDateFormat("YYYY");
 			JFormattedTextField tfDate = new JFormattedTextField(format);
 			JLabel lDate = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.dateLabel"));
 			eDate = new GUIElement();
@@ -1766,8 +1810,10 @@ public class DSpacePublisherWizard {
 			JTextField textfield = new JTextField();
 			elementToAdd.setTextfield(textfield);
 			JButton button = new JButton();
+			button.addActionListener(this);
 			elementToAdd.setButton(button);
 			JButton minusbutton = new JButton();
+			minusbutton.addActionListener(this);
 			elementToAdd.setMinusbutton(minusbutton);
 			elementToAdd.create();
 			return elementToAdd;
@@ -1778,18 +1824,9 @@ public class DSpacePublisherWizard {
 		 * panelbuilder (builder)
 		 * @param metadatapropertyname
 		 */
-		/*public void refreshPanel(String metadatapropertyname) {
+		public void refreshPanel(String metadatapropertyname) {
 			String columns="pref:grow";
 			String rows="pref";
-
-			int counter=0;
-			for(GUIElement oneguielement : elementsofproperty.get(metadatapropertyname)) {
-				oneguielement.getButton().removeActionListener(this);
-				if (counter > 0) {
-					oneguielement.getMinusbutton().removeActionListener(this);
-				}
-				counter++;
-			}
 
 			FormLayout layout = new FormLayout(columns,rows);
 
@@ -1842,9 +1879,6 @@ public class DSpacePublisherWizard {
 						}
 					}
 				}
-				oneguielement.getButton().addActionListener(this);
-
-				oneguielement.getMinusbutton().addActionListener(this);
 
 				propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
 
@@ -1882,6 +1916,7 @@ public class DSpacePublisherWizard {
 			return propertyValues;
 		}
 
+		@Override
 		public void actionPerformed(ActionEvent e) {
 			// TODO Auto-generated method stub
 			Object source = e.getSource();
@@ -1898,6 +1933,7 @@ public class DSpacePublisherWizard {
 							elementsofproperty.get(propertyname).add(element);
 							if (propertyname.equals("creator")) {
 								element.getTextfield().getDocument().addDocumentListener(adapter);
+								GuiUtils.prepareChangeableBorder(element.getTextfield());
 								refreshBorder(elementsofproperty.get(propertyname));
 							}
 							refreshPanel(propertyname);
@@ -1908,6 +1944,8 @@ public class DSpacePublisherWizard {
 							if (elementsofproperty.get(propertyname).size() > 1) {
 								if (propertyname.equals("creator")) {
 									elementsofproperty.get(propertyname).get(buttonNumber).getTextfield().getDocument().removeDocumentListener(adapter);
+									elementsofproperty.get(propertyname).get(buttonNumber).getButton().removeActionListener(this);
+									elementsofproperty.get(propertyname).get(buttonNumber).getMinusbutton().removeActionListener(this);
 								}
 								removeElementFromPanel(propertyname,buttonNumber);
 							} else {
@@ -1964,7 +2002,7 @@ public class DSpacePublisherWizard {
 			}
 			return !allEmpty;
 		}
-	};*/
+	};
 
 
 
@@ -2075,6 +2113,12 @@ public class DSpacePublisherWizard {
 					.add(messageArea).xyw(1, 11, 3)
 					.build();
 		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 	};
 
 
@@ -2092,9 +2136,6 @@ public class DSpacePublisherWizard {
 	        this.rootDirectories = new File[] {rootDirectory};
 	    }
 
-	    DirectoryRestrictedFileSystemView(File[] rootDirectories) {
-	        this.rootDirectories = rootDirectories;
-	    }
 
 	    @Override
 		public File createNewFolder(File containingDir) throws IOException {
@@ -2136,6 +2177,11 @@ public class DSpacePublisherWizard {
 	 * @author Volodymyr Kushnarenko
 	 */
 	private static class PathCellRenderer extends DefaultTableCellRenderer {
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
 
 		@Override
 		public Component getTableCellRendererComponent(

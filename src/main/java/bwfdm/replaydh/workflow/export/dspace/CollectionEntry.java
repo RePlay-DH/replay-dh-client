@@ -33,9 +33,7 @@ public class CollectionEntry {
 		for(Entry<String, String> entry : entries) {
 			if(entry.getValue() != null) {
 				values.add(entry.getValue());
-			} else {
-				values.add("No Name");
-			}
+			} 
 		}
 		return values;
 	}
