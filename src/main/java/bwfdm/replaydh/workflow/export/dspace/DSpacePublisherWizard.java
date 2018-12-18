@@ -66,10 +66,8 @@ import javax.swing.table.TableModel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 
-import com.jayway.jsonpath.Configuration;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Option;
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.FormLayout;
@@ -131,6 +129,10 @@ public class DSpacePublisherWizard {
 		private String chosenDataset;
 		private String jsonObjectWithMetadata;
 		
+		
+		public String getJsonObjectWithMetadata() {
+			return jsonObjectWithMetadata;
+		}
 		private boolean exportProcessMetadataAllowed;
 		
 		public void setExportProcessMetadataAllowed(boolean exportProcessMetadataAllowed) {
@@ -145,9 +147,6 @@ public class DSpacePublisherWizard {
 			this.replaceMetadataAllowed = replaceMetadataAllowed;
 		}
 
-		public String getJsonObjectWithMetadata() {
-			return jsonObjectWithMetadata;
-		}
 
 		public DSpaceExporterContext(WorkflowExportInfo exportInfo) {
 			this.exportInfo = requireNonNull(exportInfo);
@@ -842,7 +841,7 @@ public class DSpacePublisherWizard {
 		@Override
 		public Page<DSpaceExporterContext> next(RDHEnvironment environment, DSpaceExporterContext context) {
 			if (collectionEntries != null) {
-				context.chosenDataset = collectionEntries.getKeyForDatasets(collectionsComboBox.getSelectedItem().toString());
+				context.chosenDataset = collectionEntries.getKeyForDataset(collectionsComboBox.getSelectedItem().toString());
 			} else {
 				context.chosenDataset = null;
 			}
@@ -1182,21 +1181,19 @@ public class DSpacePublisherWizard {
 				protected Boolean doInBackground() throws Exception {
 					boolean metadataAvailable = false;
 					if (context.chosenDataset != null) {
-						//String doi=context.chosenDataset.substring(context.chosenDataset.indexOf("doi:"), context.chosenDataset.length());
-						//String metadataUrl = createMetadataUrl(environment.getProperty(RDHProperty.DSPACE_REPOSITORY_URL),doi);
 						String metadataUrl = context.chosenDataset;
-						/*if (context.getExportRepository().getJSONMetadata(metadataUrl) != null) {
-							context.jsonObjectWithMetadata=context.getExportRepository().getJSONMetadata(metadataUrl);
+						if (context.exportRepository.getItemMetadata(metadataUrl) != null) {
+							context.jsonObjectWithMetadata=context.exportRepository.getItemMetadata(metadataUrl);
 							metadataAvailable=true;
-						}*/
+						}
 					}
 					return metadataAvailable;
 				}
 				@Override
 				protected void done() {
 					if (context.chosenDataset != null) {
-						Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
-						String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
+						System.out.println(context.jsonObjectWithMetadata);
+						/*String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
 						if (license != null) {
 							eLicense.getTextfield().setText(license);
 						} else {
@@ -1325,7 +1322,7 @@ public class DSpacePublisherWizard {
 								}
 								break;
 							}
-						}
+						}*/
 					}
 				}
 			};

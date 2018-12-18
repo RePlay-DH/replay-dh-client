@@ -2,8 +2,6 @@ package bwfdm.replaydh.workflow.export.dspace;
 
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 
 /**
@@ -13,8 +11,6 @@ import java.util.Map.Entry;
 public class CollectionEntry {
 	
 	private Set<Entry<String, String>> entries;
-	private Set<String> valuesForDatasets = new TreeSet<>();
-	private Map<String,String> keysForDatasets = new HashMap<>();
 	
 	CollectionEntry(Set<Entry<String, String>> entries) {
 		this.entries = entries;
@@ -41,19 +37,21 @@ public class CollectionEntry {
 	public String getKey(String value) {
 		String key = null;
 		for(Entry<String, String> entry : entries) {
-			if(entry.getValue().equals(value)) {
-				key=entry.getKey();
-				break;
+			if(entry.getValue() != null) {
+				if(entry.getValue().equals(value)) {
+					key=entry.getKey();
+					break;
+				}
 			}
 		}
 		return key;
 	}
 	
-	public String getKeyForDatasets(String value) {
+	public String getKeyForDataset(String value) {
 		String key = null;
-		for(String valueForDataset : valuesForDatasets) {
+		for(String valueForDataset : this.getValues()) {
 			if (valueForDataset.equals(value)) {
-				key=keysForDatasets.get(value);
+				key=this.getKey(value);
 				break;
 			} 
 		}

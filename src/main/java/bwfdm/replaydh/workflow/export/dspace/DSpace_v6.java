@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -54,6 +56,7 @@ import org.swordapp.client.SWORDWorkspace;
 import org.swordapp.client.ServiceDocument;
 import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
+import org.xml.sax.SAXException;
 
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.workflow.export.dspace.WebUtils.RequestType;
@@ -82,6 +85,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	protected String collectionsURL;
 	protected String hierarchyURL;
 	protected String restTestURL;
+	protected String restItemMetadataURL;
 	
 	private String standardUser;
 	private String password;
@@ -156,6 +160,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		this.collectionsURL = this.restURL + "/collections";
 		this.hierarchyURL = this.restURL + "/hierarchy";
 		this.restTestURL = this.restURL + "/test";
+		this.restItemMetadataURL = this.restURL + "/items/";
 	}
 
 	
@@ -179,6 +184,13 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		}
 	}
 
+	public String getItemMetadata(String swordEditLink) throws SWORDClientException, IOException, SAXException, ParserConfigurationException {
+		int startindex=swordEditLink.indexOf("swordv2/edit/");
+		String itemId=swordEditLink.substring(startindex, swordEditLink.length());
+		itemId=itemId.replace("swordv2/edit/", "");
+		String jsonOutput = getEntryMetadata(this.restItemMetadataURL+itemId+"/metadata");
+		return jsonOutput;
+	}
 	
 	/**
 	 * Get a list of communities for the current collection. Specific only for DSpace-6.
