@@ -66,8 +66,10 @@ import javax.swing.table.TableModel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.FormLayout;
@@ -1192,8 +1194,9 @@ public class DSpacePublisherWizard {
 				@Override
 				protected void done() {
 					if (context.chosenDataset != null) {
+						Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
 						System.out.println(context.jsonObjectWithMetadata);
-						/*String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
+						String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
 						if (license != null) {
 							eLicense.getTextfield().setText(license);
 						} else {
@@ -1322,7 +1325,7 @@ public class DSpacePublisherWizard {
 								}
 								break;
 							}
-						}*/
+						}
 					}
 				}
 			};
