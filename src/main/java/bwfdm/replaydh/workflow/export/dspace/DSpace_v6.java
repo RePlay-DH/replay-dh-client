@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,10 +37,13 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -86,13 +90,16 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	protected String hierarchyURL;
 	protected String restTestURL;
 	protected String restItemMetadataURL;
+	protected String restLogin;
 	
 	private String standardUser;
 	private String password;
 
 	CloseableHttpClient httpClient;
 	
-	public DSpace_v6(String serviceDocumentURL, String restURL, String adminUser, String standardUser, char[] adminPassword) {
+	HttpClient httpRestClient;
+	
+	public DSpace_v6(String serviceDocumentURL, String restURL, String adminUser, String standardUser, char[] adminPassword) throws ClientProtocolException, IOException, URISyntaxException {
 
 		super(SwordExporter.createAuthCredentials(adminUser, adminPassword, standardUser));
 		
@@ -110,12 +117,24 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 
 		// HttpClient which ignores the ssl certificate
 		this.httpClient = WebUtils.createHttpClientWithSSLSupport();
+		
+		CredentialsProvider provider = new BasicCredentialsProvider();
+		UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(this.standardUser, this.password);
+		provider.setCredentials(AuthScope.ANY, credentials);
 
+		httpRestClient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
+		
+		URIBuilder builder = new URIBuilder(this.restLogin);
+		builder.setParameter("email", this.standardUser);
+		builder.setParameter("password", this.password);
+		
+		httpRestClient.execute(new HttpPost(builder.build()));
+		
 		// TODO: original version, without ignoring of ssl certificate
 		// this.client = HttpClientBuilder.create().build();	
 	}
 	
-	public DSpace_v6(String serviceDocumentURL, String restURL, String userName, char[] userPassword) {
+	public DSpace_v6(String serviceDocumentURL, String restURL, String userName, char[] userPassword) throws ClientProtocolException, IOException, URISyntaxException {
 	
 		super(SwordExporter.createAuthCredentials(userName, userPassword));
 		
@@ -132,7 +151,18 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 
 		// HttpClient which ignores the ssl certificate
 		this.httpClient = WebUtils.createHttpClientWithSSLSupport();
+		
+		CredentialsProvider provider = new BasicCredentialsProvider();
+		UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(this.standardUser, this.password);
+		provider.setCredentials(AuthScope.ANY, credentials);
 
+		httpRestClient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
+		
+		URIBuilder builder = new URIBuilder(this.restLogin);
+		builder.setParameter("email", this.standardUser);
+		builder.setParameter("password", this.password);
+		
+		httpRestClient.execute(new HttpPost(builder.build()));
 		// TODO: original version, without ignoring of ssl certificate
 		// this.client = HttpClientBuilder.create().build();
 	}
@@ -161,6 +191,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		this.hierarchyURL = this.restURL + "/hierarchy";
 		this.restTestURL = this.restURL + "/test";
 		this.restItemMetadataURL = this.restURL + "/items/";
+		this.restLogin = this.restURL + "/login";
 	}
 
 	
@@ -607,19 +638,16 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		
 	/**
 	 * Parts copied from: https://www.baeldung.com/httpclient-4-basic-authentication
+	 * @throws IOException 
+	 * @throws ClientProtocolException 
 	 */
-	public String getEntryMetadata(String datasetSwordLink) throws SWORDClientException, IOException {
+	public String getEntryMetadata(String datasetSwordLink) throws ClientProtocolException, IOException {
 		if (datasetSwordLink == null) {
 			log.error("Null datasetUrl passed in to getEntryMetadata; returning null");
 			return null;
 		}
-		CredentialsProvider provider = new BasicCredentialsProvider();
-		UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(this.standardUser, this.password);
-		provider.setCredentials(AuthScope.ANY, credentials);
 
-		HttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
-
-		HttpResponse response = client.execute(new HttpGet(datasetSwordLink));
+		HttpResponse response = httpRestClient.execute(new HttpGet(datasetSwordLink));
 		int statusCode = response.getStatusLine().getStatusCode();
 		
 		String responseString=null;

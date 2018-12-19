@@ -28,6 +28,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,6 +65,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 
+import org.apache.http.client.ClientProtocolException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -620,11 +622,22 @@ public class DSpacePublisherWizard {
 					restURL = createRestURL(tfUrl.getText());
 					serviceDocumentURL = createServiceDocumentURL(tfUrl.getText());
 
-					exportRepository = new DSpace_v6(serviceDocumentURL,
-															restURL,
-															tfUserLogin.getText(),
-															pfUserPassword.getPassword()
-															);
+					try {
+						exportRepository = new DSpace_v6(serviceDocumentURL,
+								restURL,
+								tfUserLogin.getText(),
+								pfUserPassword.getPassword()
+								);
+					} catch (ClientProtocolException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					} catch (URISyntaxException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 					// Prepare GUI for the repository requests
 					checkLoginButton.setEnabled(false);
 					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.waitMessage"));
@@ -1196,7 +1209,7 @@ public class DSpacePublisherWizard {
 					if (context.chosenDataset != null) {
 						Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
 						System.out.println(context.jsonObjectWithMetadata);
-						String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
+						/*String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
 						if (license != null) {
 							eLicense.getTextfield().setText(license);
 						} else {
@@ -1325,7 +1338,7 @@ public class DSpacePublisherWizard {
 								}
 								break;
 							}
-						}
+						}*/
 					}
 				}
 			};
