@@ -37,12 +37,14 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.json.JsonObject;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -88,6 +90,7 @@ import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
 import bwfdm.replaydh.workflow.export.dspace.GUIElement;
 import bwfdm.replaydh.workflow.export.dspace.CollectionEntry;
 import bwfdm.replaydh.workflow.export.generic.ExportRepository;
+import net.minidev.json.JSONArray;
 
 /**
  * @author Volodymyr Kushnarenko
@@ -1128,7 +1131,7 @@ public class DSpacePublisherWizard {
 		private long timeOut = 60; //in seconds
 		private DocumentAdapter adapter;
 
-		private List<Object> jsonObjects;
+		private JSONArray jsonObjects;
 		private String propertyForSwitch;
 		private String propertyvalue;
 		private List<Object> authors;
@@ -1209,6 +1212,38 @@ public class DSpacePublisherWizard {
 					if (context.chosenDataset != null) {
 						Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
 						System.out.println(context.jsonObjectWithMetadata);
+						jsonObjects = JsonPath.read(context.jsonObjectWithMetadata,"$");
+						LinkedHashMap<String, String> property;
+						int authorCounter=0;
+						for(int i = 0; i < jsonObjects.size(); i++) {
+							property=JsonPath.read(jsonObjects.get(i),"$");
+							propertyForSwitch=property.get("element").toString();
+							switch(propertyForSwitch) {
+							case "title":
+								propertyvalue=property.get("key");
+								if (propertyvalue != null) {
+									eTitle.getTextfield().setText(property.get("value"));
+								}
+								break;
+							case "contributor":
+								if (property.get("qualifier").equals("author")) {
+									propertyvalue = property.get("key");
+									if(authorCounter > 0) {
+										GUIElement element = createGUIElement("creator");
+										elementsofproperty.get("creator").add(element);
+										element.getTextfield().getDocument().addDocumentListener(adapter);
+										GuiUtils.prepareChangeableBorder(element.getTextfield());
+										element.getTextfield().setText(property.get("value"));
+									} else {
+										elementsofproperty.get("creator").get(authorCounter).getTextfield().setText(property.get("value"));
+									}
+									authorCounter++;
+								}
+								refreshPanel("creator");
+								break;
+							}
+							
+						}
 						/*String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
 						if (license != null) {
 							eLicense.getTextfield().setText(license);
@@ -1252,6 +1287,7 @@ public class DSpacePublisherWizard {
 											GUIElement element = createGUIElement("creator");
 											elementsofproperty.get("creator").add(element);
 											element.getTextfield().getDocument().addDocumentListener(adapter);
+											GuiUtils.prepareChangeableBorder(element.getTextfield());
 										}
 										elementsofproperty.get("creator").get(index).getTextfield().setText(propertyvalue);
 									}
@@ -1875,6 +1911,7 @@ public class DSpacePublisherWizard {
 
 				if (z == 0) {
 					oneguielement.create();
+					oneguielement.getMinusbutton().addActionListener(this);
 					if (oneguielement.getLabel().getText().equals("")) {
 						switch (metadatapropertyname) {
 						case "creator":
@@ -1894,6 +1931,7 @@ public class DSpacePublisherWizard {
 				}
 
 				propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
+				
 
 				if (numberOfElements > 1) {
 					propertybuilder.appendRows("$nlg, pref");
@@ -1999,7 +2037,7 @@ public class DSpacePublisherWizard {
 		public boolean refreshBorder(List<GUIElement> propertylist) {
 			boolean allEmpty=true;
 			for (GUIElement checkElement : propertylist) {
-				if (!(checkElement.getTextfield().getText().equals(""))) {
+				if (!(checkElement.getTextfield().getText().isEmpty())) {
 					allEmpty=false;
 					break;
 				}

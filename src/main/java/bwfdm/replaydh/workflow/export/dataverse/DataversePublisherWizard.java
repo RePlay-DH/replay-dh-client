@@ -68,7 +68,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
 
-import com.hp.hpl.jena.sparql.util.Context;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
