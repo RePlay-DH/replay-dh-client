@@ -1109,6 +1109,7 @@ public class DataversePublisherWizard {
 											GUIElement element = createGUIElement("creator");
 											elementsofproperty.get("creator").add(element);
 											element.getTextfield().getDocument().addDocumentListener(adapter);
+											GuiUtils.prepareChangeableBorder(element.getTextfield());
 										}
 										elementsofproperty.get("creator").get(index).getTextfield().setText(propertyvalue);
 									}
@@ -1732,6 +1733,7 @@ public class DataversePublisherWizard {
 
 				if (z == 0) {
 					oneguielement.create();
+					oneguielement.getMinusbutton().addActionListener(this);
 					if (oneguielement.getLabel().getText().equals("")) {
 						switch (metadatapropertyname) {
 						case "creator":
@@ -1856,7 +1858,7 @@ public class DataversePublisherWizard {
 		public boolean refreshBorder(List<GUIElement> propertylist) {
 			boolean allEmpty=true;
 			for (GUIElement checkElement : propertylist) {
-				if (!(checkElement.getTextfield().getText().equals(""))) {
+				if (!(checkElement.getTextfield().getText().isEmpty())) {
 					allEmpty=false;
 					break;
 				}
