@@ -6,6 +6,8 @@ import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import com.jgoodies.forms.builder.FormBuilder;
@@ -15,10 +17,17 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
 
 public class GUIElement {
 	
+	public GUIElement(String propertyname) {
+		this.propertyname=propertyname;
+	}
+
+	private String propertyname;
 	private FormBuilder propertybuilder = FormBuilder.create();
 	private static final String columns = "pref, 6dlu, pref:grow, 3dlu, pref, 3dlu, pref";
 	private static final String rows = "pref";
 	private JTextField textfield = new JTextField();
+	private JTextArea description;
+	private JScrollPane scroll;
 	private JLabel label = new JLabel();
 	private JButton button = null;
 	private JButton minusbutton = null;
@@ -42,7 +51,13 @@ public class GUIElement {
 		propertybuilder.panel(panel);
 		panel.setLayout(layout);
 		propertybuilder.add(label).xy(1, 1);
-		propertybuilder.add(textfield).xy(3, 1);
+		if (propertyname.equals("description")) {
+			description = new JTextArea(1,1);
+			scroll = new JScrollPane(description);
+			propertybuilder.add(scroll).xy(3, 1);
+		} else {
+			propertybuilder.add(textfield).xy(3, 1);
+		}
 		if(minusbutton != null) {
 			minusbutton.setName("minus");
 			propertybuilder.add(minusbutton).xy(5, 1);
@@ -114,5 +129,11 @@ public class GUIElement {
 
 	public void setResetButton(JButton resetButton) {
 		this.resetButton = resetButton;
+	}
+	public JTextArea getDescription() {
+		return description;
+	}
+	public void setDescription(JTextArea description) {
+		this.description = description;
 	}
 }
