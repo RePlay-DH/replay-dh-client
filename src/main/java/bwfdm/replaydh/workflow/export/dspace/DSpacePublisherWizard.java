@@ -1212,6 +1212,7 @@ public class DSpacePublisherWizard {
 						jsonObjects = JsonPath.read(context.jsonObjectWithMetadata,"$");
 						LinkedHashMap<String, String> property;
 						int authorCounter=0;
+						int subjectCounter=0;
 						for(int i = 0; i < jsonObjects.size(); i++) {
 							property=JsonPath.read(jsonObjects.get(i),"$");
 							propertyForSwitch=property.get("element").toString();
@@ -1227,14 +1228,15 @@ public class DSpacePublisherWizard {
 								if (property.get("qualifier") != null) {
 									if (property.get("qualifier").equals("author")) {
 										propertyvalue = property.get("key");
-										if(authorCounter > 0) {
+										if (authorCounter > 0) {
 											GUIElement element = createGUIElement("creator");
 											elementsofproperty.get("creator").add(element);
 											element.getTextfield().getDocument().addDocumentListener(adapter);
 											GuiUtils.prepareChangeableBorder(element.getTextfield());
 											element.getTextfield().setText(property.get("value"));
 										} else {
-											elementsofproperty.get("creator").get(authorCounter).getTextfield().setText(property.get("value"));
+											elementsofproperty.get("creator").get(authorCounter).getTextfield()
+													.setText(property.get("value"));
 										}
 										authorCounter++;
 									}
@@ -1248,11 +1250,13 @@ public class DSpacePublisherWizard {
 								}
 								break;
 							case "date":
-								if (property.get("qualifier").equals("issued")) {
-									propertyvalue=property.get("key");
-									if (propertyvalue != null) {
-										eDate.getTextfield().setText(property.get("value"));
-									} 
+								if (property.get("qualifier") != null) {
+									if (property.get("qualifier").equals("issued")) {
+										propertyvalue=property.get("key");
+										if (propertyvalue != null) {
+											eDate.getTextfield().setText(property.get("value"));
+										} 
+									}
 								}
 								break;
 							case "identifier":
@@ -1261,140 +1265,43 @@ public class DSpacePublisherWizard {
 									eIdentifier.getTextfield().setText(property.get("value"));
 								}
 								break;
-							}
-							
-						}
-						/*String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
-						if (license != null) {
-							eLicense.getTextfield().setText(license);
-						} else {
-							license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.license");
-							if (license != null) {
-								eLicense.getTextfield().setText("");
-							}
-						}
-						String rights = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.termsOfUse");
-						if (rights != null) {
-							eRights.getTextfield().setText(rights);
-						} else {
-							rights = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.termsOfUse");
-							if (rights != null) {
-								eRights.getTextfield().setText("");
-							}
-						}
-						jsonObjects = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields[*].typeName");
-						for (int i=0; i < jsonObjects.size(); i++) {
-							propertyForSwitch = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].typeName");
-							switch(propertyForSwitch) {
-							case "title":
-								propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value");
+							case "publisher":
+								propertyvalue=property.get("key");
 								if (propertyvalue != null) {
-									eTitle.getTextfield().setText(propertyvalue);
-								}
-								break;
-							case "otherId":
-								propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[0].otherIdValue.value");
-								if (propertyvalue != null) {
-									eIdentifier.getTextfield().setText(propertyvalue);
-								}
-								break;
-							case "author":
-								if (authors == null) {
-									authors = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
-									for (int index=0; index < authors.size(); index++) {
-										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"].authorName.value");
-										if (index+1 < authors.size()) {
-											GUIElement element = createGUIElement("creator");
-											elementsofproperty.get("creator").add(element);
-											element.getTextfield().getDocument().addDocumentListener(adapter);
-											GuiUtils.prepareChangeableBorder(element.getTextfield());
-										}
-										elementsofproperty.get("creator").get(index).getTextfield().setText(propertyvalue);
-									}
-								}
-								refreshPanel("creator");
-								break;
-							case "dsDescription":
-								propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[0].dsDescriptionValue.value");
-								if (propertyvalue != null) {
-									eDescription.getTextfield().setText(propertyvalue);
+									ePublisher.getTextfield().setText(property.get("value"));
 								}
 								break;
 							case "subject":
-								if (subjects == null) {
-									subjects = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
-									int numbersToAdd=elementsofproperty.get("subject").size();
-									if ((numbersToAdd == 1) && (elementsofproperty.get("subject").get(0).getTextfield().getText().equals(""))) {
-										numbersToAdd=0;
-									}
-									for (int index=0; index < subjects.size(); index++) {
-										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"]");
-										if (!(propertyvalue.equals("N/A"))) {
-											if ((subjects.size()+numbersToAdd) > elementsofproperty.get("subject").size()) {
-												GUIElement element = createGUIElement("subject");
-												elementsofproperty.get("subject").add(element);
-												element.getTextfield().getDocument().addDocumentListener(adapter);
-											}
-											elementsofproperty.get("subject").get(index+numbersToAdd).getTextfield().setText(propertyvalue);
-										}
-									}
+								propertyvalue = property.get("key");
+								if (subjectCounter > 0) {
+									GUIElement element = createGUIElement("subject");
+									elementsofproperty.get("subject").add(element);
+									element.getTextfield().getDocument().addDocumentListener(adapter);
+									GuiUtils.prepareChangeableBorder(element.getTextfield());
+									element.getTextfield().setText(property.get("value"));
+								} else {
+									elementsofproperty.get("subject").get(subjectCounter).getTextfield()
+											.setText(property.get("value"));
 								}
+								subjectCounter++;
 								refreshPanel("subject");
 								break;
-							case "keyword":
-								if (keywords == null) {
-									keywords = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
-									int numbersToAdd=elementsofproperty.get("subject").size();
-									if ((numbersToAdd == 1) && (elementsofproperty.get("subject").get(0).getTextfield().getText().equals(""))) {
-										numbersToAdd=0;
-									}
-									for (int index=0; index < keywords.size(); index++) {
-										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"].keywordValue.value");
-										if (!(propertyvalue.equals("N/A"))) {
-											if ((keywords.size()+numbersToAdd) > elementsofproperty.get("subject").size()) {
-												GUIElement element = createGUIElement("subject");
-												elementsofproperty.get("subject").add(element);
-												element.getTextfield().getDocument().addDocumentListener(adapter);
-											}
-											elementsofproperty.get("subject").get(index+numbersToAdd).getTextfield().setText(propertyvalue);
-										}
+							case "rights":
+								if (property.get("qualifier") == null) {
+									propertyvalue = property.get("key");
+									if (propertyvalue != null) {
+										eRights.getTextfield().setText(property.get("value"));
 									}
 								}
-								refreshPanel("subject");
 								break;
-							case "producer":
-								if (publisher == null) {
-									publisher = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
-									for (int index=0; index < publisher.size(); index++) {
-										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"].producerName.value");
-										if (index+1 < publisher.size()) {
-											GUIElement element = createGUIElement("publisher");
-											elementsofproperty.get("publisher").add(element);
-											element.getTextfield().getDocument().addDocumentListener(adapter);
-										}
-										elementsofproperty.get("publisher").get(index).getTextfield().setText(propertyvalue);
-									}
-								}
-								refreshPanel("publisher");
-								break;
-							case "productionDate":
-								propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value");
+							case "type":
+								propertyvalue = property.get("key");
 								if (propertyvalue != null) {
-									eDate.getTextfield().setText(propertyvalue);
-								} else {
-									eDate.getTextfield().setText("");
-								}
-								break;
-							case "kindOfData":
-								propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[0]");
-								if (propertyvalue != null) {
-									eResourceType.getTextfield().setText(propertyvalue);
-								} else {
-									eResourceType.getTextfield().setText("");
+									eResourceType.getTextfield().setText(property.get("value"));
 								}
 								break;
 							}
-						}*/
+						}
 					}
 				}
 			};
