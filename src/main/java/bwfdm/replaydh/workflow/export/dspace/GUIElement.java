@@ -17,10 +17,6 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
 
 public class GUIElement {
 	
-	public GUIElement(String propertyname) {
-		this.propertyname=propertyname;
-	}
-
 	private String propertyname;
 	private FormBuilder propertybuilder = FormBuilder.create();
 	private static final String columns = "pref, 6dlu, pref:grow, 3dlu, pref, 3dlu, pref";
@@ -51,11 +47,9 @@ public class GUIElement {
 		propertybuilder.panel(panel);
 		panel.setLayout(layout);
 		propertybuilder.add(label).xy(1, 1);
-		if (propertyname.equals("description")) {
-			description = new JTextArea(1,1);
-			scroll = new JScrollPane(description);
+		if (description != null) {
 			propertybuilder.add(scroll).xy(3, 1);
-		} else {
+		} else if (textfield != null) {
 			propertybuilder.add(textfield).xy(3, 1);
 		}
 		if(minusbutton != null) {
@@ -135,5 +129,6 @@ public class GUIElement {
 	}
 	public void setDescription(JTextArea description) {
 		this.description = description;
+		scroll = new JScrollPane(this.description);
 	}
 }
