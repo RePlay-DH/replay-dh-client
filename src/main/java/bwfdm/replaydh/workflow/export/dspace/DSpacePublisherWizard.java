@@ -1167,8 +1167,8 @@ public class DSpacePublisherWizard {
 		};
 
 		public void createNewDataset(RDHEnvironment environment, DSpaceExporterContext context) {
-			String creator = null;
-			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
+			String creator = "";
+			if(eCreator.getTextfield().getText().isEmpty()) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
 				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
 			}
 			eCreator.getTextfield().setText(creator);
