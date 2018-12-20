@@ -68,7 +68,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.AuthCredentials;
 
-import com.hp.hpl.jena.sparql.util.Context;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
@@ -1024,8 +1023,8 @@ public class DataversePublisherWizard {
 		};
 
 		public void createNewDataset(RDHEnvironment environment, DataversePublisherContext context) {
-			String creator = null;
-			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
+			String creator = "";
+			if(eCreator.getTextfield().getText().isEmpty()) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
 				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
 			}
 			eCreator.getTextfield().setText(creator);
@@ -1579,9 +1578,9 @@ public class DataversePublisherWizard {
 					int size = elementsofproperty.get(propertyname).size();
 					for (int i=size-1; i > 0; i--) {
 						elementsofproperty.get(propertyname).remove(i);
+						refreshPanel(propertyname);
 					}
 					elementsofproperty.get(propertyname).get(0).getTextfield().setText("");
-					refreshPanel(propertyname);
 				}
 			}
 			subjects=null;
