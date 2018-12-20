@@ -1578,9 +1578,9 @@ public class DataversePublisherWizard {
 					int size = elementsofproperty.get(propertyname).size();
 					for (int i=size-1; i > 0; i--) {
 						elementsofproperty.get(propertyname).remove(i);
+						refreshPanel(propertyname);
 					}
 					elementsofproperty.get(propertyname).get(0).getTextfield().setText("");
-					refreshPanel(propertyname);
 				}
 			}
 			subjects=null;

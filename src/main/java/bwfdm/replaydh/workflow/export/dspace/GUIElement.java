@@ -17,7 +17,6 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
 
 public class GUIElement {
 	
-	private String propertyname;
 	private FormBuilder propertybuilder = FormBuilder.create();
 	private static final String columns = "pref, 6dlu, pref:grow, 3dlu, pref, 3dlu, pref";
 	private static final String rows = "pref";

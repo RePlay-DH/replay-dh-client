@@ -1669,9 +1669,9 @@ public class DSpacePublisherWizard {
 					int size = elementsofproperty.get(propertyname).size();
 					for (int i=size-1; i > 0; i--) {
 						elementsofproperty.get(propertyname).remove(i);
+						refreshPanel(propertyname);
 					}
 					elementsofproperty.get(propertyname).get(0).getTextfield().setText("");
-					refreshPanel(propertyname);
 				}
 			}
 			//ePublicationYear.getTextfield().setText("");
@@ -1868,7 +1868,7 @@ public class DSpacePublisherWizard {
 		public List<String> getValuesOfProperty(String metadatapropertyname) {
 			List<String> propertyValues = new ArrayList<>();
 			for(GUIElement oneguielement: elementsofproperty.get(metadatapropertyname)) {
-				if (!(oneguielement.getTextfield().getText().equals(""))) {
+				if (!(oneguielement.getTextfield().getText().isEmpty())) {
 					propertyValues.add(oneguielement.getTextfield().getText());
 				}
 			}
