@@ -83,7 +83,6 @@ import bwfdm.replaydh.ui.helper.Wizard.Page;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
 import bwfdm.replaydh.workflow.export.dspace.GUIElement;
 import bwfdm.replaydh.workflow.export.dspace.CollectionEntry;
-import bwfdm.replaydh.workflow.export.generic.ExportRepository;
 import net.minidev.json.JSONArray;
 
 /**
@@ -128,6 +127,9 @@ public class DSpacePublisherWizard {
 		private boolean replaceMetadataAllowed;
 
 		private String chosenDataset;
+		public String getChosenDataset() {
+			return chosenDataset;
+		}
 		private String jsonObjectWithMetadata;
 		
 		
@@ -171,7 +173,7 @@ public class DSpacePublisherWizard {
 		public String getUserLogin() {
 			return userLogin;
 		}
-		public ExportRepository getExportRepository() {
+		public DSpace_v6 getExportRepository() {
 			return exportRepository;
 		}
 		public Map<String, String> getAvailableCollections() {

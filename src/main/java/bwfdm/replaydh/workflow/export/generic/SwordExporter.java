@@ -472,12 +472,14 @@ public abstract class SwordExporter {
 	 * 
 	 * @throws SWORDClientException 
 	 */
-	public void replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) throws SWORDClientException {
+	public String replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) throws SWORDClientException {
+		SwordResponse response;
 		try {
-			exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);	
+			response=exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);	
 		} catch (FileNotFoundException | ProtocolViolationException | SWORDError e) {
 			throw new SWORDClientException("Exception by replacing of metadata via metadata Map: " 
 					+ e.getClass().getSimpleName() + ": " + e.getMessage());
 		}
+		return response.getLocation().toString();
 	}
 }

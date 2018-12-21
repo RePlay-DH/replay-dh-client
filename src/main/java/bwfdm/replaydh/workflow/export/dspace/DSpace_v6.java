@@ -21,6 +21,7 @@ package bwfdm.replaydh.workflow.export.dspace;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -48,6 +49,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.eclipse.jgit.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.Content;
@@ -67,6 +69,7 @@ import bwfdm.replaydh.workflow.export.dspace.WebUtils.RequestType;
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.CollectionObject;
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.HierarchyObject;
 import bwfdm.replaydh.workflow.export.generic.SwordExporter;
+import bwfdm.replaydh.workflow.export.generic.SwordExporter.SwordRequestType;
 
 
 /**
@@ -922,6 +925,40 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		} catch (SWORDClientException e) {
 			log.error("Exception by creation of new entry with file and metadata as Map.", e);
 			return null;
+		}
+	}
+	
+	/**
+	 * @author Florian Fritze
+	 * @param collectionURL
+	 * @param entryUrl
+	 * @param zipFile
+	 * @param metadataMap
+	 */
+	public void replaceMetadataAndAddFile(String collectionURL, String entryUrl, File zipFile, Map<String, List<String>> metadataMap) {
+		String packageFormat = getPackageFormat(zipFile.getName());
+		try {
+			try {
+				super.exportElement(replaceMetadataEntry(entryUrl, metadataMap), SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (SWORDError e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ProtocolViolationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} catch (SWORDClientException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			FileUtils.delete(zipFile);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 

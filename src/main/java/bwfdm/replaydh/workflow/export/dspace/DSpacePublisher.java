@@ -26,9 +26,13 @@ import java.awt.Window;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 import javax.swing.SwingUtilities;
 
@@ -39,6 +43,8 @@ import org.slf4j.LoggerFactory;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.UserFolder;
 import bwfdm.replaydh.io.IOUtils;
+import bwfdm.replaydh.io.resources.FileResource;
+import bwfdm.replaydh.io.resources.IOResource;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.core.RDHMainPanel;
@@ -46,12 +52,16 @@ import bwfdm.replaydh.ui.helper.AbstractDialogWorker;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.workflow.export.ResourcePublisher;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
+import bwfdm.replaydh.workflow.export.WorkflowExportInfo.Builder;
+import bwfdm.replaydh.workflow.export.WorkflowExportInfo.Mode;
+import bwfdm.replaydh.workflow.export.WorkflowExportInfo.Type;
 import bwfdm.replaydh.workflow.export.dspace.DSpacePublisherWizard.DSpaceExporterContext;
-import bwfdm.replaydh.workflow.export.generic.ExportRepository;
+import bwfdm.replaydh.workflow.export.raw.RawMetadataExporter;
 
 /**
  * @author Markus Gärtner
  * @author Volodymyr Kushnarenko
+ * @author Florian Fritze
  *
  */
 public class DSpacePublisher implements ResourcePublisher {
@@ -80,6 +90,7 @@ public class DSpacePublisher implements ResourcePublisher {
 
 		RDHEnvironment environment = exportInfo.getEnvironment();
 		DSpaceExporterContext context = new DSpaceExporterContext(exportInfo);
+		Window activeWindow = javax.swing.FocusManager.getCurrentManager().getActiveWindow();
 
 		log.info("DSpace publication, calling wizard");
 
@@ -90,7 +101,6 @@ public class DSpacePublisher implements ResourcePublisher {
 				return;
 			}
 
-			Window activeWindow = javax.swing.FocusManager.getCurrentManager().getActiveWindow();
 			DSpacePublisherWorker worker = new DSpacePublisherWorker(activeWindow, context);
 			worker.start();
 			
@@ -182,45 +192,121 @@ public class DSpacePublisher implements ResourcePublisher {
 		 */
 		@Override
 		protected Boolean doInBackground() throws Exception {
-			
-			ExportRepository repository = context.getExportRepository();
+
+			DSpace_v6 repository = context.getExportRepository();
 			boolean result = false;
-			
-			if(!context.getFilesToPublish().isEmpty()) {
-				
-				// Publication: files + metadata
-				
-				String workspacePath = context.exportInfo.getEnvironment().getWorkspacePath().toString();
-				//TODO: store tmp zip archive in logs or somewhere else?
-				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS).toString();//use log folder to store temporary zip-file
+
+			File tempFile = null;
+
+			if (context.isExportProcessMetadataAllowed()) {
+				RawMetadataExporter exporter = new RawMetadataExporter();
+
+				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS)
+						.toString();// use log folder to store temporary zip-file
 				String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
-				File zipFile = new File(logFolder + FileSystems.getDefault().getSeparator() +  rdhPrefix + timeStamp + ".zip");
-								
-				try {
-					IOUtils.packFilesToZip(context.getFilesToPublish(), zipFile, workspacePath);
-				} catch (IOException ex) {
-					log.error("Exception by addition of file to zip: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
+				tempFile = new File(logFolder + FileSystems.getDefault().getSeparator() + rdhPrefix + timeStamp
+						+ "_ProcessMetadata.json");
+				IOResource outputResource = new FileResource(Paths.get(tempFile.getPath()));
+
+				Builder exportInfo = WorkflowExportInfo.newExportBuilder().encoding(StandardCharsets.UTF_8)
+						.mode(Mode.FILE).outputResource(outputResource).environment(context.exportInfo.getEnvironment())
+						.workflowScope(context.exportInfo.getWorkflowScope())
+						.objectScope(context.exportInfo.getObjectScope()).type(Type.METADATA)
+						.workflow(context.exportInfo.getWorkflow()).steps(context.exportInfo.getSteps())
+						.targetStep(context.exportInfo.getTargetStep());
+
+				exporter.export(exportInfo.build());
+			}
+
+			if (!context.getFilesToPublish().isEmpty()) {
+
+				// Publication: files + metadata
+
+				String workspacePath = context.exportInfo.getEnvironment().getWorkspacePath().toString();
+				// TODO: store tmp zip archive in logs or somewhere else?
+				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS)
+						.toString();// use log folder to store temporary zip-file
+				String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+				File zipFile = new File(
+						logFolder + FileSystems.getDefault().getSeparator() + rdhPrefix + timeStamp + ".zip");
+
+				List<File> filesList = context.getFilesToPublish();
+				if (context.isExportProcessMetadataAllowed()) {
+					filesList.add(tempFile);
 				}
-				
+
+				try {
+					IOUtils.packFilesToZip(filesList, zipFile, workspacePath);
+				} catch (IOException ex) {
+					log.error("Exception by addition of file to zip: {}: {}", ex.getClass().getSimpleName(),
+							ex.getMessage());
+				}
+
 				// Start publication process
-				//TODO: Map<String, List<String>>
-				String editUrl = repository.exportNewEntryWithFileAndMetadata(context.collectionURL, zipFile, true, context.getMetadataObject().getMapDoublinCoreToMetadata());
-				result = (editUrl != null);
+				if (context.isReplaceMetadataAllowed()) {
+					repository.replaceMetadataAndAddFile(context.getCollectionURL(),
+							context.getChosenDataset(), zipFile, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				} else {
+					repository.createEntryWithMetadataAndFile(context.getCollectionURL(), zipFile, false,
+							context.getMetadataObject().getMapDoublinCoreToMetadata());
+				}
+
 				// Delete zip-file
 				try {
-					FileUtils.delete(zipFile); 				
+					FileUtils.delete(zipFile);
+					if (context.isExportProcessMetadataAllowed()) {
+						FileUtils.delete(tempFile);
+					}
 				} catch (Exception ex) {
 					log.error("Exception by deleting the file: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
-				}				
-				
+				}
+
+			} else if (context.isExportProcessMetadataAllowed()) {
+				String workspacePath = context.exportInfo.getEnvironment().getWorkspacePath().toString();
+				// TODO: store tmp zip archive in logs or somewhere else?
+				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS)
+						.toString();// use log folder to store temporary zip-file
+				String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+				File zipFile = new File(
+						logFolder + FileSystems.getDefault().getSeparator() + rdhPrefix + timeStamp + ".zip");
+
+				List<File> filesList = new ArrayList<>();
+				filesList.add(tempFile);
+
+				try {
+					IOUtils.packFilesToZip(filesList, zipFile, workspacePath);
+				} catch (IOException ex) {
+					log.error("Exception by addition of file to zip: {}: {}", ex.getClass().getSimpleName(),
+							ex.getMessage());
+				}
+
+				// Start publication process
+				if (context.isReplaceMetadataAllowed()) {
+					repository.replaceMetadataAndAddFile(context.getCollectionURL(),
+							context.getChosenDataset(), zipFile, context.getMetadataObject().getMapDoublinCoreToMetadata());
+				} else {
+					repository.createEntryWithMetadataAndFile(context.getCollectionURL(), zipFile, false,
+							context.getMetadataObject().getMapDoublinCoreToMetadata());
+				}
+
+				// Delete zip-file
+				try {
+					FileUtils.delete(zipFile);
+					FileUtils.delete(tempFile);
+				} catch (Exception ex) {
+					log.error("Exception by deleting the file: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
+				}
 			} else {
-				
+
 				// Publication: metadata only
-				//TODO: Map<String, List<String>>
-				String editUrl = repository.exportNewEntryWithMetadata(context.getCollectionURL(), context.getMetadataObject().getMapDoublinCoreToMetadata());
-				result = (editUrl != null);
+				if (context.isReplaceMetadataAllowed()) {
+					repository.replaceMetadataEntry(context.getChosenDataset(), context.getMetadataObject().getMapDoublinCoreToMetadata());
+				} else {
+					repository.createEntryWithMetadata(context.getCollectionURL(), 
+							context.getMetadataObject().getMapDoublinCoreToMetadata());
+				}
 			}
-			
+
 			return Boolean.valueOf(result);
 		}
 		
