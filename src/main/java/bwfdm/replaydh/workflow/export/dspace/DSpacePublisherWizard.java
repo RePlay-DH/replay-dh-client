@@ -32,8 +32,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -48,7 +46,6 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
-import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
@@ -1213,7 +1210,7 @@ public class DSpacePublisherWizard {
 						for(int i = 0; i < jsonObjects.size(); i++) {
 							property=JsonPath.read(jsonObjects.get(i),"$");
 							propertyForSwitch=property.get("element").toString();
-							System.out.println(propertyForSwitch+" : "+property);
+							//System.out.println(propertyForSwitch+" : "+property);
 							switch(propertyForSwitch) {
 							case "title":
 								propertyvalue=property.get("key");
@@ -1273,7 +1270,6 @@ public class DSpacePublisherWizard {
 								if (subjectCounter > 0) {
 									GUIElement element = createGUIElement("subject");
 									elementsofproperty.get("subject").add(element);
-									element.getTextfield().getDocument().addDocumentListener(adapter);
 									GuiUtils.prepareChangeableBorder(element.getTextfield());
 									element.getTextfield().setText(property.get("value"));
 								} else {
@@ -1489,8 +1485,6 @@ public class DSpacePublisherWizard {
 			builder = FormBuilder.create();
 			panelRow = new HashMap<>();
 
-			DateFormat format;
-
 			rm = ResourceManager.getInstance();
 
 			JTextField tfTitle = new JTextField();
@@ -1532,9 +1526,9 @@ public class DSpacePublisherWizard {
 			ePublicationYear.create();
 			listofkeys.add("year");*/
 
-			//JTextField tfDate = new JTextField();
-			format = new SimpleDateFormat("YYYY");
-			JFormattedTextField tfDate = new JFormattedTextField(format);
+			JTextField tfDate = new JTextField();
+			//format = new SimpleDateFormat("YYYY");
+			//JFormattedTextField tfDate = new JFormattedTextField(format);
 			JLabel lDate = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.dateLabel"));
 			eDate = new GUIElement();
 			eDate.setTextfield(tfDate);
@@ -1645,9 +1639,8 @@ public class DSpacePublisherWizard {
 			};
 
 			eCreator.getTextfield().getDocument().addDocumentListener(adapter);
-			tfTitle.getDocument().addDocumentListener(adapter);
-			eDescription.getDescription().getDocument().addDocumentListener(adapter);
-			tfDate.getDocument().addDocumentListener(adapter);
+			eTitle.getTextfield().getDocument().addDocumentListener(adapter);
+			eDate.getTextfield().getDocument().addDocumentListener(adapter);
 
 			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dspacePublisher.editMetadata.processMetadata"));
 			processMetadata.setSelected(true);
