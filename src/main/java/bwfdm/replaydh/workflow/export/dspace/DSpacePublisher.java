@@ -201,8 +201,6 @@ public class DSpacePublisher implements ResourcePublisher {
 			if (context.isExportProcessMetadataAllowed()) {
 				RawMetadataExporter exporter = new RawMetadataExporter();
 				String workspacePath = context.exportInfo.getEnvironment().getWorkspacePath().toString();
-				String logFolder = context.exportInfo.getEnvironment().getClient().getUserFolder(UserFolder.LOGS)
-						.toString();// use log folder to store temporary zip-file
 				String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
 				tempFile = new File(workspacePath + FileSystems.getDefault().getSeparator() + rdhPrefix + timeStamp
 						+ "_ProcessMetadata.json");
@@ -244,8 +242,7 @@ public class DSpacePublisher implements ResourcePublisher {
 
 				// Start publication process
 				if (context.isReplaceMetadataAllowed()) {
-					repository.replaceMetadataAndAddFile(context.getCollectionURL(),
-							context.getChosenDataset(), zipFile, context.getMetadataObject().getMapDoublinCoreToMetadata());
+					repository.replaceMetadataEntry(context.getChosenDataset(), context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
 					repository.createEntryWithMetadataAndFile(context.getCollectionURL(), zipFile, true,
 							context.getMetadataObject().getMapDoublinCoreToMetadata());
@@ -282,8 +279,7 @@ public class DSpacePublisher implements ResourcePublisher {
 
 				// Start publication process
 				if (context.isReplaceMetadataAllowed()) {
-					repository.replaceMetadataAndAddFile(context.getCollectionURL(),
-							context.getChosenDataset(), zipFile, context.getMetadataObject().getMapDoublinCoreToMetadata());
+					repository.replaceMetadataEntry(context.getChosenDataset(), context.getMetadataObject().getMapDoublinCoreToMetadata());
 				} else {
 					repository.createEntryWithMetadataAndFile(context.getCollectionURL(), zipFile, true,
 							context.getMetadataObject().getMapDoublinCoreToMetadata());

@@ -863,7 +863,10 @@ public class DSpacePublisherWizard {
 			} else {
 				context.chosenDataset = null;
 			}
-			return CHOOSE_FILES;
+			if (context.chosenDataset == null) {
+				return CHOOSE_FILES;
+			}
+			return EDIT_METADATA;
 		}
 
 		@Override
@@ -1147,12 +1150,17 @@ public class DSpacePublisherWizard {
 				createNewDataset(environment, context);
 				replaceMetadata.setSelected(false);
 				replaceMetadata.setEnabled(false);
+				processMetadata.setSelected(true);
+				processMetadata.setEnabled(true);
 			} else {
 				clearGUI();
 				resetButton.getResetButton().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.ResetButton"));
 				getJSONObject(environment, context);
 				replaceMetadata.setSelected(true);
 				replaceMetadata.setEnabled(true);
+				processMetadata.setSelected(false);
+				processMetadata.setEnabled(false);
+				context.filesToPublish = new ArrayList<>();
 			}
 
 
@@ -1252,6 +1260,11 @@ public class DSpacePublisherWizard {
 										if (propertyvalue != null) {
 											eDate.getTextfield().setText(property.get("value"));
 										} 
+									}
+								} else {
+									propertyvalue=property.get("key");
+									if (propertyvalue != null) {
+										eDate.getTextfield().setText(property.get("value"));
 									}
 								}
 								break;
