@@ -1094,9 +1094,9 @@ public class DSpacePublisherWizard {
 		private GUIElement eTitle;
 		private GUIElement eDescription;
 		private GUIElement eSubjects;
-		private GUIElement eVersion;
-		private GUIElement eReference;
-		private GUIElement eLicense;
+		//private GUIElement eVersion;
+		//private GUIElement eReference;
+		//private GUIElement eLicense;
 		private GUIElement eRights;
 		private GUIElement eDate;
 		private GUIElement eSources;
@@ -1124,9 +1124,9 @@ public class DSpacePublisherWizard {
 		private List<String> publisherElements;
 		private List<String> typeElements;
 		private List<String> subjectElements;
-		private List<String> hasVersionElements;
+		/*private List<String> hasVersionElements;
 		private List<String> referenceElements;
-		private List<String> licenseElements;
+		private List<String> licenseElements;*/
 		private List<String> rightsElements;
 		private List<String> dateElements;
 		private List<String> sourcesElements;
@@ -1407,7 +1407,7 @@ public class DSpacePublisherWizard {
 			context.metadataObject.mapDublinCoreToMetadata.put("subject", subjectElements);
 			context.metadataObject.mapDublinCoreToLabel.put("subject", rm.get("replaydh.wizard.dspacePublisher.editMetadata.subjectLabel"));
 
-			if (hasVersionElements == null) {
+			/*if (hasVersionElements == null) {
 				hasVersionElements = new ArrayList<>();
 			} else {
 				hasVersionElements.clear();
@@ -1435,7 +1435,7 @@ public class DSpacePublisherWizard {
 			}
 			licenseElements.add(eLicense.getTextfield().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("license", licenseElements);
-			context.metadataObject.mapDublinCoreToLabel.put("license", rm.get("replaydh.wizard.dspacePublisher.editMetadata.LicenseLabel"));
+			context.metadataObject.mapDublinCoreToLabel.put("license", rm.get("replaydh.wizard.dspacePublisher.editMetadata.LicenseLabel"));*/
 
 			if (dateElements == null) {
 				dateElements = new ArrayList<>();
@@ -1591,7 +1591,7 @@ public class DSpacePublisherWizard {
 			eSubjects.create();
 			listofkeys.add("subject");
 
-			JTextField tfVersion = new JTextField();
+			/*JTextField tfVersion = new JTextField();
 			JLabel lversion = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.versionLabel"));
 			eVersion = new GUIElement();
 			eVersion.setTextfield(tfVersion);
@@ -1614,7 +1614,7 @@ public class DSpacePublisherWizard {
 			eLicense.getTextfield().setToolTipText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.licenseToolTip"));
 			eLicense.setLabel(lLicense);
 			eLicense.create();
-			listofkeys.add("license");
+			listofkeys.add("license");*/
 
 			JTextField tfRights = new JTextField();
 			JLabel lRights = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.RightsLabel"));
@@ -1664,7 +1664,7 @@ public class DSpacePublisherWizard {
 			replaceMetadata.setSelected(false);
 
 			builder.columns("pref:grow");
-			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 			builder.padding(Paddings.DLU4);
 			createGUI();
 			mainPanel=builder.getPanel();
@@ -1687,9 +1687,9 @@ public class DSpacePublisherWizard {
 			eResourceType.getTextfield().setText("");
 			eTitle.getTextfield().setText("");
 			eDescription.getDescription().setText("");
-			eVersion.getTextfield().setText("");
+			/*eVersion.getTextfield().setText("");
 			eReference.getTextfield().setText("");
-			eLicense.getTextfield().setText("");
+			eLicense.getTextfield().setText("");*/
 			eRights.getTextfield().setText("");
 			eDate.getTextfield().setText("");
 		}
@@ -1754,20 +1754,20 @@ public class DSpacePublisherWizard {
 			panelRow.put("publisher", 13);
 			builder.add(propertypanels.get("subject")).xy(1, 15);
 			panelRow.put("subject", 15);
-			builder.add(eVersion.getPanel()).xy(1, 17);
-			panelRow.put("version", 17);
+			//builder.add(eVersion.getPanel()).xy(1, 17);
+			/*panelRow.put("version", 17);
 			builder.add(eReference.getPanel()).xy(1, 19);
 			panelRow.put("reference", 19);
 			builder.add(eLicense.getPanel()).xy(1, 21);
-			panelRow.put("license", 21);
-			builder.add(eRights.getPanel()).xy(1, 23);
-			panelRow.put("rights", 23);
-			builder.add(propertypanels.get("sources")).xy(1, 25);
-			panelRow.put("sources", 25);
-			builder.add(resetButton.getPanel()).xy(1, 27);
-			builder.add(processMetadata).xy(1, 29);
-			builder.add(replaceMetadata).xy(1, 31);
-			builder.add(messageArea).xyw(1, 33, 1);
+			panelRow.put("license", 21);*/
+			builder.add(eRights.getPanel()).xy(1, 17);
+			panelRow.put("rights", 17);
+			builder.add(propertypanels.get("sources")).xy(1, 19);
+			panelRow.put("sources", 19);
+			builder.add(resetButton.getPanel()).xy(1, 21);
+			builder.add(processMetadata).xy(1, 23);
+			builder.add(replaceMetadata).xy(1, 25);
+			builder.add(messageArea).xyw(1, 27, 1);
 		}
 
 		public GUIElement createGUIElement(String metadataproperty) {

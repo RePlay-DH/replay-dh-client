@@ -664,7 +664,11 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		return responseString;
 	}
 	
-	
+	/**
+	 * 
+	 * @param entryXML
+	 * @return unique identifier for dropdown menu
+	 */
 	public String createUniqueEntryID(String entryXML) {
 		String response=entryXML;
 		
@@ -695,9 +699,6 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 				identifier=availableMatcher.group(1)+ " - " + titleMatcher.group(1);
 			}
 		}
-		
-		
-		
 		
 		return identifier;
 	}
