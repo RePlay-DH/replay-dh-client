@@ -1158,6 +1158,9 @@ public class DSpacePublisherWizard {
 				getJSONObject(environment, context);
 				replaceMetadata.setSelected(true);
 				replaceMetadata.setEnabled(true);
+				if(replaceMetadata.getActionListeners().length == 0) {
+					replaceMetadata.addActionListener(this);
+				}
 				processMetadata.setSelected(false);
 				processMetadata.setEnabled(false);
 				context.filesToPublish = new ArrayList<>();
@@ -1470,7 +1473,7 @@ public class DSpacePublisherWizard {
 			context.setExportProcessMetadataAllowed(processMetadata.isSelected());
 
 			context.setReplaceMetadataAllowed(replaceMetadata.isSelected());
-
+			
 			return FINISH;
 		}
 
@@ -1946,6 +1949,14 @@ public class DSpacePublisherWizard {
 					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.RestoreButton"));
 					Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
 					parentComponent.pack();
+				}
+			}
+			if (source == replaceMetadata) {
+				if (!replaceMetadata.isSelected()) {
+					processMetadata.setEnabled(true);
+				} else {
+					processMetadata.setEnabled(false);
+					processMetadata.setSelected(false);
 				}
 			}
 		}
