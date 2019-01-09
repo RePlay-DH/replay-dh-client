@@ -6,6 +6,8 @@ import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import com.jgoodies.forms.builder.FormBuilder;
@@ -24,6 +26,8 @@ public class GUIElement {
 	private JButton minusbutton = null;
 	private JButton resetButton = null;
 	private JPanel panel = new JPanel();
+	private JTextArea description;
+	private JScrollPane scroll;
 	private static final FormLayout layout = new FormLayout(columns,rows);
 	private static final JLabel shadowlabelfirst = new JLabel();
 	private static final JLabel shadowlabelsecond = new JLabel();
@@ -42,7 +46,11 @@ public class GUIElement {
 		propertybuilder.panel(panel);
 		panel.setLayout(layout);
 		propertybuilder.add(label).xy(1, 1);
-		propertybuilder.add(textfield).xy(3, 1);
+		if (description != null) {
+			propertybuilder.add(scroll).xy(3, 1);
+		} else if (textfield != null) {
+			propertybuilder.add(textfield).xy(3, 1);
+		}
 		if(minusbutton != null) {
 			minusbutton.setName("minus");
 			propertybuilder.add(minusbutton).xy(5, 1);
@@ -114,5 +122,12 @@ public class GUIElement {
 
 	public void setResetButton(JButton resetButton) {
 		this.resetButton = resetButton;
+	}
+	public JTextArea getDescription() {
+		return description;
+	}
+	public void setDescription(JTextArea description) {
+		this.description = description;
+		scroll = new JScrollPane(this.description);
 	}
 }

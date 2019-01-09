@@ -1035,7 +1035,7 @@ public class DataversePublisherWizard {
 			eTitle.getTextfield().setText(context.exportInfo.getWorkflow().getTitle());
 
 			// Description
-			eDescription.getTextfield().setText(context.exportInfo.getWorkflow().getDescription());
+			eDescription.getDescription().setText(context.exportInfo.getWorkflow().getDescription());
 
 			// Publication year
 			int year = Calendar.getInstance().get(Calendar.YEAR);
@@ -1118,7 +1118,7 @@ public class DataversePublisherWizard {
 							case "dsDescription":
 								propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[0].dsDescriptionValue.value");
 								if (propertyvalue != null) {
-									eDescription.getTextfield().setText(propertyvalue);
+									eDescription.getDescription().setText(propertyvalue);
 								}
 								break;
 							case "subject":
@@ -1226,7 +1226,7 @@ public class DataversePublisherWizard {
 			} else {
 				descriptionElements.clear();
 			}
-			descriptionElements.add(eDescription.getTextfield().getText());
+			descriptionElements.add(eDescription.getDescription().getText());
 			context.metadataObject.mapDublinCoreToMetadata.put("description", descriptionElements);
 			context.metadataObject.mapDublinCoreToLabel.put("description", rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
 
@@ -1366,7 +1366,7 @@ public class DataversePublisherWizard {
 
 			nextEnabled &= refreshBorder(elementsofproperty.get("creator"));
 			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());
-			nextEnabled &= checkAndUpdateBorder(eDescription.getTextfield());
+			nextEnabled &= checkAndUpdateBorderDesc(eDescription.getDescription());
 			nextEnabled &= checkAndUpdateBorder(eDate.getTextfield());
 
 			if ((eLicense.getTextfield().getText().equals("CC0")) || (eLicense.getTextfield().getText().equals("NONE"))) {
@@ -1384,6 +1384,13 @@ public class DataversePublisherWizard {
 			String text = tf.getText().trim();
 			boolean isValid = text!=null && !text.isEmpty();
 			GuiUtils.toggleChangeableBorder(tf, !isValid);
+			return isValid;
+		}
+		
+		private boolean checkAndUpdateBorderDesc(JTextArea ta) {
+			String text = ta.getText().trim();
+			boolean isValid = text!=null && !text.isEmpty();
+			GuiUtils.toggleChangeableBorder(ta, !isValid);
 			return isValid;
 		}
 
@@ -1407,10 +1414,13 @@ public class DataversePublisherWizard {
 			eTitle.create();
 			listofkeys.add("title");
 
-			JTextField tfDescription = new JTextField();
+			JTextArea description = new JTextArea();
+			description.setLineWrap(true);
+			description.setRows(1);
+			description.setWrapStyleWord(true);
 			JLabel lDescription = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
 			eDescription = new GUIElement();
-			eDescription.setTextfield(tfDescription);
+			eDescription.setDescription(description);
 			eDescription.setLabel(lDescription);
 			eDescription.create();
 			listofkeys.add("description");
@@ -1539,7 +1549,7 @@ public class DataversePublisherWizard {
 
 			GuiUtils.prepareChangeableBorder(tfCreator);
 			GuiUtils.prepareChangeableBorder(tfTitle);
-			GuiUtils.prepareChangeableBorder(tfDescription);
+			GuiUtils.prepareChangeableBorder(eDescription.getDescription());
 			GuiUtils.prepareChangeableBorder(tfDate);
 			GuiUtils.prepareChangeableBorder(tfLicense);
 
@@ -1555,7 +1565,7 @@ public class DataversePublisherWizard {
 			eCreator.getTextfield().getDocument().addDocumentListener(adapter);
 			eLicense.getTextfield().getDocument().addDocumentListener(adapter);
 			tfTitle.getDocument().addDocumentListener(adapter);
-			tfDescription.getDocument().addDocumentListener(adapter);
+			eDescription.getDescription().getDocument().addDocumentListener(adapter);
 			tfDate.getDocument().addDocumentListener(adapter);
 
 			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dataversePublisher.editMetadata.processMetadata"));
@@ -1591,7 +1601,7 @@ public class DataversePublisherWizard {
 			eIdentifier.getTextfield().setText("");
 			eResourceType.getTextfield().setText("");
 			eTitle.getTextfield().setText("");
-			eDescription.getTextfield().setText("");
+			eDescription.getDescription().setText("");
 			eVersion.getTextfield().setText("");
 			eReference.getTextfield().setText("");
 			eLicense.getTextfield().setText("");

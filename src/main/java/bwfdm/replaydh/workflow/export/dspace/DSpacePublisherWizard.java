@@ -1515,7 +1515,7 @@ public class DSpacePublisherWizard {
 
 			JTextArea description = new JTextArea();
 			description.setLineWrap(true);
-			description.setRows(2);
+			description.setRows(1);
 			description.setWrapStyleWord(true);
 			JLabel lDescription = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.descriptionLabel"));
 			eDescription = new GUIElement();
