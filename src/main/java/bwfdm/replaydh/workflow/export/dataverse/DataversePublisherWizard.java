@@ -31,8 +31,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -46,7 +44,6 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
-import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
@@ -1024,10 +1021,10 @@ public class DataversePublisherWizard {
 
 		public void createNewDataset(RDHEnvironment environment, DataversePublisherContext context) {
 			String creator = "";
-			if(eCreator.getTextfield().getText().isEmpty()) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
+			if(elementsofproperty.get("creator").get(0).getTextfield().getText().isEmpty()) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
 				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
 			}
-			eCreator.getTextfield().setText(creator);
+			elementsofproperty.get("creator").get(0).getTextfield().setText(creator);
 
 			//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
 
@@ -1387,6 +1384,23 @@ public class DataversePublisherWizard {
 			return isValid;
 		}
 		
+		/*private boolean checkAndUpdateBorderDate(JTextField tf) {
+			String text = tf.getText().trim();
+			int number = text.length();
+			boolean isValid = false;
+			if (number == 4) {
+				isValid=true;
+			}
+			try {
+				Integer.parseInt(text);
+			}
+			catch (NumberFormatException e) {
+				isValid=false;
+			}
+			GuiUtils.toggleChangeableBorder(tf, !isValid);
+			return isValid;
+		}*/
+		
 		private boolean checkAndUpdateBorderDesc(JTextArea ta) {
 			String text = ta.getText().trim();
 			boolean isValid = text!=null && !text.isEmpty();
@@ -1402,7 +1416,7 @@ public class DataversePublisherWizard {
 			builder = FormBuilder.create();
 			panelRow = new HashMap<>();
 
-			DateFormat format;
+			//DateFormat format;
 
 			rm = ResourceManager.getInstance();
 
@@ -1448,9 +1462,9 @@ public class DataversePublisherWizard {
 			ePublicationYear.create();
 			listofkeys.add("year");*/
 
-			//JTextField tfDate = new JTextField();
-			format = new SimpleDateFormat("YYYY");
-			JFormattedTextField tfDate = new JFormattedTextField(format);
+			JTextField tfDate = new JTextField();
+			//format = new SimpleDateFormat("YYYY");
+			//JFormattedTextField tfDate = new JFormattedTextField(format);
 			JLabel lDate = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.dateLabel"));
 			eDate = new GUIElement();
 			eDate.setTextfield(tfDate);
@@ -1643,6 +1657,9 @@ public class DataversePublisherWizard {
 			}
 			if(eCreator.getMinusbutton().getActionListeners().length == 0) {
 				eCreator.getMinusbutton().addActionListener(this);
+			}
+			if(eCreator.getTextfield().getComponentListeners().length == 0) {
+				eCreator.getTextfield().getDocument().addDocumentListener(adapter);
 			}
 			elementsofproperty.put("creator", creatorslist);
 			propertypanels.put("creator", elementsofproperty.get("creator").get(0).getPanel());
@@ -1859,6 +1876,7 @@ public class DataversePublisherWizard {
 				if (resetButton.getResetButton().getText().equals(rm.get("replaydh.wizard.dataversePublisher.editMetadata.RestoreButton"))) {
 					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.ResetButton"));
 					if (myContext.chosenDataset == null) {
+						clearGUI();
 						createNewDataset(myEnvironment, myContext);
 					} else {
 						clearGUI();

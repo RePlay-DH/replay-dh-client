@@ -1494,6 +1494,22 @@ public class DSpacePublisherWizard {
 			GuiUtils.toggleChangeableBorder(tf, !isValid);
 			return isValid;
 		}
+		/*private boolean checkAndUpdateBorderDate(JTextField tf) {
+			String text = tf.getText().trim();
+			int number = text.length();
+			boolean isValid = false;
+			if (number == 4) {
+				isValid=true;
+			}
+			try {
+				Integer.parseInt(text);
+			}
+			catch (NumberFormatException e) {
+				isValid=false;
+			}
+			GuiUtils.toggleChangeableBorder(tf, !isValid);
+			return isValid;
+		}*/
 
 		@Override
 		protected JPanel createPanel() {
@@ -1735,6 +1751,9 @@ public class DSpacePublisherWizard {
 			if(eCreator.getMinusbutton().getActionListeners().length == 0) {
 				eCreator.getMinusbutton().addActionListener(this);
 			}
+			if(eCreator.getTextfield().getComponentListeners().length == 0) {
+				eCreator.getTextfield().getDocument().addDocumentListener(adapter);
+			}
 			elementsofproperty.put("creator", creatorslist);
 			propertypanels.put("creator", elementsofproperty.get("creator").get(0).getPanel());
 
@@ -1953,6 +1972,7 @@ public class DSpacePublisherWizard {
 				if (resetButton.getResetButton().getText().equals(rm.get("replaydh.wizard.dspacePublisher.editMetadata.RestoreButton"))) {
 					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.ResetButton"));
 					if (myContext.chosenDataset == null) {
+						clearGUI();
 						createNewDataset(myEnvironment, myContext);
 					} else {
 						clearGUI();
