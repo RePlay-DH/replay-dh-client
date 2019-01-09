@@ -1178,10 +1178,10 @@ public class DSpacePublisherWizard {
 
 		public void createNewDataset(RDHEnvironment environment, DSpaceExporterContext context) {
 			String creator = "";
-			if(eCreator.getTextfield().getText().isEmpty()) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
+			if(elementsofproperty.get("creator").get(0).getTextfield().getText().isEmpty()) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
 				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
 			}
-			eCreator.getTextfield().setText(creator);
+			elementsofproperty.get("creator").get(0).getTextfield().setText(creator);
 
 			//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
 
@@ -1513,7 +1513,10 @@ public class DSpacePublisherWizard {
 			eTitle.create();
 			listofkeys.add("title");
 
-			JTextArea description = new JTextArea(1,1);
+			JTextArea description = new JTextArea();
+			description.setLineWrap(true);
+			description.setRows(2);
+			description.setWrapStyleWord(true);
 			JLabel lDescription = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.descriptionLabel"));
 			eDescription = new GUIElement();
 			eDescription.setDescription(description);
@@ -1796,6 +1799,8 @@ public class DSpacePublisherWizard {
 			String columns="pref:grow";
 			String rows="pref";
 
+			
+			
 			FormLayout layout = new FormLayout(columns,rows);
 
 
@@ -1830,7 +1835,12 @@ public class DSpacePublisherWizard {
 
 				if (z == 0) {
 					oneguielement.create();
-					oneguielement.getMinusbutton().addActionListener(this);
+					if(oneguielement.getButton().getActionListeners().length == 0) {
+						oneguielement.getButton().addActionListener(this);
+					}
+					if(oneguielement.getMinusbutton().getActionListeners().length == 0) {
+						oneguielement.getMinusbutton().addActionListener(this);
+					}
 					if (oneguielement.getLabel().getText().equals("")) {
 						switch (metadatapropertyname) {
 						case "creator":
