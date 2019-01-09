@@ -1446,8 +1446,8 @@ public class DSpacePublisherWizard {
 				dateElements.clear();
 			}
 			dateElements.add(eDate.getTextfield().getText());
-			context.metadataObject.mapDublinCoreToMetadata.put("date", dateElements);
-			context.metadataObject.mapDublinCoreToLabel.put("date", rm.get("replaydh.wizard.dspacePublisher.editMetadata.dateLabel"));
+			context.metadataObject.mapDublinCoreToMetadata.put("issued", dateElements);
+			context.metadataObject.mapDublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dspacePublisher.editMetadata.dateLabel"));
 
 			if (rightsElements == null) {
 				rightsElements = new ArrayList<>();
