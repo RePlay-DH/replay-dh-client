@@ -1729,6 +1729,12 @@ public class DSpacePublisherWizard {
 			}
 
 			creatorslist.add(eCreator);
+			if(eCreator.getButton().getActionListeners().length == 0) {
+				eCreator.getButton().addActionListener(this);
+			}
+			if(eCreator.getMinusbutton().getActionListeners().length == 0) {
+				eCreator.getMinusbutton().addActionListener(this);
+			}
 			elementsofproperty.put("creator", creatorslist);
 			propertypanels.put("creator", elementsofproperty.get("creator").get(0).getPanel());
 

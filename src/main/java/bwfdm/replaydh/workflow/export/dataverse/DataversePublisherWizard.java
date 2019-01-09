@@ -1638,6 +1638,12 @@ public class DataversePublisherWizard {
 			}
 
 			creatorslist.add(eCreator);
+			if(eCreator.getButton().getActionListeners().length == 0) {
+				eCreator.getButton().addActionListener(this);
+			}
+			if(eCreator.getMinusbutton().getActionListeners().length == 0) {
+				eCreator.getMinusbutton().addActionListener(this);
+			}
 			elementsofproperty.put("creator", creatorslist);
 			propertypanels.put("creator", elementsofproperty.get("creator").get(0).getPanel());
 
@@ -1742,7 +1748,12 @@ public class DataversePublisherWizard {
 
 				if (z == 0) {
 					oneguielement.create();
-					oneguielement.getMinusbutton().addActionListener(this);
+					if(oneguielement.getButton().getActionListeners().length == 0) {
+						oneguielement.getButton().addActionListener(this);
+					}
+					if(oneguielement.getMinusbutton().getActionListeners().length == 0) {
+						oneguielement.getMinusbutton().addActionListener(this);
+					}
 					if (oneguielement.getLabel().getText().equals("")) {
 						switch (metadatapropertyname) {
 						case "creator":
