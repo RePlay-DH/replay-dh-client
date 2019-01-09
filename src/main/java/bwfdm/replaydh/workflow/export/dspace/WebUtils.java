@@ -26,7 +26,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
+import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -83,42 +86,46 @@ public class WebUtils {
 	/**
 	 * Get a response to the REST-request
 	 * 
-	 * @param client - object of {@link CloseableHttpClient}
-	 * @param url - URL as {@link String}
+	 * @param client      - object of {@link CloseableHttpClient}
+	 * @param url         - URL as {@link String}
 	 * @param requestType - object of {@link RequestType}
-	 * @param contentType - content type as {@link String}  
-	 * @param acceptType - accept type as {@link String}
-	 *  
+	 * @param contentType - content type as {@link String}
+	 * @param acceptType  - accept type as {@link String}
+	 * 
 	 * @return {@link CloseableHttpResponse} or {@code null} in case of error
 	 */
-	public static CloseableHttpResponse getResponse(CloseableHttpClient client, String url, RequestType requestType,
-			String contentType, String acceptType) {
-		try {
-			HttpUriRequest request;
-			switch (requestType) {
-			case GET:
-				request = new HttpGet(url);
-				break;
-			case PUT:
-				request = new HttpPut(url);
-				break;
-			case POST:
-				request = new HttpPost(url);
-				break;
-			default:
-				log.error("Not supported request type: {}", requestType.toString());
-				return null;
-			}
+	public static CloseableHttpResponse getResponse(HttpClient client, String url, RequestType requestType, String contentType,
+			String acceptType) {
 
-			request.addHeader("Content-Type", contentType);
-			request.addHeader("Accept", acceptType);
-			CloseableHttpResponse response = client.execute(request);
-			return response;
-
-		} catch (IOException ex) {
-			log.error("Exception by http request: {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
+		HttpUriRequest request;
+		switch (requestType) {
+		case GET:
+			request = new HttpGet(url);
+			break;
+		case PUT:
+			request = new HttpPut(url);
+			break;
+		case POST:
+			request = new HttpPost(url);
+			break;
+		default:
+			log.error("Not supported request type: {}", requestType.toString());
 			return null;
 		}
+
+		request.addHeader("Content-Type", contentType);
+		request.addHeader("Accept", acceptType);
+		CloseableHttpResponse response = null;
+		try {
+			response = (CloseableHttpResponse) client.execute(request);
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return response;
 	}
 
 	/**
@@ -128,7 +135,7 @@ public class WebUtils {
 	 * 
 	 * @return {@link String} with response or {@code null} in case of error
 	 */
-	public static String getResponseEntityAsString(CloseableHttpResponse response) {
+	public static String getResponseEntityAsString(HttpResponse response) {
 		try {
 			return EntityUtils.toString(response.getEntity(), "UTF-8");
 		} catch (ParseException | IOException ex) {

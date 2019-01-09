@@ -96,9 +96,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	private String standardUser;
 	private String password;
 
-	CloseableHttpClient httpClient;
-	
-	HttpClient httpRestClient;
+	private HttpClient httpClient;
 	
 	public DSpace_v6(String serviceDocumentURL, String restURL, String adminUser, String standardUser, char[] adminPassword) throws ClientProtocolException, IOException, URISyntaxException {
 
@@ -117,19 +115,19 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		this.password=String.valueOf(adminPassword);
 
 		// HttpClient which ignores the ssl certificate
-		this.httpClient = WebUtils.createHttpClientWithSSLSupport();
+		//this.httpClient = WebUtils.createHttpClientWithSSLSupport();
 		
 		CredentialsProvider provider = new BasicCredentialsProvider();
 		UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(this.standardUser, this.password);
 		provider.setCredentials(AuthScope.ANY, credentials);
 
-		httpRestClient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
+		httpClient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
 		
 		URIBuilder builder = new URIBuilder(this.restLogin);
 		builder.setParameter("email", this.standardUser);
 		builder.setParameter("password", this.password);
 		
-		httpRestClient.execute(new HttpPost(builder.build()));
+		httpClient.execute(new HttpPost(builder.build()));
 		
 		// TODO: original version, without ignoring of ssl certificate
 		// this.client = HttpClientBuilder.create().build();	
@@ -151,19 +149,19 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		this.password=String.valueOf(userPassword);
 
 		// HttpClient which ignores the ssl certificate
-		this.httpClient = WebUtils.createHttpClientWithSSLSupport();
+		//this.httpClient = WebUtils.createHttpClientWithSSLSupport();
 		
 		CredentialsProvider provider = new BasicCredentialsProvider();
 		UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(this.standardUser, this.password);
 		provider.setCredentials(AuthScope.ANY, credentials);
 
-		httpRestClient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
+		httpClient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
 		
 		URIBuilder builder = new URIBuilder(this.restLogin);
 		builder.setParameter("email", this.standardUser);
 		builder.setParameter("password", this.password);
 		
-		httpRestClient.execute(new HttpPost(builder.build()));
+		httpClient.execute(new HttpPost(builder.build()));
 		// TODO: original version, without ignoring of ssl certificate
 		// this.client = HttpClientBuilder.create().build();
 	}
@@ -209,9 +207,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 			WebUtils.closeResponse(response);
 			return true;
 		} else {
-			if (response != null) {
-				WebUtils.closeResponse(response);
-			}
+			WebUtils.closeResponse(response);
 			return false;
 		}
 	}
@@ -344,8 +340,8 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 */
 	protected CollectionObject[] getAllCollectionObjects() {
 
-		final CloseableHttpResponse response = WebUtils.getResponse(this.httpClient, this.collectionsURL, RequestType.GET,
-				APPLICATION_JSON, APPLICATION_JSON);
+		final CloseableHttpResponse response = WebUtils.getResponse(this.httpClient, this.collectionsURL,
+				RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
 		final CollectionObject[] collections = JsonUtils
 				.jsonStringToObject(WebUtils.getResponseEntityAsString(response), CollectionObject[].class);
 		WebUtils.closeResponse(response);
@@ -648,7 +644,7 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 			return null;
 		}
 
-		HttpResponse response = httpRestClient.execute(new HttpGet(datasetSwordLink));
+		HttpResponse response = httpClient.execute(new HttpGet(datasetSwordLink));
 		int statusCode = response.getStatusLine().getStatusCode();
 		
 		String responseString=null;
