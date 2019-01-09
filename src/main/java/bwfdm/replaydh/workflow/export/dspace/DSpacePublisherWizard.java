@@ -1137,6 +1137,7 @@ public class DSpacePublisherWizard {
 		private JSONArray jsonObjects;
 		private String propertyForSwitch;
 		private String propertyvalue;
+		private String savedDate;
 
 		private RDHEnvironment myEnvironment;
 		private DSpaceExporterContext myContext;
@@ -1152,6 +1153,7 @@ public class DSpacePublisherWizard {
 				replaceMetadata.setEnabled(false);
 				processMetadata.setSelected(true);
 				processMetadata.setEnabled(true);
+				eDate.getTextfield().setEnabled(true);
 			} else {
 				clearGUI();
 				resetButton.getResetButton().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.ResetButton"));
@@ -1163,6 +1165,7 @@ public class DSpacePublisherWizard {
 				}
 				processMetadata.setSelected(false);
 				processMetadata.setEnabled(false);
+				eDate.getTextfield().setEnabled(false);
 				context.filesToPublish = new ArrayList<>();
 			}
 
@@ -1270,6 +1273,7 @@ public class DSpacePublisherWizard {
 										eDate.getTextfield().setText(property.get("value"));
 									}
 								}
+								savedDate=eDate.getTextfield().getText();
 								break;
 							case "identifier":
 								propertyvalue=property.get("key");
@@ -1990,9 +1994,12 @@ public class DSpacePublisherWizard {
 			if (source == replaceMetadata) {
 				if (!replaceMetadata.isSelected()) {
 					processMetadata.setEnabled(true);
+					eDate.getTextfield().setEnabled(true);
 				} else {
 					processMetadata.setEnabled(false);
 					processMetadata.setSelected(false);
+					eDate.getTextfield().setText(savedDate);
+					eDate.getTextfield().setEnabled(false);
 				}
 			}
 		}
