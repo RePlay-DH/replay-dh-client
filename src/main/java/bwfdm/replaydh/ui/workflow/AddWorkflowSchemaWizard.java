@@ -204,7 +204,7 @@ public class AddWorkflowSchemaWizard {
 	private static final AddWorkflowSchemaStep VALIDATE_SCHEMA = new AddWorkflowSchemaStep(
 			"validateSchema",
 			"replaydh.wizard.addWorkflowSchema.validateSchema.title",
-			"replaydh.wizard.addWorkflowSchema.validateSchema.message") {
+			"replaydh.wizard.addWorkflowSchema.validateSchema.description") {
 
 		/**
 		 * <pre>
