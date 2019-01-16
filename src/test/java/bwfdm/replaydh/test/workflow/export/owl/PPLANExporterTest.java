@@ -122,7 +122,7 @@ public class PPLANExporterTest {
 		exporter.export(exportInfo);
 		
 		PLAN_J_Functions functions;
-		functions = new PLAN_J_Functions();
+		functions = new PLAN_J_Functions(exportInfo.getEnvironment());
 		
 		try (Writer writer = exportInfo.createWriter()){
 

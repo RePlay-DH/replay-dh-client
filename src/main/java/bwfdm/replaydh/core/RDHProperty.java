@@ -219,8 +219,13 @@ public enum RDHProperty {
 
 	DATAVERSE_REPOSITORY_URL("dataverse.repository.url"),
 	DATAVERSE_REPOSITORY_NAME("dataverse.repository.name"),
-	;
 
+	/**
+	 * Metadata Export Settings
+	 */
+	OWL_METADATA_EXPORT_FULL_ONTOLOGY("export.owl.includeFullOntology"),
+	;
+	
 	private final String key;
 	private final Object defaultValue;
 

@@ -226,6 +226,16 @@
 		<parameter id="description" value="replaydh.plugins.trackingPreferencesTab.description" />
 		<parameter id="class" value="bwfdm.replaydh.ui.config.tabs.TrackingPreferencesTab" />
 	</extension>
+	<extension id="MetadataPreferencesTab" plugin-id="bwfdm.replaydh.core" point-id="PreferencesTab">
+		<doc>
+			<doc-text>
+				Gives the user more options for the metadata export.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.metadataPreferencesTab.name" />
+		<parameter id="description" value="replaydh.plugins.metadataPreferencesTab.description" />
+		<parameter id="class" value="bwfdm.replaydh.ui.config.tabs.MetadataPreferencesTab" />
+	</extension>
 	
 	<!-- EXPORTERS -->
 	

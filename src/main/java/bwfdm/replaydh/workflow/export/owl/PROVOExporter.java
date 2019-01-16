@@ -36,7 +36,7 @@ public class PROVOExporter implements WorkflowExporter {
 	@Override
 	public void export(WorkflowExportInfo exportInfo) throws IOException {
 		if (exportInfo.isExport()) {
-			PROV_J_Functions functions = new PROV_J_Functions();
+			PROV_J_Functions functions = new PROV_J_Functions(exportInfo.getEnvironment());
 			functions.showHistory(exportInfo.getWorkflow(), exportInfo.getTargetStep());
 			String filename = null;
 			if (!(exportInfo.getOutputResource().getPath() == null)) {
