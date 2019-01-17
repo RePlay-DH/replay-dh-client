@@ -1430,7 +1430,7 @@ public class DataversePublisherWizard {
 
 			JTextArea description = new JTextArea();
 			description.setLineWrap(true);
-			description.setRows(1);
+			description.setRows(3);
 			description.setWrapStyleWord(true);
 			JLabel lDescription = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.descriptionLabel"));
 			eDescription = new GUIElement();
