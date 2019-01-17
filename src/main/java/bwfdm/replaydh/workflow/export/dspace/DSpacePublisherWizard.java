@@ -28,15 +28,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -44,9 +43,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
-import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
@@ -64,11 +63,14 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 
+import org.apache.http.client.ClientProtocolException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.jayway.jsonpath.JsonPath;
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
+import com.jgoodies.forms.layout.FormLayout;
 
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHProperty;
@@ -79,8 +81,15 @@ import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
-import bwfdm.replaydh.workflow.export.generic.ExportRepository;
+import bwfdm.replaydh.workflow.export.dspace.GUIElement;
+import bwfdm.replaydh.workflow.export.dspace.CollectionEntry;
+import net.minidev.json.JSONArray;
 
+/**
+ * @author Volodymyr Kushnarenko
+ * @author Florian Fritze
+ *
+ */
 public class DSpacePublisherWizard {
 
 	private static final Logger log = LoggerFactory.getLogger(DSpacePublisherWizard.class);
@@ -89,7 +98,7 @@ public class DSpacePublisherWizard {
 		@SuppressWarnings("unchecked")
 		Wizard<DSpaceExporterContext> wizard = new Wizard<>(
 				parent, "dspacePublisher", ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.title"),
-				environment/*, FINISH /*<-- TEST*/ , CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_FILES, EDIT_METADATA, FINISH);
+				environment , CHOOSE_REPOSITORY, CHOOSE_COLLECTION, CHOOSE_DATASET, CHOOSE_FILES, EDIT_METADATA, FINISH);
 		return wizard;
 	}
 
@@ -110,8 +119,41 @@ public class DSpacePublisherWizard {
 		String userLogin;
 		Map<String, String> availableCollections;
 		List<File> filesToPublish;
-		ExportRepository exportRepository;
+		DSpace_v6 exportRepository;
 		MetadataObject metadataObject;
+		
+		private Map<String, String> availableDatasetsInCollection;
+		
+		private boolean replaceMetadataAllowed;
+
+		private String chosenDataset;
+		public String getChosenDataset() {
+			return chosenDataset;
+		}
+		private String jsonObjectWithMetadata;
+		
+		
+		public String getJsonObjectWithMetadata() {
+			return jsonObjectWithMetadata;
+		}
+		private boolean exportProcessMetadataAllowed;
+		
+		public boolean isExportProcessMetadataAllowed() {
+			return exportProcessMetadataAllowed;
+		}
+
+		public void setExportProcessMetadataAllowed(boolean exportProcessMetadataAllowed) {
+			this.exportProcessMetadataAllowed = exportProcessMetadataAllowed;
+		}
+
+		public boolean isReplaceMetadataAllowed() {
+			return replaceMetadataAllowed;
+		}
+
+		public void setReplaceMetadataAllowed(boolean replaceMetadataAllowed) {
+			this.replaceMetadataAllowed = replaceMetadataAllowed;
+		}
+
 
 		public DSpaceExporterContext(WorkflowExportInfo exportInfo) {
 			this.exportInfo = requireNonNull(exportInfo);
@@ -131,7 +173,7 @@ public class DSpacePublisherWizard {
 		public String getUserLogin() {
 			return userLogin;
 		}
-		public ExportRepository getExportRepository() {
+		public DSpace_v6 getExportRepository() {
 			return exportRepository;
 		}
 		public Map<String, String> getAvailableCollections() {
@@ -151,9 +193,8 @@ public class DSpacePublisherWizard {
 
 	public static final class MetadataObject{
 
-		//TODO: Map<String, List<String>>
-		Map<String, List<String>> mapDoublinCoreToMetadata;
-		Map<String, String> mapDoublinCoreToLabel;
+		Map<String, List<String>> mapDublinCoreToMetadata;
+		Map<String, String> mapDublinCoreToLabel;
 
 		/**
 		 * Get map with key=doublin.core, value=metadata.
@@ -161,8 +202,8 @@ public class DSpacePublisherWizard {
 		 * Should be used for the publication to the repository.
 		 */
 		public Map<String, List<String>> getMapDoublinCoreToMetadata(){
-			if(mapDoublinCoreToMetadata != null){
-				return mapDoublinCoreToMetadata;
+			if(mapDublinCoreToMetadata != null){
+				return mapDublinCoreToMetadata;
 			} else {
 				return new HashMap<>();
 			}
@@ -173,13 +214,12 @@ public class DSpacePublisherWizard {
 		 * <p>
 		 * Should be used ONLY for the representation of the metadata.
 		 */
-		//TODO: Map<String, List<String>>
 		public Map<String, List<String>> getMapLabelToMetadata(){
 
 			Map<String, List<String>> metadataMap = new HashMap<>();
-			if((mapDoublinCoreToMetadata != null) && (mapDoublinCoreToLabel != null)) {
-				for(Map.Entry<String, List<String>> entryDoublinCoreToMetadata: mapDoublinCoreToMetadata.entrySet()) {
-					for(Map.Entry<String, String> entryDoublinCoreToLabel: mapDoublinCoreToLabel.entrySet()) {
+			if((mapDublinCoreToMetadata != null) && (mapDublinCoreToLabel != null)) {
+				for(Map.Entry<String, List<String>> entryDoublinCoreToMetadata: mapDublinCoreToMetadata.entrySet()) {
+					for(Map.Entry<String, String> entryDoublinCoreToLabel: mapDublinCoreToLabel.entrySet()) {
 						if(entryDoublinCoreToLabel.getKey().equals(entryDoublinCoreToMetadata.getKey())) {
 							metadataMap.put(entryDoublinCoreToLabel.getValue(), entryDoublinCoreToMetadata.getValue());
 							break;
@@ -255,10 +295,6 @@ public class DSpacePublisherWizard {
 		String sdURL = getHostURL(url);
 		sdURL += "/swordv2/servicedocument";
 
-		// Explicit replace "https://" with "http://", because of the SWORD-client, which does not support SSL-certificates
-		if(sdURL.startsWith("https://")) {
-			sdURL = sdURL.replaceFirst("https://", "http://");
-		}
 		return sdURL;
 	}
 
@@ -333,32 +369,12 @@ public class DSpacePublisherWizard {
 //		}
 //	}
 
-	/**
-	 * Representation of the collection of <String, String> in the ComboBox
-	 * @author Volodymyr Kushnarenko
-	 */
-	private static class CollectionEntry{
-
-		private Map.Entry<String, String> entry;
-		protected CollectionEntry(Map.Entry<String, String> entry) {
-			this.entry = entry;
-		}
-
-		public Map.Entry<String, String> getEntry() {
-			return entry;
-		}
-
-		@Override
-		public String toString() {
-			return entry.getValue();
-		}
-	}
 
 	/**
 	 * Abstract class for the wizard page
 	 * @author Volodymyr Kushnarenko
 	 */
-	private static abstract class DSpaceExporterStep extends AbstractWizardStep<DSpaceExporterContext> {
+	private static abstract class DSpaceExporterStep extends AbstractWizardStep<DSpaceExporterContext> implements ActionListener {
 		protected DSpaceExporterStep(String id, String titleKey, String descriptionKey) {
 			super(id, titleKey, descriptionKey);
 		}
@@ -389,30 +405,16 @@ public class DSpacePublisherWizard {
 		private long timeOut; //in seconds
 
 		private Map<String, String> availableCollections;
-		private ExportRepository exportRepository;
+		private DSpace_v6 exportRepository;
 
 		/**
 		 * Check the connection via REST-interface.
 		 * Sets the global flag {@code restOK=true} if connection is working, and {@code restOK=false} otherwise
 		 * @param dspaceRepository
 		 */
-		private void checkAndCorrectRestURL(DSpace_v6 dspaceRepository) {
+		private void checkAndCorrectRestURL() {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
-
-				/**
-				 * Replace "http://" via "https://" and otherwise
-				 * @param url
-				 */
-				protected void exchangeHttpHttps(String url) {
-					if(url.startsWith("http://")) {
-						url = url.replaceFirst("http://", "https://");
-					} else {
-						if(url.startsWith("https://")) {
-							url = url.replaceFirst("https://", "http://");
-						}
-					}
-				}
 
 				@Override
 				protected Boolean doInBackground() throws Exception {
@@ -421,22 +423,17 @@ public class DSpacePublisherWizard {
 						return false;
 					}
 					String correctedRestURL = new String(restURL);
-					dspaceRepository.setAllRestURLs(correctedRestURL);
+					exportRepository.setAllRestURLs(correctedRestURL);
 
-					//Exchange "http://" and "https://" if REST is not accessible
-					if(!dspaceRepository.isRestAccessible()) {
-						exchangeHttpHttps(correctedRestURL);
-						// If the exchange did not help, move to the previous condition
-						if(!dspaceRepository.isRestAccessible()) {
-							if(restURL == null) {
-								return false; //not really needed here
-							}
-							correctedRestURL = new String(restURL);
-							dspaceRepository.setAllRestURLs(correctedRestURL);
-							restOK = false;
-							restURL = String.valueOf(correctedRestURL.toCharArray());
-							return restOK;
+					if(!exportRepository.isRestAccessible()) {
+						if (restURL == null) {
+							return false; // not really needed here
 						}
+						correctedRestURL = new String(restURL);
+						exportRepository.setAllRestURLs(correctedRestURL);
+						restOK = false;
+						restURL = String.valueOf(correctedRestURL.toCharArray());
+						return restOK;
 					}
 
 					restURL = String.valueOf(correctedRestURL.toCharArray());
@@ -476,18 +473,17 @@ public class DSpacePublisherWizard {
 		 * @param exportRepository
 		 * @param userLogin
 		 */
-		private void checkUserRegistrationAndGetCollections(ExportRepository exportRepository) {
+		private void checkUserRegistrationAndGetCollections() {
 
 			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
 
 				@Override
 				protected Boolean doInBackground() throws Exception {
-					//Thread.sleep(20000); //for test, to imitate a long task and provocate termination on timeout
-					loginOK = exportRepository.hasRegisteredCredentials();
-					if(exportRepository instanceof DSpaceRepository) {
-						availableCollections = ((DSpaceRepository)exportRepository).getAvailableCollectionsWithFullName(" -- ");
+					if(exportRepository.isRepositoryAccessible()) {
+						availableCollections = exportRepository.getAvailableCollectionsWithFullName(" -- ");
+						loginOK=true;
 					} else {
-						availableCollections = exportRepository.getAvailableCollections();
+						loginOK=false;
 					}
 					return loginOK;
 				}
@@ -496,9 +492,7 @@ public class DSpacePublisherWizard {
 				protected void done() {
 					// Worker was finished properly
 					if(!isCancelled()) {
-						if(loginOK) {
-							checkLoginButton.setEnabled(false);
-						} else {
+						if(loginOK == false) {
 							pfUserPassword.setText("");
 							GuiUtils.toggleChangeableBorder(pfUserPassword, true); //set red border as a sign of the wrong password
 							checkLoginButton.setEnabled(false);
@@ -507,7 +501,7 @@ public class DSpacePublisherWizard {
 					}
 					// Worker was terminated (timeout or exception)
 					else {
-						loginOK = false;
+						//loginOK = false;
 						statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.terminationMessage"));
 						checkLoginButton.setEnabled(true); //in case of the Internet problem user have to click it again
 						setNextEnabled(false);
@@ -533,7 +527,10 @@ public class DSpacePublisherWizard {
 			context.userLogin = tfUserLogin.getText();
 			context.availableCollections = availableCollections;
 			context.exportRepository = exportRepository;
-
+			
+			environment.setProperty(RDHProperty.DSPACE_REPOSITORY_URL, context.repositoryURL);
+			environment.setProperty(RDHProperty.DSPACE_REPOSITORY_USERNAME, context.userLogin);
+			
 			return CHOOSE_COLLECTION;
 		}
 
@@ -543,6 +540,7 @@ public class DSpacePublisherWizard {
 
 			if(environment != null) {
 				tfUrl.setText(environment.getProperty(RDHProperty.DSPACE_REPOSITORY_URL));
+				tfUserLogin.setText(environment.getProperty(RDHProperty.DSPACE_REPOSITORY_USERNAME));
 			}
 
 			if(!loginOK) {
@@ -563,12 +561,12 @@ public class DSpacePublisherWizard {
 			ResourceManager rm = ResourceManager.getInstance();
 
 			loginOK = false;
-			restOK = false;
+			//restOK = false;
 			timeOut = 60; //seconds
 
 			//TODO: -> tfUrl.setEditable(true)
 			tfUrl = new JTextField();
-			tfUrl.setEditable(false);	//make the URL not editable for test reasons.
+			tfUrl.setEditable(true);	//make the URL not editable for test reasons.
 										//But wizard is already available to check the URL automatically
 										//and provide messages in case of error
 
@@ -579,8 +577,12 @@ public class DSpacePublisherWizard {
 			GuiUtils.prepareChangeableBorder(tfUserLogin);
 			GuiUtils.prepareChangeableBorder(pfUserPassword);
 
+			GuiUtils.toggleChangeableBorder(tfUrl, true);
+			GuiUtils.toggleChangeableBorder(tfUserLogin, true);
+			GuiUtils.toggleChangeableBorder(pfUserPassword, true);
+			
 			statusMessage = GuiUtils.createTextArea(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.pleaseLoginMessage"));
-
+			
 			DocumentAdapter adapter = new DocumentAdapter() {
 
 				@Override
@@ -603,10 +605,13 @@ public class DSpacePublisherWizard {
 			tfUrl.getDocument().addDocumentListener(adapter);
 			tfUserLogin.getDocument().addDocumentListener(adapter);
 			pfUserPassword.getDocument().addDocumentListener(adapter);
+			
+			
 
 
 			// Login button
 			checkLoginButton = new JButton(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.loginButton"));
+			checkLoginButton.setEnabled(false);
 			checkLoginButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -620,36 +625,50 @@ public class DSpacePublisherWizard {
 					restURL = createRestURL(tfUrl.getText());
 					serviceDocumentURL = createServiceDocumentURL(tfUrl.getText());
 
-					exportRepository = new DSpace_v6(serviceDocumentURL,
-															restURL,
-															tfUserLogin.getText(),
-															pfUserPassword.getPassword()
-															);
+					try {
+						exportRepository = new DSpace_v6(serviceDocumentURL,
+								restURL,
+								tfUserLogin.getText(),
+								pfUserPassword.getPassword()
+								);
+					} catch (ClientProtocolException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					} catch (URISyntaxException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 					// Prepare GUI for the repository requests
 					checkLoginButton.setEnabled(false);
 					statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.waitMessage"));
-					restOK = false;
+					//restOK = false;
 					loginOK = false;
 
 					// Start repository requests
 					SwingUtilities.invokeLater(new Runnable() {
 				        @Override
 						public void run() {
-				        	checkAndCorrectRestURL((DSpace_v6)exportRepository);
+				        	checkAndCorrectRestURL();
 				        	if(restOK) {
-				        		checkUserRegistrationAndGetCollections(exportRepository);
-				        		if(loginOK) {
-				        			statusMessage.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseRepository.successMessage"));
+				        		checkUserRegistrationAndGetCollections();
+								if (loginOK) {
+									statusMessage.setText(ResourceManager.getInstance()
+											.get("replaydh.wizard.dspacePublisher.chooseRepository.successMessage"));
 									setNextEnabled(true);
+									checkLoginButton.setEnabled(true);
 								} else {
 									setNextEnabled(false);
-					        	}
+								}
 				        	}
 				        }
 				    });
 
 				}
 			});
+			
 
 			openRepositoryButton = new JButton(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.loginInfoButton"));
 			openRepositoryButton.addActionListener(new ActionListener() {
@@ -682,6 +701,13 @@ public class DSpacePublisherWizard {
 					.build();
 		}
 
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
 	};
 
 
@@ -694,39 +720,46 @@ public class DSpacePublisherWizard {
 			"replaydh.wizard.dspacePublisher.chooseCollection.title",
 			"replaydh.wizard.dspacePublisher.chooseCollection.description") {
 
-		private JComboBox<CollectionEntry> collectionsComboBox;
+		private JComboBox<String> collectionsComboBox;
 		private JTextArea noAvailableCollectionsMessage;
+		private CollectionEntry collectionEntries;
 
 		@Override
 		public void refresh(RDHEnvironment environment, DSpaceExporterContext context) {
 			super.refresh(environment, context); //call parent "refresh"
+			
+			collectionEntries = new CollectionEntry(context.getAvailableCollections().entrySet());
 
-			// Update combobox with collections
 			collectionsComboBox.removeAllItems();
-			for(Map.Entry<String, String> entry: context.getAvailableCollections().entrySet()) {
-				collectionsComboBox.addItem(new CollectionEntry(entry));
+			for(String value: collectionEntries.getValues()) {
+				collectionsComboBox.addItem(value);
 			}
 
 			// Display the error message if there are no collections available
 			noAvailableCollectionsMessage.setVisible(context.getAvailableCollections().isEmpty());
 
 			// Remove selection and disable "next" button
-			collectionsComboBox.setSelectedIndex(-1);
-			setNextEnabled(false);
+			if (context.getAvailableCollections().isEmpty()) {
+				collectionsComboBox.setSelectedIndex(-1);
+				setNextEnabled(false);
+			} else {
+				collectionsComboBox.setSelectedIndex(0);
+				setNextEnabled(true);
+			}
 		};
 
 		@Override
 		public Page<DSpaceExporterContext> next(RDHEnvironment environment, DSpaceExporterContext context) {
 			// Store collection url
-			context.collectionURL = ((CollectionEntry)collectionsComboBox.getSelectedItem()).getEntry().getKey();
+			context.collectionURL = collectionEntries.getKey(collectionsComboBox.getSelectedItem().toString());
 
-			return CHOOSE_FILES;
+			return CHOOSE_DATASET;
 		}
 
 		@Override
 		protected JPanel createPanel() {
 
-			collectionsComboBox = new JComboBox<CollectionEntry>();
+			collectionsComboBox = new JComboBox<String>();
 			collectionsComboBox.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -746,8 +779,127 @@ public class DSpacePublisherWizard {
 					.add(noAvailableCollectionsMessage).xy(1, 5)
 					.build();
 		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 	};
 
+	/**
+	 * Showing all the files in a chosen collection
+	 */
+	private static final DSpaceExporterStep CHOOSE_DATASET = new DSpaceExporterStep(
+			"chooseDataset",
+			"replaydh.wizard.dspacePublisher.chooseDataset.title",
+			"replaydh.wizard.dspacePublisher.chooseDataset.description") {
+
+		private JComboBox<String> collectionsComboBox;
+		private JTextArea noAvailableDatasetsMessage;
+
+		private CollectionEntry collectionEntries;
+
+		private long timeOut = 60; //in seconds
+
+		private ResourceManager rm = ResourceManager.getInstance();
+
+		@Override
+		public void refresh(RDHEnvironment environment, DSpaceExporterContext context) {
+			super.refresh(environment, context); //call parent "refresh"
+
+			checkFilesAvailable(context);
+
+			// Update combobox with collections
+			collectionsComboBox.removeAllItems();
+
+			collectionsComboBox.addItem(rm.get("replaydh.wizard.dspacePublisher.chooseDataset.create"));
+
+			// Remove selection and disable "next" button
+			//collectionsComboBox.setSelectedIndex(-1);
+			//setNextEnabled(false);
+		};
+
+		private void checkFilesAvailable(DSpaceExporterContext context) {
+
+			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+				boolean filesAvailable;
+				@Override
+				protected Boolean doInBackground() throws Exception {
+					filesAvailable = false;
+					if (!(context.exportRepository.getCollectionEntries(context.collectionURL).isEmpty())) {
+						context.availableDatasetsInCollection=context.exportRepository.getCollectionEntries(context.collectionURL);
+						filesAvailable=true;
+					}
+					return filesAvailable;
+				}
+				
+				@Override
+				protected void done() {
+					if (filesAvailable) {
+						collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
+						for (String value : collectionEntries.getValues()) {
+							collectionsComboBox.addItem(value);
+						}
+						collectionsComboBox.setSelectedIndex(0);
+						setNextEnabled(true);
+						noAvailableDatasetsMessage.setText(ResourceManager.getInstance()
+								.get("replaydh.wizard.dspacePublisher.chooseDataset.datasetsMessage"));
+					} else {
+						// Display the error message if there are no collections available
+						collectionEntries = null;
+						noAvailableDatasetsMessage.setText(ResourceManager.getInstance()
+								.get("replaydh.wizard.dspacePublisher.chooseDataset.noDatasetsMessage"));
+					}
+				}
+			};
+			executeWorkerWithTimeout(worker, timeOut, "Exception by exchanging http/https");
+		}
+
+		@Override
+		public Page<DSpaceExporterContext> next(RDHEnvironment environment, DSpaceExporterContext context) {
+			if (collectionEntries != null) {
+				context.chosenDataset = collectionEntries.getKeyForDataset(collectionsComboBox.getSelectedItem().toString());
+			} else {
+				context.chosenDataset = null;
+			}
+			if (context.chosenDataset == null) {
+				return CHOOSE_FILES;
+			}
+			return EDIT_METADATA;
+		}
+
+		@Override
+		protected JPanel createPanel() {
+
+			collectionsComboBox = new JComboBox<String>();
+			collectionsComboBox.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					setNextEnabled(true);
+				}
+			});
+
+			noAvailableDatasetsMessage = GuiUtils.createTextArea(ResourceManager.getInstance()
+					.get("replaydh.wizard.dspacePublisher.chooseDataset.noDatasetsMessage"));
+
+			return FormBuilder.create()
+					.columns("fill:pref:grow")
+					.rows("pref, $nlg, pref, $nlg, pref")
+					.padding(Paddings.DLU4)
+					.add(new JLabel(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.chooseDataset.collectionLabel"))).xy(1, 1)
+					.add(collectionsComboBox).xy(1, 3)
+					.add(noAvailableDatasetsMessage).xy(1, 5)
+					.build();
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
+	};
 
 	/**
 	 * 3rd. page - choose files for publishing
@@ -916,6 +1068,12 @@ public class DSpacePublisherWizard {
 					.add(messageArea).xyw(1, 5, 3)
 					.build();
 		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 	};
 
 
@@ -927,45 +1085,93 @@ public class DSpacePublisherWizard {
 			"replaydh.wizard.dspacePublisher.editMetadata.title",
 			"replaydh.wizard.dspacePublisher.editMetadata.description") {
 
-		private JTextField tfCreator;
-		private JTextField tfTitle;
-		private JTextField tfDescription;
-		private JFormattedTextField tfPublicationYear;
-
-		//Not used metadata fields
-		//private JTextField tfIdentifier;
-		//private JTextField tfPublisher;
-		//private JTextField tfResourceType;
-
+		private JPanel mainPanel;
+		//private GUIElement ePublicationYear;
+		private GUIElement eIdentifier;
+		private GUIElement ePublisher;
+		private GUIElement eResourceType;
+		private GUIElement eCreator;
+		private GUIElement eTitle;
+		private GUIElement eDescription;
+		private GUIElement eSubjects;
+		//private GUIElement eVersion;
+		//private GUIElement eReference;
+		//private GUIElement eLicense;
+		private GUIElement eRights;
+		private GUIElement eDate;
+		private GUIElement eSources;
+		private GUIElement resetButton;
 		private JTextArea messageArea;
+		private JCheckBox processMetadata;
+		private JCheckBox replaceMetadata;
 
-		private DateFormat format;
+		private List<GUIElement> creatorslist;
+		private List<GUIElement> publisherslist;
+		private List<GUIElement> subjectslist;
+		private List<GUIElement> sourceslist;
+		private List<String> listofkeys;
+		private Map<String, JPanel> propertypanels;
+		private Map<String, List<GUIElement>> elementsofproperty;
+		private FormBuilder builder;
+		private Map<String, Integer> panelRow;
+		private ResourceManager rm;
+
+		private List<String> titleElements;
+		private List<String> descriptionElements;
+		private List<String> creatorElements;
+		//private List<String> issuedElements;
+		private List<String> identifierElements;
+		private List<String> publisherElements;
+		private List<String> typeElements;
+		private List<String> subjectElements;
+		/*private List<String> hasVersionElements;
+		private List<String> referenceElements;
+		private List<String> licenseElements;*/
+		private List<String> rightsElements;
+		private List<String> dateElements;
+		private List<String> sourcesElements;
+
+		private long timeOut = 60; //in seconds
+		private DocumentAdapter adapter;
+
+		private JSONArray jsonObjects;
+		private String propertyForSwitch;
+		private String propertyvalue;
+		private String savedDate;
+
+		private RDHEnvironment myEnvironment;
+		private DSpaceExporterContext myContext;
 
 		@Override
 		public void refresh(RDHEnvironment environment, DSpaceExporterContext context) {
 			super.refresh(environment, context); //call parent "refresh"
-
-			//TODO: use it to fill in the text fields with not null values. Should be used later, when we use some metadata-schema
-			MetadataObject mdObject = context.metadataObject;
-
 			// Creator
-			String creator = null;
-			if(creator==null) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
-				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
+			if (context.chosenDataset == null) {
+				clearGUI();
+				createNewDataset(environment, context);
+				replaceMetadata.setSelected(false);
+				replaceMetadata.setEnabled(false);
+				processMetadata.setSelected(true);
+				processMetadata.setEnabled(true);
+				eDate.getTextfield().setEnabled(true);
+			} else {
+				clearGUI();
+				resetButton.getResetButton().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.ResetButton"));
+				getJSONObject(environment, context);
+				replaceMetadata.setSelected(true);
+				replaceMetadata.setEnabled(true);
+				if(replaceMetadata.getActionListeners().length == 0) {
+					replaceMetadata.addActionListener(this);
+				}
+				processMetadata.setSelected(false);
+				processMetadata.setEnabled(false);
+				eDate.getTextfield().setEnabled(false);
+				context.filesToPublish = new ArrayList<>();
 			}
-			tfCreator.setText(creator);
 
-			//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
 
-			// Title
-			tfTitle.setText(context.exportInfo.getWorkflow().getTitle());
-
-			// Description
-			tfDescription.setText(context.exportInfo.getWorkflow().getDescription());
-
-			// Publication year
-			int year = Calendar.getInstance().get(Calendar.YEAR);
-			tfPublicationYear.setText(String.valueOf(year));
+			myEnvironment=environment;
+			myContext=context;
 
 			refreshNextEnabled();
 
@@ -973,55 +1179,315 @@ public class DSpacePublisherWizard {
 
 		};
 
+		public void createNewDataset(RDHEnvironment environment, DSpaceExporterContext context) {
+			String creator = "";
+			if(elementsofproperty.get("creator").get(0).getTextfield().getText().isEmpty()) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
+				creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
+			}
+			elementsofproperty.get("creator").get(0).getTextfield().setText(creator);
+
+			//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
+
+			// Title
+			eTitle.getTextfield().setText(context.exportInfo.getWorkflow().getTitle());
+
+			// Description
+			eDescription.getDescription().setText(context.exportInfo.getWorkflow().getDescription());
+
+			// Publication year
+			int year = Calendar.getInstance().get(Calendar.YEAR);
+			eDate.getTextfield().setText(String.valueOf(year));
+
+		}
+
+		private void getJSONObject(RDHEnvironment environment, DSpaceExporterContext context) {
+
+			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+
+				@Override
+				protected Boolean doInBackground() throws Exception {
+					boolean metadataAvailable = false;
+					if (context.chosenDataset != null) {
+						String metadataUrl = context.chosenDataset;
+						if (context.exportRepository.getItemMetadata(metadataUrl) != null) {
+							context.jsonObjectWithMetadata=context.exportRepository.getItemMetadata(metadataUrl);
+							metadataAvailable=true;
+						}
+					}
+					return metadataAvailable;
+				}
+				@Override
+				protected void done() {
+					if (context.chosenDataset != null) {
+						jsonObjects = JsonPath.read(context.jsonObjectWithMetadata,"$");
+						LinkedHashMap<String, String> property;
+						int authorCounter=0;
+						int subjectCounter=0;
+						for(int i = 0; i < jsonObjects.size(); i++) {
+							property=JsonPath.read(jsonObjects.get(i),"$");
+							propertyForSwitch=property.get("element").toString();
+							//System.out.println(propertyForSwitch+" : "+property);
+							switch(propertyForSwitch) {
+							case "title":
+								propertyvalue=property.get("key");
+								if (propertyvalue != null) {
+									eTitle.getTextfield().setText(property.get("value"));
+								}
+								break;
+							case "contributor":
+								if (property.get("qualifier") != null) {
+									if (property.get("qualifier").equals("author")) {
+										propertyvalue = property.get("key");
+										if (authorCounter > 0) {
+											GUIElement element = createGUIElement("creator");
+											elementsofproperty.get("creator").add(element);
+											element.getTextfield().getDocument().addDocumentListener(adapter);
+											GuiUtils.prepareChangeableBorder(element.getTextfield());
+											element.getTextfield().setText(property.get("value"));
+										} else {
+											elementsofproperty.get("creator").get(authorCounter).getTextfield()
+													.setText(property.get("value"));
+										}
+										authorCounter++;
+									}
+									refreshPanel("creator");
+								}
+								break;
+							case "description":
+								propertyvalue=property.get("key");
+								if (propertyvalue != null) {
+									eDescription.getDescription().setText(property.get("value"));
+								}
+								break;
+							case "date":
+								if (property.get("qualifier") != null) {
+									if (property.get("qualifier").equals("issued")) {
+										propertyvalue=property.get("key");
+										if (propertyvalue != null) {
+											eDate.getTextfield().setText(property.get("value"));
+										} 
+									}
+								} else {
+									propertyvalue=property.get("key");
+									if (propertyvalue != null) {
+										eDate.getTextfield().setText(property.get("value"));
+									}
+								}
+								savedDate=eDate.getTextfield().getText();
+								break;
+							case "identifier":
+								propertyvalue=property.get("key");
+								if (propertyvalue != null) {
+									eIdentifier.getTextfield().setText(property.get("value"));
+								}
+								break;
+							case "publisher":
+								propertyvalue=property.get("key");
+								if (propertyvalue != null) {
+									ePublisher.getTextfield().setText(property.get("value"));
+								}
+								break;
+							case "subject":
+								propertyvalue = property.get("key");
+								if (subjectCounter > 0) {
+									GUIElement element = createGUIElement("subject");
+									elementsofproperty.get("subject").add(element);
+									GuiUtils.prepareChangeableBorder(element.getTextfield());
+									element.getTextfield().setText(property.get("value"));
+								} else {
+									elementsofproperty.get("subject").get(subjectCounter).getTextfield()
+											.setText(property.get("value"));
+								}
+								subjectCounter++;
+								refreshPanel("subject");
+								break;
+							case "rights":
+								if (property.get("qualifier") == null) {
+									propertyvalue = property.get("key");
+									if (propertyvalue != null) {
+										eRights.getTextfield().setText(property.get("value"));
+									}
+								}
+								break;
+							case "type":
+								propertyvalue = property.get("key");
+								if (propertyvalue != null) {
+									eResourceType.getTextfield().setText(property.get("value"));
+								}
+								break;
+							}
+						}
+					}
+				}
+			};
+			executeWorkerWithTimeout(worker, timeOut, "Exception by exchanging http/https");
+		}
+
 		@Override
 		public Page<DSpaceExporterContext> next(RDHEnvironment environment, DSpaceExporterContext context) {
 
-			ResourceManager rm = ResourceManager.getInstance();
-
 			// Store metadata
 			context.metadataObject = new MetadataObject();
-			context.metadataObject.mapDoublinCoreToMetadata = new HashMap<>();
-			context.metadataObject.mapDoublinCoreToLabel = new HashMap<>();
+			context.metadataObject.mapDublinCoreToMetadata = new HashMap<>();
+			context.metadataObject.mapDublinCoreToLabel = new HashMap<>();
 
 			// Title
-			context.metadataObject.mapDoublinCoreToMetadata.put("title", Arrays.asList(tfTitle.getText()));
-			context.metadataObject.mapDoublinCoreToLabel.put("title", rm.get("replaydh.wizard.dspacePublisher.editMetadata.titleLabel"));
+			if (titleElements == null) {
+				titleElements = new ArrayList<>();
+			} else {
+				titleElements.clear();
+			}
+			titleElements.add(eTitle.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("title", titleElements);
+			context.metadataObject.mapDublinCoreToLabel.put("title", rm.get("replaydh.wizard.dspacePublisher.editMetadata.titleLabel"));
 
 			// Description
-			context.metadataObject.mapDoublinCoreToMetadata.put("description", Arrays.asList(tfDescription.getText()));
-			context.metadataObject.mapDoublinCoreToLabel.put("description", rm.get("replaydh.wizard.dspacePublisher.editMetadata.descriptionLabel"));
+			if (descriptionElements == null) {
+				descriptionElements = new ArrayList<>();
+			} else {
+				descriptionElements.clear();
+			}
+			descriptionElements.add(eDescription.getDescription().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("description", descriptionElements);
+			context.metadataObject.mapDublinCoreToLabel.put("description", rm.get("replaydh.wizard.dspacePublisher.editMetadata.descriptionLabel"));
 
 			// Creator
-			context.metadataObject.mapDoublinCoreToMetadata.put("creator", Arrays.asList(tfCreator.getText()));
-			context.metadataObject.mapDoublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dspacePublisher.editMetadata.creatorLabel"));
+			if (creatorElements == null) {
+				creatorElements = new ArrayList<>();
+			} else {
+				creatorElements.clear();
+			}
+			for (String property : getValuesOfProperty("creator")) {
+				creatorElements.add(property);
+			}
+			context.metadataObject.mapDublinCoreToMetadata.put("creator", creatorElements);
+			context.metadataObject.mapDublinCoreToLabel.put("creator", rm.get("replaydh.wizard.dspacePublisher.editMetadata.creatorLabel"));
 
 			// Publication year
-			context.metadataObject.mapDoublinCoreToMetadata.put("issued", Arrays.asList(tfPublicationYear.getText()));
-			context.metadataObject.mapDoublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dspacePublisher.editMetadata.publicationYearLabel"));
+			/*if (issuedElements == null) {
+				issuedElements = new ArrayList<>();
+			} else {
+				issuedElements.clear();
+			}
+			issuedElements.add(ePublicationYear.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("issued", issuedElements);
+			context.metadataObject.mapDublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dspacePublisher.editMetadata.publicationYearLabel"));*/
 
-//			// Not used (reserved) metadata fields
-//			context.metadataObject.mapDoublinCoreToMetadata.put("identifier", tfIdentifier.getText());
-//			context.metadataObject.mapDoublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dspacePublisher.editMetadata.identifierLabel"));
-//			context.metadataObject.mapDoublinCoreToMetadata.put("publisher", tfPublisher.getText());
-//			context.metadataObject.mapDoublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dspacePublisher.editMetadata.publisherLabel"));
-//			context.metadataObject.mapDoublinCoreToMetadata.put("type", tfResourceType.getText());
-//			context.metadataObject.mapDoublinCoreToLabel.put("type", rm.get("replaydh.wizard.dspacePublisher.editMetadata.resourceTypeLabel"));
+			// Not used (reserved) metadata fields
+			if (identifierElements == null) {
+				identifierElements = new ArrayList<>();
+			} else {
+				identifierElements.clear();
+			}
+			identifierElements.add(eIdentifier.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("identifier", identifierElements);
+			context.metadataObject.mapDublinCoreToLabel.put("identifier", rm.get("replaydh.wizard.dspacePublisher.editMetadata.identifierLabel"));
 
+			if (publisherElements == null) {
+				publisherElements = new ArrayList<>();
+			} else {
+				publisherElements.clear();
+			}
+			for (String property : getValuesOfProperty("publisher")) {
+				publisherElements.add(property);
+			}
+			context.metadataObject.mapDublinCoreToMetadata.put("publisher", publisherElements);
+			context.metadataObject.mapDublinCoreToLabel.put("publisher", rm.get("replaydh.wizard.dspacePublisher.editMetadata.publisherLabel"));
+
+			if (typeElements == null) {
+				typeElements = new ArrayList<>();
+			} else {
+				typeElements.clear();
+			}
+			typeElements.add(eResourceType.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("type", typeElements);
+			context.metadataObject.mapDublinCoreToLabel.put("type", rm.get("replaydh.wizard.dspacePublisher.editMetadata.resourceTypeLabel"));
+
+			if (subjectElements == null) {
+				subjectElements = new ArrayList<>();
+			} else {
+				subjectElements.clear();
+			}
+			for (String property : getValuesOfProperty("subject")) {
+				subjectElements.add(property);
+			}
+			context.metadataObject.mapDublinCoreToMetadata.put("subject", subjectElements);
+			context.metadataObject.mapDublinCoreToLabel.put("subject", rm.get("replaydh.wizard.dspacePublisher.editMetadata.subjectLabel"));
+
+			/*if (hasVersionElements == null) {
+				hasVersionElements = new ArrayList<>();
+			} else {
+				hasVersionElements.clear();
+			}
+			hasVersionElements.add(eVersion.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("hasVersion", hasVersionElements);
+			context.metadataObject.mapDublinCoreToLabel.put("hasVersion", rm.get("replaydh.wizard.dspacePublisher.editMetadata.versionLabel"));
+
+			if (referenceElements == null) {
+				referenceElements = new ArrayList<>();
+			} else {
+				referenceElements.clear();
+			}
+			referenceElements.add(eReference.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("isReferencedBy", referenceElements);
+			context.metadataObject.mapDublinCoreToLabel.put("isReferencedBy", rm.get("replaydh.wizard.dspacePublisher.editMetadata.isReferencedByLabel"));
+
+			if (licenseElements == null) {
+				licenseElements = new ArrayList<>();
+			} else {
+				licenseElements.clear();
+			}
+			if (!((eLicense.getTextfield().getText().equals("CC0")) || (eLicense.getTextfield().getText().equals("NONE")))) {
+				licenseElements.add("NONE");
+			}
+			licenseElements.add(eLicense.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("license", licenseElements);
+			context.metadataObject.mapDublinCoreToLabel.put("license", rm.get("replaydh.wizard.dspacePublisher.editMetadata.LicenseLabel"));*/
+
+			if (dateElements == null) {
+				dateElements = new ArrayList<>();
+			} else {
+				dateElements.clear();
+			}
+			dateElements.add(eDate.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("issued", dateElements);
+			context.metadataObject.mapDublinCoreToLabel.put("issued", rm.get("replaydh.wizard.dspacePublisher.editMetadata.dateLabel"));
+
+			if (rightsElements == null) {
+				rightsElements = new ArrayList<>();
+			} else {
+				rightsElements.clear();
+			}
+			rightsElements.add(eRights.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("rights", rightsElements);
+			context.metadataObject.mapDublinCoreToLabel.put("rights", rm.get("replaydh.wizard.dspacePublisher.editMetadata.RightsLabel"));
+
+			if (sourcesElements == null) {
+				sourcesElements = new ArrayList<>();
+			} else {
+				sourcesElements.clear();
+			}
+			for (String property : getValuesOfProperty("sources")) {
+				sourcesElements.add(property);
+			}
+			sourcesElements.add(eSources.getTextfield().getText());
+			context.metadataObject.mapDublinCoreToMetadata.put("sources", sourcesElements);
+			context.metadataObject.mapDublinCoreToLabel.put("sources", rm.get("replaydh.wizard.dspacePublisher.editMetadata.sourcesLabel"));
+
+			context.setExportProcessMetadataAllowed(processMetadata.isSelected());
+
+			context.setReplaceMetadataAllowed(replaceMetadata.isSelected());
+			
 			return FINISH;
 		}
 
 		private void refreshNextEnabled() {
+
 			boolean nextEnabled = true;
 
-			nextEnabled &= checkAndUpdateBorder(tfCreator);
-			nextEnabled &= checkAndUpdateBorder(tfTitle);
-			nextEnabled &= checkAndUpdateBorder(tfDescription);
-			nextEnabled &= checkAndUpdateBorder(tfPublicationYear);
-
-			// Not used metadata fields
-			//nextEnabled &= checkAndUpdateBorder(tfIdentifier);
-			//nextEnabled &= checkAndUpdateBorder(tfPublisher);
-			//nextEnabled &= checkAndUpdateBorder(tfResourceType);
+			nextEnabled &= refreshBorder(elementsofproperty.get("creator"));
+			nextEnabled &= checkAndUpdateBorder(eTitle.getTextfield());
+			nextEnabled &= checkAndUpdateBorder(eDate.getTextfield());
 
 			setNextEnabled(nextEnabled);
 		}
@@ -1032,74 +1498,530 @@ public class DSpacePublisherWizard {
 			GuiUtils.toggleChangeableBorder(tf, !isValid);
 			return isValid;
 		}
+		/*private boolean checkAndUpdateBorderDate(JTextField tf) {
+			String text = tf.getText().trim();
+			int number = text.length();
+			boolean isValid = false;
+			if (number == 4) {
+				isValid=true;
+			}
+			try {
+				Integer.parseInt(text);
+			}
+			catch (NumberFormatException e) {
+				isValid=false;
+			}
+			GuiUtils.toggleChangeableBorder(tf, !isValid);
+			return isValid;
+		}*/
 
 		@Override
 		protected JPanel createPanel() {
+			listofkeys = new ArrayList<>();
+			propertypanels = new HashMap<>();
+			elementsofproperty = new HashMap<>();
+			builder = FormBuilder.create();
+			panelRow = new HashMap<>();
 
-			ResourceManager rm = ResourceManager.getInstance();
+			rm = ResourceManager.getInstance();
 
-			tfCreator = new JTextField();
-			tfTitle = new JTextField();
-			tfDescription = new JTextField();
-			format = new SimpleDateFormat("YYYY");
-			tfPublicationYear = new JFormattedTextField(format);
+			JTextField tfTitle = new JTextField();
+			JLabel lTitle = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.titleLabel"));
+			eTitle = new GUIElement();
+			eTitle.setTextfield(tfTitle);
+			eTitle.setLabel(lTitle);
+			eTitle.create();
+			listofkeys.add("title");
+
+			JTextArea description = new JTextArea();
+			description.setLineWrap(true);
+			description.setRows(3);
+			description.setWrapStyleWord(true);
+			JLabel lDescription = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.descriptionLabel"));
+			eDescription = new GUIElement();
+			eDescription.setDescription(description);
+			eDescription.setLabel(lDescription);
+			eDescription.create();
+			listofkeys.add("description");
+
+			JTextField tfCreator = new JTextField();
+			JLabel lCreator = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.creatorLabel"));
+			eCreator = new GUIElement();
+			GuiUtils.prepareChangeableBorder(tfCreator);
+			eCreator.setTextfield(tfCreator);
+			eCreator.setLabel(lCreator);
+			eCreator.setButton(new JButton());
+			eCreator.getButton().addActionListener(this);
+			eCreator.setMinusbutton(new JButton());
+			eCreator.getMinusbutton().addActionListener(this);
+			eCreator.create();
+			listofkeys.add("creator");
+
+			/*format = new SimpleDateFormat("YYYY");
+			JFormattedTextField tfPublicationYear = new JFormattedTextField(format);
+			JLabel lPubYear = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.publicationYearLabel"));
+			ePublicationYear = new GUIElement();
+			ePublicationYear.setTextfield(tfPublicationYear);
+			ePublicationYear.setLabel(lPubYear);
 			tfPublicationYear.setToolTipText("YYYY");
+			ePublicationYear.create();
+			listofkeys.add("year");*/
+
+			JTextField tfDate = new JTextField();
+			//format = new SimpleDateFormat("YYYY");
+			//JFormattedTextField tfDate = new JFormattedTextField(format);
+			JLabel lDate = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.dateLabel"));
+			eDate = new GUIElement();
+			eDate.setTextfield(tfDate);
+			eDate.setLabel(lDate);
+			eDate.create();
+			listofkeys.add("date");
+
+			JTextField tfResourceType = new JTextField();
+			JLabel lResourceType = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.resourceTypeLabel"));
+			eResourceType = new GUIElement();
+			eResourceType.setTextfield(tfResourceType);
+			eResourceType.setLabel(lResourceType);
+			eResourceType.create();
+			listofkeys.add("resourceType");
+
+			JTextField tfIdentifier = new JTextField();
+			JLabel lIdentifier = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.identifierLabel"));
+			eIdentifier = new GUIElement();
+			eIdentifier.setTextfield(tfIdentifier);
+			eIdentifier.setLabel(lIdentifier);
+			eIdentifier.create();
+			listofkeys.add("identifier");
+
+			JTextField tfPublisher = new JTextField();
+			JLabel lPublisher = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.publisherLabel"));
+			ePublisher = new GUIElement();
+			ePublisher.setTextfield(tfPublisher);
+			ePublisher.setLabel(lPublisher);
+			ePublisher.setButton(new JButton());
+			ePublisher.getButton().addActionListener(this);
+			ePublisher.setMinusbutton(new JButton());
+			ePublisher.getMinusbutton().addActionListener(this);
+			ePublisher.create();
+			listofkeys.add("publisher");
+
+			JTextField tfSubjects = new JTextField();
+			JLabel lSubjects = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.subjectLabel"));
+			eSubjects = new GUIElement();
+			eSubjects.setTextfield(tfSubjects);
+			eSubjects.setLabel(lSubjects);
+			eSubjects.setButton(new JButton());
+			eSubjects.getButton().addActionListener(this);
+			eSubjects.setMinusbutton(new JButton());
+			eSubjects.getMinusbutton().addActionListener(this);
+			eSubjects.create();
+			listofkeys.add("subject");
+
+			/*JTextField tfVersion = new JTextField();
+			JLabel lversion = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.versionLabel"));
+			eVersion = new GUIElement();
+			eVersion.setTextfield(tfVersion);
+			eVersion.setLabel(lversion);
+			eVersion.create();
+			listofkeys.add("version");
+
+			JTextField tfReference = new JTextField();
+			JLabel lreference = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.isReferencedByLabel"));
+			eReference = new GUIElement();
+			eReference.setTextfield(tfReference);
+			eReference.setLabel(lreference);
+			eReference.create();
+			listofkeys.add("reference");
+
+			JTextField tfLicense = new JTextField("NONE");
+			JLabel lLicense = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.LicenseLabel"));
+			eLicense = new GUIElement();
+			eLicense.setTextfield(tfLicense);
+			eLicense.getTextfield().setToolTipText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.licenseToolTip"));
+			eLicense.setLabel(lLicense);
+			eLicense.create();
+			listofkeys.add("license");*/
+
+			JTextField tfRights = new JTextField();
+			JLabel lRights = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.RightsLabel"));
+			eRights = new GUIElement();
+			eRights.setTextfield(tfRights);
+			eRights.setLabel(lRights);
+			eRights.create();
+			listofkeys.add("rights");
+
+			JTextField tfSource = new JTextField();
+			JLabel lSource = new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.sourcesLabel"));
+			eSources = new GUIElement();
+			eSources.setTextfield(tfSource);
+			eSources.setLabel(lSource);
+			eSources.setButton(new JButton());
+			eSources.getButton().addActionListener(this);
+			eSources.setMinusbutton(new JButton());
+			eSources.getMinusbutton().addActionListener(this);
+			eSources.create();
+			listofkeys.add("sources");
+
+			resetButton = new GUIElement();
+			resetButton.createResetButton(rm.get("replaydh.wizard.dspacePublisher.editMetadata.ResetButton"));
+			resetButton.getResetButton().addActionListener(this);
 
 			GuiUtils.prepareChangeableBorder(tfCreator);
 			GuiUtils.prepareChangeableBorder(tfTitle);
-			GuiUtils.prepareChangeableBorder(tfDescription);
-			GuiUtils.prepareChangeableBorder(tfPublicationYear);
-
-			// Not used metadata fields
-			//tfIdentifier = new JTextField();
-			//tfPublisher = new JTextField();
-			//tfResourceType = new JTextField();
-			//
-			//GuiUtils.prepareChangeableBorder(tfIdentifier);
-			//GuiUtils.prepareChangeableBorder(tfPublisher);
-			//GuiUtils.prepareChangeableBorder(tfResourceType);
-
+			GuiUtils.prepareChangeableBorder(tfDate);
 
 			messageArea = GuiUtils.createTextArea(rm.get("replaydh.wizard.dspacePublisher.editMetadata.infoMessage"));
 
-
-			final DocumentAdapter adapter = new DocumentAdapter() {
+			adapter = new DocumentAdapter() {
 				@Override
 				public void anyUpdate(DocumentEvent e) {
 					refreshNextEnabled();
 				}
 			};
 
-			tfCreator.getDocument().addDocumentListener(adapter);
-			tfTitle.getDocument().addDocumentListener(adapter);
-			tfDescription.getDocument().addDocumentListener(adapter);
-			tfPublicationYear.getDocument().addDocumentListener(adapter);
+			eCreator.getTextfield().getDocument().addDocumentListener(adapter);
+			eTitle.getTextfield().getDocument().addDocumentListener(adapter);
+			eDate.getTextfield().getDocument().addDocumentListener(adapter);
 
-			// Not used metadata fields
-			//tfIdentifier.getDocument().addDocumentListener(adapter);
-			//tfPublisher.getDocument().addDocumentListener(adapter);
-			//tfResourceType.getDocument().addDocumentListener(adapter);
+			processMetadata = new JCheckBox(rm.get("replaydh.wizard.dspacePublisher.editMetadata.processMetadata"));
+			processMetadata.setSelected(true);
 
-			return FormBuilder.create()
-					.columns("pref, 6dlu, fill:pref:grow")
-					.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref")
-					.padding(Paddings.DLU4)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.titleLabel"))).xy(1, 1)
-					.add(tfTitle).xy(3, 1)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.descriptionLabel"))).xy(1, 3)
-					.add(tfDescription).xy(3, 3)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.creatorLabel"))).xy(1, 5)
-					.add(tfCreator).xy(3, 5)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.publicationYearLabel"))).xy(1, 7)
-					.add(tfPublicationYear).xy(3, 7)
-//					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.resourceTypeLabel"))).xy(1, 9)
-//					.add(tfResourceType).xy(3, 9)
-//					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.identifierLabel"))).xy(1, 11)
-//					.add(tfIdentifier).xy(3, 11)
-//					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.editMetadata.publisherLabel"))).xy(1, 13)
-//					.add(tfPublisher).xy(3, 13)
-					.add(messageArea).xyw(1, 9, 3)
-					.build();
+			replaceMetadata = new JCheckBox(rm.get("replaydh.wizard.dspacePublisher.editMetadata.replaceMetadata"));
+			replaceMetadata.setSelected(false);
+
+			builder.columns("pref:grow");
+			builder.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+			builder.padding(Paddings.DLU4);
+			createGUI();
+			mainPanel=builder.getPanel();
+			return builder.build();
+		}
+
+		public void clearGUI() {
+			for (String propertyname : listofkeys) {
+				if(elementsofproperty.get(propertyname) != null) {
+					int size = elementsofproperty.get(propertyname).size();
+					for (int i=size-1; i > 0; i--) {
+						elementsofproperty.get(propertyname).remove(i);
+						refreshPanel(propertyname);
+					}
+					elementsofproperty.get(propertyname).get(0).getTextfield().setText("");
+				}
+			}
+			//ePublicationYear.getTextfield().setText("");
+			eIdentifier.getTextfield().setText("");
+			eResourceType.getTextfield().setText("");
+			eTitle.getTextfield().setText("");
+			eDescription.getDescription().setText("");
+			/*eVersion.getTextfield().setText("");
+			eReference.getTextfield().setText("");
+			eLicense.getTextfield().setText("");*/
+			eRights.getTextfield().setText("");
+			eDate.getTextfield().setText("");
+		}
+
+		public void createGUI() {
+
+			if (publisherslist == null) {
+				publisherslist = new ArrayList<>();
+			} else {
+				publisherslist.clear();
+			}
+
+			publisherslist.add(ePublisher);
+			elementsofproperty.put("publisher", publisherslist);
+			propertypanels.put("publisher", elementsofproperty.get("publisher").get(0).getPanel());
+
+			if (subjectslist == null) {
+				subjectslist = new ArrayList<>();
+			} else {
+				subjectslist.clear();
+			}
+
+			subjectslist.add(eSubjects);
+			elementsofproperty.put("subject", subjectslist);
+			propertypanels.put("subject", elementsofproperty.get("subject").get(0).getPanel());
+
+			if (creatorslist == null) {
+				creatorslist = new ArrayList<>();
+			} else {
+				creatorslist.clear();
+			}
+
+			creatorslist.add(eCreator);
+			if(eCreator.getButton().getActionListeners().length == 0) {
+				eCreator.getButton().addActionListener(this);
+			}
+			if(eCreator.getMinusbutton().getActionListeners().length == 0) {
+				eCreator.getMinusbutton().addActionListener(this);
+			}
+			if(eCreator.getTextfield().getComponentListeners().length == 0) {
+				eCreator.getTextfield().getDocument().addDocumentListener(adapter);
+			}
+			elementsofproperty.put("creator", creatorslist);
+			propertypanels.put("creator", elementsofproperty.get("creator").get(0).getPanel());
+
+			if (sourceslist == null) {
+				sourceslist = new ArrayList<>();
+			} else {
+				sourceslist.clear();
+			}
+
+			sourceslist.add(eSources);
+			elementsofproperty.put("sources", sourceslist);
+			propertypanels.put("sources", elementsofproperty.get("sources").get(0).getPanel());
+
+			builder.add(eTitle.getPanel()).xy(1, 1);
+			panelRow.put("title", 1);
+			builder.add(eDescription.getPanel()).xy(1, 3);
+			panelRow.put("description", 3);
+			builder.add(propertypanels.get("creator")).xy(1, 5);
+			panelRow.put("creator", 5);
+			//builder.add(ePublicationYear.getPanel()).xy(1, 7);
+			//panelRow.put("year", 7);
+			builder.add(eDate.getPanel()).xy(1, 7);
+			panelRow.put("date", 7);
+			builder.add(eResourceType.getPanel()).xy(1, 9);
+			panelRow.put("resourceType", 9);
+			builder.add(eIdentifier.getPanel()).xy(1, 11);
+			panelRow.put("identifier", 11);
+			builder.add(propertypanels.get("publisher")).xy(1, 13);
+			panelRow.put("publisher", 13);
+			builder.add(propertypanels.get("subject")).xy(1, 15);
+			panelRow.put("subject", 15);
+			//builder.add(eVersion.getPanel()).xy(1, 17);
+			/*panelRow.put("version", 17);
+			builder.add(eReference.getPanel()).xy(1, 19);
+			panelRow.put("reference", 19);
+			builder.add(eLicense.getPanel()).xy(1, 21);
+			panelRow.put("license", 21);*/
+			builder.add(eRights.getPanel()).xy(1, 17);
+			panelRow.put("rights", 17);
+			builder.add(propertypanels.get("sources")).xy(1, 19);
+			panelRow.put("sources", 19);
+			builder.add(resetButton.getPanel()).xy(1, 21);
+			builder.add(processMetadata).xy(1, 23);
+			builder.add(replaceMetadata).xy(1, 25);
+			builder.add(messageArea).xyw(1, 27, 1);
+		}
+
+		public GUIElement createGUIElement(String metadataproperty) {
+			GUIElement elementToAdd = new GUIElement();
+			JTextField textfield = new JTextField();
+			elementToAdd.setTextfield(textfield);
+			JButton button = new JButton();
+			button.addActionListener(this);
+			elementToAdd.setButton(button);
+			JButton minusbutton = new JButton();
+			minusbutton.addActionListener(this);
+			elementToAdd.setMinusbutton(minusbutton);
+			elementToAdd.create();
+			return elementToAdd;
+		}
+
+		/**
+		 * Refreshes one JPanel according to the specified metadata property and its position (index) in the main
+		 * panelbuilder (builder)
+		 * @param metadatapropertyname
+		 */
+		public void refreshPanel(String metadatapropertyname) {
+			String columns="pref:grow";
+			String rows="pref";
+
+			
+			
+			FormLayout layout = new FormLayout(columns,rows);
+
+
+			JPanel onepropertypanel = propertypanels.get(metadatapropertyname);
+
+			onepropertypanel.removeAll();
+
+			onepropertypanel.setLayout(layout);
+
+
+
+			JPanel newpropertypanel = new JPanel();
+
+
+			FormBuilder propertybuilder = FormBuilder.create();
+			propertybuilder.columns(columns);
+			propertybuilder.rows(rows);
+
+
+
+			propertybuilder.panel(newpropertypanel);
+
+			propertypanels.put(metadatapropertyname, newpropertypanel);
+			onepropertypanel.removeAll();
+			onepropertypanel.setLayout(layout);
+
+			int numberOfElements=elementsofproperty.get(metadatapropertyname).size();
+
+			int z=0;
+
+			for(GUIElement oneguielement : elementsofproperty.get(metadatapropertyname)) {
+
+				if (z == 0) {
+					oneguielement.create();
+					if(oneguielement.getButton().getActionListeners().length == 0) {
+						oneguielement.getButton().addActionListener(this);
+					}
+					if(oneguielement.getMinusbutton().getActionListeners().length == 0) {
+						oneguielement.getMinusbutton().addActionListener(this);
+					}
+					if (oneguielement.getLabel().getText().equals("")) {
+						switch (metadatapropertyname) {
+						case "creator":
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.creatorLabel"));
+							break;
+						case "publisher":
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.publisherLabel"));
+							break;
+						case "subject":
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.subjectLabel"));
+							break;
+						case "sources":
+							oneguielement.getLabel().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.sourcesLabel"));
+							break;
+						}
+					}
+				}
+
+				propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
+				
+
+				if (numberOfElements > 1) {
+					propertybuilder.appendRows("$nlg, pref");
+				}
+
+				z++;
+
+
+			}
+			if (elementsofproperty.get(metadatapropertyname).size() > 1) {
+				propertybuilder.addSeparator("").xyw(1, ((z*2)+1), 1);
+				z++;
+			}
+			builder.add(propertybuilder.build()).xy(1, panelRow.get(metadatapropertyname));
+			Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, mainPanel);
+			if (parentComponent != null) {
+				parentComponent.pack();
+			}
+		}
+
+		public void removeElementFromPanel(String metadatapropertyname, int buttonNumber) {
+			elementsofproperty.get(metadatapropertyname).remove(buttonNumber);
+			refreshPanel(metadatapropertyname);
+		}
+
+		public List<String> getValuesOfProperty(String metadatapropertyname) {
+			List<String> propertyValues = new ArrayList<>();
+			for(GUIElement oneguielement: elementsofproperty.get(metadatapropertyname)) {
+				if (!(oneguielement.getTextfield().getText().isEmpty())) {
+					propertyValues.add(oneguielement.getTextfield().getText());
+				}
+			}
+			return propertyValues;
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			Object source = e.getSource();
+			JButton buttonpressed = null;
+			JButton minusbuttonpressed = null;
+			boolean done=false;
+			for (String propertyname : listofkeys) {
+				if (elementsofproperty.get(propertyname) != null) {
+					for (int buttonNumber = 0; buttonNumber < elementsofproperty.get(propertyname).size(); buttonNumber++) {
+						buttonpressed=elementsofproperty.get(propertyname).get(buttonNumber).getButton();
+						minusbuttonpressed=elementsofproperty.get(propertyname).get(buttonNumber).getMinusbutton();
+						if (source == buttonpressed) {
+							GUIElement element = createGUIElement(propertyname);
+							elementsofproperty.get(propertyname).add(element);
+							if (propertyname.equals("creator")) {
+								element.getTextfield().getDocument().addDocumentListener(adapter);
+								GuiUtils.prepareChangeableBorder(element.getTextfield());
+								refreshBorder(elementsofproperty.get(propertyname));
+							}
+							refreshPanel(propertyname);
+							done=true;
+							break;
+						}
+						if (source == minusbuttonpressed) {
+							if (elementsofproperty.get(propertyname).size() > 1) {
+								if (propertyname.equals("creator")) {
+									elementsofproperty.get(propertyname).get(buttonNumber).getTextfield().getDocument().removeDocumentListener(adapter);
+									elementsofproperty.get(propertyname).get(buttonNumber).getButton().removeActionListener(this);
+									elementsofproperty.get(propertyname).get(buttonNumber).getMinusbutton().removeActionListener(this);
+								}
+								removeElementFromPanel(propertyname,buttonNumber);
+							} else {
+								elementsofproperty.get(propertyname).get(0).getTextfield().setText("");
+							}
+							if (propertyname.equals("creator")) {
+								refreshBorder(elementsofproperty.get(propertyname));
+							}
+							done=true;
+							break;
+						}
+					}
+					if (done == true) {
+						break;
+					}
+				}
+			}
+			if (source == resetButton.getResetButton()) {
+				if (resetButton.getResetButton().getText().equals(rm.get("replaydh.wizard.dspacePublisher.editMetadata.RestoreButton"))) {
+					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.ResetButton"));
+					if (myContext.chosenDataset == null) {
+						clearGUI();
+						createNewDataset(myEnvironment, myContext);
+					} else {
+						clearGUI();
+						getJSONObject(myEnvironment, myContext);
+					}
+				} else {
+					builder.getPanel().removeAll();
+					createGUI();
+					clearGUI();
+					resetButton.getResetButton().setText(rm.get("replaydh.wizard.dspacePublisher.editMetadata.RestoreButton"));
+					Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, builder.getPanel());
+					parentComponent.pack();
+				}
+			}
+			if (source == replaceMetadata) {
+				if (!replaceMetadata.isSelected()) {
+					processMetadata.setEnabled(true);
+					eDate.getTextfield().setEnabled(true);
+				} else {
+					processMetadata.setEnabled(false);
+					processMetadata.setSelected(false);
+					eDate.getTextfield().setText(savedDate);
+					eDate.getTextfield().setEnabled(false);
+				}
+			}
+		}
+
+		public boolean refreshBorder(List<GUIElement> propertylist) {
+			boolean allEmpty=true;
+			for (GUIElement checkElement : propertylist) {
+				if (!(checkElement.getTextfield().getText().isEmpty())) {
+					allEmpty=false;
+					break;
+				}
+			}
+			if (!(allEmpty)) {
+				for (GUIElement changeElement : propertylist) {
+					GuiUtils.toggleChangeableBorder(changeElement.getTextfield(),false);
+				}
+			} else {
+				for (GUIElement changeElement : propertylist) {
+					GuiUtils.toggleChangeableBorder(changeElement.getTextfield(),true);
+				}
+			}
+			return !allEmpty;
 		}
 	};
 
@@ -1115,11 +2037,13 @@ public class DSpacePublisherWizard {
 			"replaydh.wizard.dspacePublisher.finish.description") {
 
 		private JTextArea repositoryUrlArea;
-		private JTextArea userLoginArea;
 		private JTextArea choosenCollectionArea;
 		private JTextArea choosenFilesArea;
 		private JTextArea metadataArea;
+		private JTextArea metadataNotice;
 		private JTextArea messageArea;
+
+		private ResourceManager rm = ResourceManager.getInstance();
 
 		@Override
 		public void refresh(RDHEnvironment environment, DSpaceExporterContext context) {
@@ -1128,11 +2052,6 @@ public class DSpacePublisherWizard {
 			// Repository URL
 			if(context.getRepositoryURL() != null) {
 				repositoryUrlArea.setText(context.getRepositoryURL());
-			}
-
-			// User login
-			if(context.getUserLogin() != null) {
-				userLoginArea.setText(context.getUserLogin());
 			}
 
 			// Chosen collection
@@ -1159,9 +2078,12 @@ public class DSpacePublisherWizard {
 			String strMetadata = "";
 			if(context.getMetadataObject() != null) {
 				for(Map.Entry<String, List<String>> entry: context.getMetadataObject().getMapLabelToMetadata().entrySet()) {
-					strMetadata += entry.getKey();
-					for(String metadataEntry: entry.getValue()) {
-						strMetadata += ": " + metadataEntry;
+					strMetadata += entry.getKey() + ": ";
+					for (String property : entry.getValue()) {
+						strMetadata += property + ", ";
+					}
+					if (strMetadata.substring(strMetadata.length()-2, strMetadata.length()).equals(", ")) {
+						strMetadata=strMetadata.substring(0, strMetadata.length()-2);
 					}
 					strMetadata += "\n";
 				}
@@ -1172,6 +2094,12 @@ public class DSpacePublisherWizard {
 				strMetadata = ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.finish.noDataMessage");
 			}
 			metadataArea.setText(strMetadata);
+
+			if (context.isExportProcessMetadataAllowed()) {
+				metadataNotice.setText(rm.get("replaydh.wizard.dspacePublisher.finish.processMetadata"));
+			} else {
+				metadataNotice.setText("");
+			}
 
 			// Info message
 			messageArea.setText(ResourceManager.getInstance().get("replaydh.wizard.dspacePublisher.finish.infoMessage"));
@@ -1188,29 +2116,34 @@ public class DSpacePublisherWizard {
 			ResourceManager rm = ResourceManager.getInstance();
 
 			repositoryUrlArea = GuiUtils.createTextArea("");
-			userLoginArea = GuiUtils.createTextArea("");
 			choosenCollectionArea = GuiUtils.createTextArea("");
 			choosenFilesArea = GuiUtils.createTextArea("");
 			metadataArea = GuiUtils.createTextArea("");
+			metadataNotice = GuiUtils.createTextArea("");
 			messageArea = GuiUtils.createTextArea("");
 
 			//TODO: add separators
 			return FormBuilder.create()
 					.columns("pref, 6dlu, fill:pref:grow")
-					.rows("top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref")
+					.rows("top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref, $nlg, top:pref")
 					.padding(Paddings.DLU4)
 					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.urlLabel"))).xy(1, 1)
 					.add(repositoryUrlArea).xy(3, 1)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseRepository.loginLabel"))).xy(1, 3)
-					.add(userLoginArea).xy(3, 3)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseCollection.collectionLabel"))).xy(1, 5)
-					.add(choosenCollectionArea).xy(3, 5)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseFiles.filesLabel"))).xy(1, 7)
-					.add(choosenFilesArea).xy(3, 7)
-					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.finish.metadataLabel"))).xy(1, 9)
-					.add(metadataArea).xy(3, 9)
-					.add(messageArea).xyw(1, 11, 3)
+					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseCollection.collectionLabel"))).xy(1, 3)
+					.add(choosenCollectionArea).xy(3, 3)
+					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.chooseFiles.filesLabel"))).xy(1, 5)
+					.add(choosenFilesArea).xy(3, 5)
+					.add(new JLabel(rm.get("replaydh.wizard.dspacePublisher.finish.metadataLabel"))).xy(1, 7)
+					.add(metadataArea).xy(3, 7)
+					.add(metadataNotice).xy(3, 9)
+					.add(messageArea).xyw(1, 13, 3)
 					.build();
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+
 		}
 	};
 
@@ -1229,9 +2162,6 @@ public class DSpacePublisherWizard {
 	        this.rootDirectories = new File[] {rootDirectory};
 	    }
 
-	    DirectoryRestrictedFileSystemView(File[] rootDirectories) {
-	        this.rootDirectories = rootDirectories;
-	    }
 
 	    @Override
 		public File createNewFolder(File containingDir) throws IOException {
@@ -1273,6 +2203,11 @@ public class DSpacePublisherWizard {
 	 * @author Volodymyr Kushnarenko
 	 */
 	private static class PathCellRenderer extends DefaultTableCellRenderer {
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
 
 		@Override
 		public Component getTableCellRendererComponent(

@@ -1,4 +1,4 @@
-package bwfdm.replaydh.workflow.export.dataverse;
+package bwfdm.replaydh.workflow.export.dspace;
 
 import java.awt.Dimension;
 
@@ -21,13 +21,13 @@ public class GUIElement {
 	private static final String columns = "right:max(100dlu;pref), 6dlu, max(170dlu;min), 3dlu, pref, 3dlu, pref";
 	private static final String rows = "pref";
 	private JTextField textfield = new JTextField();
+	private JTextArea description;
+	private JScrollPane scroll;
 	private JLabel label = new JLabel();
 	private JButton button = null;
 	private JButton minusbutton = null;
 	private JButton resetButton = null;
 	private JPanel panel = new JPanel();
-	private JTextArea description;
-	private JScrollPane scroll;
 	private static final FormLayout layout = new FormLayout(columns,rows);
 	private static final JLabel shadowlabelfirst = new JLabel();
 	private static final JLabel shadowlabelsecond = new JLabel();

@@ -473,11 +473,21 @@ public abstract class SwordExporter {
 	 * @throws SWORDClientException 
 	 */
 	public void replaceMetadataEntry(String entryUrl, Map<String, List<String>> metadataMap) throws SWORDClientException {
+		requireNonNull(entryUrl);
+		requireNonNull(metadataMap);
+		
 		try {
-			exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);	
-		} catch (FileNotFoundException | ProtocolViolationException | SWORDError e) {
-			throw new SWORDClientException("Exception by replacing of metadata via metadata Map: " 
-					+ e.getClass().getSimpleName() + ": " + e.getMessage());
-		}
+			exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SWORDError e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ProtocolViolationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	
+		
 	}
 }

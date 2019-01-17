@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,9 +30,23 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swordapp.client.Content;
@@ -44,15 +59,21 @@ import org.swordapp.client.SWORDWorkspace;
 import org.swordapp.client.ServiceDocument;
 import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
+import org.xml.sax.SAXException;
 
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.workflow.export.dspace.WebUtils.RequestType;
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.CollectionObject;
 import bwfdm.replaydh.workflow.export.dspace.dto.v6.HierarchyObject;
 import bwfdm.replaydh.workflow.export.generic.SwordExporter;
+import bwfdm.replaydh.workflow.export.generic.SwordExporter.SwordRequestType;
 
 
-
+/**
+ * @author Volodymyr Kushnarenko
+ * @author Florian Fritze
+ *
+ */
 public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 
 	protected static final Logger log = LoggerFactory.getLogger(DSpace_v6.class);
@@ -68,10 +89,15 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	protected String collectionsURL;
 	protected String hierarchyURL;
 	protected String restTestURL;
+	protected String restItemMetadataURL;
+	protected String restLogin;
+	
+	private String standardUser;
+	private String password;
 
-	CloseableHttpClient httpClient;
-
-	public DSpace_v6(String serviceDocumentURL, String restURL, String adminUser, String standardUser, char[] adminPassword) {
+	private HttpClient httpClient;
+	
+	public DSpace_v6(String serviceDocumentURL, String restURL, String adminUser, String standardUser, char[] adminPassword) throws ClientProtocolException, IOException, URISyntaxException {
 
 		super(SwordExporter.createAuthCredentials(adminUser, adminPassword, standardUser));
 		
@@ -83,15 +109,30 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		
 		this.setServiceDocumentURL(serviceDocumentURL);
 		this.setAllRestURLs(restURL);
+		
+		this.standardUser=standardUser;
+		this.password=String.valueOf(adminPassword);
 
 		// HttpClient which ignores the ssl certificate
-		this.httpClient = WebUtils.createHttpClientWithSSLSupport();
+		//this.httpClient = WebUtils.createHttpClientWithSSLSupport();
+		
+		CredentialsProvider provider = new BasicCredentialsProvider();
+		UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(this.standardUser, this.password);
+		provider.setCredentials(AuthScope.ANY, credentials);
 
+		httpClient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
+		
+		URIBuilder builder = new URIBuilder(this.restLogin);
+		builder.setParameter("email", this.standardUser);
+		builder.setParameter("password", this.password);
+		
+		httpClient.execute(new HttpPost(builder.build()));
+		
 		// TODO: original version, without ignoring of ssl certificate
 		// this.client = HttpClientBuilder.create().build();	
 	}
 	
-	public DSpace_v6(String serviceDocumentURL, String restURL, String userName, char[] userPassword) {
+	public DSpace_v6(String serviceDocumentURL, String restURL, String userName, char[] userPassword) throws ClientProtocolException, IOException, URISyntaxException {
 	
 		super(SwordExporter.createAuthCredentials(userName, userPassword));
 		
@@ -102,10 +143,24 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		
 		this.setServiceDocumentURL(serviceDocumentURL);
 		this.setAllRestURLs(restURL);
+		
+		this.standardUser=userName;
+		this.password=String.valueOf(userPassword);
 
 		// HttpClient which ignores the ssl certificate
-		this.httpClient = WebUtils.createHttpClientWithSSLSupport();
+		//this.httpClient = WebUtils.createHttpClientWithSSLSupport();
+		
+		CredentialsProvider provider = new BasicCredentialsProvider();
+		UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(this.standardUser, this.password);
+		provider.setCredentials(AuthScope.ANY, credentials);
 
+		httpClient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
+		
+		URIBuilder builder = new URIBuilder(this.restLogin);
+		builder.setParameter("email", this.standardUser);
+		builder.setParameter("password", this.password);
+		
+		httpClient.execute(new HttpPost(builder.build()));
 		// TODO: original version, without ignoring of ssl certificate
 		// this.client = HttpClientBuilder.create().build();
 	}
@@ -133,6 +188,8 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		this.collectionsURL = this.restURL + "/collections";
 		this.hierarchyURL = this.restURL + "/hierarchy";
 		this.restTestURL = this.restURL + "/test";
+		this.restItemMetadataURL = this.restURL + "/items/";
+		this.restLogin = this.restURL + "/login";
 	}
 
 	
@@ -149,13 +206,18 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 			WebUtils.closeResponse(response);
 			return true;
 		} else {
-			if (response != null) {
-				WebUtils.closeResponse(response);
-			}
+			WebUtils.closeResponse(response);
 			return false;
 		}
 	}
 
+	public String getItemMetadata(String swordEditLink) throws SWORDClientException, IOException, SAXException, ParserConfigurationException {
+		int startindex=swordEditLink.indexOf("swordv2/edit/");
+		String itemId=swordEditLink.substring(startindex, swordEditLink.length());
+		itemId=itemId.replace("swordv2/edit/", "");
+		String jsonOutput = getEntryMetadata(this.restItemMetadataURL+itemId+"/metadata");
+		return jsonOutput;
+	}
 	
 	/**
 	 * Get a list of communities for the current collection. Specific only for DSpace-6.
@@ -277,8 +339,8 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	 */
 	protected CollectionObject[] getAllCollectionObjects() {
 
-		final CloseableHttpResponse response = WebUtils.getResponse(this.httpClient, this.collectionsURL, RequestType.GET,
-				APPLICATION_JSON, APPLICATION_JSON);
+		final CloseableHttpResponse response = WebUtils.getResponse(this.httpClient, this.collectionsURL,
+				RequestType.GET, APPLICATION_JSON, APPLICATION_JSON);
 		final CollectionObject[] collections = JsonUtils
 				.jsonStringToObject(WebUtils.getResponseEntityAsString(response), CollectionObject[].class);
 		WebUtils.closeResponse(response);
@@ -552,12 +614,12 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 					Pattern idPattern = Pattern.compile("<id>(.+?)</id>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<id>https://some_link</id>"
 					Matcher idMatcher = idPattern.matcher(entryString);
 					
-					Pattern titlePattern = Pattern.compile("<title.+?>(.+?)</title>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<title type="text">some_title</title>" 
-					Matcher titleMatcher = titlePattern.matcher(entryString);
+					//Pattern titlePattern = Pattern.compile("<title.+?>(.+?)</title>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<title type="text">some_title</title>" 
+					//Matcher titleMatcher = titlePattern.matcher(entryString);
 					
 					// Find id and title
-					if(idMatcher.find() && titleMatcher.find()) { 
-						entriesMap.put(idMatcher.group(1), titleMatcher.group(1));
+					if(idMatcher.find()) { 
+						entriesMap.put(idMatcher.group(1), this.createUniqueEntryID(this.getEntryMetadata(idMatcher.group(1))));
 					}
 				}
 			} catch (IOException e) {
@@ -570,6 +632,72 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 	}
 	
 		
+	/**
+	 * Parts copied from: https://www.baeldung.com/httpclient-4-basic-authentication
+	 * @throws IOException 
+	 * @throws ClientProtocolException 
+	 */
+	public String getEntryMetadata(String datasetSwordLink) throws ClientProtocolException, IOException {
+		if (datasetSwordLink == null) {
+			log.error("Null datasetUrl passed in to getEntryMetadata; returning null");
+			return null;
+		}
+
+		HttpResponse response = httpClient.execute(new HttpGet(datasetSwordLink));
+		int statusCode = response.getStatusLine().getStatusCode();
+		
+		String responseString=null;
+		
+		if (statusCode == HttpStatus.SC_OK) {
+			HttpEntity entity = response.getEntity();
+			responseString = EntityUtils.toString(entity, "UTF-8");
+		}
+		if ((log.isDebugEnabled()) && (responseString != null)) {
+			log.debug("Connecting with" + datasetSwordLink + "was successfully");
+		}
+
+		return responseString;
+	}
+	
+	/**
+	 * 
+	 * @param entryXML
+	 * @return unique identifier for dropdown menu
+	 */
+	public String createUniqueEntryID(String entryXML) {
+		String response=entryXML;
+		
+		String identifier=null;
+		Pattern entryPattern = Pattern.compile("<entry.+?>(.*?)</entry>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<entry>some_entry_with_other_tags_inside</entry>
+		Matcher entryMatcher = entryPattern.matcher(response);
+		
+		entryMatcher.find();
+		
+		String entryString = entryMatcher.group(1);
+		
+		Pattern availablePattern = Pattern.compile("<available.+?>(.+?)</available>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<id>https://some_link</id>"
+		Matcher availableMatcher = availablePattern.matcher(entryString);
+		
+		availableMatcher.find();
+		
+		Pattern titlePattern = Pattern.compile("<title.+?>(.+?)</title>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<title type="text">some_title</title>" 
+		Matcher titleMatcher = titlePattern.matcher(entryString);
+		
+		if(availableMatcher.group(1).toString().equals("Date Available")) {
+			Pattern updatedPattern = Pattern.compile("<updated>(.+?)</updated>", Pattern.DOTALL | Pattern.MULTILINE); //e.g. "<id>https://some_link</id>"
+			Matcher updatedMatcher = updatedPattern.matcher(entryString);
+			if(updatedMatcher.find() && titleMatcher.find()) {
+				identifier=updatedMatcher.group(1)+ " - " + titleMatcher.group(1);
+			}
+		} else {
+			if(titleMatcher.find()) {
+				identifier=availableMatcher.group(1)+ " - " + titleMatcher.group(1);
+			}
+		}
+		
+		return identifier;
+	}
+	
 	/**
 	 * {@inheritDoc}
 	 */
@@ -677,11 +805,13 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 		for (String collectionUrl : collectionsMap.keySet()) {
 			List<String> communities = this.getCommunitiesForCollection(collectionUrl, serviceDocument, hierarchy, existedCollectionObjects);
 			String fullName = "";
-			for (String community : communities) {
-				fullName += community + fullNameSeparator; // add community + separator
+			if(communities != null) {
+				for (String community : communities) {
+					fullName += community + fullNameSeparator; // add community + separator
+				}
+				fullName += collectionsMap.get(collectionUrl); // add collection name (title)
+				collectionsMap.put(collectionUrl, fullName);
 			}
-			fullName += collectionsMap.get(collectionUrl); // add collection name (title)
-			collectionsMap.put(collectionUrl, fullName);
 		}
 		return collectionsMap;
 	}
@@ -791,5 +921,4 @@ public class DSpace_v6 extends SwordExporter implements DSpaceRepository {
 			return null;
 		}
 	}
-
 }

@@ -345,7 +345,7 @@ public class DataverseRepository_v4 extends SwordExporter {
 	public void exportFile(String metadataSetHrefURL, File zipFile) {
 		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
 		try {
-			DepositReceipt receipt = (DepositReceipt) exportElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
+			exportElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
