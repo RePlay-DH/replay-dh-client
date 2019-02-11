@@ -1200,6 +1200,25 @@ public class DataversePublisherWizard {
 							replaceMetadata.setSelected(false);
 							replaceMetadata.setEnabled(false);
 							context.setReplaceMetadataAllowed(replaceMetadata.isSelected());
+							String creator = "";
+							if(elementsofproperty.get("creator").get(0).getTextfield().getText().isEmpty()) { 	//TODO fetch user defined value if mdObject is not null (see todo above)
+								creator = environment.getProperty(RDHProperty.CLIENT_USERNAME);
+							}
+							elementsofproperty.get("creator").get(0).getTextfield().setText(creator);
+
+							//TODO: should we use workflow title or workflow-step title is also possible? Because we publish files from the current workflow-step
+
+							// Title
+							eTitle.getTextfield().setText(context.exportInfo.getWorkflow().getTitle());
+
+							// Description
+							eDescription.getDescription().setText(context.exportInfo.getWorkflow().getDescription());
+
+							// Publication year
+							int year = Calendar.getInstance().get(Calendar.YEAR);
+							eDate.getTextfield().setText(String.valueOf(year));
+
+							eLicense.getTextfield().setText("NONE");
 							JOptionPane.showMessageDialog(null, rm.get("replaydh.wizard.dspacePublisher.editMetadata.deaccessioned"), "Info", JOptionPane.INFORMATION_MESSAGE);
 						}
 					}
