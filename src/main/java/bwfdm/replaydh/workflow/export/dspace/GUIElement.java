@@ -18,7 +18,7 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
 public class GUIElement {
 	
 	private FormBuilder propertybuilder = FormBuilder.create();
-	private static final String columns = "right:max(100dlu;pref), 6dlu, max(170dlu;min), 3dlu, pref, 3dlu, pref";
+	private static final String columns = "right:max(120dlu;pref), 6dlu, max(180dlu;min), 3dlu, pref, 3dlu, pref";
 	private static final String rows = "pref";
 	private JTextField textfield = new JTextField();
 	private JTextArea description;

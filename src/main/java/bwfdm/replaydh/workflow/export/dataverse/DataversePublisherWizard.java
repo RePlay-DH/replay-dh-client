@@ -45,6 +45,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTable;
@@ -1062,136 +1063,144 @@ public class DataversePublisherWizard {
 				protected void done() {
 					if (context.chosenDataset != null) {
 						Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
-						String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
-						if (license != null) {
-							eLicense.getTextfield().setText(license);
-						} else {
-							license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.license");
+						Map test = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion");
+						if(test != null) {
+							String license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.license");
 							if (license != null) {
-								eLicense.getTextfield().setText("");
+								eLicense.getTextfield().setText(license);
+							} else {
+								license = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.license");
+								if (license != null) {
+									eLicense.getTextfield().setText("");
+								}
 							}
-						}
-						String rights = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.termsOfUse");
-						if (rights != null) {
-							eRights.getTextfield().setText(rights);
-						} else {
-							rights = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.termsOfUse");
+							String rights = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion.termsOfUse");
 							if (rights != null) {
-								eRights.getTextfield().setText("");
+								eRights.getTextfield().setText(rights);
+							} else {
+								rights = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.termsOfUse");
+								if (rights != null) {
+									eRights.getTextfield().setText("");
+								}
 							}
-						}
-						jsonObjects = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields[*].typeName");
-						for (int i=0; i < jsonObjects.size(); i++) {
-							propertyForSwitch = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].typeName");
-							switch(propertyForSwitch) {
-							case "title":
-								propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value");
-								if (propertyvalue != null) {
-									eTitle.getTextfield().setText(propertyvalue);
-								}
-								break;
-							case "otherId":
-								propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[0].otherIdValue.value");
-								if (propertyvalue != null) {
-									eIdentifier.getTextfield().setText(propertyvalue);
-								}
-								break;
-							case "author":
-								if (authors == null) {
-									authors = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
-									for (int index=0; index < authors.size(); index++) {
-										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"].authorName.value");
-										if (index+1 < authors.size()) {
-											GUIElement element = createGUIElement("creator");
-											elementsofproperty.get("creator").add(element);
-											element.getTextfield().getDocument().addDocumentListener(adapter);
-											GuiUtils.prepareChangeableBorder(element.getTextfield());
+							jsonObjects = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields[*].typeName");
+							for (int i=0; i < jsonObjects.size(); i++) {
+								propertyForSwitch = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].typeName");
+								switch(propertyForSwitch) {
+								case "title":
+									propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value");
+									if (propertyvalue != null) {
+										eTitle.getTextfield().setText(propertyvalue);
+									}
+									break;
+								case "otherId":
+									propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[0].otherIdValue.value");
+									if (propertyvalue != null) {
+										eIdentifier.getTextfield().setText(propertyvalue);
+									}
+									break;
+								case "author":
+									if (authors == null) {
+										authors = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
+										for (int index=0; index < authors.size(); index++) {
+											propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"].authorName.value");
+											if (index+1 < authors.size()) {
+												GUIElement element = createGUIElement("creator");
+												elementsofproperty.get("creator").add(element);
+												element.getTextfield().getDocument().addDocumentListener(adapter);
+												GuiUtils.prepareChangeableBorder(element.getTextfield());
+											}
+											elementsofproperty.get("creator").get(index).getTextfield().setText(propertyvalue);
 										}
-										elementsofproperty.get("creator").get(index).getTextfield().setText(propertyvalue);
 									}
-								}
-								refreshPanel("creator");
-								break;
-							case "dsDescription":
-								propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[0].dsDescriptionValue.value");
-								if (propertyvalue != null) {
-									eDescription.getDescription().setText(propertyvalue);
-								}
-								break;
-							case "subject":
-								if (subjects == null) {
-									subjects = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
-									int numbersToAdd=elementsofproperty.get("subject").size();
-									if ((numbersToAdd == 1) && (elementsofproperty.get("subject").get(0).getTextfield().getText().equals(""))) {
-										numbersToAdd=0;
+									refreshPanel("creator");
+									break;
+								case "dsDescription":
+									propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[0].dsDescriptionValue.value");
+									if (propertyvalue != null) {
+										eDescription.getDescription().setText(propertyvalue);
 									}
-									for (int index=0; index < subjects.size(); index++) {
-										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"]");
-										if (!(propertyvalue.equals("N/A"))) {
-											if ((subjects.size()+numbersToAdd) > elementsofproperty.get("subject").size()) {
-												GUIElement element = createGUIElement("subject");
-												elementsofproperty.get("subject").add(element);
+									break;
+								case "subject":
+									if (subjects == null) {
+										subjects = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
+										int numbersToAdd=elementsofproperty.get("subject").size();
+										if ((numbersToAdd == 1) && (elementsofproperty.get("subject").get(0).getTextfield().getText().equals(""))) {
+											numbersToAdd=0;
+										}
+										for (int index=0; index < subjects.size(); index++) {
+											propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"]");
+											if (!(propertyvalue.equals("N/A"))) {
+												if ((subjects.size()+numbersToAdd) > elementsofproperty.get("subject").size()) {
+													GUIElement element = createGUIElement("subject");
+													elementsofproperty.get("subject").add(element);
+													element.getTextfield().getDocument().addDocumentListener(adapter);
+												}
+												elementsofproperty.get("subject").get(index+numbersToAdd).getTextfield().setText(propertyvalue);
+											}
+										}
+									}
+									refreshPanel("subject");
+									break;
+								case "keyword":
+									if (keywords == null) {
+										keywords = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
+										int numbersToAdd=elementsofproperty.get("subject").size();
+										if ((numbersToAdd == 1) && (elementsofproperty.get("subject").get(0).getTextfield().getText().equals(""))) {
+											numbersToAdd=0;
+										}
+										for (int index=0; index < keywords.size(); index++) {
+											propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"].keywordValue.value");
+											if (!(propertyvalue.equals("N/A"))) {
+												if ((keywords.size()+numbersToAdd) > elementsofproperty.get("subject").size()) {
+													GUIElement element = createGUIElement("subject");
+													elementsofproperty.get("subject").add(element);
+													element.getTextfield().getDocument().addDocumentListener(adapter);
+												}
+												elementsofproperty.get("subject").get(index+numbersToAdd).getTextfield().setText(propertyvalue);
+											}
+										}
+									}
+									refreshPanel("subject");
+									break;
+								case "producer":
+									if (publisher == null) {
+										publisher = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
+										for (int index=0; index < publisher.size(); index++) {
+											propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"].producerName.value");
+											if (index+1 < publisher.size()) {
+												GUIElement element = createGUIElement("publisher");
+												elementsofproperty.get("publisher").add(element);
 												element.getTextfield().getDocument().addDocumentListener(adapter);
 											}
-											elementsofproperty.get("subject").get(index+numbersToAdd).getTextfield().setText(propertyvalue);
+											elementsofproperty.get("publisher").get(index).getTextfield().setText(propertyvalue);
 										}
 									}
-								}
-								refreshPanel("subject");
-								break;
-							case "keyword":
-								if (keywords == null) {
-									keywords = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
-									int numbersToAdd=elementsofproperty.get("subject").size();
-									if ((numbersToAdd == 1) && (elementsofproperty.get("subject").get(0).getTextfield().getText().equals(""))) {
-										numbersToAdd=0;
+									refreshPanel("publisher");
+									break;
+								case "productionDate":
+									propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value");
+									if (propertyvalue != null) {
+										eDate.getTextfield().setText(propertyvalue);
+									} else {
+										eDate.getTextfield().setText("");
 									}
-									for (int index=0; index < keywords.size(); index++) {
-										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"].keywordValue.value");
-										if (!(propertyvalue.equals("N/A"))) {
-											if ((keywords.size()+numbersToAdd) > elementsofproperty.get("subject").size()) {
-												GUIElement element = createGUIElement("subject");
-												elementsofproperty.get("subject").add(element);
-												element.getTextfield().getDocument().addDocumentListener(adapter);
-											}
-											elementsofproperty.get("subject").get(index+numbersToAdd).getTextfield().setText(propertyvalue);
-										}
+									break;
+								case "kindOfData":
+									propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[0]");
+									if (propertyvalue != null) {
+										eResourceType.getTextfield().setText(propertyvalue);
+									} else {
+										eResourceType.getTextfield().setText("");
 									}
+									break;
 								}
-								refreshPanel("subject");
-								break;
-							case "producer":
-								if (publisher == null) {
-									publisher = JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[*]");
-									for (int index=0; index < publisher.size(); index++) {
-										propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value["+index+"].producerName.value");
-										if (index+1 < publisher.size()) {
-											GUIElement element = createGUIElement("publisher");
-											elementsofproperty.get("publisher").add(element);
-											element.getTextfield().getDocument().addDocumentListener(adapter);
-										}
-										elementsofproperty.get("publisher").get(index).getTextfield().setText(propertyvalue);
-									}
-								}
-								refreshPanel("publisher");
-								break;
-							case "productionDate":
-								propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value");
-								if (propertyvalue != null) {
-									eDate.getTextfield().setText(propertyvalue);
-								} else {
-									eDate.getTextfield().setText("");
-								}
-								break;
-							case "kindOfData":
-								propertyvalue=JsonPath.read(context.jsonObjectWithMetadata,"$.data.latestVersion.metadataBlocks.citation.fields["+i+"].value[0]");
-								if (propertyvalue != null) {
-									eResourceType.getTextfield().setText(propertyvalue);
-								} else {
-									eResourceType.getTextfield().setText("");
-								}
-								break;
 							}
+						} else {
+							replaceMetadata.setSelected(false);
+							replaceMetadata.setEnabled(false);
+							context.setReplaceMetadataAllowed(replaceMetadata.isSelected());
+							JOptionPane.showMessageDialog(null, rm.get("replaydh.wizard.dspacePublisher.editMetadata.deaccessioned"), "Info", JOptionPane.INFORMATION_MESSAGE);
 						}
 					}
 				}
