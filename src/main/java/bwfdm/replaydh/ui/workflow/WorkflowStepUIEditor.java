@@ -120,6 +120,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     // Icons
     private Icon iconRemove = IconRegistry.getGlobalRegistry().getIcon("list-remove-5.png");
     private Icon iconAdd = IconRegistry.getGlobalRegistry().getIcon("list-add.png");
+    private Icon iconAddAuto = IconRegistry.getGlobalRegistry().getIcon("document-import-2.png");
     private Icon iconExpanded = IconRegistry.getGlobalRegistry().getIcon("right.png");
     private Icon iconCollapsed = IconRegistry.getGlobalRegistry().getIcon("left.png");
 
@@ -142,6 +143,12 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     private JButton btnAddInputResource = null;
     private JButton btnAddOutputResource = null;
     private JButton btnAddTool = null;
+    
+    // Add buttons
+    private JButton btnAddAutoPerson = null;
+    private JButton btnAddAutoInputResource = null;
+    private JButton btnAddAutoOutputResource = null;
+    private JButton btnAddAutoTool = null;
 
     List<Person> sortedPersons;
     List<Resource> sortedInputs;
@@ -277,11 +284,17 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	btnAddTool = createButton(toolTipAddTool,iconAdd,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	btnAddInputResource = createButton(toolTipAddInputResource,iconAdd,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	btnAddOutputResource = createButton(toolTipAddOutputResource,iconAdd,buttonBigPreferredSize,actionListenerAddIdentifiable);
+    	
+    	// Buttons to add new identifiable
+        btnAddAutoPerson = createButton(toolTipAddPerson,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
+    	btnAddAutoTool = createButton(toolTipAddTool,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
+    	btnAddAutoInputResource = createButton(toolTipAddInputResource,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
+    	btnAddAutoOutputResource = createButton(toolTipAddOutputResource,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
 
-    	personsPanel = new CategoryPanel(Role.PERSON, btnAddPerson);
-    	toolPanel = new CategoryPanel(Role.TOOL, btnAddTool);
-    	inputResourcesPanel = new CategoryPanel(Role.INPUT, btnAddInputResource);
-    	outputResourcesPanel = new CategoryPanel(Role.OUTPUT, btnAddOutputResource);
+    	personsPanel = new CategoryPanel(Role.PERSON, btnAddPerson, btnAddAutoPerson);
+    	toolPanel = new CategoryPanel(Role.TOOL, btnAddTool, btnAddAutoTool);
+    	inputResourcesPanel = new CategoryPanel(Role.INPUT, btnAddInputResource, btnAddAutoInputResource);
+    	outputResourcesPanel = new CategoryPanel(Role.OUTPUT, btnAddOutputResource, btnAddAutoOutputResource);
 
     	/**
     	 * <pre>
@@ -1413,7 +1426,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
     	private final ResourceDragController dragController;
 
-    	CategoryPanel(Role role, JButton addButton) {
+    	CategoryPanel(Role role, JButton addButton, JButton addAutoButton) {
 
     		this.role = requireNonNull(role);
 
@@ -1469,11 +1482,12 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
         	 * </pre>
         	 */
     		FormBuilder.create()
-    			.columns("pref:grow:fill, 3dlu, pref")
+    			.columns("pref:grow:fill, 3dlu, pref, 3dlu, pref")
     			.rows("pref, pref, 7dlu, pref:grow")
     			.panel(this)
     			.addSeparator(header).xy(1, 1, "fill, center")
-    			.add(addButton).xywh(3, 1, 1, 2, "right, top")
+    			.add(addAutoButton).xywh(3, 1, 1, 2, "right, top")
+    			.add(addButton).xywh(5, 1, 1, 2, "right, top")
     			.add(infoLabel).xy(1, 2, "left, bottom")
     			.add(contentPanel).xyw(1, 4, 3, "fill, fill")
     			.build();
