@@ -73,6 +73,7 @@ import bwfdm.replaydh.ui.helper.ScrollablePanel;
 import bwfdm.replaydh.ui.helper.ScrollablePanel.ScrollableSizeHint;
 import bwfdm.replaydh.ui.helper.WrapLayout;
 import bwfdm.replaydh.ui.icons.IconRegistry;
+import bwfdm.replaydh.ui.workflow.auto.AutoCompletionWizardWorkflowStep;
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifiable.Role;
 import bwfdm.replaydh.workflow.Identifiable.Type;
@@ -441,6 +442,37 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 			return;
 
 		} else if (source == btnAddOutputResource){
+			applyLocalEditors(outputResourceEditorElementsList); //Apply local editors to avoid possible conflicts
+        	DefaultResource output = createNewResource();
+			if(callIdentifiableEditorDialogue(this.schema, Type.RESOURCE, output)) {
+				addIdentifiable(output, Role.OUTPUT);
+			}
+			return;
+		}
+        
+        AutoCompletionWizardWorkflowStep autoWizard = new AutoCompletionWizardWorkflowStep();
+        
+        if(source == btnAddAutoPerson){
+        	applyLocalEditors(personEditorElementsList); //Apply local editors to avoid possible conflicts
+        	DefaultPerson person = createNewPerson();
+        	if(callIdentifiableEditorDialogue(this.schema, Type.PERSON, person)) {
+				addIdentifiable(person, Role.PERSON);
+        	}
+        	return;
+
+		} else if (source == btnAddAutoTool){
+			applyLocalEditors(toolEditorElementsList); //Apply local editors to avoid possible conflicts
+        	DefaultTool tool = createNewTool();
+			if(callIdentifiableEditorDialogue(this.schema, Type.TOOL, tool)) {
+				addIdentifiable(tool, Role.TOOL);
+			}
+			return;
+
+		} else if (source == btnAddAutoInputResource){
+			autoWizard.createWizard();
+			return;
+
+		} else if (source == btnAddAutoOutputResource){
 			applyLocalEditors(outputResourceEditorElementsList); //Apply local editors to avoid possible conflicts
         	DefaultResource output = createNewResource();
 			if(callIdentifiableEditorDialogue(this.schema, Type.RESOURCE, output)) {
