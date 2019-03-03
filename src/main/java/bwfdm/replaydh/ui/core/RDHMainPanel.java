@@ -86,7 +86,6 @@ import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHException;
 import bwfdm.replaydh.core.RDHProperty;
 import bwfdm.replaydh.core.Workspace;
-import bwfdm.replaydh.git.JGitAdapter;
 import bwfdm.replaydh.io.FileTracker;
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.io.LocalFileObject;
@@ -241,7 +240,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		workflowSource = client.getWorkflowSource();
 		fileTracker = client.getFileTracker();
-		fileTracker.addPropertyChangeListener(JGitAdapter.NAME_WORKFLOW, fileTrackerChangeListener);
+		fileTracker.addPropertyChangeListener(FileTracker.NAME_WORKFLOW, fileTrackerChangeListener);
 
 		environment.addPropertyChangeListener(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, environmentChangeListener);
 
@@ -617,7 +616,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		actionMapper.dispose();
 
 		removeHierarchyListener(handler);
-		fileTracker.removePropertyChangeListener(JGitAdapter.NAME_WORKFLOW, fileTrackerChangeListener);
+		fileTracker.removePropertyChangeListener(FileTracker.NAME_WORKFLOW, fileTrackerChangeListener);
 		environment.removePropertyChangeListener(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, environmentChangeListener);
 
 		// Finally make sure our background task gets canceled
@@ -1254,7 +1253,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		private void onFileTrackerPropertyChange(PropertyChangeEvent evt) {
 
 			switch (evt.getPropertyName()) {
-			case JGitAdapter.NAME_WORKFLOW:
+			case FileTracker.NAME_WORKFLOW:
 				GuiUtils.invokeEDT(RDHMainPanel.this::refreshWorkflowFromSource);
 				break;
 

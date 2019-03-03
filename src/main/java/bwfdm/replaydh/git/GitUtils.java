@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.git;
@@ -22,12 +22,31 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.eclipse.jgit.api.TransportCommand;
+import org.eclipse.jgit.api.TransportConfigCallback;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
+import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.JschConfigSessionFactory;
+import org.eclipse.jgit.transport.OpenSshConfig.Host;
+import org.eclipse.jgit.transport.SshSessionFactory;
+import org.eclipse.jgit.transport.SshTransport;
+import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.transport.TransportProtocol;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
+
+import com.jcraft.jsch.Session;
+
+import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.ui.GuiUtils;
+import bwfdm.replaydh.utils.Mutable.MutableObject;
 
 /**
  * @author Markus Gärtner
@@ -179,5 +198,105 @@ public class GitUtils {
 		Path infoFile = gitDir.resolve(RDH_CLIENT_INFO_FILENAME);
 
 		return Files.exists(infoFile, LinkOption.NOFOLLOW_LINKS);
+	}
+
+	/**
+	 * Figure out what {@link TransportProtocol} to use for the given remote {@code uri}.
+	 *
+	 * @param uri
+	 * @param repo
+	 * @param remoteName
+	 * @return
+	 * @throws GitException
+	 */
+	public static TransportProtocol getProtocol(
+			URIish uri, Repository repo, String remoteName) throws GitException {
+		return Transport.getTransportProtocols()
+				.stream()
+				.filter(p -> p.canHandle(uri, repo, remoteName))
+				.findFirst()
+				.orElseThrow(() -> new GitException("No transport protocol found for uri: "+uri));
+	}
+
+	/**
+	 * Configures the given {@code command} with credentials befitting the
+	 * protocol specified by the {@code uri} scheme.
+	 * <p>
+	 * If the configuration requires additional user credentials, this method
+	 * will present the user with a corresponding dialog and after successful
+	 * elicitation of the credentials data call the {@code credentialsFactory}
+	 * callback. This way client code is in control over constructing the
+	 * actual {@link CredentialsProvider} instance and also can keep that
+	 * reference for later cleanup work.
+	 * <p>
+	 * The method returns {@code true} if configuration was successful and
+	 * {@code false} if at any point involving user interactions the user
+	 * decided to abort.
+	 *
+	 * @param command
+	 * @param uri
+	 * @param remoteName
+	 * @param credentialsFactory
+	 * @return
+	 * @throws GitException
+	 */
+	public static boolean prepareTransportCredentials(
+			TransportCommand<?, ?> command,
+			URIish uri, String remoteName,
+			BiFunction<String, char[], CredentialsProvider> credentialsFactory) throws GitException {
+		TransportProtocol protocol = getProtocol(uri, command.getRepository(), remoteName);
+
+		Set<String> schemes = protocol.getSchemes();
+
+		//TODO we need a better recognition strategy than checking the scheme set...
+
+		// Regular http or https access
+		if(schemes.contains("https")) {
+			return GuiUtils.showCredentialsDialog(null,
+					ResourceManager.getInstance().get("replaydh.dialogs.credentials.loginCredentialsTitle"),
+					ResourceManager.getInstance().get("replaydh.dialogs.credentials.loginCredentialsMessage"),
+					(username, password) -> command.setCredentialsProvider(
+							credentialsFactory.apply(username, password)));
+		}
+
+		// ssh key with optional password
+		if(schemes.contains("ssh")) {
+
+			// Ask user for optional password
+			MutableObject<char[]> password = new MutableObject<>();
+			if(!GuiUtils.showPasswordDialog(null,
+					ResourceManager.getInstance().get("replaydh.dialogs.credentials.sshPasswordTitle"),
+					ResourceManager.getInstance().get("replaydh.dialogs.credentials.sshPasswordMessage"),
+					password::set)) {
+				return false;
+			}
+
+			// Configure SSH session to use password if needed
+			SshSessionFactory sshSessionFactory = new JschConfigSessionFactory() {
+				@Override
+				protected void configure(Host host, Session session) {
+				    // If available, do set the user password for the SSH key
+					password.asOptional().ifPresent(chars -> session.setPassword(new String(chars)));
+				}
+			};
+
+			// Inject callback to configure transport
+			command.setTransportConfigCallback(new TransportConfigCallback() {
+				@Override
+				public void configure(Transport transport) {
+					SshTransport sshTransport = (SshTransport) transport;
+					sshTransport.setSshSessionFactory(sshSessionFactory);
+				}
+			});
+
+			return true;
+		}
+
+		// For local or anonymous git repositories we don't need any credentials configuration
+		if(schemes.contains("git") || schemes.contains("file")) {
+			return true;
+		}
+
+		throw new GitException("Protocol not supported: "+protocol.getName());
 	}
 }

@@ -360,6 +360,21 @@
 		<parameter id="objectScope" value="all" />
 	</extension>
 	
+	<extension id="GitRemotePublisher" plugin-id="bwfdm.replaydh.core" point-id="ResourcePublisher">
+		<doc>
+			<doc-text>
+				Exporter to publish data from a workflow into a remote Git repository.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.gitRemotePublisher.name" />
+		<parameter id="description" value="replaydh.plugins.gitRemotePublisher.description" />
+		<parameter id="class" value="bwfdm.replaydh.git.GitRemotePublisher" />
+		
+		<parameter id="type" value="object" />
+		<parameter id="workflowScope" value="workflow" />
+		<parameter id="objectScope" value="workspace" />
+	</extension>
+	
 	<extension id="GitArchiveExporter" plugin-id="bwfdm.replaydh.core" point-id="WorkflowExporter">
 		<doc>
 			<doc-text>

@@ -958,9 +958,9 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 			try {
 				publisher = pluginEngine.instantiate(extension);
 			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+				log.error("Failed to instantiate resource publisher: {}", extension.getUniqueId(), e);
 				GuiUtils.showErrorDialog(panel, e);
 				GuiUtils.beep();
-				log.error("Failed to instantiate resource publisher: {}", extension.getUniqueId(), e);
 				return;
 			}
 

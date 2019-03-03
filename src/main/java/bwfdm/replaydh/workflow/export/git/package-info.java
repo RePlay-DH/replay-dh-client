@@ -16,46 +16,11 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.helper;
-
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-
 /**
+ * Holds classes related to exporting the state of the client's local git repository
+ * to a remote instance.
+ *
  * @author Markus Gärtner
  *
  */
-@FunctionalInterface
-public interface DocumentAdapter extends DocumentListener {
-
-	/**
-	 * Hook for subclasses to react to generic changes.
-	 * @param e
-	 */
-	void anyUpdate(DocumentEvent e);
-
-	/**
-	 * @see javax.swing.event.DocumentListener#insertUpdate(javax.swing.event.DocumentEvent)
-	 */
-	@Override
-	default void insertUpdate(DocumentEvent e) {
-		anyUpdate(e);
-	}
-
-	/**
-	 * @see javax.swing.event.DocumentListener#removeUpdate(javax.swing.event.DocumentEvent)
-	 */
-	@Override
-	default void removeUpdate(DocumentEvent e) {
-		anyUpdate(e);
-	}
-
-	/**
-	 * @see javax.swing.event.DocumentListener#changedUpdate(javax.swing.event.DocumentEvent)
-	 */
-	@Override
-	default void changedUpdate(DocumentEvent e) {
-		anyUpdate(e);
-	}
-
-}
+package bwfdm.replaydh.workflow.export.git;

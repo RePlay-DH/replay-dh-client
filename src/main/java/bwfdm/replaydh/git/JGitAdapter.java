@@ -117,7 +117,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 	private static final JGitAdapterVersion VERSION = JGitAdapterVersion.VERSION_1;
 
-	public static final String NAME_WORKFLOW = "workflow";
+	static JGitAdapter fromClient(RDHClient client) {
+		return (JGitAdapter) client.getFileTracker();
+	}
 
 	/**
 	 * If set in the environment's {@link RDHEnvironment#getProperty(String) properties}
@@ -293,7 +295,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			workflow.setNextStepNumber(Integer.parseInt(nextStepId));
 		}
 
-		getPropertyChangeSupport().firePropertyChange(NAME_WORKFLOW, null, workflow);
+		getPropertyChangeSupport().firePropertyChange(FileTracker.NAME_WORKFLOW, null, workflow);
 	}
 
 	/**
@@ -688,7 +690,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Dispose current revWalk if present.
 	 * Close current workflow if present.
 	 * <p>
-	 * Fires {@value #NAME_WORKFLOW} if a workflow was present
+	 * Fires {@value FileTracker#NAME_WORKFLOW} if a workflow was present
 	 * and has been closed a result of this method call.
 	 *
 	 */
@@ -724,7 +726,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 					workflow.close();
 					Workflow oldValue = workflow;
 					workflow = null;
-					getPropertyChangeSupport().firePropertyChange(NAME_WORKFLOW, oldValue, null);
+					getPropertyChangeSupport().firePropertyChange(FileTracker.NAME_WORKFLOW, oldValue, null);
 				}
 
 				pendingStep = null;

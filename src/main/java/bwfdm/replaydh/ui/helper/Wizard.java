@@ -160,7 +160,8 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 
 	private final Interval wizardUptime = new Interval();
 
-	public Wizard(Window parent, String statLabel, String wizardTitle, RDHEnvironment environment, @SuppressWarnings("unchecked") Page<E>...pages) {
+	public Wizard(Window parent, String statLabel, String wizardTitle, RDHEnvironment environment,
+			@SuppressWarnings("unchecked") Page<E>...pages) {
 		super(parent, wizardTitle);
 
 		this.statLabel = requireNonNull(statLabel);
@@ -456,7 +457,11 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 	}
 
 	private void setNextEnabled(boolean enabled) {
-		nextButton.setEnabled(enabled);
+		nextButton.setEnabled(enabled && !isLastPage());
+	}
+
+	private void setPreviousEnabled(boolean enabled) {
+		previousButton.setEnabled(enabled && !isFirstPage());
 	}
 
 	private void stopWizard(boolean cancel) {
@@ -545,6 +550,14 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		}
 
 		/**
+		 * @see bwfdm.replaydh.ui.helper.Wizard.WizardControl#setPreviousEnabled(boolean)
+		 */
+		@Override
+		public void setPreviousEnabled(boolean enabled) {
+			Wizard.this.setPreviousEnabled(enabled);
+		}
+
+		/**
 		 * @see bwfdm.replaydh.ui.helper.Wizard.WizardControl#invokeNext(bwfdm.replaydh.ui.helper.Wizard.Page)
 		 */
 		@Override
@@ -562,6 +575,15 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		 * @param enabled
 		 */
 		void setNextEnabled(boolean enabled);
+
+		/**
+		 * Defines whether or not the button to return to the "previous"
+		 * step should be enabled, allowing the user to backtrack
+		 * his decisions.
+		 *
+		 * @param enabled
+		 */
+		void setPreviousEnabled(boolean enabled);
 
 		/**
 		 * Overrides the default behavior of using the "next" button
