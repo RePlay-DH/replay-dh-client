@@ -11,14 +11,13 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import com.jgoodies.forms.builder.FormBuilder;
-import com.jgoodies.forms.layout.FormLayout;
 
 import bwfdm.replaydh.ui.icons.IconRegistry;
 
 public class GUIElement {
 	
 	private FormBuilder propertybuilder = FormBuilder.create();
-	private static final String columns = "right:max(100dlu;pref), 6dlu, max(170dlu;min), 3dlu, pref, 3dlu, pref";
+	private static final String columns = "right:max(120dlu;pref), 6dlu, max(180dlu;min), 3dlu, pref, 3dlu, pref";
 	private static final String rows = "pref";
 	private JTextField textfield = new JTextField();
 	private JTextArea description;
@@ -28,7 +27,6 @@ public class GUIElement {
 	private JButton minusbutton = null;
 	private JButton resetButton = null;
 	private JPanel panel = new JPanel();
-	private static final FormLayout layout = new FormLayout(columns,rows);
 	private static final JLabel shadowlabelfirst = new JLabel();
 	private static final JLabel shadowlabelsecond = new JLabel();
 	private static final Dimension preferredSize = new Dimension(17,17);
@@ -70,7 +68,6 @@ public class GUIElement {
 		propertybuilder.columns(columns);
 		propertybuilder.rows(rows);
 		propertybuilder.panel(panel);
-		panel.setLayout(layout);
 		label.setVisible(false);
 		resetButton = new JButton(resetLabel);
 		resetButton.setPreferredSize(buttonSize);

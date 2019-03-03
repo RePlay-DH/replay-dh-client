@@ -199,6 +199,8 @@ public final class WorkflowUIUtils {
 		final Runnable checkInput = () -> {
 			String text = tfId.getText();
 			Object type = cbType.getSelectedItem();
+			IdentifierTypeProxy idType = (IdentifierTypeProxy) type;
+			boolean selectionDialogue = false;
 
 			boolean inputValid = text!=null && !text.isEmpty() && type!=null;
 
@@ -206,11 +208,11 @@ public final class WorkflowUIUtils {
 				inputValid &= !((String)type).isEmpty();
 			}
 			
-			if((cbType.getSelectedItem().toString().equals(schema.findIdentifierType("checksum").getName())) || (cbType.getSelectedItem().toString().equals(schema.findIdentifierType("path").getName()))) {
-				chooseFile.setVisible(true);
-			} else {
-				chooseFile.setVisible(false);
-			}
+			if((IdentifierType.isDefaultChecksumIdentifierType(idType.identifierType)) || (IdentifierType.isDefaultPathIdentifierType(idType.identifierType))) {
+				selectionDialogue=true;
+			} 
+			
+			chooseFile.setVisible(selectionDialogue);
 
 			bOk.setEnabled(inputValid);
 		};
@@ -262,6 +264,7 @@ public final class WorkflowUIUtils {
 
 		final MutableObject<Identifier> result = new MutableObject<>();
 
+		
 		bOk.addActionListener(a -> {
 			Object type = cbType.getSelectedItem();
 			String id = tfId.getText();
@@ -282,14 +285,16 @@ public final class WorkflowUIUtils {
 
 		chooseFile.addActionListener(a -> {
 			int returnVal;
+			Object type = cbType.getSelectedItem();
+			IdentifierTypeProxy idType = (IdentifierTypeProxy) type;
 			File file = null;
-			if (cbType.getSelectedItem().toString().equals(schema.findIdentifierType("path").getName())){
+			if (IdentifierType.isDefaultPathIdentifierType(idType.identifierType)){
 				returnVal=fc.showDialog(panel, rm.get("replaydh.labels.select.file"));
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					file = fc.getSelectedFile();
 					tfId.setText(file.getPath().toString());
 				}
-			} else if (cbType.getSelectedItem().toString().equals(schema.findIdentifierType("checksum").getName())) {
+			} else if (IdentifierType.isDefaultChecksumIdentifierType(idType.identifierType)) {
 				returnVal=fc.showDialog(panel, rm.get("replaydh.labels.select.checksum"));
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					file = fc.getSelectedFile();

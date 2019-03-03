@@ -402,7 +402,7 @@ public class DSpacePublisherWizard {
 		private boolean loginOK;
 		private boolean restOK;
 
-		private long timeOut; //in seconds
+		private long timeOut = 60; //in seconds
 
 		private Map<String, String> availableCollections;
 		private DSpace_v6 exportRepository;
