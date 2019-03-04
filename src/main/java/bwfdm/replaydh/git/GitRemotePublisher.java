@@ -20,24 +20,16 @@ package bwfdm.replaydh.git;
 
 import java.awt.Component;
 import java.awt.Window;
-import java.io.File;
 import java.io.IOException;
 
 import javax.swing.SwingUtilities;
 
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.PushCommand;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.eclipse.jgit.transport.PushResult;
-import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.Wizard;
-import bwfdm.replaydh.utils.Mutable.MutableObject;
 import bwfdm.replaydh.workflow.export.ExportException;
 import bwfdm.replaydh.workflow.export.ResourcePublisher;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
@@ -89,39 +81,5 @@ public class GitRemotePublisher implements ResourcePublisher {
 		}
 
 		return wizardDone;
-	}
-
-	public static void main(String[] args) throws Exception {
-		File gitDir = new File("D:\\Temp\\RePlay\\michael_bug_20181128\\.git");
-
-		String uriString = "git://github.com/mcgaerty/dummy_rdh.git";
-		URIish uri = new URIish(uriString);
-
-		FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder();
-		repositoryBuilder.addCeilingDirectory(gitDir);
-		repositoryBuilder.findGitDir(gitDir);
-
-		try(Git git = new Git(repositoryBuilder.build())) {
-
-//			List<TransportProtocol> protocols = Transport.getTransportProtocols();
-//			System.out.println("===== "+uriString+" =====");
-//			protocols.forEach(p -> System.out.printf("%s -> %b%n",p.getName(),
-//					p.canHandle(uri, git.getRepository(), null)));
-//			System.out.println("=============================");
-
-			PushCommand cmd = git.push();
-
-			MutableObject<UsernamePasswordCredentialsProvider> credentials = new MutableObject<>();
-			GitUtils.prepareTransportCredentials(cmd, uri, null, (username, password) -> {
-				return credentials.setAndGet(new UsernamePasswordCredentialsProvider(username, password));
-			});
-
-//			cmd.setDryRun(true);
-			cmd.setRemote(uriString);
-
-			Iterable<PushResult> result = cmd.call();
-
-			result.forEach(r -> System.out.println(r.getMessages()));
-		}
 	}
 }
