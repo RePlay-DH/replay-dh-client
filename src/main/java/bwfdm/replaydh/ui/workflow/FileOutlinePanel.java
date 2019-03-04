@@ -51,9 +51,9 @@ import com.jgoodies.forms.factories.Paddings;
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.io.TrackingStatus;
-import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.helper.CloseableUI;
 import bwfdm.replaydh.ui.helper.WrapLayout;
+import bwfdm.replaydh.utils.RDHUtils;
 import bwfdm.replaydh.workflow.Resource;
 
 /**
@@ -103,7 +103,7 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 		layout.setAlignOnBaseline(true);
 		contentPanel = new JPanel(layout);
 
-		add(COMPONENT_FACTORY.createSeparator(getTitle(trackingStatus), SwingConstants.LEFT), BorderLayout.NORTH);
+		add(COMPONENT_FACTORY.createSeparator(RDHUtils.getTitle(trackingStatus), SwingConstants.LEFT), BorderLayout.NORTH);
 		add(contentPanel, BorderLayout.CENTER);
 	}
 
@@ -133,21 +133,6 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 		checkArgument("Value must be positive", filesVisible>0);
 		this.filesVisible = filesVisible;
 		refreshUI();
-	}
-
-	private static String getTitle(TrackingStatus status) {
-		ResourceManager rm = ResourceManager.getInstance();
-		switch (status) {
-		case IGNORED: return rm.get("replaydh.trackingStatus.ignored");
-		case TRACKED: return rm.get("replaydh.trackingStatus.tracked");
-		case UNKNOWN: return rm.get("replaydh.trackingStatus.unknown");
-		case MODIFIED: return rm.get("replaydh.trackingStatus.modified");
-		case MISSING: return rm.get("replaydh.trackingStatus.missing");
-		case CORRUPTED: return rm.get("replaydh.trackingStatus.corrupted");
-
-		default:
-			throw new IllegalArgumentException("unknown tracking status: "+status);
-		}
 	}
 
 	private FilePanel getCachedOrCreateFilePanel(LocalFileObject file) {

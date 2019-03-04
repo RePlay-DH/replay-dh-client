@@ -34,7 +34,7 @@ import bwfdm.replaydh.ui.helper.Wizard.WizardControl;
 public abstract class AbstractWizardStep<E extends Object> implements Wizard.Page<E> {
 
 
-	protected final JPanel panel;
+	protected JPanel panel;
 	protected final String id;
 	protected final String title;
 	protected final String description;
@@ -45,7 +45,13 @@ public abstract class AbstractWizardStep<E extends Object> implements Wizard.Pag
 		this.id = requireNonNull(id);
 		title = ResourceManager.getInstance().get(titleKey);
 		description = descriptionKey==null ? null : ResourceManager.getInstance().get(descriptionKey);
-		panel = createPanel();
+	}
+
+	protected JPanel panel() {
+		if(panel==null) {
+			panel = createPanel();
+		}
+		return panel;
 	}
 
 	protected abstract JPanel createPanel();
@@ -70,7 +76,7 @@ public abstract class AbstractWizardStep<E extends Object> implements Wizard.Pag
 
 	@Override
 	public JComponent getPageComponent() {
-		return panel;
+		return panel();
 	}
 
 	@Override

@@ -73,11 +73,15 @@ public class GitRemotePublisher implements ResourcePublisher {
 			ancestorWindow = SwingUtilities.getWindowAncestor(owner);
 		}
 
-		try(Wizard<GitRemotePublisherContext> wizard = GitRemotePublisherWizard.getWizard(
-				ancestorWindow, environment)) {
+		try {
+			try(Wizard<GitRemotePublisherContext> wizard = GitRemotePublisherWizard.getWizard(
+					ancestorWindow, environment)) {
 
-			wizard.startWizard(context);
-			wizardDone = wizard.isFinished() && !wizard.isCancelled();
+				wizard.startWizard(context);
+				wizardDone = wizard.isFinished() && !wizard.isCancelled();
+			}
+		}catch (Throwable e) {
+			e.printStackTrace();
 		}
 
 		return wizardDone;

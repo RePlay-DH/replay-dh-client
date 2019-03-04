@@ -66,6 +66,7 @@ import com.mxgraph.view.mxStylesheet;
 import bwfdm.replaydh.core.PluginEngine;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHException;
+import bwfdm.replaydh.git.GitRemoteUpdater;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.stats.StatEntry;
 import bwfdm.replaydh.stats.StatType;
@@ -391,6 +392,7 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 		actionMapper.mapTask("replaydh.ui.core.workflowGraph.exportStepResources", callbackHandler::exportStepResources);
 		actionMapper.mapTask("replaydh.ui.core.workflowGraph.exportMetadata", callbackHandler::exportMetadata);
 		actionMapper.mapTask("replaydh.ui.core.workflowGraph.exportResources", callbackHandler::exportResources);
+		actionMapper.mapTask("replaydh.ui.core.workflowGraph.updateRepository", callbackHandler::updateRepository);
 
 		/*
 		 *  Do NOT register the publish action, since that one is only there
@@ -418,6 +420,8 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 
 		boolean isSingleUncompressedStep = isSingleSelectedStep && !canExpandStep;
 
+		boolean isWorkflowEmpty = WorkflowUtils.isEmpty(getWorkflow());
+
 		actionManager.setEnabled(isSingleSelectedStep && canCompressStep,
 				"replaydh.ui.core.workflowGraph.compressStep");
 		actionManager.setEnabled(isSingleSelectedStep && canExpandStep,
@@ -430,13 +434,10 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 				"replaydh.ui.core.workflowGraph.exportStepMetadata");
 		actionManager.setEnabled(isSingleUncompressedStep,
 				"replaydh.ui.core.workflowGraph.exportStepResources");
-		actionManager.setEnabled(!WorkflowUtils.isEmpty(getWorkflow()),
+		actionManager.setEnabled(!isWorkflowEmpty,
 				"replaydh.ui.core.workflowGraph.exportMetadata",
 				"replaydh.ui.core.workflowGraph.exportResources",
 				"replaydh.ui.core.workflowGraph.publishResources");
-
-		//TODO set enabled state of the export resource or publish actions
-
 	}
 
 	private String createLabel(Object cell) {
@@ -944,8 +945,18 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 		}
 
 		/**
+		 * Pull changes from a remote repository to synchronize our local
+		 * workspace.
+		 */
+		private void updateRepository() {
+			environment.execute(() -> new GitRemoteUpdater(environment).update(panel));
+		}
+
+		/**
 		 * Initiate the publication process for the currently active
 		 * step.
+		 * <p>
+		 * Needs the {@code ActionEvent} to figure out what publisher plugin to use.
 		 */
 		private void publishResources(ActionEvent ae) {
 
@@ -995,7 +1006,14 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 
 				if(exceptionToReport!=null) {
 					log.error("Initiating publication process failed", exceptionToReport);
-					//TODO show error dialog?
+
+					final Throwable throwable = exceptionToReport;
+
+					GuiUtils.invokeEDTLater(() -> GuiUtils.showErrorDialog(panel,
+							ResourceManager.getInstance().get("replaydh.ui.core.workflowGraph.publishResources.errorTitle"),
+							ResourceManager.getInstance().get("replaydh.ui.core.workflowGraph.publishResources.errorMessage"),
+							throwable));
+
 					return;
 				}
 

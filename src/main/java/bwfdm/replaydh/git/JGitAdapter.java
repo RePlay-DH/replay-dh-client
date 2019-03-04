@@ -198,7 +198,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Package-private so that the {@link GitArchiveExporter}
 	 * can use it for interaction with git.
 	 */
-	Git getGit() {
+	public Git getGit() {  // TODO leave it public or change back to package-private?
 		return git;
 	}
 

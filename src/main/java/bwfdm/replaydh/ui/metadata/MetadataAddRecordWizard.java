@@ -440,9 +440,9 @@ public class MetadataAddRecordWizard {
 		@Override
 		public void refresh(RDHEnvironment environment, AddRecordContext context) {
 			if(context.type==Type.FILE) {
-				layout.first(panel);
+				layout.first(panel());
 			} else {
-				layout.last(panel);
+				layout.last(panel());
 			}
 
 			if(context.file!=null) {

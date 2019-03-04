@@ -274,9 +274,20 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		return label;
 	}
 
+	/**
+	 * Make sure that all pages have a properly initialized UI
+	 */
+	private void ensureUI() {
+		for(Page<?> page : pages) {
+			page.getPageComponent();
+		}
+	}
+
 	public void startWizard(E context) {
 
 		this.context = requireNonNull(context);
+
+		ensureUI();
 
 		setNextActivePage(0);
 
@@ -630,6 +641,10 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		/**
 		 * Callback to process current content of the page
 		 * and signal which page to visit next.
+		 * <p>
+		 * If something went wrong and continuing to a new
+		 * page is not possible, returning {@code null} will
+		 * make the wizard stay on the current page.
 		 *
 		 * @return
 		 */
