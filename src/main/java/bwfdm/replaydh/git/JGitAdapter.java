@@ -2134,19 +2134,30 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 				String message = commit.getFullMessage();
 
 				if(workflow.getInitialStepDirect()==step) {
+					// Special handling of initial commit: this one only carries configuration metadata
 					step.setTitle(GitUtils.INITIAL_COMMIT_HEADER);
 					step.setDescription(message);
 					step.setRecordingTime(LocalDateTime.ofInstant(
 							Instant.ofEpochSecond(commit.getCommitTime()),
 							ZoneId.systemDefault()));
+				} else if(isNonJsonString(message)) {
+					/*
+					 *  "Foreign" commits are accepted, but not encouraged.
+					 *
+					 *  We can't properly handle the commit message there, but
+					 *  we'll at least be able to visualize them in the client.
+					 */
+					step.setDescription(message);
+					step.setTitle(GitUtils.FOREIGN_COMMIT_HEADER);
 				} else {
+					// We expect valid JSON data here
 					Options options = new Options();
 					options.put(JsonWorkflowStepReader.SKIP_HEADER, true);
 
 					try {
 						JsonWorkflowStepReader.parseStep(workflow.getSchema(), () -> step, message, options);
 					} catch (Exception e) {
-						if(getEnvironment().getBoolean(RDHProperty.GIT_IGNORE_MISSING_METADATA, false)) {
+						if(getEnvironment().getBoolean(RDHProperty.GIT_IGNORE_FAULTY_METADATA, false)) {
 							// If we're prevented from throwing an exception, at least log it for future info
 							log.warn("Failed to read process metadata from commit for step {}", step.getId(), e);
 						} else
@@ -2160,6 +2171,10 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 				workflow.setIgnoreEventRequests(false);
 			}
 		}
+	}
+
+	private boolean isNonJsonString(String s) {
+		return s.indexOf('{')==-1;
 	}
 
 	/**
