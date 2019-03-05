@@ -22,16 +22,19 @@ import static java.util.Objects.requireNonNull;
 
 import java.awt.Component;
 import java.awt.Window;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumMap;
 
 import javax.swing.SwingUtilities;
 
+import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.PullResult;
+import org.eclipse.jgit.transport.FetchResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import bwfdm.replaydh.core.RDHEnvironment;
-import bwfdm.replaydh.io.FileTracker;
 import bwfdm.replaydh.io.TrackingStatus;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
@@ -57,8 +60,11 @@ public class GitRemoteUpdater {
 	}
 
 	public void update(Component parent) {
+		GuiUtils.checkNotEDT();
 
 		log.info("Initiated update of local workspace");
+
+		final JGitAdapter gitAdapter = JGitAdapter.fromClient(environment.getClient());
 
 		// Check that we don't have any unsaved changes
 		new AbstractDialogWorker<Boolean, Object>(SwingUtilities.getWindowAncestor(parent),
@@ -69,9 +75,7 @@ public class GitRemoteUpdater {
 
 			@Override
 			protected Boolean doInBackground() throws Exception {
-
-				FileTracker fileTracker = environment.getClient().getFileTracker();
-				fileTracker.refreshStatusInfo();
+				gitAdapter.refreshStatusInfo();
 
 				/*
 				 * Files with status UNKNOWN are included here as we want to make
@@ -83,7 +87,7 @@ public class GitRemoteUpdater {
 								TrackingStatus.CORRUPTED,
 								TrackingStatus.MISSING,
 								TrackingStatus.UNKNOWN)) {
-					int count = fileTracker.getFileCountForStatus(trackingStatus);
+					int count = gitAdapter.getFileCountForStatus(trackingStatus);
 					if(count>0) {
 						fileCountForStatus.put(trackingStatus, Integer.valueOf(count));
 					}
@@ -127,6 +131,7 @@ public class GitRemoteUpdater {
 
 				// If we have changes blocking our import capability, we need to directly stop!
 				if(result.booleanValue()) {
+					log.info("Updating local workspace aborted due to uncommitted local changes");
 					return;
 				}
 
@@ -134,14 +139,43 @@ public class GitRemoteUpdater {
 
 				// Workspace is ready for import, now show the real dialog
 				GuiUtils.invokeEDTLater(() -> {
-					GitRemoteUpdaterContext context = new GitRemoteUpdaterContext(environment);
+					GitRemoteUpdaterContext context;
+					try {
+						context = createUpdaterContext(gitAdapter);
+					} catch (IOException e) {
+						log.error("Failed to create context for wizard", e);
+						GuiUtils.showErrorDialog(parent,
+								ResourceManager.getInstance().get("replaydh.wizard.gitRemoteUpdater.prepare.failedTitle"),
+								ResourceManager.getInstance().get("replaydh.wizard.gitRemoteUpdater.prepare.localGitError"),
+								e);
+						GuiUtils.beep();
+
+						return;
+					}
+
+					// Here be user interaction
 					if(showWizard(parent, context)) {
 						log.info("Finished updating local workspace");
+
+						// Post-processing: refresh state of our git adapter based on pull result
+//						if(context.commandCompleted) {
+//							environment.execute(() -> handlePullResult(gitAdapter, context.result));
+//						}
+						//TODO do we actually need cleanup or maintenance work if the wizard itself takes care already?
+					} else {
+						log.info("Updating local workspace cancelled");
 					}
 				});
 
 			};
 		}.start();
+	}
+
+	private GitRemoteUpdaterContext createUpdaterContext(JGitAdapter gitAdapter) throws IOException {
+		GitRemoteUpdaterContext context = new GitRemoteUpdaterContext(gitAdapter.getGit());
+		context.currentHead = gitAdapter.head();
+
+		return context;
 	}
 
 	private boolean showWizard(Component owner, GitRemoteUpdaterContext context) {
@@ -161,5 +195,13 @@ public class GitRemoteUpdater {
 		}
 
 		return wizardDone;
+	}
+
+	private void handlePullResult(JGitAdapter gitAdapter, PullResult pullResult) {
+
+		FetchResult fetchResult = pullResult.getFetchResult();
+		MergeResult mergeResult = pullResult.getMergeResult();
+
+		//TODO check the PullResult and make the gitAdapter refresh data
 	}
 }

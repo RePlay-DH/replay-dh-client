@@ -1861,7 +1861,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		}
 	}
 
-	private RevCommit head() throws IOException {
+	RevCommit head() throws IOException {
 		return resolve(Constants.HEAD);
 	}
 
@@ -1964,9 +1964,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
                     revWalk.markStart(revWalk.parseCommit(getTarget(ref, repo)));
                 }
 
-//				Iterable<RevCommit> commits = git.log().all().call();
-
-				buildWorkflowGraph(revWalk, Constants.HEAD);
+				buildWorkflowGraph(revWalk, Constants.HEAD, false);
 
 				// Finally switch flag so we don't ever attempt to load the workflow a second time
 				workflowLoaded = true;
@@ -1983,7 +1981,44 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		workflow.fireStateChanged();
 	}
 
-	private void buildWorkflowGraph(Iterable<RevCommit> source, String active)
+	void refreshWorkflow() throws GitException {
+		synchronized (gitLock) {
+			// Avoid loading the git twice
+			if(workflowLoaded) {
+				return;
+			}
+
+			workflow.setIgnoreEventRequests(true);
+			final Repository repo = git.getRepository();
+
+			try(RevWalk revWalk = new RevWalk(repo)) {
+
+				Collection<Ref> allRefs = repo.getRefDatabase().getRefs(Constants.R_HEADS).values();
+                for( Ref ref : allRefs ) {
+                    revWalk.markStart(revWalk.parseCommit(getTarget(ref, repo)));
+                }
+
+//				Iterable<RevCommit> commits = git.log().all().call();
+
+				buildWorkflowGraph(revWalk, Constants.HEAD, false);
+
+				// Finally switch flag so we don't ever attempt to load the workflow a second time
+				workflowLoaded = true;
+
+			} catch (IOException e) {
+				throw new GitException("General I/O issue when trying to access log of git repository", e);
+			} finally {
+
+				workflow.setIgnoreEventRequests(false);
+			}
+		}
+
+		// Notify listeners
+		workflow.fireStateChanged();
+	}
+
+	private void buildWorkflowGraph(Iterable<RevCommit> source, String active,
+			boolean reportExistingNodes)
 				throws GitException, IOException {
 
 		resetStepLookup();
@@ -2096,11 +2131,13 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	/**
 	 * Returns the RevCommit for the supplied id or {@code null}
 	 * if that id cannot be resolved.
+	 * <p>
+	 * Package private so that {@link GitRemoteUpdater} has access.
 	 *
 	 * @return
 	 * @throws GitException if parsing the head commit failed
 	 */
-	private RevCommit resolve(String str) throws IOException {
+	RevCommit resolve(String str) throws IOException {
 		ObjectId id = git.getRepository().resolve(str);
 		return id==null ? null : revWalk.parseCommit(id);
 	}

@@ -48,10 +48,13 @@ public class ErrorPanel extends JPanel {
 		cbShowStackTrace.setToolTipText(GuiUtils.toSwingTooltip(
 				rm.get("replaydh.panels.error.showStackTrace.tooltip")));
 
+		cbShowStackTrace.addActionListener(ae -> refreshContent());
+
 		taOutput = GuiUtils.createTextArea("");
 		taOutput.setColumns(60);
 		taOutput.setRows(15);
-		taOutput.setEditable(false);
+		taOutput.setEditable(true);
+		taOutput.setFocusable(true);
 		taOutput.setLineWrap(false);
 		taOutput.setBorder(GuiUtils.defaultContentBorder);
 
@@ -94,7 +97,7 @@ public class ErrorPanel extends JPanel {
 	 * @return
 	 */
 	public ErrorPanel setText(String text) {
-		taOutput.setText(null);
+		taOutput.setText(text);
 		cbShowStackTrace.setVisible(false);
 		return this;
 	}

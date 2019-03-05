@@ -65,25 +65,6 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 
 	private static final long serialVersionUID = -2324289994636994740L;
 
-//	public static void main(String[] args) {
-//		Page<Object> page1 = mock(Page.class);
-//		when(page1.getTitle()).thenReturn("Step 1");
-//		when(page1.getDescription()).thenReturn("Description 1");
-//		when(page1.getPageComponent()).thenReturn(new JLabel("Content XX"));
-//
-//		Page<Object> page2 = mock(Page.class);
-//		when(page2.getTitle()).thenReturn("Step 2");
-//		when(page2.getDescription()).thenReturn("Description 2");
-//		when(page2.getPageComponent()).thenReturn(new JLabel("Content XX v2"));
-//
-//		when(page1.next(any(), any())).thenReturn(page2);
-//
-//		Wizard<Object> wizard = new Wizard<>(null, "Test Wizard", mock(RDHEnvironment.class), page1, page2);
-//		wizard.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-//
-//		wizard.startWizard(new Object());
-//	}
-
 	private final RDHEnvironment environment;
 
 	// General page control
@@ -429,7 +410,7 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		nextButton.setText(lastPage ?
 				rm.get("replaydh.labels.finish")
 				: rm.get("replaydh.labels.next"));
-		cancelButton.setEnabled(!lastPage || currentPage.canCancel());
+		cancelButton.setEnabled(!lastPage && currentPage.canCancel());
 
 		int currentActivePageIndex = activePageIndex();
 		states[currentActivePageIndex].setEnabled(true);
@@ -668,9 +649,10 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		void persist(RDHEnvironment environment, E context);
 
 		/**
-		 * Only needed for final pages, this method indicates
-		 * whether or not the page can still be cancelled at this
-		 * point.
+		 * Only needed for pages other than the final one, this method indicates
+		 * whether or not the page can still be cancelled at this point.
+		 * <p>
+		 * The default implementation always returns {@code true}.
 		 *
 		 * @return
 		 */
@@ -690,7 +672,7 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		 * background task or open resource that it is trying to
 		 * close, this method should return {@code false}.
 		 * <p>
-		 * THe default implementation always returns {@code true}.
+		 * The default implementation always returns {@code true}.
 		 */
 		default boolean close() {
 			return true;

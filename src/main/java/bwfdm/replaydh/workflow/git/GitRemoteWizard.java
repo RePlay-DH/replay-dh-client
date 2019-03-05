@@ -103,6 +103,9 @@ public abstract class GitRemoteWizard {
 		/** Store credentials provider here so that we can properly discard its data afterwards */
 		public UsernamePasswordCredentialsProvider credentials;
 
+		/** Flag to signal the command finished without 'error' but may still have failed */
+		public boolean commandCompleted;
+
 		public GitRemoteContext(Git git) {
 			this.git = requireNonNull(git);
 		}
@@ -543,12 +546,19 @@ public abstract class GitRemoteWizard {
 			try {
 				context.result = get();
 			} catch (InterruptedException | CancellationException e) {
-				// Assumed to be user-originated cancellation
+				/*
+				 *  Assumed to be user-originated cancellation.
+				 *  This should also shadow the CanceledException from the
+				 *  Git command. If that ever surfaces, we need to handle it
+				 *  here or wrap it earlier.
+				 */
+
 			} catch (ExecutionException e) {
 				// Unwrap real error
 				context.error = e.getCause();
 
-				log.error("Failed to push to remote git: {}", e.getCause());
+				log.error("Failed executing command for remote git: {}",
+						context.getRemote(), e.getCause());
 			}
 
 			// Store last displayed info
@@ -688,7 +698,11 @@ public abstract class GitRemoteWizard {
 		protected T doInBackground() throws Exception {
 			attachProgressMonitor();
 
-			return command.call();
+			T result = command.call();
+
+			context.commandCompleted = true;
+
+			return result;
 		}
 	}
 

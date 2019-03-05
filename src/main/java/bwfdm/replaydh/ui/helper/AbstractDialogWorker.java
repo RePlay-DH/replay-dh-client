@@ -176,6 +176,9 @@ public abstract class AbstractDialogWorker<T extends Object, V extends Object> e
 		// no-op
 	}
 
+	/**
+	 * Hides the dialog window without the user interaction.
+	 */
 	protected void end() {
 		dialog.setVisible(false);
 		dialog.dispose();
