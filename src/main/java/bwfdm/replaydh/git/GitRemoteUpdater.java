@@ -73,6 +73,11 @@ public class GitRemoteUpdater {
 				FileTracker fileTracker = environment.getClient().getFileTracker();
 				fileTracker.refreshStatusInfo();
 
+				/*
+				 * Files with status UNKNOWN are included here as we want to make
+				 * users aware of the risks of having files in the local workspace
+				 * that are not part of the Git index.
+				 */
 				for(TrackingStatus trackingStatus : Arrays.asList(
 								TrackingStatus.MODIFIED,
 								TrackingStatus.CORRUPTED,

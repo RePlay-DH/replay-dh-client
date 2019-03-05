@@ -180,7 +180,7 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 
 			taHeader = GuiUtils.createTextArea("");
 
-			taInfo = GuiUtils.createTextArea("");
+			taInfo = new JTextArea();
 			taInfo.setColumns(60);
 			taInfo.setRows(15);
 			taInfo.setEditable(true);
