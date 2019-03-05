@@ -215,7 +215,8 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		for(int i=0; i<pages.length; i++) {
 			JLabel label = createLabel(11, true, SwingConstants.LEFT, SwingConstants.CENTER);
 			label.setText(pages[i].getTitle());
-			label.setToolTipText(pages[i].getDescription());
+			label.setToolTipText(GuiUtils.toSwingTooltip(
+					pages[i].getDescription()));
 			label.setEnabled(false);
 			label.setFocusable(false);
 			states[i] = label;

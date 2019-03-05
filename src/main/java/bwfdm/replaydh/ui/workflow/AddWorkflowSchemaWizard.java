@@ -507,12 +507,14 @@ public class AddWorkflowSchemaWizard {
 			if(isValidating()) {
 				// CANCEL mode
 				bValidate.setText(rm.get("replaydh.wizard.addWorkflowSchema.validateSchema.cancel.label"));
-				bValidate.setToolTipText(rm.get("replaydh.wizard.addWorkflowSchema.validateSchema.cancel.description"));
+				bValidate.setToolTipText(GuiUtils.toSwingTooltip(
+						rm.get("replaydh.wizard.addWorkflowSchema.validateSchema.cancel.description")));
 				bValidate.setIcon(ir.getIcon("loading-64.gif", Resolution.forSize(24)));
 			} else {
 				// VALIDATE mode
 				bValidate.setText(rm.get("replaydh.wizard.addWorkflowSchema.validateSchema.validate.label"));
-				bValidate.setToolTipText(rm.get("replaydh.wizard.addWorkflowSchema.validateSchema.validate.description"));
+				bValidate.setToolTipText(GuiUtils.toSwingTooltip(
+						rm.get("replaydh.wizard.addWorkflowSchema.validateSchema.validate.description")));
 				bValidate.setIcon(ir.getIcon("update-icon.png", Resolution.forSize(24)));
 			}
 

@@ -229,7 +229,8 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 		JList<FileIgnoreInfo> list = createList(model);
 
 		JCheckBox checkBox = new JCheckBox();
-		checkBox.setToolTipText(rm.get("replaydh.ui.editor.ignoreFiles.toggleAll"));
+		checkBox.setToolTipText(GuiUtils.toSwingTooltip(
+				rm.get("replaydh.ui.editor.ignoreFiles.toggleAll")));
 		checkBox.addItemListener(ie -> model.setAll(checkBox.isSelected()));
 
 //		ScrollablePanel panel = new ScrollablePanel();
@@ -500,7 +501,7 @@ public class FileIgnoreEditor implements Editor<FileIgnoreEditor.FileIgnoreConfi
 				boolean isSelected, boolean cellHasFocus) {
 			Path path = info.fileObject.getFile();
 			lPath.setText(path.getFileName().toString());
-			setToolTipText(path.toString());
+			setToolTipText(GuiUtils.toSwingTooltip(path.toString()));
 
 			lSize.setText(IOUtils.readableSize(path));
 

@@ -38,6 +38,7 @@ import bwfdm.replaydh.git.GitException;
 import bwfdm.replaydh.git.GitUtils;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
+import bwfdm.replaydh.ui.helper.ErrorPanel;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
 
@@ -154,25 +155,20 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			"replaydh.wizard.gitRemoteUpdater.finish.description") {
 
 		private JTextArea taHeader;
-		private JTextArea taInfo;
+		private ErrorPanel epInfo;
 
 		@Override
 		protected JPanel createPanel() {
 
 			taHeader = GuiUtils.createTextArea("");
 
-			taInfo = GuiUtils.createTextArea("");
-			taInfo.setColumns(60);
-			taInfo.setRows(15);
-			taInfo.setEditable(true);
-			taInfo.setLineWrap(false);
-			taInfo.setBorder(GuiUtils.defaultContentBorder);
+			epInfo = new ErrorPanel();
 
 			return FormBuilder.create()
 					.columns("fill:pref:grow")
 					.rows("pref, 6dlu, pref, $nlg, pref")
 					.add(taHeader).xy(1, 1)
-					.addScrolled(taInfo).xy(1, 3, "center, center")
+					.add(epInfo).xy(1, 3, "center, center")
 					.build();
 		}
 
@@ -181,13 +177,13 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			ResourceManager rm = ResourceManager.getInstance();
 
 			if(context.error!=null) {
-				taInfo.setText(GuiUtils.errorText(context.error));
+				epInfo.setThrowable(context.error);
 				taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.headerError"));
 			} else if(context.result!=null) {
-				taInfo.setText(context.result.toString());
+				epInfo.setText(context.result.toString());
 			} else {
 				taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.headerMissingInfo"));
-				taInfo.setText(context.finalMessage);
+				epInfo.setText(context.finalMessage);
 			}
 
 			setPreviousEnabled(false);

@@ -1218,7 +1218,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			if(dragActive) {
 				setIcon(icon);
 				setText(label);
-				setToolTipText(tooltip);
+				setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 
 				setBorder(isTarget ? ACTIVE_BORDER : EMPTY_BORDER);
 			} else {

@@ -51,6 +51,7 @@ import com.jgoodies.forms.factories.Paddings;
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.io.TrackingStatus;
+import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.CloseableUI;
 import bwfdm.replaydh.ui.helper.WrapLayout;
 import bwfdm.replaydh.utils.RDHUtils;
@@ -264,7 +265,7 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 			}
 
 			label.setText(title);
-			label.setToolTipText(tooltip);
+			label.setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 
 			// More detailed outline
 

@@ -42,7 +42,8 @@ public class TrackingPreferencesTab extends DelegatingPreferencesTab {
 		ResourceManager rm = ResourceManager.getInstance();
 
 		JTextField tfMaxSize = new JTextField(20);
-		tfMaxSize.setToolTipText(rm.get("replaydh.plugins.trackingPreferencesTab.ignoreLargerThan.description"));
+		tfMaxSize.setToolTipText(GuiUtils.toSwingTooltip(
+				rm.get("replaydh.plugins.trackingPreferencesTab.ignoreLargerThan.description")));
 		GuiUtils.addErrorFeedback(tfMaxSize, s -> {
 			try {
 				IOUtils.parseSize(s);

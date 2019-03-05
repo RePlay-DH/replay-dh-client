@@ -47,6 +47,7 @@ import bwfdm.replaydh.git.GitException;
 import bwfdm.replaydh.git.GitUtils;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
+import bwfdm.replaydh.ui.helper.ErrorPanel;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
 import bwfdm.replaydh.ui.icons.IconRegistry;
@@ -168,7 +169,7 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 		private JComboBox<PushResult> cbResults;
 
 		private JTextArea taHeader;
-		private JTextArea taInfo;
+		private ErrorPanel epInfo;
 
 		@Override
 		protected JPanel createPanel() {
@@ -180,19 +181,14 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 
 			taHeader = GuiUtils.createTextArea("");
 
-			taInfo = new JTextArea();
-			taInfo.setColumns(60);
-			taInfo.setRows(15);
-			taInfo.setEditable(true);
-			taInfo.setLineWrap(false);
-			taInfo.setBorder(GuiUtils.defaultContentBorder);
+			epInfo = new ErrorPanel();
 
 			return FormBuilder.create()
 					.columns("fill:pref:grow")
 					.rows("pref, 6dlu, pref, $nlg, pref")
 					.add(taHeader).xy(1, 1)
 					.add(cbResults).xy(1, 3)
-					.addScrolled(taInfo).xy(1, 5, "center, center")
+					.add(epInfo).xy(1, 5, "center, center")
 					.build();
 		}
 
@@ -200,7 +196,7 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 			PushResult pushResult = (PushResult) cbResults.getSelectedItem();
 
 			if(pushResult==null) {
-				taInfo.setText(null);
+				epInfo.setText(null);
 			} else {
 				//TODO properly process the displayed data for non-technical users
 				StringBuilder sb = new StringBuilder();
@@ -214,7 +210,7 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 					.sorted((u1, u2) -> u1.getRemoteName().compareTo(u2.getRemoteName()))
 					.forEach(refUpdate -> sb.append(LB).append(refUpdate.toString()));  //TODO ugly, as this is not localized
 
-				taInfo.setText(sb.toString());
+				epInfo.setText(sb.toString());
 			}
 		}
 
@@ -226,7 +222,7 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 
 			if(context.error!=null) {
 				cbResults.setVisible(false);
-				taInfo.setText(GuiUtils.errorText(context.error));
+				epInfo.setThrowable(context.error);
 				taHeader.setText(rm.get("replaydh.wizard.gitRemotePublisher.finish.headerError"));
 			} else if(context.result!=null) {
 				context.result.forEach(cbResults::addItem);
@@ -251,7 +247,7 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 				}
 			} else {
 				taHeader.setText(rm.get("replaydh.wizard.gitRemotePublisher.finish.headerMissingInfo"));
-				taInfo.setText(context.finalMessage);
+				epInfo.setText(context.finalMessage);
 			}
 
 			setPreviousEnabled(false);
@@ -299,7 +295,7 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 
 			delegate.getListCellRendererComponent(list, text, index, isSelected, cellHasFocus);
 
-			delegate.setToolTipText(tooltip);
+			delegate.setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 			delegate.setIcon(icon);
 
 			return delegate;

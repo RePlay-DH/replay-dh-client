@@ -106,7 +106,7 @@ public final class WorkflowUIUtils {
 
 			super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
-			setToolTipText(tooltip);
+			setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 
 			return this;
 		}
@@ -180,7 +180,7 @@ public final class WorkflowUIUtils {
 			IdentifierSchema schema, Predicate<? super IdentifierType> filter) {
 
 		IconRegistry ir = IconRegistry.getGlobalRegistry();
-		
+
 		ResourceManager rm = ResourceManager.getInstance();
 
 		final JButton bOk = new JButton(rm.get("replaydh.labels.ok"));
@@ -189,12 +189,13 @@ public final class WorkflowUIUtils {
 		final JComboBox<IdentifierTypeProxy> cbType = createIdentifierTypeComboBox(schema, filter);
 
 		final JTextField tfId = GuiUtils.autoSelectFullContent(new JTextField());
-		
+
 		final JFileChooser fc = new JFileChooser();
-		
+
 		final JButton chooseFile = new JButton(ir.getIcon("add_obj.gif", Resolution.forSize(16)));
 		chooseFile.setPreferredSize(new Dimension(24, 24));
-		chooseFile.setToolTipText(rm.get("replaydh.labels.choose.file.tip"));
+		chooseFile.setToolTipText(GuiUtils.toSwingTooltip(
+				rm.get("replaydh.labels.choose.file.tip")));
 
 		final Runnable checkInput = () -> {
 			String text = tfId.getText();
@@ -207,18 +208,18 @@ public final class WorkflowUIUtils {
 			if(type instanceof String) {
 				inputValid &= !((String)type).isEmpty();
 			}
-			
+
 			if((IdentifierType.isDefaultChecksumIdentifierType(idType.identifierType)) || (IdentifierType.isDefaultPathIdentifierType(idType.identifierType))) {
 				selectionDialogue=true;
-			} 
-			
+			}
+
 			chooseFile.setVisible(selectionDialogue);
 
 			bOk.setEnabled(inputValid);
 		};
 
 		cbType.addActionListener(a -> checkInput.run());
-		
+
 		tfId.getDocument().addDocumentListener(new DocumentAdapter() {
 			@Override
 			public void anyUpdate(DocumentEvent e) {
@@ -264,7 +265,7 @@ public final class WorkflowUIUtils {
 
 		final MutableObject<Identifier> result = new MutableObject<>();
 
-		
+
 		bOk.addActionListener(a -> {
 			Object type = cbType.getSelectedItem();
 			String id = tfId.getText();
@@ -309,7 +310,7 @@ public final class WorkflowUIUtils {
 				}
 			}
 		});
-		
+
 		checkInput.run();
 		dialog.setVisible(true);
 

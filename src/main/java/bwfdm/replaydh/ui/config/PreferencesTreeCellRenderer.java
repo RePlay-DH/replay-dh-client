@@ -23,6 +23,7 @@ import java.awt.Component;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultTreeCellRenderer;
 
+import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.config.PreferencesTreeModel.Node;
 import bwfdm.replaydh.ui.id.Identity;
 
@@ -55,7 +56,8 @@ public class PreferencesTreeCellRenderer extends DefaultTreeCellRenderer {
 		super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
 
 		if(label!=null) {
-			setToolTipText(label.getDescription());
+			setToolTipText(GuiUtils.toSwingTooltip(
+					label.getDescription()));
 			setIcon(label.getIcon());
 		}
 

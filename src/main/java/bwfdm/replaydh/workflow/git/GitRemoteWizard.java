@@ -443,11 +443,13 @@ public abstract class GitRemoteWizard {
 
 			if(workerRunning()) {
 				bTransmit.setText(rm.get("replaydh.labels.cancel"));
-				bTransmit.setToolTipText(rm.get("replaydh.wizard.gitRemote.execute.cancelTooltip"));
+				bTransmit.setToolTipText(GuiUtils.toSwingTooltip(
+						rm.get("replaydh.wizard.gitRemote.execute.cancelTooltip")));
 				bTransmit.setIcon(ir.getIcon("loading-16.gif"));
 			} else {
 				bTransmit.setText(rm.get("replaydh.labels.start"));
-				bTransmit.setToolTipText(rm.get("replaydh.wizard.gitRemote.execute.startTooltip"));
+				bTransmit.setToolTipText(GuiUtils.toSwingTooltip(
+						rm.get("replaydh.wizard.gitRemote.execute.startTooltip")));
 				bTransmit.setIcon(null);
 			}
 		}
@@ -720,7 +722,7 @@ public abstract class GitRemoteWizard {
 			// Let the default implementation do the real work
 			super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
-			setToolTipText(tooltip);
+			setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 
 			return this;
 		}

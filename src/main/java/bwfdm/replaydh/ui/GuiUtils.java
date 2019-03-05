@@ -105,6 +105,7 @@ import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Editor;
 import bwfdm.replaydh.ui.helper.EditorControl;
+import bwfdm.replaydh.ui.helper.ErrorPanel;
 import bwfdm.replaydh.ui.icons.Resolution;
 import bwfdm.replaydh.utils.Mutable;
 import bwfdm.replaydh.utils.MutablePrimitives.MutableBoolean;
@@ -408,14 +409,32 @@ public class GuiUtils {
 		showErrorDialog(parent, null, null, t);
 	}
 
-	public static String errorText(Throwable t) {
+	public static String errorText(Throwable t, boolean showStackTrace) {
 
-		StringWriter sw = new StringWriter(250);
-		try(PrintWriter pw = new PrintWriter(sw)) {
-			t.printStackTrace(pw);
+		if(showStackTrace) {
+			StringWriter sw = new StringWriter(250);
+			try(PrintWriter pw = new PrintWriter(sw)) {
+				t.printStackTrace(pw);
+			}
+
+			return sw.toString();
+		} else {
+			StringBuilder sb = new StringBuilder(100);
+			sb.append(t.getLocalizedMessage());
+
+			String causedBy = ResourceManager.getInstance().get("replaydh.panels.error.causedBy");
+			Throwable current = t.getCause();
+			if(current!=null) {
+				sb.append('\n');
+			}
+
+			while(current!=null) {
+				sb.append('\n').append(causedBy).append(":  ").append(current.getLocalizedMessage());
+				current = current.getCause();
+			}
+
+			return sb.toString();
 		}
-
-		return sw.toString();
 	}
 
 	public static void showErrorDialog(Component parent, String title, String message, Throwable t) {
@@ -462,12 +481,10 @@ public class GuiUtils {
 				.add(infoLabel).xyw(1, 1, 5);
 
 		if(t!=null) {
-			String content = errorText(t);
-			JTextArea textArea = createTextArea(content);
-			textArea.setLineWrap(false);
-			textArea.setBorder(defaultContentBorder);
+			ErrorPanel errorPanel = new ErrorPanel();
+			errorPanel.setThrowable(t);
 
-			JScrollPane scrollPane = new JScrollPane(textArea);
+			JScrollPane scrollPane = new JScrollPane(errorPanel);
 			scrollPane.setPreferredSize(new Dimension(400, 300));
 			scrollPane.setBorder(defaultAreaBorder);
 
@@ -1054,7 +1071,7 @@ public class GuiUtils {
     		}
 
     		JMenuItem item = new JMenuItem(name);
-    		item.setToolTipText(description);
+    		item.setToolTipText(toSwingTooltip(description));
     		item.setIcon(icon);
 
     		item.putClientProperty(EXTENSION_KEY, extension.getUniqueId());
