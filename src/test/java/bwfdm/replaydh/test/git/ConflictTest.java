@@ -31,6 +31,7 @@ import java.util.stream.StreamSupport;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.api.PullResult;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefUpdate.Result;
@@ -72,6 +73,9 @@ public class ConflictTest extends RepositoryTest {
 			assertEquals(MergeStatus.CONFLICTING, pullResult.getMergeResult().getMergeStatus());
 
 			assertTrue(readLocalFile("a").startsWith("a\n<<<<<<< HEAD"));
+
+			Status status = local.status().call();
+			assertTrue(status.getConflicting().contains("a"));
 		}
 	}
 
