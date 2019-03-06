@@ -77,6 +77,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		
 		GUIElement simpleSearch = createGUIElement();
 		simpleSearch.getLabel().setText(rm.get("replaydh.wizard.metadataAutoWizard.simpleSearch"));
+		simpleSearch.getButton().setVisible(false);
+		simpleSearch.getMinusbutton().setVisible(false);
 		
 		GUIElementMetadata chooseProperties = createGUIElement("keys");
 		cbRoleType = WorkflowUIUtils.createLabelComboBox(getLabelSchema());
