@@ -30,6 +30,11 @@ import bwfdm.replaydh.workflow.schema.LabelSchema;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 import bwfdm.replaydh.ui.GuiUtils;
 
+/**
+ * 
+ * @author Florian Fritze
+ *
+ */
 public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	
 	private JDialog wizardWindow;
