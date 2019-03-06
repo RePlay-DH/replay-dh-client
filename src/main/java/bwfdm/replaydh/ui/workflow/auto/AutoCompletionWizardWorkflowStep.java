@@ -42,8 +42,6 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	private JPanel mainPanelWizard;
 	private List<GUIElementMetadata> dd = new ArrayList<>();
 	
-	private JComboBox<CompoundLabel> cbRoleType = null;
-	private CompoundLabel defaultTypeOrRole = null;
 	
 	private Identifiable.Type type = null;
 	private WorkflowSchema schema = null;
@@ -81,8 +79,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		simpleSearch.getMinusbutton().setVisible(false);
 		
 		GUIElementMetadata chooseProperties = createGUIElement("keys");
-		cbRoleType = WorkflowUIUtils.createLabelComboBox(getLabelSchema());
-		defaultTypeOrRole = WorkflowUIUtils.createDefaultLabel(getLabelSchema());
+		JComboBox<CompoundLabel> cbRoleType = WorkflowUIUtils.createLabelComboBox(getLabelSchema());
+		CompoundLabel defaultTypeOrRole = WorkflowUIUtils.createDefaultLabel(getLabelSchema());
 		cbRoleType.setSelectedItem(defaultTypeOrRole);
 		cbRoleType.addActionListener(this);
 		chooseProperties.getKeysDropdown().setModel(cbRoleType.getModel());
@@ -226,6 +224,11 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 					oneguielement.getKeysDropdown().addActionListener(this);
 				}
 			}
+			
+			JComboBox<CompoundLabel> cbRoleType = WorkflowUIUtils.createLabelComboBox(getLabelSchema());
+			CompoundLabel defaultTypeOrRole = WorkflowUIUtils.createDefaultLabel(getLabelSchema());
+			cbRoleType.setSelectedItem(defaultTypeOrRole);
+			cbRoleType.addActionListener(this);
 			
 			oneguielement.getKeysDropdown().setModel(cbRoleType.getModel());
 			oneguielement.getKeysDropdown().addActionListener(this);
