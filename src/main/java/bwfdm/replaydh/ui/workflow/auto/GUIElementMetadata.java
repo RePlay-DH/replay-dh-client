@@ -3,7 +3,9 @@ package bwfdm.replaydh.ui.workflow.auto;
 import java.awt.Dimension;
 
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -14,19 +16,20 @@ import com.jgoodies.forms.builder.FormBuilder;
 
 import bwfdm.replaydh.ui.icons.IconRegistry;
 
-public class GUIElement {
+
+public class GUIElementMetadata {
 	
 	private FormBuilder propertybuilder = FormBuilder.create();
 	private static final String columns = "left:max(60dlu;pref), 6dlu, max(180dlu;min), 3dlu, pref, 3dlu, pref";
 	private static final String rows = "pref";
 	private JTextField textfield = new JTextField();
-	private JLabel label = new JLabel();
+	private JComboBox<String> keysDropdown = new JComboBox<>();
 	private JButton button = null;
 	private JButton minusbutton = null;
 	private JButton resetButton = null;
-	private JPanel panel = new JPanel();
 	private JTextArea description;
 	private JScrollPane scroll;
+	private JPanel panel = new JPanel();
 	private static final JLabel shadowlabelfirst = new JLabel();
 	private static final JLabel shadowlabelsecond = new JLabel();
 	private static final Dimension preferredSize = new Dimension(17,17);
@@ -42,7 +45,7 @@ public class GUIElement {
 		propertybuilder.columns(columns);
 		propertybuilder.rows(rows);
 		propertybuilder.panel(panel);
-		propertybuilder.add(label).xy(1, 1);
+		propertybuilder.add(keysDropdown).xy(1, 1);
 		if (description != null) {
 			propertybuilder.add(scroll).xy(3, 1);
 		} else if (textfield != null) {
@@ -64,14 +67,14 @@ public class GUIElement {
 		}
 	}
 	
-	public void createResetButton(String resetLabel) {
+	public void createExtraButton(String resetLabel) {
 		propertybuilder.columns(columns);
 		propertybuilder.rows(rows);
 		propertybuilder.panel(panel);
-		label.setVisible(false);
+		keysDropdown.setVisible(false);
 		resetButton = new JButton(resetLabel);
 		resetButton.setPreferredSize(buttonSize);
-		propertybuilder.add(label).xy(1, 1);
+		propertybuilder.add(keysDropdown).xy(1, 1);
 		propertybuilder.add(resetButton).xy(3, 1);
 		shadowlabelfirst.setPreferredSize(preferredSize);
 		propertybuilder.add(shadowlabelfirst).xy(5, 1);
@@ -106,16 +109,15 @@ public class GUIElement {
 		this.minusbutton.setIcon(iidel);
 		this.minusbutton.setPreferredSize(preferredSize);
 	}
-	public JLabel getLabel() {
-		return label;
-	}
-	public void setLabel(JLabel label) {
-		this.label = label;
-	}
-	public JButton getResetButton() {
+	public JButton getExtraButton() {
 		return resetButton;
 	}
-
+	public JComboBox<String> getKeysDropdown() {
+		return keysDropdown;
+	}
+	public void setKeysDropdown(JComboBox<String> keysDropdown) {
+		this.keysDropdown = keysDropdown;
+	}
 	public void setResetButton(JButton resetButton) {
 		this.resetButton = resetButton;
 	}

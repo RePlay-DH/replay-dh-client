@@ -453,19 +453,11 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
         AutoCompletionWizardWorkflowStep autoWizard = new AutoCompletionWizardWorkflowStep();
         
         if(source == btnAddAutoPerson){
-        	applyLocalEditors(personEditorElementsList); //Apply local editors to avoid possible conflicts
-        	DefaultPerson person = createNewPerson();
-        	if(callIdentifiableEditorDialogue(this.schema, Type.PERSON, person)) {
-				addIdentifiable(person, Role.PERSON);
-        	}
+        	autoWizard.createWizard();
         	return;
 
 		} else if (source == btnAddAutoTool){
-			applyLocalEditors(toolEditorElementsList); //Apply local editors to avoid possible conflicts
-        	DefaultTool tool = createNewTool();
-			if(callIdentifiableEditorDialogue(this.schema, Type.TOOL, tool)) {
-				addIdentifiable(tool, Role.TOOL);
-			}
+			autoWizard.createWizard();
 			return;
 
 		} else if (source == btnAddAutoInputResource){
@@ -473,11 +465,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 			return;
 
 		} else if (source == btnAddAutoOutputResource){
-			applyLocalEditors(outputResourceEditorElementsList); //Apply local editors to avoid possible conflicts
-        	DefaultResource output = createNewResource();
-			if(callIdentifiableEditorDialogue(this.schema, Type.RESOURCE, output)) {
-				addIdentifiable(output, Role.OUTPUT);
-			}
+			autoWizard.createWizard();
 			return;
 		}
 
