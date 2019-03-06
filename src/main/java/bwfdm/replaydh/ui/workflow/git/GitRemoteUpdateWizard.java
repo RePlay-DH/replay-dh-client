@@ -99,12 +99,21 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		}
 	}
 
+	/**
+	 * Unchanged (up2date or not-attempted)
+	 */
 	private static final EnumSet<Result> UNCHANGED = EnumSet.of(
 			Result.NO_CHANGE, Result.NOT_ATTEMPTED);
 
+	/**
+	 * Updated, forcefully overwritten, new or renamed
+	 */
 	private static final EnumSet<Result> CHANGED = EnumSet.of(
 			Result.FAST_FORWARD, Result.FORCED, Result.NEW, Result.RENAMED);
 
+	/**
+	 * Rejected or caused by I/O or locking issues
+	 */
 	private static final EnumSet<Result> FAILED;
 	static {
 		EnumSet<Result> failed = EnumSet.allOf(Result.class);
@@ -129,6 +138,51 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment,
 				GitRemoteUpdaterContext context) {
 			return defaultProcessNext(environment, context) ? UPDATE : null;
+		}
+	};
+
+
+	/**
+	 * Let user select if he wants to update entire workflow or only current workspace state.
+	 */
+	private static final GitRemoteStep<FetchResult, GitRemoteUpdaterContext> SCOPE
+		= new GitRemoteStep<FetchResult, GitRemoteUpdaterContext>(
+			"finish",
+			"replaydh.wizard.gitRemoteUpdater.finish.title",
+			"replaydh.wizard.gitRemoteUpdater.finish.description") {
+
+		private JTextArea taHeader;
+		private ErrorPanel epInfo;
+		private JLabel lIcon;
+
+		@Override
+		protected JPanel createPanel() {
+
+			taHeader = GuiUtils.createTextArea("");
+
+			lIcon = new JLabel();
+			lIcon.setIcon(IconRegistry.getGlobalRegistry().getIcon("loading-16.gif"));
+
+			epInfo = new ErrorPanel();
+
+			return FormBuilder.create()
+					.columns("fill:pref:grow")
+					.rows("pref, 6dlu, pref, pref")
+					.add(taHeader).xy(1, 1)
+					.add(lIcon).xy(1, 3, "center, center")
+					.add(epInfo).xy(1, 4, "center, center")
+					.build();
+		}
+
+		@Override
+		public void refresh(RDHEnvironment environment, GitRemoteUpdaterContext context) {
+
+		};
+
+		@Override
+		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment, GitRemoteUpdaterContext context) {
+			// TODO Auto-generated method stub
+			return null;
 		}
 	};
 
@@ -167,7 +221,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			}
 
 			command.setCheckFetchedObjects(true);
-//			command.isRemoveDeletedRefs(); //TODO for now we don't allow deleting local refs. Needs tochange when we add deeper functionality
+//			command.isRemoveDeletedRefs(); //TODO for now we don't allow deleting local refs. Needs to change when we add deeper functionality
 
 			return command;
 		};
@@ -254,10 +308,12 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 					}
 
 					taHeader.setText(rm.get(headerKey));
-					epInfo.setText(fetchResult.toString());
+					epInfo.setText(fetchResult.toString()); // display raw info
 				} else if(hasChanged(updatesByResultType.keySet())) {
 					// Local refs changed and we need to merge (or at least try...)
 					List<TrackingRefUpdate> updatedRefs = getUpdatedRefs(updatesByResultType);
+
+					// Check if we can merge and if not provide the user with options
 					doDryRun(environment, context, updatedRefs);
 				} else {
 					// Nothing changed
@@ -312,6 +368,9 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			return updatedRefs;
 		}
 
+		/**
+		 * Checks whether we can merge all the updated refs
+		 */
 		private void doDryRun(RDHEnvironment environment, GitRemoteUpdaterContext context,
 				List<TrackingRefUpdate> updatedRefs) {
 			ResourceManager rm = ResourceManager.getInstance();
@@ -321,11 +380,26 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			lIcon.setVisible(true);
 			epInfo.setVisible(false);
 
+
 			SwingWorker<MergeResult, String> worker = new SwingWorker<MergeResult, String>() {
 
 				@Override
 				protected MergeResult doInBackground() throws Exception {
 					final Repository repository = context.git.getRepository();
+
+					/*
+					 * Scenarios:
+					 *
+					 * 1. Everything can be merged -> run a normal MergeCommand
+					 *
+					 * 2. Conflicts detected - present options to user:
+					 *     a)  Insert conflict markers into files (and give him an example)
+					 *     b)  If conflict is in current branch: allow to create the "remote"
+					 *         version of conflicted file so the user has both and can merge
+					 *         manually.
+					 *     c)  If conflicts are in another branch, only merge/resolve the current
+					 *         branch and ask user to switch to the conflicting branch later.
+					 */
 
 					// Go through all updated refs and make sure we can merge
 					for(TrackingRefUpdate refUpdate : updatedRefs) {

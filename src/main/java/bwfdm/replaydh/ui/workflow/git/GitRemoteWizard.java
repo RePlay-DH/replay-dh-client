@@ -431,13 +431,15 @@ public abstract class GitRemoteWizard {
 			if(worker.getState()==StateValue.PENDING) {
 				bTransmit.setText(ResourceManager.getInstance().get("replaydh.labels.cancel"));
 				worker.execute();
-				refreshPreviousEnabled();
 			} else {
 				// Otherwise it's a cancel request
 				worker.cancel(false); //TODO for now we don't want to interrupt the worker thread
 			}
 
-			GuiUtils.invokeEDTLater(this::refreshButton);
+			GuiUtils.invokeEDTLater(() -> {
+				refreshButton();
+				refreshPreviousEnabled();
+			});
 		}
 
 		private void refreshButton() {
