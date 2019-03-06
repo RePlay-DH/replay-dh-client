@@ -474,7 +474,7 @@ public abstract class GitRemoteWizard {
 		public void refresh(RDHEnvironment environment, C context) {
 			if(context.remoteConfig==null) {
 				cbScope.setEnabled(false);
-				taInfo.setText(ResourceManager.getInstance().get(""));
+				taInfo.setText(ResourceManager.getInstance().get("replaydh.wizard.gitRemote.selectScope.noRemote"));
 			} else {
 				cbScope.setEnabled(true);
 
