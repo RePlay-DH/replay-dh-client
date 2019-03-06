@@ -37,11 +37,9 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	
 	private Map<String, List<GUIElementMetadata>> elementsofproperty;
 	private Map<String, JPanel> propertypanels;
-	//private Map<String, Integer> panelRow;
 	private List<String> listofkeys;
 	
 	private JPanel mainPanelWizard;
-	//private DocumentAdapter adapter;
 	private List<GUIElementMetadata> dd = new ArrayList<>();
 	
 	private JComboBox<CompoundLabel> cbRoleType = null;
@@ -72,7 +70,6 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	public JPanel createWizardPanel() {
 		
 		builderWizard = FormBuilder.create();
-		//panelRow = new HashMap<>();
 		
 		listofkeys = new ArrayList<>();
 		propertypanels = new HashMap<>();
@@ -143,28 +140,15 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 					if (source == buttonpressed) {
 						GUIElementMetadata element = createGUIElement(propertyname);
 						elementsofproperty.get(propertyname).add(element);
-						if (propertyname.equals("creator")) {
-							//element.getTextfield().getDocument().addDocumentListener(adapter);
-							GuiUtils.prepareChangeableBorder(element.getTextfield());
-							refreshBorder(elementsofproperty.get(propertyname));
-						}
 						refreshPanel(propertyname);
 						done=true;
 						break;
 					}
 					if (source == minusbuttonpressed) {
 						if (elementsofproperty.get(propertyname).size() > 1) {
-							if (propertyname.equals("creator")) {
-								//elementsofproperty.get(propertyname).get(buttonNumber).getTextfield().getDocument().removeDocumentListener(adapter);
-								elementsofproperty.get(propertyname).get(buttonNumber).getButton().removeActionListener(this);
-								elementsofproperty.get(propertyname).get(buttonNumber).getMinusbutton().removeActionListener(this);
-							}
 							removeElementFromPanel(propertyname,buttonNumber);
 						} else {
 							elementsofproperty.get(propertyname).get(0).getTextfield().setText("");
-						}
-						if (propertyname.equals("creator")) {
-							refreshBorder(elementsofproperty.get(propertyname));
 						}
 						done=true;
 						break;
@@ -239,22 +223,6 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 				if(oneguielement.getKeysDropdown().getActionListeners().length == 0) {
 					oneguielement.getKeysDropdown().addActionListener(this);
 				}
-				/*if (oneguielement.getLabel().getText().equals("")) {
-					switch (metadatapropertyname) {
-					case "creator":
-						oneguielement.getLabel().setText(rm.get("darus.wizard.dataversePublisher.editMetadata.creatorLabel"));
-						break;
-					case "publisher":
-						oneguielement.getLabel().setText(rm.get("darus.wizard.dataversePublisher.editMetadata.publisherLabel"));
-						break;
-					case "subject":
-						oneguielement.getLabel().setText(rm.get("darus.wizard.dataversePublisher.editMetadata.subjectLabel"));
-						break;
-					case "sources":
-						oneguielement.getLabel().setText(rm.get("darus.wizard.dataversePublisher.editMetadata.sourcesLabel"));
-						break;
-					}
-				}*/
 			}
 			
 			oneguielement.getKeysDropdown().setModel(cbRoleType.getModel());
