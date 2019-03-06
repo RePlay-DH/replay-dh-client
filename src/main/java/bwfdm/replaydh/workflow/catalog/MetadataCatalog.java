@@ -65,6 +65,20 @@ public interface MetadataCatalog {
 	Result query(QuerySettings settings, List<Constraint> constraints) throws CatalogException;
 
 	/**
+	 * Asks the catalog for suggestions usable in an auto-completion scenario.
+	 *
+	 * @param settings  general constraints such as a {@link WorkflowSchema} or result size limit
+	 * @param context  optional hint for the catalog for which type of resource/person/tool suggestions
+	 * should be gathered. If {@code null} then search will be performed solely based on {@code key}
+	 * @param key  the property for which to gather values
+	 * @param valuePrefix  a filter to restrict the search to only values that start with this prefix. If
+	 * {@code null} or {@link String#isEmpty() empty} then arbitrary values for the specified key will be picked.
+	 * @return A non-null but potentially empty list of values found for the specified property based on the parameters
+	 * @throws CatalogException
+	 */
+	List<String> suggest(QuerySettings settings, Identifiable context, String key, String valuePrefix) throws CatalogException;
+
+	/**
 	 * An immutable instance of {@link QuerySettings} that can be shared
 	 * and used as default value.
 	 */
@@ -108,6 +122,8 @@ public interface MetadataCatalog {
 
 	}
 
+	public static final int DEFAULT_RESULT_LIMIT = 100;
+
 	/**
 	 * Additional settings to customize the behavior of the query engine in
 	 * a catalog.
@@ -121,7 +137,7 @@ public interface MetadataCatalog {
 	 */
 	public static class QuerySettings {
 		private WorkflowSchema schema = null;
-		private int resultLimit = -1;
+		private int resultLimit = DEFAULT_RESULT_LIMIT;
 
 		boolean canEdit() {
 			return true;
