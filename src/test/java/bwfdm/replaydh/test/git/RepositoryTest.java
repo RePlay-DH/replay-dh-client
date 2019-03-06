@@ -89,6 +89,20 @@ public abstract class RepositoryTest {
 		return makeFile(OTHER_NAME, name, content);
 	}
 
+	protected String readFile(String parent, String name) throws IOException {
+		File dir = new File(folder.getRoot(), parent);
+		File file = new File(dir, name);
+		return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+	}
+
+	protected String readLocalFile(String name) throws IOException {
+		return readFile(LOCAL_NAME, name);
+	}
+
+	protected String readOtherFile(String name) throws IOException {
+		return readFile(OTHER_NAME, name);
+	}
+
 	protected void addRemote(Git git, Git remote) throws MalformedURLException, GitAPIException {
 		RemoteAddCommand cmd = git.remoteAdd();
 		cmd.setName(Constants.DEFAULT_REMOTE_NAME);

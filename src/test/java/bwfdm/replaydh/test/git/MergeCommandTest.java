@@ -22,8 +22,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.MergeResult.MergeStatus;
+import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.merge.ThreeWayMerger;
@@ -38,7 +41,7 @@ import org.junit.Test;
 public class MergeCommandTest extends RepositoryTest {
 
 	@Test
-	public void testConflictingMerge() throws Exception {
+	public void testConflictingFetchWithMergeDryRun() throws Exception {
 		try(Git local = createLocalGit();
 				Git other = createOtherGit();
 				Git remote = createRemoteGit()) {
@@ -50,7 +53,7 @@ public class MergeCommandTest extends RepositoryTest {
 			local.add().addFilepattern("a").call();
 			local.commit().setMessage("a1").call();
 
-			makeOtherFile("a", "a\n\bc\nc");
+			makeOtherFile("a", "a\nbc\nc");
 			other.add().addFilepattern("a").call();
 			other.commit().setMessage("a").call();
 
@@ -67,12 +70,81 @@ public class MergeCommandTest extends RepositoryTest {
 			ObjectId fetchHead = refUpdate.getNewObjectId();
 
 			assertEquals("a\nb\nc", readFile(local, repo.parseCommit(localHead), "a"));
-			assertEquals("a\n\bc\nc", readFile(local, repo.parseCommit(fetchHead), "a"));
+			assertEquals("a\nbc\nc", readFile(local, repo.parseCommit(fetchHead), "a"));
+			assertEquals("a\nb\nc", readLocalFile("a"));
 
 			boolean noProblems = merger.merge(
 					localHead, fetchHead);
 
 			assertFalse(noProblems);
+		}
+	}
+
+	@Test
+	public void testDetectingConflictingFilesAndLinesDuringMergeDryRun() throws Exception {
+		try(Git local = createLocalGit();
+				Git other = createOtherGit();
+				Git remote = createRemoteGit()) {
+
+			addRemote(local, remote);
+			addRemote(other, remote);
+
+			makeLocalFile("a", "a\nb\nc");
+			local.add().addFilepattern("a").call();
+			local.commit().setMessage("a1").call();
+
+			makeOtherFile("a", "a\nbc\nc");
+			other.add().addFilepattern("a").call();
+			other.commit().setMessage("a").call();
+
+			other.push().setPushAll().call();
+
+			FetchResult fr = local.fetch().call();
+
+			TrackingRefUpdate refUpdate = fr.getTrackingRefUpdate("refs/remotes/origin/master");
+			assertEquals(Result.NEW, refUpdate.getResult());
+
+			Repository repo = local.getRepository();
+
+			ThreeWayMerger merger = MergeStrategy.RECURSIVE.newMerger(repo, true);
+			ObjectId localHead = repo.resolve(Constants.HEAD);
+			ObjectId fetchHead = repo.resolve(Constants.FETCH_HEAD);
+
+			assertEquals("a\nb\nc", readFile(local, repo.parseCommit(localHead), "a"));
+			assertEquals("a\nbc\nc", readFile(local, repo.parseCommit(fetchHead), "a"));
+			assertEquals("a\nb\nc", readLocalFile("a"));
+
+			boolean noProblems = merger.merge(
+					localHead, fetchHead);
+
+			assertFalse(noProblems);
+		}
+	}
+
+	@Test
+	public void testConflictingMergeDuringPull() throws Exception {
+		try(Git local = createLocalGit();
+				Git other = createOtherGit();
+				Git remote = createRemoteGit()) {
+
+			addRemote(local, remote);
+			addRemote(other, remote);
+
+			makeLocalFile("a", "a\nb\nc");
+			local.add().addFilepattern("a").call();
+			local.commit().setMessage("a1").call();
+
+			makeOtherFile("a", "a\nbc\nc");
+			other.add().addFilepattern("a").call();
+			other.commit().setMessage("a").call();
+
+			other.push().setPushAll().call();
+
+			PullResult pullResult = local.pull().call();
+
+			assertEquals(MergeStatus.CONFLICTING, pullResult.getMergeResult().getMergeStatus());
+
+			System.out.println(readLocalFile("a"));
 		}
 	}
 }
