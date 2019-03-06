@@ -7,7 +7,7 @@ Integrated Tool for tracking, versioning and publishing workflows.
 - Export metadata or data from your workflow in various formats
 - Publish directly to institutional repositories such as [DSpace](https://www.duraspace.org/dspace/ "DSpace's Homepage") from within the client
 
-See the original [project homepage](https://www.ub.uni-stuttgart.de/replay/) for additional information and associated publications.
+See the original [project homepage](https://www.ub.uni-stuttgart.de/replay) for additional information and associated publications.
 
 ### Setup
 

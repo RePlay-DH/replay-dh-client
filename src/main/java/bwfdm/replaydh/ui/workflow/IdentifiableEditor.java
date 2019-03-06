@@ -25,11 +25,9 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,7 +53,6 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.ListSelectionEvent;
@@ -225,7 +222,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		tfTitle.setEditable(builder.isTitleEditable());
 		if(tfTitle.isEditable()) {
 			String typeLabel = type.getDisplayLabel();
-			tfTitle.setToolTipText(rm.get("replaydh.ui.editor.identifiable.titleTooltip", typeLabel));
+			tfTitle.setToolTipText(GuiUtils.toSwingTooltip(
+					rm.get("replaydh.ui.editor.identifiable.titleTooltip", typeLabel)));
 			tfTitle.getDocument().addDocumentListener(new DocumentAdapter() {
 				@Override
 				public void anyUpdate(DocumentEvent e) {
@@ -532,7 +530,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			titleIdentifier = getTitleIdentifier(identifiable);
 
 			titleLabel.setText(titleIdentifier.getType().getName());
-			titleLabel.setToolTipText(titleIdentifier.getType().getDescription());
+			titleLabel.setToolTipText(GuiUtils.toSwingTooltip(
+					titleIdentifier.getType().getDescription()));
 
 			tfTitle.setText(titleIdentifier.getId());
 

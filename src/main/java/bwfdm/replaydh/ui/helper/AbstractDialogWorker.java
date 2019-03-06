@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.helper;
@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import java.awt.Dialog.ModalityType;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
 import javax.swing.JButton;
@@ -42,6 +43,12 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
 import bwfdm.replaydh.ui.icons.Resolution;
 
 /**
+ * A version of {@link SwingWorker} that maintains and displays its own
+ * {@link JDialog} instance while running the background task.
+ *
+ * @param <T> type returned by {@link #doInBackground()} and {@link #get()}
+ * @param <V> type for intermediary results send to {@link #process(java.util.List)}
+ *
  * @author Markus Gärtner
  *
  */
@@ -116,6 +123,23 @@ public abstract class AbstractDialogWorker<T extends Object, V extends Object> e
 		dialog.setVisible(true);
 	}
 
+	/**
+	 * Does a best-effort attempt at returning the final result of this worker.
+	 * If the worker hasn't {@link #isDone() finished} yet or the {@link #get()}
+	 * method throws an error, {@code null} is returned.
+	 * @return
+	 */
+	protected T tryGetUnblocked() {
+		if(isDone()) {
+			try {
+				return get();
+			} catch (InterruptedException | ExecutionException e) {
+				// ignored
+			}
+		}
+
+		return null;
+	}
 
 	/**
 	 * @see javax.swing.SwingWorker#done()
@@ -128,7 +152,7 @@ public abstract class AbstractDialogWorker<T extends Object, V extends Object> e
 		try {
 			T result = get();
 			doneImpl(result);
-		} catch (InterruptedException e) {
+		} catch (InterruptedException | CancellationException e) {
 			// Accept user cancellation
 			message = getMessage(MessageType.CANCELLED, e);
 			iconName = "icons8-Error-48.png";
@@ -150,5 +174,13 @@ public abstract class AbstractDialogWorker<T extends Object, V extends Object> e
 	 */
 	protected void doneImpl(T result) {
 		// no-op
+	}
+
+	/**
+	 * Hides the dialog window without the user interaction.
+	 */
+	protected void end() {
+		dialog.setVisible(false);
+		dialog.dispose();
 	}
 }

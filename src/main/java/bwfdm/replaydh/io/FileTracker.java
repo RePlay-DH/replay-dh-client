@@ -52,6 +52,8 @@ public interface FileTracker extends PropertyChangeSource {
 
 	String NAME_STATUS_INFO = "statusInfo";
 
+	String NAME_WORKFLOW = "workflow";
+
 	Path getTrackedFolder();
 
 	/**

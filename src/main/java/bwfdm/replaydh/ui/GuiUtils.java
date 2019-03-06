@@ -51,6 +51,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -68,6 +70,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -93,6 +96,7 @@ import org.java.plugin.registry.Extension;
 
 import com.jgoodies.forms.builder.ButtonBarBuilder;
 import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.factories.Forms;
 import com.jgoodies.forms.factories.Paddings;
 
 import bwfdm.replaydh.core.PluginEngine;
@@ -101,8 +105,10 @@ import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.helper.Editor;
 import bwfdm.replaydh.ui.helper.EditorControl;
+import bwfdm.replaydh.ui.helper.ErrorPanel;
 import bwfdm.replaydh.ui.icons.Resolution;
 import bwfdm.replaydh.utils.Mutable;
+import bwfdm.replaydh.utils.MutablePrimitives.MutableBoolean;
 import bwfdm.replaydh.utils.StringWrapper;
 import bwfdm.replaydh.utils.xml.HtmlUtils;
 
@@ -403,14 +409,32 @@ public class GuiUtils {
 		showErrorDialog(parent, null, null, t);
 	}
 
-	public static String errorText(Throwable t) {
+	public static String errorText(Throwable t, boolean showStackTrace) {
 
-		StringWriter sw = new StringWriter(250);
-		try(PrintWriter pw = new PrintWriter(sw)) {
-			t.printStackTrace(pw);
+		if(showStackTrace) {
+			StringWriter sw = new StringWriter(250);
+			try(PrintWriter pw = new PrintWriter(sw)) {
+				t.printStackTrace(pw);
+			}
+
+			return sw.toString();
+		} else {
+			StringBuilder sb = new StringBuilder(100);
+			sb.append(t.getLocalizedMessage());
+
+			String causedBy = ResourceManager.getInstance().get("replaydh.panels.error.causedBy");
+			Throwable current = t.getCause();
+			if(current!=null) {
+				sb.append('\n');
+			}
+
+			while(current!=null) {
+				sb.append('\n').append(causedBy).append(":  ").append(current.getLocalizedMessage());
+				current = current.getCause();
+			}
+
+			return sb.toString();
 		}
-
-		return sw.toString();
 	}
 
 	public static void showErrorDialog(Component parent, String title, String message, Throwable t) {
@@ -457,12 +481,10 @@ public class GuiUtils {
 				.add(infoLabel).xyw(1, 1, 5);
 
 		if(t!=null) {
-			String content = errorText(t);
-			JTextArea textArea = createTextArea(content);
-			textArea.setLineWrap(false);
-			textArea.setBorder(defaultContentBorder);
+			ErrorPanel errorPanel = new ErrorPanel();
+			errorPanel.setThrowable(t);
 
-			JScrollPane scrollPane = new JScrollPane(textArea);
+			JScrollPane scrollPane = new JScrollPane(errorPanel);
 			scrollPane.setPreferredSize(new Dimension(400, 300));
 			scrollPane.setBorder(defaultAreaBorder);
 
@@ -491,6 +513,134 @@ public class GuiUtils {
 
 		dialog.setVisible(true);
 		dialog.dispose();
+	}
+
+	public static boolean showCredentialsDialog(Component parent,
+			String title, String message,
+			BiConsumer<String, char[]> action) {
+		JTextField tfUsername = new JTextField(25);
+		JPasswordField pfPassword = new JPasswordField(25);
+		JTextArea taInfo = createTextArea(null);
+		ResourceManager rm = ResourceManager.getInstance();
+
+		prepareChangeableBorder(tfUsername);
+		prepareChangeableBorder(pfPassword);
+
+		FormBuilder builder = FormBuilder.create()
+				.columns("pref, 6dlu, fill:pref:grow")
+				.rows("pref, 6dlu, pref, $nlg, pref, 8dlu, pref")
+				.padding(Paddings.DIALOG)
+				.add(taInfo).xyw(1, 1, 3)
+				.addLabel(rm.get("replaydh.dialogs.credentials.username")).xy(1, 3)
+				.add(tfUsername).xy(3, 3)
+				.addLabel(rm.get("replaydh.dialogs.credentials.password")).xy(1, 5)
+				.add(pfPassword).xy(3, 5);
+
+		Frame owner = getFrame(parent);
+		JDialog dialog = new JDialog(owner, title, true);
+
+		MutableBoolean result = new MutableBoolean();
+
+		Consumer<ActionEvent> close = ae -> dialog.setVisible(false);
+		Consumer<ActionEvent> confirm = ae -> result.setBoolean(true);
+
+		JButton okButton = new JButton(ResourceManager.getInstance().get("replaydh.labels.ok"));
+		okButton.addActionListener(ae -> confirm.andThen(close).accept(ae));
+		JButton cancelButton = new JButton(ResourceManager.getInstance().get("replaydh.labels.cancel"));
+		cancelButton.addActionListener(ae -> close.accept(ae));
+		builder.add(Forms.buttonBar(okButton, cancelButton)).xyw(1, 7, 3, "center, bottom");
+
+		Runnable updateOkEnabled = () -> {
+			toggleChangeableBorder(tfUsername, tfUsername.getDocument().getLength()==0);
+			toggleChangeableBorder(pfPassword, pfPassword.getDocument().getLength()==0);
+
+			okButton.setEnabled(!isErrorBorderActive(tfUsername)
+					&& !isErrorBorderActive(pfPassword));
+		};
+
+		DocumentAdapter checkNotEmpty = de -> updateOkEnabled.run();
+		tfUsername.getDocument().addDocumentListener(checkNotEmpty);
+		pfPassword.getDocument().addDocumentListener(checkNotEmpty);
+
+		updateOkEnabled.run();
+
+		dialog.add(builder.build());
+		dialog.setModal(true);
+		dialog.setResizable(true);
+		dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		dialog.pack();
+		dialog.setLocationRelativeTo(parent);
+
+		// Workaround for text wrapping not providing a good height indicator for packing
+		taInfo.setText(message);
+		taInfo.revalidate();
+		dialog.pack();
+
+		dialog.setVisible(true);
+		dialog.dispose();
+
+		if(result.booleanValue()) {
+			action.accept(tfUsername.getText(), pfPassword.getPassword());
+		}
+
+		// Cleanup sensible data
+		tfUsername.setText(null);
+		pfPassword.setText(null);
+
+		return result.booleanValue();
+	}
+
+	public static boolean showPasswordDialog(Component parent,
+			String title, String message,
+			Consumer<char[]> action) {
+		JPasswordField pfPassword = new JPasswordField(25);
+		JTextArea taInfo = createTextArea(null);
+		ResourceManager rm = ResourceManager.getInstance();
+
+		FormBuilder builder = FormBuilder.create()
+				.columns("pref, 6dlu, fill:pref:grow")
+				.rows("pref, 6dlu, pref, 8dlu, pref")
+				.padding(Paddings.DIALOG)
+				.add(taInfo).xyw(1, 1, 3)
+				.addLabel(rm.get("replaydh.dialogs.credentials.password")).xy(1, 3)
+				.add(pfPassword).xy(3, 3);
+
+		Frame owner = getFrame(parent);
+		JDialog dialog = new JDialog(owner, title, true);
+
+		MutableBoolean result = new MutableBoolean();
+
+		Consumer<ActionEvent> close = ae -> dialog.setVisible(false);
+		Consumer<ActionEvent> confirm = ae -> result.setBoolean(true);
+
+		JButton okButton = new JButton(ResourceManager.getInstance().get("replaydh.labels.ok"));
+		okButton.addActionListener(ae -> confirm.andThen(close).accept(ae));
+		JButton cancelButton = new JButton(ResourceManager.getInstance().get("replaydh.labels.cancel"));
+		cancelButton.addActionListener(ae -> close.accept(ae));
+		builder.add(Forms.buttonBar(okButton, cancelButton)).xyw(1, 5, 3, "center, bottom");
+
+		dialog.add(builder.build());
+		dialog.setModal(true);
+		dialog.setResizable(true);
+		dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		dialog.pack();
+		dialog.setLocationRelativeTo(parent);
+
+		// Workaround for text wrapping not providing a good height indicator for packing
+		taInfo.setText(message);
+		dialog.pack();
+
+		dialog.setVisible(true);
+		dialog.dispose();
+
+		if(result.booleanValue()) {
+			action.accept(pfPassword.getPassword());
+		}
+
+		// Cleanup sensible data
+		pfPassword.setText(null);
+
+		return result.booleanValue();
 	}
 
 	public static Frame getFrame(Component comp) {
@@ -921,7 +1071,7 @@ public class GuiUtils {
     		}
 
     		JMenuItem item = new JMenuItem(name);
-    		item.setToolTipText(description);
+    		item.setToolTipText(toSwingTooltip(description));
     		item.setIcon(icon);
 
     		item.putClientProperty(EXTENSION_KEY, extension.getUniqueId());
@@ -964,6 +1114,13 @@ public class GuiUtils {
     	}
 
     	comp.setBorder(border);
+    }
+
+    public static boolean isErrorBorderActive(JComponent comp) {
+    	Border border = comp.getBorder();
+    	Border errorBorder = (Border) comp.getClientProperty(ERROR_BORDER_PROPERTY);
+
+    	return border!=null && border==errorBorder;
     }
 
     public static DocumentListener addErrorFeedback(final JTextComponent component, final String regex) {

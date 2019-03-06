@@ -65,25 +65,6 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 
 	private static final long serialVersionUID = -2324289994636994740L;
 
-//	public static void main(String[] args) {
-//		Page<Object> page1 = mock(Page.class);
-//		when(page1.getTitle()).thenReturn("Step 1");
-//		when(page1.getDescription()).thenReturn("Description 1");
-//		when(page1.getPageComponent()).thenReturn(new JLabel("Content XX"));
-//
-//		Page<Object> page2 = mock(Page.class);
-//		when(page2.getTitle()).thenReturn("Step 2");
-//		when(page2.getDescription()).thenReturn("Description 2");
-//		when(page2.getPageComponent()).thenReturn(new JLabel("Content XX v2"));
-//
-//		when(page1.next(any(), any())).thenReturn(page2);
-//
-//		Wizard<Object> wizard = new Wizard<>(null, "Test Wizard", mock(RDHEnvironment.class), page1, page2);
-//		wizard.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-//
-//		wizard.startWizard(new Object());
-//	}
-
 	private final RDHEnvironment environment;
 
 	// General page control
@@ -160,7 +141,8 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 
 	private final Interval wizardUptime = new Interval();
 
-	public Wizard(Window parent, String statLabel, String wizardTitle, RDHEnvironment environment, @SuppressWarnings("unchecked") Page<E>...pages) {
+	public Wizard(Window parent, String statLabel, String wizardTitle, RDHEnvironment environment,
+			@SuppressWarnings("unchecked") Page<E>...pages) {
 		super(parent, wizardTitle);
 
 		this.statLabel = requireNonNull(statLabel);
@@ -214,7 +196,8 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		for(int i=0; i<pages.length; i++) {
 			JLabel label = createLabel(11, true, SwingConstants.LEFT, SwingConstants.CENTER);
 			label.setText(pages[i].getTitle());
-			label.setToolTipText(pages[i].getDescription());
+			label.setToolTipText(GuiUtils.toSwingTooltip(
+					pages[i].getDescription()));
 			label.setEnabled(false);
 			label.setFocusable(false);
 			states[i] = label;
@@ -273,9 +256,20 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		return label;
 	}
 
+	/**
+	 * Make sure that all pages have a properly initialized UI
+	 */
+	private void ensureUI() {
+		for(Page<?> page : pages) {
+			page.getPageComponent();
+		}
+	}
+
 	public void startWizard(E context) {
 
 		this.context = requireNonNull(context);
+
+		ensureUI();
 
 		setNextActivePage(0);
 
@@ -416,7 +410,7 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		nextButton.setText(lastPage ?
 				rm.get("replaydh.labels.finish")
 				: rm.get("replaydh.labels.next"));
-		cancelButton.setEnabled(!lastPage || currentPage.canCancel());
+		cancelButton.setEnabled(!lastPage && currentPage.canCancel());
 
 		int currentActivePageIndex = activePageIndex();
 		states[currentActivePageIndex].setEnabled(true);
@@ -456,7 +450,11 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 	}
 
 	private void setNextEnabled(boolean enabled) {
-		nextButton.setEnabled(enabled);
+		nextButton.setEnabled(enabled && !isLastPage());
+	}
+
+	private void setPreviousEnabled(boolean enabled) {
+		previousButton.setEnabled(enabled && !isFirstPage());
 	}
 
 	private void stopWizard(boolean cancel) {
@@ -545,6 +543,14 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		}
 
 		/**
+		 * @see bwfdm.replaydh.ui.helper.Wizard.WizardControl#setPreviousEnabled(boolean)
+		 */
+		@Override
+		public void setPreviousEnabled(boolean enabled) {
+			Wizard.this.setPreviousEnabled(enabled);
+		}
+
+		/**
 		 * @see bwfdm.replaydh.ui.helper.Wizard.WizardControl#invokeNext(bwfdm.replaydh.ui.helper.Wizard.Page)
 		 */
 		@Override
@@ -562,6 +568,15 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		 * @param enabled
 		 */
 		void setNextEnabled(boolean enabled);
+
+		/**
+		 * Defines whether or not the button to return to the "previous"
+		 * step should be enabled, allowing the user to backtrack
+		 * his decisions.
+		 *
+		 * @param enabled
+		 */
+		void setPreviousEnabled(boolean enabled);
 
 		/**
 		 * Overrides the default behavior of using the "next" button
@@ -608,6 +623,10 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		/**
 		 * Callback to process current content of the page
 		 * and signal which page to visit next.
+		 * <p>
+		 * If something went wrong and continuing to a new
+		 * page is not possible, returning {@code null} will
+		 * make the wizard stay on the current page.
 		 *
 		 * @return
 		 */
@@ -630,9 +649,10 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		void persist(RDHEnvironment environment, E context);
 
 		/**
-		 * Only needed for final pages, this method indicates
-		 * whether or not the page can still be cancelled at this
-		 * point.
+		 * Only needed for pages other than the final one, this method indicates
+		 * whether or not the page can still be cancelled at this point.
+		 * <p>
+		 * The default implementation always returns {@code true}.
 		 *
 		 * @return
 		 */
@@ -652,7 +672,7 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		 * background task or open resource that it is trying to
 		 * close, this method should return {@code false}.
 		 * <p>
-		 * THe default implementation always returns {@code true}.
+		 * The default implementation always returns {@code true}.
 		 */
 		default boolean close() {
 			return true;

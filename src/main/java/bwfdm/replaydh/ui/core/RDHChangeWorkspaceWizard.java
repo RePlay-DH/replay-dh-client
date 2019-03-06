@@ -273,7 +273,7 @@ public abstract class RDHChangeWorkspaceWizard {
 			if(value instanceof Path) {
 				Path workspace = (Path) value;
 
-				setToolTipText(workspace.toString());
+				setToolTipText(GuiUtils.toSwingTooltip(workspace.toString()));
 
 				if(Files.exists(workspace, LinkOption.NOFOLLOW_LINKS)) {
 					setText(workspace.toString());
@@ -597,11 +597,13 @@ public abstract class RDHChangeWorkspaceWizard {
 
 			if(isScanning()) {
 				bValidate.setText(rm.get("replaydh.wizard.changeWorkspace.validateWorkspace.cancel.label"));
-				bValidate.setToolTipText(rm.get("replaydh.wizard.changeWorkspace.validateWorkspace.cancel.description"));
+				bValidate.setToolTipText(GuiUtils.toSwingTooltip(
+						rm.get("replaydh.wizard.changeWorkspace.validateWorkspace.cancel.description")));
 				bValidate.setIcon(ir.getIcon("loading-64.gif", Resolution.forSize(24)));
 			} else {
 				bValidate.setText(rm.get("replaydh.wizard.changeWorkspace.validateWorkspace.validate.label"));
-				bValidate.setToolTipText(rm.get("replaydh.wizard.changeWorkspace.validateWorkspace.validate.description"));
+				bValidate.setToolTipText(GuiUtils.toSwingTooltip(
+						rm.get("replaydh.wizard.changeWorkspace.validateWorkspace.validate.description")));
 				bValidate.setIcon(ir.getIcon("update-icon.png", Resolution.forSize(24)));
 			}
 

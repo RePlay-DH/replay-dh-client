@@ -117,7 +117,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 	private static final JGitAdapterVersion VERSION = JGitAdapterVersion.VERSION_1;
 
-	public static final String NAME_WORKFLOW = "workflow";
+	static JGitAdapter fromClient(RDHClient client) {
+		return (JGitAdapter) client.getFileTracker();
+	}
 
 	/**
 	 * If set in the environment's {@link RDHEnvironment#getProperty(String) properties}
@@ -196,7 +198,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Package-private so that the {@link GitArchiveExporter}
 	 * can use it for interaction with git.
 	 */
-	Git getGit() {
+	public Git getGit() {  // TODO leave it public or change back to package-private?
 		return git;
 	}
 
@@ -293,7 +295,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			workflow.setNextStepNumber(Integer.parseInt(nextStepId));
 		}
 
-		getPropertyChangeSupport().firePropertyChange(NAME_WORKFLOW, null, workflow);
+		getPropertyChangeSupport().firePropertyChange(FileTracker.NAME_WORKFLOW, null, workflow);
 	}
 
 	/**
@@ -688,7 +690,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Dispose current revWalk if present.
 	 * Close current workflow if present.
 	 * <p>
-	 * Fires {@value #NAME_WORKFLOW} if a workflow was present
+	 * Fires {@value FileTracker#NAME_WORKFLOW} if a workflow was present
 	 * and has been closed a result of this method call.
 	 *
 	 */
@@ -724,7 +726,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 					workflow.close();
 					Workflow oldValue = workflow;
 					workflow = null;
-					getPropertyChangeSupport().firePropertyChange(NAME_WORKFLOW, oldValue, null);
+					getPropertyChangeSupport().firePropertyChange(FileTracker.NAME_WORKFLOW, oldValue, null);
 				}
 
 				pendingStep = null;
@@ -1859,7 +1861,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		}
 	}
 
-	private RevCommit head() throws IOException {
+	RevCommit head() throws IOException {
 		return resolve(Constants.HEAD);
 	}
 
@@ -1962,9 +1964,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
                     revWalk.markStart(revWalk.parseCommit(getTarget(ref, repo)));
                 }
 
-//				Iterable<RevCommit> commits = git.log().all().call();
-
-				buildWorkflowGraph(revWalk, Constants.HEAD);
+				buildWorkflowGraph(revWalk, Constants.HEAD, false);
 
 				// Finally switch flag so we don't ever attempt to load the workflow a second time
 				workflowLoaded = true;
@@ -1981,7 +1981,44 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		workflow.fireStateChanged();
 	}
 
-	private void buildWorkflowGraph(Iterable<RevCommit> source, String active)
+	void refreshWorkflow() throws GitException {
+		synchronized (gitLock) {
+			// Avoid loading the git twice
+			if(workflowLoaded) {
+				return;
+			}
+
+			workflow.setIgnoreEventRequests(true);
+			final Repository repo = git.getRepository();
+
+			try(RevWalk revWalk = new RevWalk(repo)) {
+
+				Collection<Ref> allRefs = repo.getRefDatabase().getRefs(Constants.R_HEADS).values();
+                for( Ref ref : allRefs ) {
+                    revWalk.markStart(revWalk.parseCommit(getTarget(ref, repo)));
+                }
+
+//				Iterable<RevCommit> commits = git.log().all().call();
+
+				buildWorkflowGraph(revWalk, Constants.HEAD, false);
+
+				// Finally switch flag so we don't ever attempt to load the workflow a second time
+				workflowLoaded = true;
+
+			} catch (IOException e) {
+				throw new GitException("General I/O issue when trying to access log of git repository", e);
+			} finally {
+
+				workflow.setIgnoreEventRequests(false);
+			}
+		}
+
+		// Notify listeners
+		workflow.fireStateChanged();
+	}
+
+	private void buildWorkflowGraph(Iterable<RevCommit> source, String active,
+			boolean reportExistingNodes)
 				throws GitException, IOException {
 
 		resetStepLookup();
@@ -2094,11 +2131,13 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	/**
 	 * Returns the RevCommit for the supplied id or {@code null}
 	 * if that id cannot be resolved.
+	 * <p>
+	 * Package private so that {@link GitRemoteUpdater} has access.
 	 *
 	 * @return
 	 * @throws GitException if parsing the head commit failed
 	 */
-	private RevCommit resolve(String str) throws IOException {
+	RevCommit resolve(String str) throws IOException {
 		ObjectId id = git.getRepository().resolve(str);
 		return id==null ? null : revWalk.parseCommit(id);
 	}
@@ -2132,19 +2171,30 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 				String message = commit.getFullMessage();
 
 				if(workflow.getInitialStepDirect()==step) {
+					// Special handling of initial commit: this one only carries configuration metadata
 					step.setTitle(GitUtils.INITIAL_COMMIT_HEADER);
 					step.setDescription(message);
 					step.setRecordingTime(LocalDateTime.ofInstant(
 							Instant.ofEpochSecond(commit.getCommitTime()),
 							ZoneId.systemDefault()));
+				} else if(isNonJsonString(message)) {
+					/*
+					 *  "Foreign" commits are accepted, but not encouraged.
+					 *
+					 *  We can't properly handle the commit message there, but
+					 *  we'll at least be able to visualize them in the client.
+					 */
+					step.setDescription(message);
+					step.setTitle(GitUtils.FOREIGN_COMMIT_HEADER);
 				} else {
+					// We expect valid JSON data here
 					Options options = new Options();
 					options.put(JsonWorkflowStepReader.SKIP_HEADER, true);
 
 					try {
 						JsonWorkflowStepReader.parseStep(workflow.getSchema(), () -> step, message, options);
 					} catch (Exception e) {
-						if(getEnvironment().getBoolean(RDHProperty.GIT_IGNORE_MISSING_METADATA, false)) {
+						if(getEnvironment().getBoolean(RDHProperty.GIT_IGNORE_FAULTY_METADATA, false)) {
 							// If we're prevented from throwing an exception, at least log it for future info
 							log.warn("Failed to read process metadata from commit for step {}", step.getId(), e);
 						} else
@@ -2158,6 +2208,10 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 				workflow.setIgnoreEventRequests(false);
 			}
 		}
+	}
+
+	private boolean isNonJsonString(String s) {
+		return s.indexOf('{')==-1;
 	}
 
 	/**

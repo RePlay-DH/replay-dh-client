@@ -126,7 +126,7 @@ public class DataversePublisherWizard {
 
 		private String chosenDataset;
 		private String jsonObjectWithMetadata;
-		
+
 		public boolean isReplaceMetadataAllowed() {
 			return replaceMetadataAllowed;
 		}
@@ -274,7 +274,7 @@ public class DataversePublisherWizard {
 
 		return url;
 	}
-	
+
 	private static String createApiUrl(String url) {
 		url = getCorrectedURL(url);
 		url += "/api";
@@ -442,7 +442,7 @@ public class DataversePublisherWizard {
 										//and provide messages in case of error
 
 			pAPIkey = new JPasswordField();
-			
+
 			GuiUtils.prepareChangeableBorder(tfUrl);
 			GuiUtils.prepareChangeableBorder(pAPIkey);
 
@@ -684,7 +684,7 @@ public class DataversePublisherWizard {
 					}
 					return filesAvailable;
 				}
-				
+
 				@Override
 				protected void done() {
 					if (filesAvailable) {
@@ -1411,7 +1411,7 @@ public class DataversePublisherWizard {
 			GuiUtils.toggleChangeableBorder(tf, !isValid);
 			return isValid;
 		}
-		
+
 		/*private boolean checkAndUpdateBorderDate(JTextField tf) {
 			String text = tf.getText().trim();
 			int number = text.length();
@@ -1428,7 +1428,7 @@ public class DataversePublisherWizard {
 			GuiUtils.toggleChangeableBorder(tf, !isValid);
 			return isValid;
 		}*/
-		
+
 		private boolean checkAndUpdateBorderDesc(JTextArea ta) {
 			String text = ta.getText().trim();
 			boolean isValid = text!=null && !text.isEmpty();
@@ -1560,7 +1560,8 @@ public class DataversePublisherWizard {
 			JLabel lLicense = new JLabel(rm.get("replaydh.wizard.dataversePublisher.editMetadata.LicenseLabel"));
 			eLicense = new GUIElement();
 			eLicense.setTextfield(tfLicense);
-			eLicense.getTextfield().setToolTipText(rm.get("replaydh.wizard.dataversePublisher.editMetadata.licenseToolTip"));
+			eLicense.getTextfield().setToolTipText(GuiUtils.toSwingTooltip(
+					rm.get("replaydh.wizard.dataversePublisher.editMetadata.licenseToolTip")));
 			eLicense.setLabel(lLicense);
 			eLicense.create();
 			listofkeys.add("license");

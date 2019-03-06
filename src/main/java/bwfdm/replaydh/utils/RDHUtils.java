@@ -38,6 +38,8 @@ import java.util.function.IntConsumer;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHException;
 import bwfdm.replaydh.core.RDHProperty;
+import bwfdm.replaydh.io.TrackingStatus;
+import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.schema.IdentifierType;
@@ -345,6 +347,21 @@ public class RDHUtils {
         }
         return r.toString();
     }
+
+	public static String getTitle(TrackingStatus status) {
+		ResourceManager rm = ResourceManager.getInstance();
+		switch (status) {
+		case IGNORED: return rm.get("replaydh.trackingStatus.ignored");
+		case TRACKED: return rm.get("replaydh.trackingStatus.tracked");
+		case UNKNOWN: return rm.get("replaydh.trackingStatus.unknown");
+		case MODIFIED: return rm.get("replaydh.trackingStatus.modified");
+		case MISSING: return rm.get("replaydh.trackingStatus.missing");
+		case CORRUPTED: return rm.get("replaydh.trackingStatus.corrupted");
+	
+		default:
+			throw new IllegalArgumentException("unknown tracking status: "+status);
+		}
+	}
 }
 
 

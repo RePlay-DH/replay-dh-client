@@ -16,46 +16,49 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.helper;
+package bwfdm.replaydh.workflow.catalog;
 
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
+import static java.util.Objects.requireNonNull;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import bwfdm.replaydh.workflow.Identifiable;
 
 /**
+ * Implements a {@link MetadataCatalog.Result} that is backed by a
+ * {@link List} and which can be modified.
+ *
  * @author Markus Gärtner
  *
  */
-@FunctionalInterface
-public interface DocumentAdapter extends DocumentListener {
+public class SimpleResult implements MetadataCatalog.Result {
+
+	private final List<Identifiable> identifiables = new ArrayList<>();
 
 	/**
-	 * Hook for subclasses to react to generic changes.
-	 * @param e
-	 */
-	void anyUpdate(DocumentEvent e);
-
-	/**
-	 * @see javax.swing.event.DocumentListener#insertUpdate(javax.swing.event.DocumentEvent)
+	 * @see bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result#isEmpty()
 	 */
 	@Override
-	default void insertUpdate(DocumentEvent e) {
-		anyUpdate(e);
+	public boolean isEmpty() {
+		return identifiables.isEmpty();
 	}
 
 	/**
-	 * @see javax.swing.event.DocumentListener#removeUpdate(javax.swing.event.DocumentEvent)
+	 * @see bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result#iterator()
 	 */
 	@Override
-	default void removeUpdate(DocumentEvent e) {
-		anyUpdate(e);
+	public Iterator<Identifiable> iterator() {
+		return identifiables.iterator();
 	}
 
-	/**
-	 * @see javax.swing.event.DocumentListener#changedUpdate(javax.swing.event.DocumentEvent)
-	 */
-	@Override
-	default void changedUpdate(DocumentEvent e) {
-		anyUpdate(e);
+	public void add(Identifiable identifiable) {
+		requireNonNull(identifiable);
+		identifiables.add(identifiable);
 	}
 
+	public void clear() {
+		identifiables.clear();
+	}
 }

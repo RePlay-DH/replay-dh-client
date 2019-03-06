@@ -191,11 +191,11 @@ public enum RDHProperty {
 
 	/**
 	 * Boolean flag to indicate that the client should not report
-	 * the missing of process metadate entries in commit messages.
+	 * damaged process metadate entries in commit messages.
 	 * <p>
 	 * The default value for this property is {@code false}.
 	 */
-	GIT_IGNORE_MISSING_METADATA("git.ignoreMissingMetadata", false),
+	GIT_IGNORE_FAULTY_METADATA("git.ignoreFaultyMetadata", false),
 
 	// Properties defining elicitation of process metadata
 
@@ -226,7 +226,7 @@ public enum RDHProperty {
 	 */
 	OWL_METADATA_EXPORT_FULL_ONTOLOGY("export.owl.includeFullOntology"),
 	;
-	
+
 	private final String key;
 	private final Object defaultValue;
 

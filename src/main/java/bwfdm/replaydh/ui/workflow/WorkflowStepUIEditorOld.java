@@ -1579,7 +1579,7 @@ public class WorkflowStepUIEditorOld implements Editor<WorkflowStep>{
         } else {
         	button.setText(name);
         }
-        button.setToolTipText(toolTipText);
+        button.setToolTipText(GuiUtils.toSwingTooltip(toolTipText));
         button.setPreferredSize(preferredSize);
         button.addActionListener(actionListener);
         return button;

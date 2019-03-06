@@ -440,9 +440,9 @@ public class MetadataAddRecordWizard {
 		@Override
 		public void refresh(RDHEnvironment environment, AddRecordContext context) {
 			if(context.type==Type.FILE) {
-				layout.first(panel);
+				layout.first(panel());
 			} else {
-				layout.last(panel);
+				layout.last(panel());
 			}
 
 			if(context.file!=null) {
@@ -669,11 +669,13 @@ public class MetadataAddRecordWizard {
 
 			if(isVerifying()) {
 				bVerify.setText(rm.get("replaydh.wizard.addRecord.verifyTarget.cancel.label"));
-				bVerify.setToolTipText(rm.get("replaydh.wizard.addRecord.verifyTarget.cancel.description"));
+				bVerify.setToolTipText(GuiUtils.toSwingTooltip(
+						rm.get("replaydh.wizard.addRecord.verifyTarget.cancel.description")));
 				bVerify.setIcon(ir.getIcon("loading-64.gif", Resolution.forSize(24)));
 			} else {
 				bVerify.setText(rm.get("replaydh.wizard.addRecord.verifyTarget.verify.label"));
-				bVerify.setToolTipText(rm.get("replaydh.wizard.addRecord.verifyTarget.verify.description"));
+				bVerify.setToolTipText(GuiUtils.toSwingTooltip(
+						rm.get("replaydh.wizard.addRecord.verifyTarget.verify.description")));
 				bVerify.setIcon(ir.getIcon("update-icon.png", Resolution.forSize(24)));
 			}
 

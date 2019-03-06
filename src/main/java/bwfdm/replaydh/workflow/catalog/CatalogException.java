@@ -16,46 +16,37 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.helper;
+package bwfdm.replaydh.workflow.catalog;
 
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
+import static java.util.Objects.requireNonNull;
+
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 
 /**
  * @author Markus Gärtner
  *
  */
-@FunctionalInterface
-public interface DocumentAdapter extends DocumentListener {
+public class CatalogException extends Exception {
 
-	/**
-	 * Hook for subclasses to react to generic changes.
-	 * @param e
-	 */
-	void anyUpdate(DocumentEvent e);
+	private static final long serialVersionUID = 2133314701022590875L;
 
-	/**
-	 * @see javax.swing.event.DocumentListener#insertUpdate(javax.swing.event.DocumentEvent)
-	 */
-	@Override
-	default void insertUpdate(DocumentEvent e) {
-		anyUpdate(e);
+	private final Reference<MetadataCatalog> catalog;
+
+	public CatalogException(MetadataCatalog catalog, String message, Throwable cause) {
+		super(message, cause);
+		this.catalog = new WeakReference<>(requireNonNull(catalog));
+	}
+
+	public CatalogException(MetadataCatalog catalog, String message) {
+		super(message);
+		this.catalog = new WeakReference<>(requireNonNull(catalog));
 	}
 
 	/**
-	 * @see javax.swing.event.DocumentListener#removeUpdate(javax.swing.event.DocumentEvent)
+	 * @return the catalog
 	 */
-	@Override
-	default void removeUpdate(DocumentEvent e) {
-		anyUpdate(e);
+	public MetadataCatalog getCatalog() {
+		return catalog.get();
 	}
-
-	/**
-	 * @see javax.swing.event.DocumentListener#changedUpdate(javax.swing.event.DocumentEvent)
-	 */
-	@Override
-	default void changedUpdate(DocumentEvent e) {
-		anyUpdate(e);
-	}
-
 }
