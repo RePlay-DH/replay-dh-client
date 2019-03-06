@@ -15,15 +15,16 @@ import javax.swing.JTextField;
 import com.jgoodies.forms.builder.FormBuilder;
 
 import bwfdm.replaydh.ui.icons.IconRegistry;
+import bwfdm.replaydh.workflow.schema.CompoundLabel;
 
 
 public class GUIElementMetadata {
 	
 	private FormBuilder propertybuilder = FormBuilder.create();
-	private static final String columns = "left:max(60dlu;pref), 6dlu, max(180dlu;min), 3dlu, pref, 3dlu, pref";
+	private static final String columns = "left:max(120dlu;pref), 6dlu, max(180dlu;min), 3dlu, pref, 3dlu, pref";
 	private static final String rows = "pref";
 	private JTextField textfield = new JTextField();
-	private JComboBox<String> keysDropdown = new JComboBox<>();
+	private JComboBox<CompoundLabel> keysDropdown = new JComboBox<>();
 	private JButton button = null;
 	private JButton minusbutton = null;
 	private JButton resetButton = null;
@@ -112,10 +113,10 @@ public class GUIElementMetadata {
 	public JButton getExtraButton() {
 		return resetButton;
 	}
-	public JComboBox<String> getKeysDropdown() {
+	public JComboBox<CompoundLabel> getKeysDropdown() {
 		return keysDropdown;
 	}
-	public void setKeysDropdown(JComboBox<String> keysDropdown) {
+	public void setKeysDropdown(JComboBox<CompoundLabel> keysDropdown) {
 		this.keysDropdown = keysDropdown;
 	}
 	public void setResetButton(JButton resetButton) {

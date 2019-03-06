@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -19,17 +20,19 @@ import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.FormLayout;
 
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.ui.workflow.WorkflowUIUtils;
 import bwfdm.replaydh.ui.workflow.auto.GUIElement;
 import bwfdm.replaydh.ui.workflow.auto.GUIElementMetadata;
+import bwfdm.replaydh.workflow.Identifiable;
+import bwfdm.replaydh.workflow.Identifiable.Type;
+import bwfdm.replaydh.workflow.schema.CompoundLabel;
+import bwfdm.replaydh.workflow.schema.LabelSchema;
+import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.GuiUtils;
 
 public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	
-	public AutoCompletionWizardWorkflowStep() {
-		
-	}
-
 	private JDialog wizardWindow;
 	private ResourceManager rm = ResourceManager.getInstance();
 	
@@ -42,9 +45,17 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	//private DocumentAdapter adapter;
 	private List<GUIElementMetadata> dd = new ArrayList<>();
 	
+	private JComboBox<CompoundLabel> cbRoleType = null;
+	private CompoundLabel defaultTypeOrRole = null;
+	
+	private Identifiable.Type type = null;
+	private WorkflowSchema schema = null;
+	
 	private FormBuilder builderWizard;
 	
-	public void createWizard() {
+	public void createWizard(WorkflowSchema schema, Identifiable.Type type) {
+		this.schema=schema;
+		this.type=type;
 		wizardWindow = new JDialog();
 		wizardWindow.setModal(true);
 		mainPanelWizard=this.createWizardPanel();
@@ -69,6 +80,11 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		simpleSearch.getLabel().setText(rm.get("replaydh.wizard.metadataAutoWizard.simpleSearch"));
 		
 		GUIElementMetadata chooseProperties = createGUIElement("keys");
+		cbRoleType = WorkflowUIUtils.createLabelComboBox(getLabelSchema());
+		defaultTypeOrRole = WorkflowUIUtils.createDefaultLabel(getLabelSchema());
+		cbRoleType.setSelectedItem(defaultTypeOrRole);
+		//cbRoleType.addActionListener(this::onRoleTypeComboBoxClicked);
+		chooseProperties.getKeysDropdown().setModel(cbRoleType.getModel());
 		dd.add(chooseProperties);
 		propertypanels.put("defaultdd", chooseProperties.getPanel());
 		
@@ -216,6 +232,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 					}
 				}*/
 			}
+			
+			oneguielement.getKeysDropdown().setModel(cbRoleType.getModel());
 
 			propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
 
@@ -275,5 +293,13 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	private void removeElementFromPanel(String metadatapropertyname, int buttonNumber) {
 		elementsofproperty.get(metadatapropertyname).remove(buttonNumber);
 		refreshPanel(metadatapropertyname);
+	}
+	
+	private LabelSchema getLabelSchema() {
+		return isPersonEditor() ? schema.getRoleSchema() : schema.getResourceTypeSchema();
+	}
+	
+	public boolean isPersonEditor() {
+		return type==Type.PERSON;
 	}
 }
