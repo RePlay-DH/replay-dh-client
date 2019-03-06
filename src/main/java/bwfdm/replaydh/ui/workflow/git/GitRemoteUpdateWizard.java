@@ -156,8 +156,8 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			"replaydh.wizard.gitRemoteUpdater.selectScope.title",
 			"replaydh.wizard.gitRemoteUpdater.selectScope.description",
 			"replaydh.wizard.gitRemoteUpdater.selectScope.header",
-			"replaydh.wizard.gitRemoteUpdater.selectScope.workspace",
-			"replaydh.wizard.gitRemoteUpdater.selectScope.workflow") {
+			"replaydh.wizard.gitRemoteUpdater.selectScope.workspaceScope",
+			"replaydh.wizard.gitRemoteUpdater.selectScope.workflowScope") {
 
 		@Override
 		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment,

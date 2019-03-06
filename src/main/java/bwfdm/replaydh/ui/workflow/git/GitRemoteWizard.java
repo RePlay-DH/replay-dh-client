@@ -456,7 +456,7 @@ public abstract class GitRemoteWizard {
 			cbScope = new JComboBox<>(Scope.values());
 			cbScope.addActionListener(ae -> onScopeSelected());
 
-			taInfo = new JTextArea();
+			taInfo = GuiUtils.createTextArea("");
 
 			return FormBuilder.create()
 					.columns("pref, 4dlu, fill:pref:grow")
