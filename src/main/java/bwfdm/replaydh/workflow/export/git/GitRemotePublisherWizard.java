@@ -51,8 +51,8 @@ import bwfdm.replaydh.ui.helper.ErrorPanel;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
 import bwfdm.replaydh.ui.icons.IconRegistry;
+import bwfdm.replaydh.ui.workflow.git.GitRemoteWizard;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
-import bwfdm.replaydh.workflow.git.GitRemoteWizard;
 
 /**
  * @author Markus Gärtner

@@ -16,7 +16,7 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.workflow.git;
+package bwfdm.replaydh.ui.workflow.git;
 
 import java.awt.Window;
 import java.net.URISyntaxException;
@@ -325,8 +325,9 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 				@Override
 				protected MergeResult doInBackground() throws Exception {
-					Repository repository = context.git.getRepository();
+					final Repository repository = context.git.getRepository();
 
+					// Go through all updated refs and make sure we can merge
 					for(TrackingRefUpdate refUpdate : updatedRefs) {
 						ThreeWayMerger merger = MergeStrategy.RECURSIVE.newMerger(repository, true);
 						boolean noProblems = merger.merge(refUpdate.getOldObjectId(), refUpdate.getNewObjectId());
