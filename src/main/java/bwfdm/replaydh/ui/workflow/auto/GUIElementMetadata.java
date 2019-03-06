@@ -27,7 +27,7 @@ public class GUIElementMetadata {
 	private JComboBox<CompoundLabel> keysDropdown = new JComboBox<>();
 	private JButton button = null;
 	private JButton minusbutton = null;
-	private JButton resetButton = null;
+	private JButton extraButton = null;
 	private JTextArea description;
 	private JScrollPane scroll;
 	private JPanel panel = new JPanel();
@@ -73,10 +73,10 @@ public class GUIElementMetadata {
 		propertybuilder.rows(rows);
 		propertybuilder.panel(panel);
 		keysDropdown.setVisible(false);
-		resetButton = new JButton(resetLabel);
-		resetButton.setPreferredSize(buttonSize);
-		propertybuilder.add(keysDropdown).xy(1, 1);
-		propertybuilder.add(resetButton).xy(3, 1);
+		extraButton = new JButton(resetLabel);
+		extraButton.setPreferredSize(buttonSize);
+		propertybuilder.add(new JLabel()).xy(1, 1);
+		propertybuilder.add(extraButton).xy(3, 1);
 		shadowlabelfirst.setPreferredSize(preferredSize);
 		propertybuilder.add(shadowlabelfirst).xy(5, 1);
 		shadowlabelsecond.setPreferredSize(preferredSize);
@@ -111,7 +111,7 @@ public class GUIElementMetadata {
 		this.minusbutton.setPreferredSize(preferredSize);
 	}
 	public JButton getExtraButton() {
-		return resetButton;
+		return extraButton;
 	}
 	public JComboBox<CompoundLabel> getKeysDropdown() {
 		return keysDropdown;
@@ -120,7 +120,7 @@ public class GUIElementMetadata {
 		this.keysDropdown = keysDropdown;
 	}
 	public void setResetButton(JButton resetButton) {
-		this.resetButton = resetButton;
+		this.extraButton = resetButton;
 	}
 	public JTextArea getDescription() {
 		return description;

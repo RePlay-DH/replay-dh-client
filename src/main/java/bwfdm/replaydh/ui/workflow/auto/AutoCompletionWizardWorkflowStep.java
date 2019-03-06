@@ -28,7 +28,6 @@ import bwfdm.replaydh.workflow.Identifiable.Type;
 import bwfdm.replaydh.workflow.schema.CompoundLabel;
 import bwfdm.replaydh.workflow.schema.LabelSchema;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
-import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.GuiUtils;
 
 public class AutoCompletionWizardWorkflowStep implements ActionListener {
@@ -50,6 +49,9 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	
 	private Identifiable.Type type = null;
 	private WorkflowSchema schema = null;
+	
+	private GUIElementMetadata resetButton = null;
+	private GUIElementMetadata searchButton = null;
 	
 	private FormBuilder builderWizard;
 	
@@ -83,18 +85,27 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		cbRoleType = WorkflowUIUtils.createLabelComboBox(getLabelSchema());
 		defaultTypeOrRole = WorkflowUIUtils.createDefaultLabel(getLabelSchema());
 		cbRoleType.setSelectedItem(defaultTypeOrRole);
-		//cbRoleType.addActionListener(this::onRoleTypeComboBoxClicked);
+		cbRoleType.addActionListener(this);
 		chooseProperties.getKeysDropdown().setModel(cbRoleType.getModel());
 		dd.add(chooseProperties);
 		propertypanels.put("defaultdd", chooseProperties.getPanel());
 		
+		searchButton = new GUIElementMetadata();
+		searchButton.createExtraButton(rm.get("replaydh.wizard.metadataAutoWizard.search"));
+		searchButton.getExtraButton().addActionListener(this);
+		resetButton = new GUIElementMetadata();
+		resetButton.createExtraButton(rm.get("replaydh.wizard.metadataAutoWizard.reset"));
+		resetButton.getExtraButton().addActionListener(this);
+		
 		builderWizard.columns("pref:grow");
-		builderWizard.rows("pref, $nlg, pref");
+		builderWizard.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref");
 		builderWizard.padding(Paddings.DLU4);
 		builderWizard.add(simpleSearch.getPanel()).xy(1, 1);
 		listofkeys.add("gsearch");
 		builderWizard.add(chooseProperties.getPanel()).xy(1, 3);
 		listofkeys.add("defaultdd");
+		builderWizard.add(resetButton.getPanel()).xy(1, 5);
+		builderWizard.add(searchButton.getPanel()).xy(1, 7);
 		elementsofproperty.put("defaultdd", dd);
 		return builderWizard.build();
 		
@@ -164,6 +175,16 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 				}
 			}
 		}
+		if (source == resetButton.getExtraButton()) {
+			int size = elementsofproperty.get("defaultdd").size();
+			for (int i=size-1; i > 0; i--) {
+				elementsofproperty.get("defaultdd").remove(i);
+				refreshPanel("defaultdd");
+			}
+		}
+		if (source == searchButton.getExtraButton()) {
+			System.out.println("Search!");
+		}
 	}
 	
 	/**
@@ -215,6 +236,9 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 				if(oneguielement.getMinusbutton().getActionListeners().length == 0) {
 					oneguielement.getMinusbutton().addActionListener(this);
 				}
+				if(oneguielement.getKeysDropdown().getActionListeners().length == 0) {
+					oneguielement.getKeysDropdown().addActionListener(this);
+				}
 				/*if (oneguielement.getLabel().getText().equals("")) {
 					switch (metadatapropertyname) {
 					case "creator":
@@ -234,6 +258,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 			}
 			
 			oneguielement.getKeysDropdown().setModel(cbRoleType.getModel());
+			oneguielement.getKeysDropdown().addActionListener(this);
 
 			propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
 
