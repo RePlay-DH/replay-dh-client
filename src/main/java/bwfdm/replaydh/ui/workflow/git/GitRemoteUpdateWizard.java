@@ -74,7 +74,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 				parent, "gitRemoteUpdaterWizard",
 				ResourceManager.getInstance().get("replaydh.wizard.gitRemoteUpdater.title"),
 				environment,
-				CHOOSE_REMOTE, UPDATE, FINISH);
+				CHOOSE_REMOTE, SELECT_SCOPE, UPDATE, FINISH);
 		return wizard;
 	}
 
@@ -137,57 +137,38 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		@Override
 		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment,
 				GitRemoteUpdaterContext context) {
+			if(!defaultProcessNext(environment, context)) {
+				return null;
+			}
+
+			// TODO figure out if we have multiple branches
+
+			return SELECT_SCOPE;
+		}
+	};
+
+	/**
+	 * Let user decide if we should only update current branch or entire repository
+	 */
+	private static final SelectScopeStep<FetchResult, GitRemoteUpdaterContext> SELECT_SCOPE
+		= new SelectScopeStep<FetchResult, GitRemoteUpdaterContext>(
+			"selectScope",
+			"replaydh.wizard.gitRemoteUpdater.selectScope.title",
+			"replaydh.wizard.gitRemoteUpdater.selectScope.description",
+			"replaydh.wizard.gitRemoteUpdater.selectScope.header",
+			"replaydh.wizard.gitRemoteUpdater.selectScope.workspace",
+			"replaydh.wizard.gitRemoteUpdater.selectScope.workflow") {
+
+		@Override
+		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment,
+				GitRemoteUpdaterContext context) {
 			return defaultProcessNext(environment, context) ? UPDATE : null;
 		}
 	};
 
 
 	/**
-	 * Let user select if he wants to update entire workflow or only current workspace state.
-	 */
-	private static final GitRemoteStep<FetchResult, GitRemoteUpdaterContext> SCOPE
-		= new GitRemoteStep<FetchResult, GitRemoteUpdaterContext>(
-			"finish",
-			"replaydh.wizard.gitRemoteUpdater.finish.title",
-			"replaydh.wizard.gitRemoteUpdater.finish.description") {
-
-		private JTextArea taHeader;
-		private ErrorPanel epInfo;
-		private JLabel lIcon;
-
-		@Override
-		protected JPanel createPanel() {
-
-			taHeader = GuiUtils.createTextArea("");
-
-			lIcon = new JLabel();
-			lIcon.setIcon(IconRegistry.getGlobalRegistry().getIcon("loading-16.gif"));
-
-			epInfo = new ErrorPanel();
-
-			return FormBuilder.create()
-					.columns("fill:pref:grow")
-					.rows("pref, 6dlu, pref, pref")
-					.add(taHeader).xy(1, 1)
-					.add(lIcon).xy(1, 3, "center, center")
-					.add(epInfo).xy(1, 4, "center, center")
-					.build();
-		}
-
-		@Override
-		public void refresh(RDHEnvironment environment, GitRemoteUpdaterContext context) {
-
-		};
-
-		@Override
-		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment, GitRemoteUpdaterContext context) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-	};
-
-	/**
-	 *
+	 * Let user run the fetch command
 	 */
 	private static final PerformOperationStep<FetchResult, FetchCommand, GitRemoteUpdaterContext> UPDATE
 			= new PerformOperationStep<FetchResult, FetchCommand, GitRemoteUpdaterContext>(
@@ -241,7 +222,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 	};
 
 	/**
-	 *
+	 * Analyze the FetchResult and propose ways to fix any issues.
 	 */
 	private static final GitRemoteStep<FetchResult, GitRemoteUpdaterContext> FINISH
 		= new GitRemoteStep<FetchResult, GitRemoteUpdaterContext>(
@@ -284,6 +265,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 				epInfo.setThrowable(context.error);
 				taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.headerError"));
 			} else if(context.result!=null) {
+				// We got a result, which can still signal a failure
 				final FetchResult fetchResult = context.result;
 				log.info("Raw result of fetching from {}: {}",
 						context.getRemote(), fetchResult);

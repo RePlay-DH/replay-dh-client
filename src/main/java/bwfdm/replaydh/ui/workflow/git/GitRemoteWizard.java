@@ -106,6 +106,9 @@ public abstract class GitRemoteWizard {
 		/** Flag to signal the command finished without 'error' but may still have failed */
 		public boolean commandCompleted;
 
+		/** The scope on which the operation should take effect */
+		public Scope scope;
+
 		public GitRemoteContext(Git git) {
 			this.git = requireNonNull(git);
 		}
@@ -167,7 +170,7 @@ public abstract class GitRemoteWizard {
 	protected static final String CHOOSE_NEW_REPO = "";
 
 	/**
-	 * First step: Let user provide or select a remote repository URL
+	 * Let user provide or select a remote repository URL
 	 */
 	protected abstract static class ChooseRemoteStep<T, C extends GitRemoteContext<T>> extends GitRemoteStep<T,C> {
 
@@ -393,8 +396,141 @@ public abstract class GitRemoteWizard {
 		}
 	}
 
+	public enum Scope {
+		/**
+		 * Only consider changes related to the current workspace (branch)
+		 */
+		WORKSPACE("workspace"),
+		/**
+		 * Push or fetch everything for the entire workflow (repository)
+		 */
+		WORKFLOW("workflow"),
+		;
+		private final String key;
+
+		private Scope(String key) {
+			this.key = "replaydh.wizard.gitRemote.scope."+key;
+		}
+
+		/**
+		 * @see java.lang.Enum#toString()
+		 */
+		@Override
+		public String toString() {
+			return ResourceManager.getInstance().get(key);
+		}
+	}
+
 	/**
-	 *
+	 * Let user provide or select a remote repository URL
+	 */
+	protected abstract static class SelectScopeStep<T, C extends GitRemoteContext<T>> extends GitRemoteStep<T,C> {
+
+		private static String DEFAULT_HEADER_SECTION_KEY = "replaydh.wizard.gitRemote.selectScope.header";
+		private static String DEFAULT_WORKSPACE_SCOPE_KEY = "replaydh.wizard.gitRemote.selectScope.workspaceScope";
+		private static String DEFAULT_WORKFLOW_SCOPE_KEY = "replaydh.wizard.gitRemote.selectScope.workflowScope";
+
+		private static final Scope DEFAULT_SCOPE = Scope.WORKSPACE;
+
+		public SelectScopeStep(String id, String titleKey, String descriptionKey,
+				String headerSectionKey, String workspaceScopeKey, String workflowScopeKey) {
+			super(id, titleKey, descriptionKey);
+
+			this.headerSectionKey = headerSectionKey!=null ? headerSectionKey : DEFAULT_HEADER_SECTION_KEY;
+			this.workspaceScopeKey = workspaceScopeKey!=null ? workspaceScopeKey : DEFAULT_WORKSPACE_SCOPE_KEY;
+			this.workflowScopeKey = workflowScopeKey!=null ? workflowScopeKey : DEFAULT_WORKFLOW_SCOPE_KEY;
+		}
+
+		private final String headerSectionKey;
+		private final String workspaceScopeKey;
+		private final String workflowScopeKey;
+
+		private JComboBox<Scope> cbScope;
+		private JTextArea taInfo;
+
+		@Override
+		protected JPanel createPanel() {
+
+			ResourceManager rm = ResourceManager.getInstance();
+
+			cbScope = new JComboBox<>(Scope.values());
+			cbScope.addActionListener(ae -> onScopeSelected());
+
+			taInfo = new JTextArea();
+
+			return FormBuilder.create()
+					.columns("pref, 4dlu, fill:pref:grow")
+					.rows("pref, 6dlu, pref, 6dlu, pref")
+					.add(GuiUtils.createTextArea(rm.get(headerSectionKey))).xyw(1, 1, 3)
+
+					.addLabel(rm.get("replaydh.wizard.gitRemote.scope.label")+":").xy(1, 3)
+					.add(cbScope).xy(3, 3)
+					.add(taInfo).xyw(1, 5, 3)
+
+					.build();
+		}
+
+		@Override
+		public void refresh(RDHEnvironment environment, C context) {
+			if(context.remoteConfig==null) {
+				cbScope.setEnabled(false);
+				taInfo.setText(ResourceManager.getInstance().get(""));
+			} else {
+				cbScope.setEnabled(true);
+
+				Scope scope = context.scope;
+				if(scope==null) {
+					scope = DEFAULT_SCOPE;
+				}
+				cbScope.setSelectedItem(scope);
+			}
+		};
+
+		private void onScopeSelected() {
+			Scope scope = (Scope) cbScope.getSelectedItem();
+
+			String infoKey;
+
+			switch (scope) {
+			case WORKSPACE:
+				infoKey = workspaceScopeKey;
+				break;
+
+			case WORKFLOW:
+				infoKey = workflowScopeKey;
+				break;
+
+			default:
+				throw new IllegalStateException("Unknown scope: "+scope);
+			}
+
+			taInfo.setText(ResourceManager.getInstance().get(infoKey));
+		}
+
+		/**
+		 * Default processing of the current page. Will return {@code true} if no errors
+		 * were encountered and the wizard can continue.
+		 *
+		 * @param environment
+		 * @param context
+		 * @return
+		 */
+		protected boolean defaultProcessNext(RDHEnvironment environment,
+				C context) {
+
+			Scope scope = (Scope)cbScope.getSelectedItem();
+			if(!cbScope.isEnabled()) {
+				scope = null;
+			}
+
+			context.scope = scope;
+
+			return true;
+		}
+	}
+
+	/**
+	 * Provide an interface for executing an arbitrary {@link GitCommand}
 	 */
 	protected static abstract class PerformOperationStep<T, G extends GitCommand<T>, C extends GitRemoteContext<T>>
 			extends GitRemoteStep<T,C> {
