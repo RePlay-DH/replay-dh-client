@@ -20,6 +20,13 @@ package bwfdm.replaydh.test.git;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult.MergeStatus;
@@ -29,6 +36,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
+import org.eclipse.jgit.merge.ResolveMerger;
 import org.eclipse.jgit.merge.ThreeWayMerger;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.TrackingRefUpdate;
@@ -38,7 +46,34 @@ import org.junit.Test;
  * @author Markus Gärtner
  *
  */
-public class MergeCommandTest extends RepositoryTest {
+public class ConflictTest extends RepositoryTest {
+
+	@Test
+	public void testConflictingMergeDuringPull() throws Exception {
+		try(Git local = createLocalGit();
+				Git other = createOtherGit();
+				Git remote = createRemoteGit()) {
+
+			addRemote(local, remote);
+			addRemote(other, remote);
+
+			makeLocalFile("a", "a\nb\nc");
+			local.add().addFilepattern("a").call();
+			local.commit().setMessage("a1").call();
+
+			makeOtherFile("a", "a\nbc\nc");
+			other.add().addFilepattern("a").call();
+			other.commit().setMessage("a").call();
+
+			other.push().setPushAll().call();
+
+			PullResult pullResult = local.pull().call();
+
+			assertEquals(MergeStatus.CONFLICTING, pullResult.getMergeResult().getMergeStatus());
+
+			assertTrue(readLocalFile("a").startsWith("a\n<<<<<<< HEAD"));
+		}
+	}
 
 	@Test
 	public void testConflictingFetchWithMergeDryRun() throws Exception {
@@ -114,37 +149,36 @@ public class MergeCommandTest extends RepositoryTest {
 			assertEquals("a\nbc\nc", readFile(local, repo.parseCommit(fetchHead), "a"));
 			assertEquals("a\nb\nc", readLocalFile("a"));
 
-			boolean noProblems = merger.merge(
+			assertTrue(merger instanceof ResolveMerger);
+
+			ResolveMerger resolveMerger = (ResolveMerger) merger;
+			boolean noProblems = resolveMerger.merge(
 					localHead, fetchHead);
 
 			assertFalse(noProblems);
-		}
-	}
+			// Make sure it really was a virtual merge and the local file remained unchanged
+			assertEquals("a\nb\nc", readLocalFile("a"));
 
-	@Test
-	public void testConflictingMergeDuringPull() throws Exception {
-		try(Git local = createLocalGit();
-				Git other = createOtherGit();
-				Git remote = createRemoteGit()) {
+			System.out.println("Commit Names: "+Arrays.toString(resolveMerger.getCommitNames()));
+			System.out.println("Modified Files: "+resolveMerger.getModifiedFiles());
+			System.out.println("Unmerged Paths: "+resolveMerger.getUnmergedPaths());
 
-			addRemote(local, remote);
-			addRemote(other, remote);
+			System.out.println("Failing Paths:");
+			Optional.ofNullable(resolveMerger.getFailingPaths()).orElse(Collections.emptyMap())
+				.forEach((path, reason) -> System.out.printf("    %s -> %s%n", path, reason));
 
-			makeLocalFile("a", "a\nb\nc");
-			local.add().addFilepattern("a").call();
-			local.commit().setMessage("a1").call();
+			System.out.println("Newly Staged:");
+			resolveMerger.getToBeCheckedOut()
+				.forEach((path, entry) -> System.out.printf("    %s -> %s%n", path, entry.getObjectId()));
 
-			makeOtherFile("a", "a\nbc\nc");
-			other.add().addFilepattern("a").call();
-			other.commit().setMessage("a").call();
-
-			other.push().setPushAll().call();
-
-			PullResult pullResult = local.pull().call();
-
-			assertEquals(MergeStatus.CONFLICTING, pullResult.getMergeResult().getMergeStatus());
-
-			System.out.println(readLocalFile("a"));
+			System.out.println("Merge Results:");
+			resolveMerger.getMergeResults()
+				.forEach((path, result) -> System.out.printf("    %s -> conflict=%b chunks=%s%n",
+						path, result.containsConflicts(),
+						StreamSupport.stream(result.spliterator(), false)
+							.map(chunk -> String.format("idx=%d begin=%d end=%d state=%s",
+									chunk.getSequenceIndex(), chunk.getBegin(), chunk.getEnd(), chunk.getConflictState()))
+							.collect(Collectors.toList())));
 		}
 	}
 }

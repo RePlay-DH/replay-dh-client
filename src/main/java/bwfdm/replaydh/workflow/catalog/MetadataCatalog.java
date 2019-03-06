@@ -55,7 +55,7 @@ public interface MetadataCatalog {
 	 * Complex "database" search.
 	 * <p>
 	 * Finds all the records for which all the specified constraints based on their
-	 * respective entries are fullfilled.
+	 * respective entries are fulfilled.
 	 *
 	 * @param settings
 	 * @param constraints
