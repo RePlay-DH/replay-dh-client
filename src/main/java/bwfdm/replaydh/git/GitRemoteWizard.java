@@ -16,7 +16,7 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.workflow.git;
+package bwfdm.replaydh.git;
 
 import static bwfdm.replaydh.utils.RDHUtils.checkState;
 import static java.util.Objects.requireNonNull;
@@ -59,8 +59,6 @@ import com.jgoodies.forms.builder.FormBuilder;
 
 import bwfdm.replaydh.core.RDHClient;
 import bwfdm.replaydh.core.RDHEnvironment;
-import bwfdm.replaydh.git.GitException;
-import bwfdm.replaydh.git.JGitAdapter;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.AbstractWizardStep;

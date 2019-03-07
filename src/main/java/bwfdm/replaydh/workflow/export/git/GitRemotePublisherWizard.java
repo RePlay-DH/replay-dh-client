@@ -52,6 +52,7 @@ import com.jgoodies.forms.builder.FormBuilder;
 
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.git.GitException;
+import bwfdm.replaydh.git.GitRemoteWizard;
 import bwfdm.replaydh.git.GitUtils;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
@@ -59,7 +60,6 @@ import bwfdm.replaydh.ui.helper.ErrorPanel;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
 import bwfdm.replaydh.ui.icons.IconRegistry;
-import bwfdm.replaydh.ui.workflow.git.GitRemoteWizard;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
 
 /**

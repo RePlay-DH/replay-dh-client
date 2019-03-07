@@ -16,7 +16,7 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.workflow.git;
+package bwfdm.replaydh.git;
 
 import java.awt.Window;
 import java.net.URISyntaxException;
@@ -51,8 +51,6 @@ import org.slf4j.LoggerFactory;
 import com.jgoodies.forms.builder.FormBuilder;
 
 import bwfdm.replaydh.core.RDHEnvironment;
-import bwfdm.replaydh.git.GitException;
-import bwfdm.replaydh.git.GitUtils;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.ErrorPanel;

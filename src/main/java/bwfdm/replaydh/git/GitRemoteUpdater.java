@@ -35,13 +35,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import bwfdm.replaydh.core.RDHEnvironment;
+import bwfdm.replaydh.git.GitRemoteUpdateWizard.GitRemoteUpdaterContext;
 import bwfdm.replaydh.io.TrackingStatus;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.AbstractDialogWorker;
 import bwfdm.replaydh.ui.helper.AbstractDialogWorker.CancellationPolicy;
-import bwfdm.replaydh.ui.workflow.git.GitRemoteUpdateWizard;
-import bwfdm.replaydh.ui.workflow.git.GitRemoteUpdateWizard.GitRemoteUpdaterContext;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.utils.RDHUtils;
 
