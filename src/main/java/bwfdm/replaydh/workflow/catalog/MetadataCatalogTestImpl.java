@@ -1,7 +1,10 @@
 package bwfdm.replaydh.workflow.catalog;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifier;
@@ -33,10 +36,86 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 	@Override
 	public Result query(QuerySettings settings, String fragment) throws CatalogException {
 		SimpleResult result = new SimpleResult();
-		List<String> strings = new ArrayList<>();
-		strings.add(tool.getEnvironment());
-		strings.add(tool.getParameters());
-		strings.add(tool.getIdentifier(schema.getDefaultNameVersionIdentifierType()).getId());
+		Map<Identifiable, List<String>> idValues = new HashMap<>();
+		List<String> stringsTool = new ArrayList<>();
+		List<String> stringsResource = new ArrayList<>();
+		List<String> stringsOutput = new ArrayList<>();
+		List<String> stringsPerson = new ArrayList<>();
+		stringsTool.add(tool.getEnvironment());
+		stringsTool.add(tool.getParameters());
+		stringsTool.add(tool.getIdentifier(schema.getDefaultNameVersionIdentifierType()).getId());
+		stringsTool.add(tool.getResourceType());
+		idValues.put(tool, stringsTool);
+		stringsResource.add(resource.getResourceType());
+		stringsResource.add(resource.getIdentifier(schema.getDefaultNameVersionIdentifierType()).getId());
+		stringsResource.add(resource.getIdentifier(schema.getDefaultPathIdentifierType()).getId());
+		idValues.put(resource, stringsResource);
+		stringsOutput.add(output.getResourceType());
+		stringsOutput.add(output.getIdentifier(schema.getDefaultPathIdentifierType()).getId());
+		idValues.put(output, stringsOutput);
+		stringsPerson.add(person.getRole());
+		stringsPerson.add(person.getIdentifier(schema.getDefaultNameIdentifierType()).getId());
+		idValues.put(person, stringsPerson);
+		for(String value : idValues.get(tool)) {
+			if(value.startsWith(fragment)) {
+				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+					if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+						result.add(tool);
+					}
+				}
+			} else if(value.endsWith(fragment)) {
+				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+					if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+						result.add(tool);
+					}
+				}
+			}
+		}
+		for(String value : idValues.get(resource)) {
+			if(value.startsWith(fragment)) {
+				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+					if(!(resource.getSystemId().equals(iter.next().getSystemId()))) {
+						result.add(resource);
+					}
+				}
+			} else if(value.endsWith(fragment)) {
+				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+					if(!(resource.getSystemId().equals(iter.next().getSystemId()))) {
+						result.add(resource);
+					}
+				}
+			}
+		}
+		for(String value : idValues.get(output)) {
+			if(value.startsWith(fragment)) {
+				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+					if(!(output.getSystemId().equals(iter.next().getSystemId()))) {
+						result.add(output);
+					}
+				}
+			} else if(value.endsWith(fragment)) {
+				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+					if(!(output.getSystemId().equals(iter.next().getSystemId()))) {
+						result.add(output);
+					}
+				}
+			}
+		}
+		for(String value : idValues.get(person)) {
+			if(value.startsWith(fragment)) {
+				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+					if(!(person.getSystemId().equals(iter.next().getSystemId()))) {
+						result.add(person);
+					}
+				}
+			} else if(value.endsWith(fragment)) {
+				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+					if(!(person.getSystemId().equals(iter.next().getSystemId()))) {
+						result.add(person);
+					}
+				}
+			}
+		}
 		return result;
 	}
 
@@ -45,7 +124,27 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 		SimpleResult result = new SimpleResult();
 		if(constraints.get(0).getKey().equals("type")) {
 			constraints.get(0).getValue().equals("dataset/analysis");
-			result.add(output);
+			for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+				if(!(output.getSystemId().equals(iter.next().getSystemId()))) {
+					result.add(output);
+				}
+			}
+		}
+		if(constraints.get(0).getKey().equals("parameter")) {
+			constraints.get(0).getValue().equals("-v -file path/to/my/dir/model.xml");
+			for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+				if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+					result.add(tool);
+				}
+			}
+		}
+		if(constraints.get(0).getKey().equals("evironment")) {
+			constraints.get(0).getValue().equals("os.arch");
+			for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+				if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+					result.add(tool);
+				}
+			}
 		}
 		return result;
 	}
@@ -54,10 +153,16 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 	public List<String> suggest(QuerySettings settings, Identifiable context, String key, String valuePrefix)
 			throws CatalogException {
 		List<String> suggestions = new ArrayList<>();
-		suggestions.add("1A");
-		suggestions.add("1B");
-		suggestions.add("1C");
-		return suggestions;
+		suggestions.add("hallo1a");
+		suggestions.add("hallo1b");
+		suggestions.add("hallo1c");
+		List<String> results = new ArrayList<>();
+		for(String value : suggestions) {
+			if(value.startsWith(valuePrefix)) {
+				results.add(value);
+			}
+		}
+		return results;
 	}
 
 	public void createObjects() {

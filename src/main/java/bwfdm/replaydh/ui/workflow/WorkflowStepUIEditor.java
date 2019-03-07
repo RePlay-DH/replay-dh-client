@@ -450,7 +450,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 			return;
 		}
         
-        AutoCompletionWizardWorkflowStep autoWizard = new AutoCompletionWizardWorkflowStep();
+        AutoCompletionWizardWorkflowStep autoWizard = new AutoCompletionWizardWorkflowStep(this.schema);
         
         if(source == btnAddAutoPerson){
         	autoWizard.createWizard(this.schema, Type.PERSON);

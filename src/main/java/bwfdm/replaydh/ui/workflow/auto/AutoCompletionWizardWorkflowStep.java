@@ -20,13 +20,11 @@ import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.FormLayout;
 
 import bwfdm.replaydh.resources.ResourceManager;
-import bwfdm.replaydh.ui.workflow.WorkflowUIUtils;
 import bwfdm.replaydh.ui.workflow.auto.GUIElement;
 import bwfdm.replaydh.ui.workflow.auto.GUIElementMetadata;
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifiable.Type;
-import bwfdm.replaydh.workflow.schema.CompoundLabel;
-import bwfdm.replaydh.workflow.schema.LabelSchema;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalogTestImpl;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 import bwfdm.replaydh.ui.GuiUtils;
 
@@ -35,8 +33,13 @@ import bwfdm.replaydh.ui.GuiUtils;
  * @author Florian Fritze
  *
  */
-public class AutoCompletionWizardWorkflowStep implements ActionListener {
+public class AutoCompletionWizardWorkflowStep extends MetadataCatalogTestImpl implements ActionListener {
 	
+	public AutoCompletionWizardWorkflowStep(WorkflowSchema schema) {
+		super(schema);
+		// TODO Auto-generated constructor stub
+	}
+
 	private JDialog wizardWindow;
 	private ResourceManager rm = ResourceManager.getInstance();
 	
@@ -47,9 +50,10 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	private JPanel mainPanelWizard;
 	private List<GUIElementMetadata> dd = new ArrayList<>();
 	
+	private JComboBox<String> ddKeys = new JComboBox<>();
+	
 	
 	private Identifiable.Type type = null;
-	private WorkflowSchema schema = null;
 	
 	private GUIElementMetadata resetButton = null;
 	private GUIElementMetadata searchButton = null;
@@ -57,7 +61,6 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	private FormBuilder builderWizard;
 	
 	public void createWizard(WorkflowSchema schema, Identifiable.Type type) {
-		this.schema=schema;
 		this.type=type;
 		wizardWindow = new JDialog();
 		wizardWindow.setModal(true);
@@ -84,11 +87,9 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		simpleSearch.getMinusbutton().setVisible(false);
 		
 		GUIElementMetadata chooseProperties = createGUIElement("keys");
-		JComboBox<CompoundLabel> cbRoleType = WorkflowUIUtils.createLabelComboBox(getLabelSchema());
-		CompoundLabel defaultTypeOrRole = WorkflowUIUtils.createDefaultLabel(getLabelSchema());
-		cbRoleType.setSelectedItem(defaultTypeOrRole);
-		cbRoleType.addActionListener(this);
-		chooseProperties.getKeysDropdown().setModel(cbRoleType.getModel());
+		ddKeys = new JComboBox(ddTypes.values());
+		ddKeys.addActionListener(this);
+		chooseProperties.getKeysDropdown().setModel(ddKeys.getModel());
 		dd.add(chooseProperties);
 		propertypanels.put("defaultdd", chooseProperties.getPanel());
 		
@@ -230,12 +231,10 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 				}
 			}
 			
-			JComboBox<CompoundLabel> cbRoleType = WorkflowUIUtils.createLabelComboBox(getLabelSchema());
-			CompoundLabel defaultTypeOrRole = WorkflowUIUtils.createDefaultLabel(getLabelSchema());
-			cbRoleType.setSelectedItem(defaultTypeOrRole);
-			cbRoleType.addActionListener(this);
+			ddKeys = new JComboBox(ddTypes.values());
+			ddKeys.addActionListener(this);
 			
-			oneguielement.getKeysDropdown().setModel(cbRoleType.getModel());
+			oneguielement.getKeysDropdown().setModel(ddKeys.getModel());
 			oneguielement.getKeysDropdown().addActionListener(this);
 
 			propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
@@ -298,11 +297,18 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		refreshPanel(metadatapropertyname);
 	}
 	
-	private LabelSchema getLabelSchema() {
-		return isPersonEditor() ? schema.getRoleSchema() : schema.getResourceTypeSchema();
-	}
 	
 	public boolean isPersonEditor() {
 		return type==Type.PERSON;
+	}
+	
+	public enum ddTypes {
+		title,
+		name,
+		type,
+		identifier,
+		parameter,
+		nameversion,
+		environment
 	}
 }

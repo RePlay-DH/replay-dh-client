@@ -3,7 +3,6 @@ package bwfdm.replaydh.ui.workflow.auto;
 import java.awt.Dimension;
 
 import javax.swing.Icon;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -15,7 +14,6 @@ import javax.swing.JTextField;
 import com.jgoodies.forms.builder.FormBuilder;
 
 import bwfdm.replaydh.ui.icons.IconRegistry;
-import bwfdm.replaydh.workflow.schema.CompoundLabel;
 
 
 public class GUIElementMetadata {
@@ -24,7 +22,7 @@ public class GUIElementMetadata {
 	private static final String columns = "left:max(120dlu;pref), 6dlu, max(180dlu;min), 3dlu, pref, 3dlu, pref";
 	private static final String rows = "pref";
 	private JTextField textfield = new JTextField();
-	private JComboBox<CompoundLabel> keysDropdown = new JComboBox<>();
+	private JComboBox<String> keysDropdown = new JComboBox<>();
 	private JButton button = null;
 	private JButton minusbutton = null;
 	private JButton extraButton = null;
@@ -113,10 +111,10 @@ public class GUIElementMetadata {
 	public JButton getExtraButton() {
 		return extraButton;
 	}
-	public JComboBox<CompoundLabel> getKeysDropdown() {
+	public JComboBox<String> getKeysDropdown() {
 		return keysDropdown;
 	}
-	public void setKeysDropdown(JComboBox<CompoundLabel> keysDropdown) {
+	public void setKeysDropdown(JComboBox<String> keysDropdown) {
 		this.keysDropdown = keysDropdown;
 	}
 	public void setResetButton(JButton resetButton) {
