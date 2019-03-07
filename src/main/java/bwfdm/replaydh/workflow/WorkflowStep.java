@@ -31,6 +31,7 @@ import java.util.Set;
 public interface WorkflowStep {
 
 	public static final String PROPERTY_INTERNAL_INFO = "RDH_internalInfo";
+	public String FOREIGN_COMMIT_HEADER = "???";
 
 	/**
 	 * Returns the unique id for this step that was assigned by the host
