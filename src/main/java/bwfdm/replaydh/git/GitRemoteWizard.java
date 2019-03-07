@@ -30,8 +30,6 @@ import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
@@ -180,8 +178,6 @@ public abstract class GitRemoteWizard {
 		private JComboBox<Object> cbRemote;
 		private JTextField tfRemoteName;
 
-		private final Matcher legalRemoteNameMatcher = Pattern.compile("[a-zA-Z]+").matcher("");
-
 		@Override
 		protected JPanel createPanel() {
 
@@ -229,8 +225,8 @@ public abstract class GitRemoteWizard {
 				return false;
 			}
 
-			// Syntax check
-			if(!legalRemoteNameMatcher.reset(name).matches()) {
+			// Remote names are part of a ref string
+			if(!Repository.isValidRefName(name)) {
 				return false;
 			}
 
