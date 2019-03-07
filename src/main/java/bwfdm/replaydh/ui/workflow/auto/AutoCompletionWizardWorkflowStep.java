@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.swing.JButton;
@@ -19,6 +20,7 @@ import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.FormLayout;
 
+import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.workflow.auto.GUIElement;
 import bwfdm.replaydh.ui.workflow.auto.GUIElementMetadata;
@@ -35,9 +37,10 @@ import bwfdm.replaydh.ui.GuiUtils;
  */
 public class AutoCompletionWizardWorkflowStep extends MetadataCatalogTestImpl implements ActionListener {
 	
-	public AutoCompletionWizardWorkflowStep(WorkflowSchema schema) {
+	public AutoCompletionWizardWorkflowStep(WorkflowSchema schema, RDHEnvironment environment) {
 		super(schema);
 		// TODO Auto-generated constructor stub
+		this.environment=environment;
 	}
 
 	private JDialog wizardWindow;
@@ -52,6 +55,7 @@ public class AutoCompletionWizardWorkflowStep extends MetadataCatalogTestImpl im
 	
 	private JComboBox<String> ddKeys = new JComboBox<>();
 	
+	private RDHEnvironment environment;
 	
 	private Identifiable.Type type = null;
 	
@@ -87,7 +91,11 @@ public class AutoCompletionWizardWorkflowStep extends MetadataCatalogTestImpl im
 		simpleSearch.getMinusbutton().setVisible(false);
 		
 		GUIElementMetadata chooseProperties = createGUIElement("keys");
-		ddKeys = new JComboBox(ddTypes.values());
+		if(this.environment.getLocale().getLanguage().equals(new Locale("de").getLanguage())) {
+			ddKeys = new JComboBox(ddTypesDe.values());
+		} else {
+			ddKeys = new JComboBox(ddTypesEng.values());
+		}
 		ddKeys.addActionListener(this);
 		chooseProperties.getKeysDropdown().setModel(ddKeys.getModel());
 		dd.add(chooseProperties);
@@ -231,7 +239,11 @@ public class AutoCompletionWizardWorkflowStep extends MetadataCatalogTestImpl im
 				}
 			}
 			
-			ddKeys = new JComboBox(ddTypes.values());
+			if(this.environment.getLocale().getLanguage().equals(new Locale("de").getLanguage())) {
+				ddKeys = new JComboBox(ddTypesDe.values());
+			} else {
+				ddKeys = new JComboBox(ddTypesEng.values());
+			}
 			ddKeys.addActionListener(this);
 			
 			oneguielement.getKeysDropdown().setModel(ddKeys.getModel());
@@ -302,13 +314,23 @@ public class AutoCompletionWizardWorkflowStep extends MetadataCatalogTestImpl im
 		return type==Type.PERSON;
 	}
 	
-	public enum ddTypes {
-		title,
-		name,
-		type,
-		identifier,
-		parameter,
-		nameversion,
-		environment
+	public enum ddTypesEng {
+		Title,
+		Name,
+		Type,
+		Identifier,
+		Parameter,
+		Nameversion,
+		Environment
+	}
+	
+	public enum ddTypesDe {
+		Titel,
+		Name,
+		Typ,
+		Identifier,
+		Parameter,
+		Namensversion,
+		Environment
 	}
 }
