@@ -1830,9 +1830,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	private void checkout(WorkflowStep step) throws IOException, GitException {
 		synchronized (gitLock) {
 			// Fetch the commit the target step is pointing to
-			RevCommit commit = loadId(step);
+			final RevCommit commit = loadId(step);
 			// Fetch the current head
-			RevCommit head = head();
+			final RevCommit head = head();
 
 			/*
 			 *  Exit early in case we are already at the right commit.
@@ -1846,8 +1846,24 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			//TODO check if we have a clean working dir state and ask user to clean it?
 
 //			ensureReachable(head);
+			String nameToCheckout = null;
 
-			CheckoutCommand cmd = git.checkout().setName(commit.name());
+			if(WorkflowUtils.isLeaf(step)) {
+				ExecutionResult<Map<ObjectId, String>> result = executeCommand(git.nameRev().add(commit));
+				if(result.hasFailed()) {
+					log.error("Failed to resolve branch for commit {}", commit, result.exception);
+				} else {
+					nameToCheckout = result.result.get(commit);
+					//TODO should we do something in case no branch pointed to 'commit' ?
+				}
+			}
+
+			if(nameToCheckout==null){
+				nameToCheckout = commit.name();
+			}
+
+			// Run command and verify new state
+			CheckoutCommand cmd = git.checkout().setName(nameToCheckout);
 			ExecutionResult<Ref> result = executeCommand(cmd);
 			if(result.hasFailed()) {
 				throw new GitException("Failed to checkout existing commit "+commit, result.exception);
@@ -2185,7 +2201,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 					 *  we'll at least be able to visualize them in the client.
 					 */
 					step.setDescription(message);
-					step.setTitle(GitUtils.FOREIGN_COMMIT_HEADER);
+					step.setTitle(WorkflowStep.FOREIGN_COMMIT_HEADER);
 				} else {
 					// We expect valid JSON data here
 					Options options = new Options();
