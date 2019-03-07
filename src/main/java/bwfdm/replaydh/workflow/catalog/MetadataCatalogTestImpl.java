@@ -119,40 +119,45 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 	@Override
 	public Result query(QuerySettings settings, List<Constraint> constraints) throws CatalogException {
 		SimpleResult result = new SimpleResult();
-		if(constraints.get(0).getKey().equals("type")) {
-			constraints.get(0).getValue().equals("dataset/analysis");
-			if(!(result.isEmpty())) {
-				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-					if(!(output.getSystemId().equals(iter.next().getSystemId()))) {
+		for(Constraint constraint : constraints) {
+			if(constraint.getKey().equals("type")) {
+				if (constraint.getValue().equals("dataset/analysis")) {
+					/*if(!(result.isEmpty())) {
+						for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+							if(!(output.getSystemId().equals(iter.next().getSystemId()))) {
+								result.add(output);
+							}
+						}
+					} else {*/
 						result.add(output);
-					}
+					//}
 				}
-			} else {
-				result.add(output);
 			}
-		}
-		if(constraints.get(0).getKey().equals("parameter")) {
-			constraints.get(0).getValue().equals("-v -file path/to/my/dir/model.xml");
-			if(!(result.isEmpty())) {
-				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-					if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+			if(constraint.getKey().equals("parameter")) {
+				if (constraint.getValue().equals("-v -file path/to/my/dir/model.xml")) {
+					/*if(!(result.isEmpty())) {
+						for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+							if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+								result.add(tool);
+							}
+						}
+					} else {*/
 						result.add(tool);
-					}
+					//}
 				}
-			} else {
-				result.add(tool);
 			}
-		}
-		if(constraints.get(0).getKey().equals("evironment")) {
-			constraints.get(0).getValue().equals("os.arch");
-			if(!(result.isEmpty())) {
-				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-					if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+			if(constraint.getKey().equals("env")) {
+				if (constraint.getValue().equals("os.arch")) {
+					/*if(!(result.isEmpty())) {
+						for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+							if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+								result.add(tool);
+							}
+						}
+					} else {*/
 						result.add(tool);
-					}
+					//}
 				}
-			} else {
-				result.add(tool);
 			}
 		}
 		return result;
