@@ -42,8 +42,6 @@ import org.eclipse.jgit.api.PushCommand;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
-import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +50,6 @@ import com.jgoodies.forms.builder.FormBuilder;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.git.GitException;
 import bwfdm.replaydh.git.GitRemoteWizard;
-import bwfdm.replaydh.git.GitUtils;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.ErrorPanel;
@@ -140,26 +137,11 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 			GitRemotePublisherContext context = worker.context;
 			PushCommand command = context.git.push();
 
-			URIish remoteUri = null;
-			String remoteName = null;
-
-			if(context.remoteConfig!=null) {
-				remoteName = context.remoteConfig.getName();
-				remoteUri = getUsablePushUri(context.remoteConfig);
-				command.setRemote(remoteName);
-			} else {
-				remoteUri = context.remoteUrl;
-				command.setRemote(remoteUri.toString());
-			}
-
-			if(!GitUtils.prepareTransportCredentials(command, remoteUri, remoteName,
-					(username, password) -> {
-						context.credentials = new UsernamePasswordCredentialsProvider(username, password);
-						return context.credentials;
-					})) {
+			if(!configureTransportCommand(command, context)) {
 				return null;
 			}
 
+			command.setRemote(context.getRemote());
 			command.setPushAll();
 			command.setPushTags();
 			command.setAtomic(true);

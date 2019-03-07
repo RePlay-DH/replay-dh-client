@@ -46,6 +46,7 @@ import javax.swing.SwingWorker.StateValue;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.GitCommand;
 import org.eclipse.jgit.api.RemoteAddCommand;
+import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Repository;
@@ -80,14 +81,8 @@ public abstract class GitRemoteWizard {
 	public static class GitRemoteContext<T> implements AutoCloseable {
 		public final Git git;
 
-		/** Actual URL for the remote if provided by user */
-		public URIish remoteUrl;
-
 		/** Registered config for the remote if selected by user */
 		public RemoteConfig remoteConfig;
-
-		/** Label for registering the remote */
-		public String refName;
 
 		/** The last message created while performing the remote operation */
 		public String finalMessage;
@@ -116,14 +111,19 @@ public abstract class GitRemoteWizard {
 		}
 
 		public String getRemote() {
-			String url = null;
-			if(remoteUrl!=null) {
-				url = remoteUrl.toString();
+			return remoteConfig==null ? null : remoteConfig.getName();
+		}
+
+		public void prepare() {
+			cleanupTempRemote();
+		}
+
+		private void cleanupTempRemote() {
+			try {
+				GitUtils.cleanupTempRemote(git);
+			} catch (GitAPIException e) {
+				GuiUtils.invokeEDT(() -> GuiUtils.showErrorDialog(GuiUtils.getActiveWindow(), e));
 			}
-			if(url==null && remoteConfig!=null) {
-				url = remoteConfig.getName();
-			}
-			return url;
 		}
 
 		/**
@@ -135,21 +135,9 @@ public abstract class GitRemoteWizard {
 				credentials.clear();
 				credentials = null;
 			}
-		}
-	}
 
-	protected static URIish getUsablePushUri(RemoteConfig config) {
-		List<URIish> pushUris = config.getPushURIs();
-		if(!pushUris.isEmpty()) {
-			return pushUris.get(0);
+			cleanupTempRemote();
 		}
-
-		List<URIish> rawUris = config.getURIs();
-		if(!rawUris.isEmpty()) {
-			return rawUris.get(0);
-		}
-
-		return null;
 	}
 
 	/**
@@ -237,6 +225,10 @@ public abstract class GitRemoteWizard {
 				return true;
 			}
 
+			if(GitUtils.TEMP_RDH_REMOTE.equals(name)) {
+				return false;
+			}
+
 			// Syntax check
 			if(!legalRemoteNameMatcher.reset(name).matches()) {
 				return false;
@@ -272,17 +264,20 @@ public abstract class GitRemoteWizard {
 			cbRemote.removeAllItems();
 			cbRemote.addItem(CHOOSE_NEW_REPO);
 
-			if(context.remoteUrl!=null) {
-				cbRemote.addItem(context.remoteUrl);
-			}
-
 			Repository repo = context.git.getRepository();
 
 			try {
-				RemoteConfig.getAllRemoteConfigs(repo.getConfig()).forEach(cbRemote::addItem);
+				RemoteConfig.getAllRemoteConfigs(repo.getConfig())
+					.stream()
+					.filter(rc -> !GitUtils.isTemporaryRemote(rc))
+					.forEach(cbRemote::addItem);
 			} catch (URISyntaxException e) {
 				log.error("Failed to read existing remote entries", e);
 				GuiUtils.showErrorDialog(getPageComponent(), e);
+			}
+
+			if(context.remoteConfig!=null && GitUtils.isTemporaryRemote(context.remoteConfig)) {
+				cbRemote.setSelectedItem(context.remoteConfig.getURIs().get(0).toString());
 			}
 
 			refreshRemoteEditable();
@@ -340,7 +335,6 @@ public abstract class GitRemoteWizard {
 		@Override
 		public void cancel(RDHEnvironment environment, C context) {
 			context.remoteConfig = null;
-			context.remoteUrl = null;
 		};
 
 		/**
@@ -362,8 +356,9 @@ public abstract class GitRemoteWizard {
 			if(item instanceof RemoteConfig) {
 				context.remoteConfig = (RemoteConfig) item;
 			} else if(item instanceof String) {
+				URIish uri;
 				try {
-					context.remoteUrl = new URIish((String) item);
+					uri = new URIish((String) item);
 				} catch (URISyntaxException e) {
 					log.error("Invalid remote url: {}", item, e);
 					GuiUtils.showErrorDialog(panel(), e);
@@ -371,12 +366,15 @@ public abstract class GitRemoteWizard {
 				}
 
 				String remoteName = tfRemoteName.getText();
+				if(remoteName==null || remoteName.isEmpty()) {
+					remoteName = GitUtils.TEMP_RDH_REMOTE;
+				}
+
 				// Additional sanity check
-				if(remoteName!=null && !remoteName.isEmpty()
-						&& checkLegalRemoteName(remoteName)) {
+				if(context.remoteConfig==null || !remoteName.equals(context.remoteConfig.getName())) {
 					RemoteAddCommand addCommand = context.git.remoteAdd();
 					addCommand.setName(remoteName);
-					addCommand.setUri(context.remoteUrl);
+					addCommand.setUri(uri);
 
 					// Save and directly use new remote config
 					try {
@@ -385,7 +383,7 @@ public abstract class GitRemoteWizard {
 						log.error("Failed to add new remote config", e);
 						GuiUtils.showErrorDialog(panel, null,
 								"replaydh.wizard.gitRemote.chooseRemote.addRemoteFailed", e);
-						// Failing to store the URL doesn't have to stop us from pushing
+						return false;
 					}
 				}
 			}
@@ -624,7 +622,27 @@ public abstract class GitRemoteWizard {
 					this::handleWorkerResult, this::handleWorkerChunks);
 		}
 
+		/**
+		 * Construct a non-null one-time-usage command.
+		 *
+		 * @param worker
+		 * @return
+		 * @throws GitException
+		 */
 		protected abstract G createGitCommand(GitWorker<T, G, C> worker) throws GitException;
+
+		protected boolean configureTransportCommand(TransportCommand<?, ?> command, C context) throws GitException {
+			RemoteConfig config = context.remoteConfig;
+
+			URIish remoteUri = config.getURIs().get(0);
+			String remoteName = config.getName();
+
+			return GitUtils.prepareTransportCredentials(command, remoteUri, remoteName,
+					(username, password) -> {
+						context.credentials = new UsernamePasswordCredentialsProvider(username, password);
+						return context.credentials;
+					});
+		}
 
 		protected void handleWorkerChunks(List<String> chunks) {
 			if(!chunks.isEmpty()) {
@@ -888,11 +906,10 @@ public abstract class GitRemoteWizard {
 			// Entries are either Strings or RemoteConfig instances
 			if(value instanceof RemoteConfig) {
 				RemoteConfig config = (RemoteConfig) value;
-				URIish uri = getUsablePushUri(config);
-				if(uri!=null) {
-					value = String.format("%s - %s", config.getName(), uri.toString());
-					tooltip = uri.toString();
-				}
+				URIish uri = config.getURIs().get(0);
+
+				value = String.format("%s - %s", config.getName(), uri.toString());
+				tooltip = uri.toString();
 			} else if(CHOOSE_NEW_REPO.equals(value)) {
 				value = ResourceManager.getInstance().get("replaydh.wizard.gitRemote.chooseRemote.addNewUrl");
 			} else if(value!=null) {

@@ -1849,13 +1849,15 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			String nameToCheckout = null;
 
 			if(WorkflowUtils.isLeaf(step)) {
+				// Find the branch the leaf commit is associated with
 				ExecutionResult<Map<ObjectId, String>> result = executeCommand(git.nameRev().add(commit));
 				if(result.hasFailed()) {
+					// This will leave us in a detached head state, but we can live with that
 					log.error("Failed to resolve branch for commit {}", commit, result.exception);
 				} else {
 					nameToCheckout = result.result.get(commit);
-					//TODO should we do something in case no branch pointed to 'commit' ?
 				}
+				//TODO should we do something in case no branch pointed to 'commit' ?
 			}
 
 			if(nameToCheckout==null){
@@ -1879,6 +1881,23 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 	RevCommit head() throws IOException {
 		return resolve(Constants.HEAD);
+	}
+
+	/**
+	 * Returns the branch {@link Ref} that {@code HEAD} currently points to
+	 * or {@code null} if the repository is currently in detached head state.
+	 * @return
+	 * @throws IOException
+	 */
+	Ref branch() throws IOException {
+		Ref head = git.getRepository().exactRef(Constants.HEAD);
+		if(head==null)
+			throw new IllegalStateException("No HEAD");
+		if(head.isSymbolic()) {
+			return head.getTarget();
+		}
+
+		return null;
 	}
 
 	private WorkflowStep lookupStep(RevCommit commit) {

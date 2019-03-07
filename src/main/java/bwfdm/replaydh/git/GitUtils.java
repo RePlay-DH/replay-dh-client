@@ -26,8 +26,12 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.RemoteAddCommand;
+import org.eclipse.jgit.api.RemoteRemoveCommand;
 import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.TransportConfigCallback;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -35,6 +39,7 @@ import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.JschConfigSessionFactory;
 import org.eclipse.jgit.transport.OpenSshConfig.Host;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.SshTransport;
 import org.eclipse.jgit.transport.Transport;
@@ -198,6 +203,29 @@ public class GitUtils {
 		Path infoFile = gitDir.resolve(RDH_CLIENT_INFO_FILENAME);
 
 		return Files.exists(infoFile, LinkOption.NOFOLLOW_LINKS);
+	}
+
+	/**
+	 * Name of a special remote config that we use for temporary
+	 * storage of push or fetch info.
+	 */
+	public static final String TEMP_RDH_REMOTE = "tmp-rdh-remote";
+
+	public static boolean isTemporaryRemote(RemoteConfig rc) {
+		return TEMP_RDH_REMOTE.equals(rc.getName());
+	}
+
+	public static void cleanupTempRemote(Git git) throws GitAPIException {
+		RemoteRemoveCommand cmd = git.remoteRemove();
+		cmd.setName(TEMP_RDH_REMOTE);
+		cmd.call();
+	}
+
+	public RemoteConfig createTempRemote(Git git, URIish uri) throws GitAPIException {
+		RemoteAddCommand cmd = git.remoteAdd();
+		cmd.setName(TEMP_RDH_REMOTE);
+		cmd.setUri(uri);
+		return cmd.call();
 	}
 
 	/**
