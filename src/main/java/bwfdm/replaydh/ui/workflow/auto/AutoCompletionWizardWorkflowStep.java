@@ -211,6 +211,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		wizardWindow.setModal(true);
 		mainPanelWizard=this.createWizardPanel();
 		wizardWindow.add(mainPanelWizard);
+		objectsPanel.setVisible(false);
 		wizardWindow.pack();
 		wizardWindow.setTitle(rm.get("replaydh.wizard.metadataAutoWizard.title"));
 		wizardWindow.setLocationRelativeTo(null);
@@ -585,7 +586,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 				if(success) {
 					for(Identifiable result : results) {
 						System.out.println(result.getType());
-						//wizard.addIdentifiable(result, result.getType().getDisplayLabel());
+						wizard.addIdentifiable(result, Role.TOOL);
 					}
 				}
 			}
@@ -600,18 +601,22 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		sortedOutputs.clear();
 		switch (role) {
 		case PERSON:
+			toolPanel.setVisible(false);
         	sortedPersons.add((Person) identifiable);
 			break;
 
 		case TOOL:
+			personsPanel.setVisible(false);
 			sortedTools.add((Tool) identifiable);
 			break;
 
 		case INPUT:
+			personsPanel.setVisible(false);
 			sortedInputs.add((Resource) identifiable);
 			break;
 
 		case OUTPUT:
+			personsPanel.setVisible(false);
 			sortedOutputs.add((Resource) identifiable);
 			//contentChanged = true;
 			break;
@@ -1226,6 +1231,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
     		element.setHeaderString(header+" "+String.valueOf(i+1));
     		contentPanel.add(element.getViewPanel());
     	}
+    	objectsPanel.setVisible(true);
     	objectsPanel.revalidate();
     	Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, mainPanelWizard);
 		if (parentComponent != null) {
