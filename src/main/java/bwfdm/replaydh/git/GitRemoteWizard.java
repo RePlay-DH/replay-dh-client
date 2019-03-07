@@ -517,6 +517,8 @@ public abstract class GitRemoteWizard {
 				C context) {
 
 			Scope scope = (Scope)cbScope.getSelectedItem();
+
+			// Make sure we don't use the selection if situation prohibits WORKSPACE
 			if(!cbScope.isEnabled()) {
 				scope = null;
 			}

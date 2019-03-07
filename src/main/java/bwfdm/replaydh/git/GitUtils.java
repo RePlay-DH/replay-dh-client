@@ -147,8 +147,6 @@ public class GitUtils {
 
 	static final String INITIAL_COMMIT_HEADER = "Storing info for JGit adapter";
 
-	static final String FOREIGN_COMMIT_HEADER = "???";
-
 	/**
 	 * Marker for the commit that denotes the artificial initial
 	 * commit performed automatically be the client.

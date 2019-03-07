@@ -199,6 +199,11 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 				return null;
 			}
 
+			// If desired, we have to restrict updates to the current branch
+			if(context.scope==Scope.WORKSPACE) {
+				//TODO
+			}
+
 			command.setCheckFetchedObjects(true);
 //			command.isRemoveDeletedRefs(); //TODO for now we don't allow deleting local refs. Needs to change when we add deeper functionality
 
