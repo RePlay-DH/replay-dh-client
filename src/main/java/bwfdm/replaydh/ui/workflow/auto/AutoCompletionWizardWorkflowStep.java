@@ -26,8 +26,6 @@ import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -62,9 +60,7 @@ import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.core.FileResolutionWorker;
 import bwfdm.replaydh.ui.core.ResourceDragController;
 import bwfdm.replaydh.ui.core.ResourceDragController.Mode;
-import bwfdm.replaydh.ui.helper.ScrollablePanel;
 import bwfdm.replaydh.ui.helper.WrapLayout;
-import bwfdm.replaydh.ui.helper.ScrollablePanel.ScrollableSizeHint;
 import bwfdm.replaydh.ui.icons.IconRegistry;
 
 /**
@@ -112,8 +108,9 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
     	btnAddAutoInputResource = createButton(toolTipAddInputResource,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	btnAddAutoOutputResource = createButton(toolTipAddOutputResource,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	
-    	scrollablePanel = new ScrollablePanel();
-    	scrollablePanel.setScrollableWidth(ScrollableSizeHint.FIT);
+    	//scrollablePanel = new ScrollablePanel();
+    	//scrollablePanel.setScrollableWidth(ScrollableSizeHint.FIT);
+    	objectsPanel = new JPanel();
 	}
 
 	private JDialog wizardWindow;
@@ -137,9 +134,10 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	private GUIElementMetadata searchButton = null;
 	
 	private FormBuilder builderWizard;
+	private FormBuilder panelWizard;
 	
 	// Scrollable panel with all persons/tool/resources
-    private ScrollablePanel scrollablePanel;
+    private JPanel objectsPanel;
 	
 	// Panels with all persons, tool, input/output resources
     private CategoryPanel personsPanel;
@@ -251,6 +249,16 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		resetButton.createExtraButton(rm.get("replaydh.wizard.metadataAutoWizard.reset"));
 		resetButton.getExtraButton().addActionListener(this);
 		
+		panelWizard = FormBuilder.create();
+    	panelWizard.columns("pref:grow");
+    	panelWizard.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref");
+    	panelWizard.padding(Paddings.DLU4);
+    	panelWizard.add(personsPanel).xy(1, 1);
+    	panelWizard.add(toolPanel).xy(1, 3);
+    	panelWizard.add(inputResourcesPanel).xy(1, 5);
+    	panelWizard.add(outputResourcesPanel).xy(1, 7);
+    	objectsPanel=panelWizard.build();
+		
 		builderWizard.columns("pref:grow");
 		builderWizard.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
 		builderWizard.padding(Paddings.DLU4);
@@ -261,7 +269,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		builderWizard.add(resetButton.getPanel()).xy(1, 5);
 		builderWizard.add(searchButton.getPanel()).xy(1, 7);
 		elementsofproperty.put("defaultdd", dd);
-		builderWizard.add(scrollablePanel).xy(1, 9);
+		builderWizard.add(objectsPanel).xy(1, 9);
 		return builderWizard.build();
 		
 	}
@@ -346,7 +354,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 			if(empty == false) {
 				QuerySettings settings = new QuerySettings();
 				settings.setSchema(schema);
-				this.searchWithConstraints(settings, constraints);
+				this.searchWithConstraints(settings, constraints, this);
 			}
 		}
 	}
@@ -556,7 +564,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		return returnType;
 	}
 	
-	private void searchWithConstraints(QuerySettings settings, List<Constraint> constraints) {
+	private void searchWithConstraints(QuerySettings settings, List<Constraint> constraints, AutoCompletionWizardWorkflowStep wizard) {
 		
 		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
 
@@ -576,7 +584,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 			protected void done() {
 				if(success) {
 					for(Identifiable result : results) {
-						System.out.println(result.getSystemId());
+						System.out.println(result.getType());
+						//wizard.addIdentifiable(result, result.getType().getDisplayLabel());
 					}
 				}
 			}
@@ -585,7 +594,11 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	}
 	
 	private void addIdentifiable(Identifiable identifiable, Role role) {
-    	switch (role) {
+		sortedPersons.clear();
+		sortedTools.clear();
+		sortedInputs.clear();
+		sortedOutputs.clear();
+		switch (role) {
 		case PERSON:
         	sortedPersons.add((Person) identifiable);
 			break;
@@ -1056,13 +1069,14 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
     	updatePanel(outputResourcesPanel, outputResourceEditorElementsList, outputResourceElementHeader);
 
 
-    	Window window = SwingUtilities.getWindowAncestor(scrollablePanel);
+    	/*Window window = SwingUtilities.getWindowAncestor(scrollablePanel);
     	if(window!=null) {
     		window.revalidate();
     		window.repaint();
     	}
-
-    	scrollablePanel.requestFocusInWindow(); //put focus somewhere in Window, just to remove the focus from other JTextComponents
+    	scrollablePanel.requestFocusInWindow(); //put focus somewhere in Window, just to remove the focus from other JTextComponents*/
+    	
+    	
     }
     
     /*
@@ -1212,8 +1226,11 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
     		element.setHeaderString(header+" "+String.valueOf(i+1));
     		contentPanel.add(element.getViewPanel());
     	}
-
-    	panel.revalidate();
+    	objectsPanel.revalidate();
+    	Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, mainPanelWizard);
+		if (parentComponent != null) {
+			parentComponent.pack();
+		}
     }
     
     private void showResourceDialog(Role role, List<LocalFileObject> files) {
