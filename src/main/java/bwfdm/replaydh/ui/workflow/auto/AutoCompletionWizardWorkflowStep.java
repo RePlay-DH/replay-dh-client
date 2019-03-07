@@ -5,6 +5,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -15,6 +16,7 @@ import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
@@ -27,6 +29,9 @@ import bwfdm.replaydh.ui.workflow.auto.GUIElementMetadata;
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifiable.Type;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalogTestImpl;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Constraint;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 import bwfdm.replaydh.ui.GuiUtils;
 
@@ -35,11 +40,10 @@ import bwfdm.replaydh.ui.GuiUtils;
  * @author Florian Fritze
  *
  */
-public class AutoCompletionWizardWorkflowStep extends MetadataCatalogTestImpl implements ActionListener {
+public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	
 	public AutoCompletionWizardWorkflowStep(WorkflowSchema schema, RDHEnvironment environment) {
-		super(schema);
-		// TODO Auto-generated constructor stub
+		this.schema=schema;
 		this.environment=environment;
 	}
 
@@ -56,6 +60,7 @@ public class AutoCompletionWizardWorkflowStep extends MetadataCatalogTestImpl im
 	private JComboBox<String> ddKeys = new JComboBox<>();
 	
 	private RDHEnvironment environment;
+	private WorkflowSchema schema;
 	
 	private Identifiable.Type type = null;
 	
@@ -182,6 +187,28 @@ public class AutoCompletionWizardWorkflowStep extends MetadataCatalogTestImpl im
 		}
 		if (source == searchButton.getExtraButton()) {
 			System.out.println("Search!");
+			boolean empty=true;
+			List<Constraint> constraints = new ArrayList<>();
+			for(Iterator<GUIElementMetadata> elements = elementsofproperty.get("defaultdd").iterator();elements.hasNext();) {
+				GUIElementMetadata element=elements.next();
+				if(!(element.getTextfield().getText().isEmpty())) {
+					empty=false;
+					Constraint constraint;
+					if(this.environment.getLocale().getLanguage().equals(new Locale("de").getLanguage())) {
+						String key = getKeyddTypesDe(element.getKeysDropdown().getSelectedItem().toString());
+						constraint = new Constraint(key,element.getTextfield().getText());
+					} else {
+						String key = getKeyddTypesEng(element.getKeysDropdown().getSelectedItem().toString());
+						constraint = new Constraint(key,element.getTextfield().getText());
+					}
+					constraints.add(constraint);
+				}
+			}
+			if(empty == false) {
+				QuerySettings settings = new QuerySettings();
+				settings.setSchema(schema);
+				this.searchWithConstraints(settings, constraints);
+			}
 		}
 	}
 	
@@ -332,5 +359,89 @@ public class AutoCompletionWizardWorkflowStep extends MetadataCatalogTestImpl im
 		Parameter,
 		Namensversion,
 		Environment
+	}
+	
+	public static String getKeyddTypesEng(String type) {
+		String returnType = null;
+		switch(type) {
+		case "Title":
+			returnType="title";
+			break;
+		case "Name":
+			returnType="name";
+			break;
+		case "Type":
+			returnType="type";
+			break;
+		case "Identifier":
+			returnType="id";
+			break;
+		case "Parameter":
+			returnType="parameter";
+			break;
+		case "Nameversion":
+			returnType="namever";
+			break;
+		case "Environment":
+			returnType="env";
+			break;
+		}
+		return returnType;
+	}
+	
+	public static String getKeyddTypesDe(String type) {
+		String returnType = null;
+		switch(type) {
+		case "Titel":
+			returnType="title";
+			break;
+		case "Name":
+			returnType="name";
+			break;
+		case "Typ":
+			returnType="type";
+			break;
+		case "Identifier":
+			returnType="id";
+			break;
+		case "Parameter":
+			returnType="parameter";
+			break;
+		case "Namensversion":
+			returnType="namever";
+			break;
+		case "Environment":
+			returnType="env";
+			break;
+		}
+		return returnType;
+	}
+	
+	private void searchWithConstraints(QuerySettings settings, List<Constraint> constraints) {
+		
+		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+
+			boolean success=true;
+			MetadataCatalogTestImpl search = new MetadataCatalogTestImpl(settings.getSchema());
+			Result results = null;
+			@Override
+			protected Boolean doInBackground() throws Exception {
+				search.createObjects();
+				results=search.query(settings, constraints);
+				if(results.isEmpty()) {
+					success=false;
+				}
+				return success;
+			}
+			@Override
+			protected void done() {
+				if(success) {
+					for(Identifiable result : results) {
+						System.out.println(result.getSystemId());
+					}
+				}
+			}
+		};
+		worker.execute();
 	}
 }

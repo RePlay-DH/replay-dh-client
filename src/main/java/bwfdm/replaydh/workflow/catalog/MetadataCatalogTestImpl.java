@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.impl.DefaultPerson;
@@ -22,8 +21,6 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 
 	
 	public MetadataCatalogTestImpl(WorkflowSchema schema) {
-		super();
-		// TODO Auto-generated constructor stub
 		this.schema=schema;
 	}
 	
@@ -124,26 +121,38 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 		SimpleResult result = new SimpleResult();
 		if(constraints.get(0).getKey().equals("type")) {
 			constraints.get(0).getValue().equals("dataset/analysis");
-			for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-				if(!(output.getSystemId().equals(iter.next().getSystemId()))) {
-					result.add(output);
+			if(!(result.isEmpty())) {
+				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+					if(!(output.getSystemId().equals(iter.next().getSystemId()))) {
+						result.add(output);
+					}
 				}
+			} else {
+				result.add(output);
 			}
 		}
 		if(constraints.get(0).getKey().equals("parameter")) {
 			constraints.get(0).getValue().equals("-v -file path/to/my/dir/model.xml");
-			for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-				if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
-					result.add(tool);
+			if(!(result.isEmpty())) {
+				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+					if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+						result.add(tool);
+					}
 				}
+			} else {
+				result.add(tool);
 			}
 		}
 		if(constraints.get(0).getKey().equals("evironment")) {
 			constraints.get(0).getValue().equals("os.arch");
-			for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-				if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
-					result.add(tool);
+			if(!(result.isEmpty())) {
+				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+					if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+						result.add(tool);
+					}
 				}
+			} else {
+				result.add(tool);
 			}
 		}
 		return result;
