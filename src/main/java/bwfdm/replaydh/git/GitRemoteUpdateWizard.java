@@ -19,7 +19,6 @@
 package bwfdm.replaydh.git;
 
 import java.awt.Window;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -175,8 +174,9 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			"replaydh.wizard.gitRemoteUpdater.update.description") {
 
 		@Override
-		protected FetchCommand createGitCommand(GitRemoteUpdaterContext context)
-					throws GitException, URISyntaxException {
+		protected FetchCommand createGitCommand(
+				GitWorker<FetchResult,FetchCommand,GitRemoteUpdaterContext> worker) throws GitException {
+			GitRemoteUpdaterContext context = worker.context;
 			FetchCommand command = context.git.fetch();
 
 			URIish remoteUri = null;
@@ -208,13 +208,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 //			command.isRemoveDeletedRefs(); //TODO for now we don't allow deleting local refs. Needs to change when we add deeper functionality
 
 			return command;
-		};
-
-		@Override
-		protected GitMonitoringWorker<FetchResult,FetchCommand,GitRemoteUpdaterContext> createWorker(
-				RDHEnvironment environment, FetchCommand command, GitRemoteUpdaterContext context) {
-			return new GitMonitoringWorker<>(this, context, command);
-		};
+		}
 
 		@Override
 		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment,

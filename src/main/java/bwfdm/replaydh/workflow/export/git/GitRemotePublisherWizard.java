@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 
 import java.awt.Component;
 import java.awt.Window;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -136,8 +135,9 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 			"replaydh.wizard.gitRemotePublisher.export.description") {
 
 		@Override
-		protected PushCommand createGitCommand(GitRemotePublisherContext context)
-					throws GitException, URISyntaxException {
+		protected PushCommand createGitCommand(
+				GitWorker<Iterable<PushResult>,PushCommand,GitRemotePublisherContext> worker) throws GitException {
+			GitRemotePublisherContext context = worker.context;
 			PushCommand command = context.git.push();
 
 			URIish remoteUri = null;
@@ -165,12 +165,6 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 			command.setAtomic(true);
 
 			return command;
-		};
-
-		@Override
-		protected GitMonitoringWorker<Iterable<PushResult>,PushCommand,GitRemotePublisherContext> createWorker(
-				RDHEnvironment environment, PushCommand command, GitRemotePublisherContext context) {
-			return new GitMonitoringWorker<>(this, context, command);
 		};
 
 		@Override

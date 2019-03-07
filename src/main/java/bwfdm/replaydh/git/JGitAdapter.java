@@ -2016,7 +2016,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 //				Iterable<RevCommit> commits = git.log().all().call();
 
-				buildWorkflowGraph(revWalk, Constants.HEAD, false);
+				buildWorkflowGraph(revWalk, Constants.HEAD, true);
 
 				// Finally switch flag so we don't ever attempt to load the workflow a second time
 				workflowLoaded = true;
@@ -2034,10 +2034,12 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	}
 
 	private void buildWorkflowGraph(Iterable<RevCommit> source, String active,
-			boolean reportExistingNodes)
+			boolean incremental)
 				throws GitException, IOException {
 
-		resetStepLookup();
+		if(!incremental) {
+			resetStepLookup();
+		}
 
 		/*
 		 *  The 'source' will usually be an instance of RevWalk
@@ -2051,7 +2053,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		// Treat our initial commit special
 		final RevCommit initialCommit = resolve(GitUtils.TAG_SOURCE);
 
-		if(isVerbose()) {
+		if(isVerbose() && !incremental) {
 			StringBuilder sb = new StringBuilder("----- Commits for graph -----");
 			for(RevCommit commit : commits) {
 				sb.append("\n  ").append(commit);
@@ -2071,7 +2073,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 			// Sanity check against duplicate step creation (should normally never happen)
 			if(lookupStep(commit)!=null) {
-				if(isVerbose()) {
+				if(isVerbose() && !incremental) {
 					log.info("Redundant graph node for commit: {}", commit);
 				}
 				continue;

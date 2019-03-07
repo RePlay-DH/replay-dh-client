@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,7 +46,6 @@ import javax.swing.SwingWorker.StateValue;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.GitCommand;
 import org.eclipse.jgit.api.RemoteAddCommand;
-import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Repository;
@@ -615,9 +615,39 @@ public abstract class GitRemoteWizard {
 			return worker!=null && !worker.isDone() && worker.getState()!=StateValue.PENDING;
 		}
 
-		protected abstract G createGitCommand(C context) throws GitException, URISyntaxException;
+		protected GitWorker<T, G, C> createWorker(RDHEnvironment environment, C context) {
+			return defaultCreateWorker(environment, context);
+		}
 
-		protected abstract GitWorker<T, G, C> createWorker(RDHEnvironment environment, G command, C context);
+		protected final GitWorker<T, G, C> defaultCreateWorker(RDHEnvironment environment, C context) {
+			return new GitWorker<>(environment, context, this::createGitCommand,
+					this::handleWorkerResult, this::handleWorkerChunks);
+		}
+
+		protected abstract G createGitCommand(GitWorker<T, G, C> worker) throws GitException;
+
+		protected void handleWorkerChunks(List<String> chunks) {
+			if(!chunks.isEmpty()) {
+				taInfo.setText(chunks.get(chunks.size()-1));
+			}
+		}
+
+		protected void handleWorkerResult(GitWorker<T, G, C> worker) {
+			ResourceManager rm = ResourceManager.getInstance();
+
+			// Store last displayed info
+			worker.context.finalMessage = taInfo.getText();
+
+			taInfo.setText(rm.get("replaydh.wizard.gitRemote.execute.workerFinished"));
+
+			refreshNextEnabled();
+			refreshPreviousEnabled();
+
+			bTransmit.setEnabled(false);
+			bTransmit.setIcon(null);
+			bTransmit.setText("-");
+			bTransmit.setToolTipText(null);
+		}
 
 		@Override
 		public void refresh(RDHEnvironment environment, C context) {
@@ -625,17 +655,7 @@ public abstract class GitRemoteWizard {
 
 			ResourceManager rm = ResourceManager.getInstance();
 
-			G command = null;
-			try {
-				command = createGitCommand(context);
-			} catch (GitException | URISyntaxException e) {
-				log.error("Failed to prepare git command", e);
-				context.error = e;
-			}
-
-			if(command!=null) {
-				worker = createWorker(environment, command, context);
-			}
+			worker = createWorker(environment, context);
 
 			bTransmit.setText(rm.get("replaydh.labels.start"));
 			bTransmit.setEnabled(worker!=null);
@@ -667,22 +687,76 @@ public abstract class GitRemoteWizard {
 		};
 	};
 
-	protected static abstract class GitWorker<T, G extends GitCommand<T>, C extends GitRemoteContext<T>>
-			extends SwingWorker<T, String> {
-		private final PerformOperationStep<T, G, C> step;
-		protected final C context;
+	@FunctionalInterface
+	public interface CommandGenerator<T, G extends GitCommand<T>, C extends GitRemoteContext<T>> {
+		G createCommand(GitWorker<T, G, C> worker) throws GitException;
+	}
 
-		protected GitWorker(PerformOperationStep<T, G, C> step, C context) {
-			this.step = step;
-			this.context = context;
+	@FunctionalInterface
+	public interface ResultHandler<T, G extends GitCommand<T>, C extends GitRemoteContext<T>> {
+		void handleResult(GitWorker<T, G, C> worker);
+	}
+
+	public static class GitWorker<T, G extends GitCommand<T>, C extends GitRemoteContext<T>>
+			extends SwingWorker<T, String>  implements ProgressMonitor {
+
+		protected final CommandGenerator<T, G, C> commandGen;
+		protected final ResultHandler<T, G, C> resultHandler;
+		protected final Consumer<List<String>> chunkHandler;
+		public final RDHEnvironment environment;
+		public final C context;
+
+		private boolean doMonitor = true;
+
+		protected GitWorker(
+				RDHEnvironment environment,
+				C context,
+				CommandGenerator<T, G, C> commandGen,
+				ResultHandler<T, G, C> resultHandler,
+				Consumer<List<String>> chunkHandler) {
+			this.environment = requireNonNull(environment);
+			this.context = requireNonNull(context);
+			this.commandGen = requireNonNull(commandGen);
+			this.resultHandler = requireNonNull(resultHandler);
+			this.chunkHandler = chunkHandler;
+		}
+
+		public GitWorker<T, G, C> monitor(boolean doMonitor) {
+			this.doMonitor = doMonitor;
+			return this;
+		}
+
+		@Override
+		protected T doInBackground() throws Exception {
+			G command = commandGen.createCommand(this);
+
+			if(command==null)
+				throw new IllegalStateException("COnstruction of Git command failed");
+
+			if(doMonitor) {
+				attachProgressMonitor(command);
+			}
+
+			return command.call();
+		}
+
+		protected void attachProgressMonitor(G command) {
+			try {
+				command.getClass().getMethod("setProgressMonitor", ProgressMonitor.class).invoke(command, this);
+			} catch (IllegalAccessException | IllegalArgumentException | SecurityException e) {
+				log.error("Unable to access method to attach progress monitor", e);
+			} catch (InvocationTargetException e) {
+				log.error("Unexpected error while attaching progress monitor", e.getCause());
+			} catch (NoSuchMethodException e) {
+				log.error("Command is missing method to attach progress monitor: {}", command.getClass(), e);
+			}
 		}
 
 		@Override
 		protected final void done() {
-			ResourceManager rm = ResourceManager.getInstance();
-
 			try {
 				context.result = get();
+				context.commandCompleted = true;
 			} catch (InterruptedException | CancellationException e) {
 				/*
 				 *  Assumed to be user-originated cancellation.
@@ -699,31 +773,18 @@ public abstract class GitRemoteWizard {
 						context.getRemote(), e.getCause());
 			}
 
-			// Store last displayed info
-			context.finalMessage = step.taInfo.getText();
-
-			step.taInfo.setText(rm.get("replaydh.wizard.gitRemote.execute.workerFinished"));
-
-			step.refreshNextEnabled();
-			step.refreshPreviousEnabled();
-
-			step.bTransmit.setEnabled(false);
-			step.bTransmit.setIcon(null);
-			step.bTransmit.setText("-");
-			step.bTransmit.setToolTipText(null);
+			resultHandler.handleResult(this);
 		};
 
 		@Override
 		protected void process(List<String> chunks) {
-			if(!chunks.isEmpty()) {
-				step.taInfo.setText(chunks.get(chunks.size()-1));
+			if(chunkHandler!=null) {
+				chunkHandler.accept(chunks);
 			}
 		};
-	}
 
-	protected static class GitMonitoringWorker<T, G extends TransportCommand<G, T>, C extends GitRemoteContext<T>>
-			extends GitWorker<T, G, C> implements ProgressMonitor {
 
+		// PROGRESS MONITOR STUFF
 
 		/** total number of tasks */
 		private int totalTasks = -1;
@@ -735,13 +796,6 @@ public abstract class GitRemoteWizard {
 		private final List<String> tasks = new ArrayList<>();
 
 		private String task;
-
-		private final G command;
-
-		public GitMonitoringWorker(PerformOperationStep<T, G, C> step, C context, G command) {
-			super(step, context);
-			this.command = requireNonNull(command);
-		}
 
 		/**
 		 * @see org.eclipse.jgit.lib.ProgressMonitor#start(int)
@@ -815,32 +869,6 @@ public abstract class GitRemoteWizard {
 			}
 
 			publish(sb.toString());
-		}
-
-		protected void attachProgressMonitor() {
-			try {
-				command.getClass().getMethod("setProgressMonitor", ProgressMonitor.class).invoke(command, this);
-			} catch (IllegalAccessException | IllegalArgumentException | SecurityException e) {
-				log.error("Unable to access method to attach progress monitor", e);
-			} catch (InvocationTargetException e) {
-				log.error("Unexpected error while attaching progress monitor", e.getCause());
-			} catch (NoSuchMethodException e) {
-				log.error("Command is missing method to attach progress monitor: {}", command.getClass(), e);
-			}
-		}
-
-		/**
-		 * @see javax.swing.SwingWorker#doInBackground()
-		 */
-		@Override
-		protected T doInBackground() throws Exception {
-			attachProgressMonitor();
-
-			T result = command.call();
-
-			context.commandCompleted = true;
-
-			return result;
 		}
 	}
 
