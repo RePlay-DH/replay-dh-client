@@ -505,25 +505,62 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     }//actionPerformed
 
     public void addIdentifiable(Identifiable identifiable, Role role) {
+    	boolean found=false;
     	switch (role) {
 		case PERSON:
-			workflowStepEditable.addPerson((Person) identifiable);
-        	sortedPersons.add((Person) identifiable);
+			if(!(sortedPersons.isEmpty())) {
+				for(Identifiable object : sortedPersons) {
+					if(object.equals(identifiable)) {
+						found=true;
+					}
+				}
+			}
+			if (found == false) {
+				workflowStepEditable.addPerson((Person) identifiable);
+	        	sortedPersons.add((Person) identifiable);
+			}
 			break;
 
 		case TOOL:
-			workflowStepEditable.setTool((Tool) identifiable);
-			sortedTools.add((Tool) identifiable);
+			if(!(sortedTools.isEmpty())) {
+				for(Identifiable object : sortedTools) {
+					if(object.equals(identifiable)) {
+						found=true;
+					}
+				}
+			}
+			if (found == false) {
+				workflowStepEditable.setTool((Tool) identifiable);
+				sortedTools.add((Tool) identifiable);
+			}
 			break;
 
 		case INPUT:
-			workflowStepEditable.addInput((Resource) identifiable);
-			sortedInputs.add((Resource) identifiable);
+			if(!(sortedInputs.isEmpty())) {
+				for(Identifiable object : sortedInputs) {
+					if(object.equals(identifiable)) {
+						found=true;
+					}
+				}
+			}
+			if (found == false) {
+				workflowStepEditable.addInput((Resource) identifiable);
+				sortedInputs.add((Resource) identifiable);
+			}
 			break;
 
 		case OUTPUT:
-			workflowStepEditable.addOutput((Resource) identifiable);
-			sortedOutputs.add((Resource) identifiable);
+			if(!(sortedOutputs.isEmpty())) {
+				for(Identifiable object : sortedOutputs) {
+					if(object.equals(identifiable)) {
+						found=true;
+					}
+				}
+			}
+			if (found == false) {
+				workflowStepEditable.addOutput((Resource) identifiable);
+				sortedOutputs.add((Resource) identifiable);
+			}
 			contentChanged = true;
 			break;
 
@@ -1098,13 +1135,21 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	copyWorkflowStepParameters(workflowStepOrig, workflowStepEditable);
 
     	sortedPersons.clear();
-    	sortedPersons.addAll(workflowStepEditable.getPersons());
+    	if(workflowStepEditable.getPersons() != null) {
+    		sortedPersons.addAll(workflowStepEditable.getPersons());
+    	}
     	sortedTools.clear();
-    	sortedTools.add(workflowStepEditable.getTool());
+    	if(workflowStepEditable.getTool() != null) {
+    		sortedTools.add(workflowStepEditable.getTool());
+    	}
     	sortedInputs.clear();
-    	sortedInputs.addAll(workflowStepEditable.getInput());
+    	if(workflowStepEditable.getInput() != null) {
+    		sortedInputs.addAll(workflowStepEditable.getInput());
+    	}
     	sortedOutputs.clear();
-    	sortedOutputs.addAll(workflowStepEditable.getOutput());
+    	if(workflowStepEditable.getOutput() != null) {
+    		sortedOutputs.addAll(workflowStepEditable.getOutput());
+    	}
 
     	updateEditorModel(workflowStepEditable);
     }
