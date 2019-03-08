@@ -129,6 +129,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	private WorkflowSchema schema;
 	
 	private Identifiable.Type type = null;
+	private Identifiable.Role role = null;
 	
 	private GUIElementMetadata resetButton = null;
 	private GUIElementMetadata searchButton = null;
@@ -205,8 +206,9 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
     private JButton btnAddAutoOutputResource = null;
     private JButton btnAddAutoTool = null;
     
-	public void createWizard(WorkflowSchema schema, Identifiable.Type type) {
+	public void createWizard(WorkflowSchema schema, Identifiable.Role role, Identifiable.Type type) {
 		this.type=type;
+		this.role=role;
 		wizardWindow = new JDialog();
 		wizardWindow.setModal(true);
 		mainPanelWizard=this.createWizardPanel();
@@ -334,7 +336,6 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 			}
 		}
 		if (source == searchButton.getExtraButton()) {
-			System.out.println("Search!");
 			boolean empty=true;
 			List<Constraint> constraints = new ArrayList<>();
 			for(Iterator<GUIElementMetadata> elements = elementsofproperty.get("defaultdd").iterator();elements.hasNext();) {
@@ -585,8 +586,43 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 			protected void done() {
 				if(success) {
 					for(Identifiable result : results) {
-						System.out.println(result.getType());
-						wizard.addIdentifiable(result, Role.TOOL);
+						switch (role) {
+						case PERSON:
+							toolPanel.setVisible(false);
+							inputResourcesPanel.setVisible(false);
+							outputResourcesPanel.setVisible(false);
+							if(result.getType().equals(Type.PERSON)) {
+								wizard.addIdentifiable(result, Role.PERSON);
+							}
+							break;
+
+						case TOOL:
+							personsPanel.setVisible(false);
+							inputResourcesPanel.setVisible(false);
+							outputResourcesPanel.setVisible(false);
+							if(result.getType().equals(Type.TOOL)) {
+								wizard.addIdentifiable(result, Role.TOOL);
+							}
+							break;
+
+						case INPUT:
+							toolPanel.setVisible(false);
+							personsPanel.setVisible(false);
+							outputResourcesPanel.setVisible(false);
+							if(result.getType().equals(Type.RESOURCE)) {
+								wizard.addIdentifiable(result, Role.INPUT);
+							}
+							break;
+
+						case OUTPUT:
+							toolPanel.setVisible(false);
+							personsPanel.setVisible(false);
+							inputResourcesPanel.setVisible(false);
+							if(result.getType().equals(Type.RESOURCE)) {
+								wizard.addIdentifiable(result, Role.OUTPUT);
+							}
+							break; 
+						}
 					}
 				}
 			}
