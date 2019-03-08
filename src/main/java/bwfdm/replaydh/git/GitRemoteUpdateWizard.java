@@ -19,9 +19,9 @@
 package bwfdm.replaydh.git;
 
 import java.awt.Window;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -37,11 +37,18 @@ import javax.swing.SwingWorker;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.diff.Sequence;
+import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.merge.MergeStrategy;
+import org.eclipse.jgit.merge.ResolveMerger;
+import org.eclipse.jgit.merge.ResolveMerger.MergeFailureReason;
+import org.eclipse.jgit.merge.ThreeWayMerger;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
@@ -74,7 +81,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 				parent, "gitRemoteUpdaterWizard",
 				ResourceManager.getInstance().get("replaydh.wizard.gitRemoteUpdater.title"),
 				environment,
-				CHOOSE_REMOTE, SELECT_SCOPE, UPDATE, FINISH);
+				CHOOSE_REMOTE, SELECT_SCOPE, UPDATE, CHECK_MERGE);
 		return wizard;
 	}
 
@@ -86,7 +93,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		/** Backup pointer to head before the pull attempt */
 		public RevCommit currentHead;
 
-		public MergeResult mergeDryRunResult;
+		List<MergeDryRunResult> mergeDryRunResults = new ArrayList<>();
 
 		public MergeResult mergeResult;
 
@@ -97,6 +104,81 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		public GitRemoteUpdaterContext(RDHEnvironment environment) {
 			super(environment);
 		}
+	}
+
+	static class MergeDryRunResult {
+		String localBranch;
+		String remoteBranch;
+		ObjectId localId;
+		ObjectId remoteId;
+		Mergable mergable = Mergable.UNKNOWN;
+
+		// Low-level fields that are not part of toString()
+
+		Throwable error;
+		Conflict conflict;
+
+		/**
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return String.format("%s -> %s %s [%s / %s]",
+					localBranch, remoteBranch, mergable, localId, remoteId);
+		}
+	}
+
+	static class Conflict {
+		/**
+		 * @see ResolveMerger#getCommitNames()
+		 */
+		final String commitNames[];
+
+		/**
+		 * @see ResolveMerger#getUnmergedPaths()
+		 */
+		final List<String> unmergedPaths;
+
+		/**
+		 * @see ResolveMerger#getModifiedFiles()
+		 */
+		final List<String> modifiedFiles;
+
+		/**
+		 * @see ResolveMerger#getToBeCheckedOut()
+		 */
+		final Map<String, DirCacheEntry> toBeCheckedOut;
+
+		/**
+		 * @see ResolveMerger#getMergeResults()
+		 */
+		final Map<String, org.eclipse.jgit.merge.MergeResult<? extends Sequence>> mergeResults;
+
+		/**
+		 * @see ResolveMerger#getFailingPaths()
+		 */
+		final Map<String, MergeFailureReason> failingPaths;
+
+		Conflict(ResolveMerger merger) {
+			commitNames = merger.getCommitNames();
+			unmergedPaths = merger.getUnmergedPaths();
+			modifiedFiles = merger.getModifiedFiles();
+			toBeCheckedOut = merger.getToBeCheckedOut();
+			mergeResults = merger.getMergeResults();
+			failingPaths = merger.getFailingPaths();
+		}
+	}
+
+	static enum Mergable {
+		/** Initial state */
+		UNKNOWN,
+		/** Merging failed with conflicts */
+		CONFLICTING,
+		/** Merging failed for other reasons (see 'error' */
+		FAILED,
+		/** Merge possible */
+		OK,
+		;
 	}
 
 	/**
@@ -194,27 +276,34 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			}
 
 			command.setCheckFetchedObjects(true);
-//			command.isRemoveDeletedRefs(); //TODO for now we don't allow deleting local refs. Needs to change when we add deeper functionality
+			command.isRemoveDeletedRefs(); // Needed to keep track of our counter branch
 
 			return command;
 		}
 
 		@Override
+		protected void handleWorkerResult(GitWorker<FetchResult,FetchCommand,GitRemoteUpdaterContext> worker) {
+			super.handleWorkerResult(worker);
+			control.invokeNext(CHECK_MERGE);
+		};
+
+
+		@Override
 		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment,
 				GitRemoteUpdaterContext context) {
 			// TODO is all the needed info already stored in the context?
-			return FINISH;
+			return CHECK_MERGE;
 		}
 	};
 
 	/**
 	 * Analyze the FetchResult and propose ways to fix any issues.
 	 */
-	private static final GitRemoteStep<FetchResult, GitRemoteUpdaterContext> FINISH
+	private static final GitRemoteStep<FetchResult, GitRemoteUpdaterContext> CHECK_MERGE
 		= new GitRemoteStep<FetchResult, GitRemoteUpdaterContext>(
-			"finish",
-			"replaydh.wizard.gitRemoteUpdater.finish.title",
-			"replaydh.wizard.gitRemoteUpdater.finish.description") {
+			"checkMerge",
+			"replaydh.wizard.gitRemoteUpdater.checkMerge.title",
+			"replaydh.wizard.gitRemoteUpdater.checkMerge.description") {
 
 		private JTextArea taHeader;
 		private ErrorPanel epInfo;
@@ -226,7 +315,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			taHeader = GuiUtils.createTextArea("");
 
 			lIcon = new JLabel();
-			lIcon.setIcon(IconRegistry.getGlobalRegistry().getIcon("loading-16.gif"));
+			lIcon.setIcon(IconRegistry.getGlobalRegistry().getIcon("loading-64.gif"));
 
 			epInfo = new ErrorPanel();
 
@@ -330,48 +419,6 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		}
 
 		/**
-		 * Extract all the {@link TrackingRefUpdate} that indicate changed data.
-		 * @param updatesByResultType
-		 * @return
-		 */
-		private List<TrackingRefUpdate> getUpdatedRefs(Map<Result, List<TrackingRefUpdate>> updatesByResultType) {
-			List<TrackingRefUpdate> updatedRefs = new ArrayList<>();
-
-			CHANGED.forEach(result -> updatedRefs.addAll(updatesByResultType.getOrDefault(
-					result, Collections.emptyList())));
-
-			return updatedRefs;
-		}
-
-		/**
-		 * Extract pairs of refs that need to be merged. The {@code mergeMap} is expected to
-		 * map from local to remote refs.
-		 *
-		 * @param updatedRefs
-		 * @param mergeMap
-		 */
-		private List<TrackingRefUpdate> extractMergeRefs(List<TrackingRefUpdate> updatedRefs) {
-			return updatedRefs.stream()
-				.filter(refUpdate -> {
-					ObjectId oldId = refUpdate.getOldObjectId();
-					ObjectId newId = refUpdate.getNewObjectId();
-
-					// Previously empty, should be no problem to merge
-					if(oldId==ObjectId.zeroId()) {
-						return false;
-					}
-
-					// Not sure if we'll ever encounter that case, but just to make sure
-					if(oldId.equals(newId)) {
-						return false;
-					}
-
-					return true;
-				})
-				.collect(Collectors.toList());
-		}
-
-		/**
 		 * Checks whether we can merge all the updated refs
 		 */
 		private void doDryRun(RDHEnvironment environment, GitRemoteUpdaterContext context,
@@ -396,7 +443,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 					// Figure out IF we need to merge
 
-
+					// Back to square 1: we might have artifacts from an earlier fetch
 					List<RefSpec> refSpecs;
 					if(context.scope==Scope.WORKSPACE) {
 						refSpecs = Arrays.asList(new RefSpec(context.branch));
@@ -404,27 +451,51 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 						refSpecs = context.remoteConfig.getFetchRefSpecs();
 					}
 
-					refSpecs.forEach(System.out::println);
+//					refSpecs.forEach(System.out::println);
 
-					// All the refs we might potentially have to merge
+					/*
+					 *  All the refs we might potentially have to merge.
+					 *  Maps from remote ref to local branch names
+					 */
+					final List<RemoteRefUpdate> refUpdates =
+							Transport.findRemoteRefUpdatesFor(repo, refSpecs, null)
+								.stream()
+								// Ignore all marker branches for merging (as they don't point to movable commits)
+								.filter(refUpdate -> !GitUtils.isRdhMarkerBranch(refUpdate.getSrcRef()))
+								.collect(Collectors.toList());
 
-					// Maps from remote ref to local branch
-					final List<RemoteRefUpdate> refUpdates = new ArrayList<>(
-							Transport.findRemoteRefUpdatesFor(repo, refSpecs, null));
 
-					System.out.println(repo.getConfig().toText());
+					try(RevWalk rw = new RevWalk(repo)) {
+						for(RemoteRefUpdate refUpdate : refUpdates) {
+							ObjectId srcId = repo.resolve(refUpdate.getSrcRef());
+							ObjectId remoteId = repo.resolve(refUpdate.getRemoteName());
 
-					if(!updatesByResultType.isEmpty()) {
-						// We got tracking updates, now base our merge on that
-						extractMergeRefs(getUpdatedRefs(updatesByResultType))
-							.stream()
-							.filter(this::isNotNeededInMerge)
-							.forEach(tru -> {
+							// Ignore full deletions or creation of new files
+							if(srcId==ObjectId.zeroId() || remoteId==ObjectId.zeroId()) {
+								continue;
+							}
 
-							});
+							RevCommit ours = rw.parseCommit(srcId);
+							RevCommit theirs = rw.parseCommit(remoteId);
+
+							if(rw.isMergedInto(ours, theirs)) {
+								continue;
+							}
+
+							MergeDryRunResult dryRunResult = new MergeDryRunResult();
+							dryRunResult.localBranch = refUpdate.getSrcRef();
+							dryRunResult.remoteBranch = refUpdate.getRemoteName();
+							dryRunResult.localId = srcId;
+							dryRunResult.remoteId = remoteId;
+
+							context.mergeDryRunResults.add(dryRunResult);
+						}
+						rw.dispose();
 					}
 
-					if(refUpdates.isEmpty()) {
+					context.mergeDryRunResults.forEach(System.out::println);
+
+					if(context.mergeDryRunResults.isEmpty()) {
 						return null;
 					}
 
@@ -449,41 +520,45 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 					 *         branch and ask user to switch to the conflicting branch later.
 					 */
 
-					for(RemoteRefUpdate toBeMerged : refUpdates) {
-//						ThreeWayMerger merger = MergeStrategy.RECURSIVE.newMerger(repo, true);
-//
-//						ObjectId ours = pairToBeMerged.getKey();
-//						ObjectId theirs = pairToBeMerged.getValue();
-//
-//						if(!merger.merge(ours, theirs)) {
-//
-//						}
+					for(MergeDryRunResult dryRunResult : context.mergeDryRunResults) {
+						// In-memory merge dry run
+						ThreeWayMerger merger = MergeStrategy.RECURSIVE.newMerger(repo, true);
+
+						if(merger instanceof ResolveMerger) {
+							((ResolveMerger)merger).setCommitNames(new String[] {
+									"BASE", "HEAD", dryRunResult.remoteBranch });
+						}
+
+						try {
+							boolean noProblems = merger.merge(dryRunResult.localId, dryRunResult.remoteId);
+
+							if(noProblems) {
+								// All went well, rejoice
+								dryRunResult.mergable = Mergable.OK;
+							} else if(merger instanceof ResolveMerger) {
+								// We failed to merge, but inspecting the ResolveMerger should give additional hints
+								ResolveMerger resolveMerger = (ResolveMerger) merger;
+								dryRunResult.conflict = new Conflict(resolveMerger);
+								if(resolveMerger.failed()) {
+									// Non-conflicting errors
+									dryRunResult.mergable = Mergable.FAILED;
+								} else {
+									// Content conflicts, from this we can recover via help from user
+									dryRunResult.mergable = Mergable.CONFLICTING;
+								}
+							} else {
+								// We failed and we have no damn clue as to why...
+								dryRunResult.mergable = Mergable.FAILED;
+							}
+						} catch(IOException e) {
+							// Serious issue: merger couldn't even complete its job
+							log.error("Error during merge dry run on {}", dryRunResult, e);
+							dryRunResult.error = e;
+							dryRunResult.mergable = Mergable.FAILED;
+						}
 					}
 
-					// TODO Auto-generated method stub
 					return null;
-				}
-
-				private boolean isNotNeededInMerge(TrackingRefUpdate refUpdate) {
-					ObjectId oldId = refUpdate.getOldObjectId();
-					ObjectId newId = refUpdate.getNewObjectId();
-
-					// Previously empty, should be no problem to merge
-					if(oldId==ObjectId.zeroId()) {
-						return true;
-					}
-
-					// Not sure if we'll ever encounter that case, but just to make sure
-					if(oldId.equals(newId)) {
-						return true;
-					}
-
-					// Deletion, also not an issue content-wise
-					if(newId==ObjectId.zeroId()) {
-						return true;
-					}
-
-					return false;
 				}
 
 				@Override
@@ -506,5 +581,51 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 				GitRemoteUpdaterContext context) {
 			return null;
 		}
+	};
+
+	/**
+	 * Analyze the FetchResult and propose ways to fix any issues.
+	 */
+	private static final GitRemoteStep<FetchResult, GitRemoteUpdaterContext> RESOLVE_CONFLICTS
+		= new GitRemoteStep<FetchResult, GitRemoteUpdaterContext>(
+			"resolveConflicts",
+			"replaydh.wizard.gitRemoteUpdater.resolveConflicts.title",
+			"replaydh.wizard.gitRemoteUpdater.resolveConflicts.description") {
+
+		@Override
+		protected JPanel createPanel() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment, GitRemoteUpdaterContext context) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+	};
+
+	/**
+	 * Analyze the FetchResult and propose ways to fix any issues.
+	 */
+	private static final GitRemoteStep<FetchResult, GitRemoteUpdaterContext> FINISH
+		= new GitRemoteStep<FetchResult, GitRemoteUpdaterContext>(
+			"finish",
+			"replaydh.wizard.gitRemoteUpdater.finish.title",
+			"replaydh.wizard.gitRemoteUpdater.finish.description") {
+
+		@Override
+		protected JPanel createPanel() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment, GitRemoteUpdaterContext context) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
 	};
 }

@@ -407,6 +407,7 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 	}
 
 	private void refreshActions() {
+		final Workflow workflow = getWorkflow();
 		final Object selectedCell = getSelectedCell();
 		final WorkflowStep selectedStep = getSelectedStep();
 		final WorkflowStep activeStep = workflow==null ? null : workflow.getActiveStep();
@@ -425,7 +426,7 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 
 		boolean isSingleUncompressedStep = isSingleSelectedStep && !canExpandStep;
 
-		boolean isWorkflowEmpty = WorkflowUtils.isEmpty(getWorkflow());
+		boolean isWorkflowEmpty = workflow!=null && WorkflowUtils.isEmpty(getWorkflow());
 
 		boolean activeStepIsLeaf = activeStep!=null && WorkflowUtils.isLeaf(activeStep);
 

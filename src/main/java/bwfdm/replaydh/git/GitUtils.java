@@ -194,6 +194,16 @@ public class GitUtils {
 		return denormalizer.apply(path);
 	}
 
+	public static boolean isRdhBranch(String branch) {
+		branch = Repository.shortenRefName(branch);
+		return branch.startsWith(RDH_NAMESPACE);
+	}
+
+	public static boolean isRdhMarkerBranch(String branch) {
+		branch = Repository.shortenRefName(branch);
+		return branch.startsWith(BRANCH_COUNTER_PREFIX);
+	}
+
 	public static boolean isGitRepository(Path dir) {
 		return FileKey.isGitRepository(dir.toFile(), FS.DETECTED);
 	}
@@ -221,7 +231,7 @@ public class GitUtils {
 		cmd.call();
 	}
 
-	public RemoteConfig createTempRemote(Git git, URIish uri) throws GitAPIException {
+	public static RemoteConfig createTempRemote(Git git, URIish uri) throws GitAPIException {
 		RemoteAddCommand cmd = git.remoteAdd();
 		cmd.setName(TEMP_RDH_REMOTE);
 		cmd.setUri(uri);
