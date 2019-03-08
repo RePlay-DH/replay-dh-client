@@ -28,13 +28,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import bwfdm.replaydh.core.RDHEnvironment;
+import bwfdm.replaydh.git.GitRemotePublisherWizard.GitRemotePublisherContext;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.workflow.export.ExportException;
 import bwfdm.replaydh.workflow.export.ResourcePublisher;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
-import bwfdm.replaydh.workflow.export.git.GitRemotePublisherWizard;
-import bwfdm.replaydh.workflow.export.git.GitRemotePublisherWizard.GitRemotePublisherContext;
 
 /**
  * @author Markus Gärtner
