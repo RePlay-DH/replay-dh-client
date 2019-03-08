@@ -44,14 +44,17 @@ import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.border.Border;
 import javax.swing.event.DocumentEvent;
 import javax.swing.text.JTextComponent;
@@ -82,6 +85,8 @@ import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
 import bwfdm.replaydh.workflow.Tool;
 import bwfdm.replaydh.workflow.WorkflowStep;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalogTestImpl;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
 import bwfdm.replaydh.workflow.impl.DefaultPerson;
 import bwfdm.replaydh.workflow.impl.DefaultResource;
 import bwfdm.replaydh.workflow.impl.DefaultTool;
@@ -118,6 +123,11 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     Dimension buttonPreferredSize = new Dimension(16,16);
     Dimension buttonBigPreferredSize = new Dimension(32,32);
 
+    private MetadataCatalogTestImpl search;
+    
+    private JPopupMenu popupTitle;
+    private JMenu MenuForAll;
+    
     // Icons
     private Icon iconRemove = IconRegistry.getGlobalRegistry().getIcon("list-remove-5.png");
     private Icon iconAdd = IconRegistry.getGlobalRegistry().getIcon("list-add.png");
@@ -243,9 +253,11 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	this.environment = requireNonNull(environment);
 
     	ResourceManager rm = ResourceManager.getInstance();
+    	
+    	search = new MetadataCatalogTestImpl(environment.getWorkspace().getSchema());
 
     	// Set correct schema in the "setEdititngItem" method
-    	schema = null;//set workflow schema
+    	schema = environment.getWorkspace().getSchema();//set workflow schema
 
     	contentChanged = false;
     	inputCorrect = true;
@@ -264,6 +276,12 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	titleTextField = new JTextField();
     	titleTextField.getDocument().addDocumentListener(documentAdapter);
     	titleTextField.addFocusListener(focusListener);
+    	
+    	popupTitle = new JPopupMenu();
+    	titleTextField.add(popupTitle);
+    	titleTextField.setComponentPopupMenu(popupTitle);
+    	MenuForAll = new JMenu();
+    	popupTitle.add(MenuForAll);
 
     	descriptionTextArea = new JTextArea();
     	descriptionTextArea.getDocument().addDocumentListener(documentAdapter);
@@ -360,6 +378,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	editorComponent.setPreferredSize(new Dimension(600, 600));
     	editorComponent.revalidate();
     	editorComponent.setMinimumSize(new Dimension(600, 600));
+    	
     }
 
 
@@ -394,6 +413,10 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	if(editorControl!=null) {
     		editorControl.setApplyEnabled(inputCorrect);
     	}
+    	MenuForAll.removeAll();
+		QuerySettings settings = new QuerySettings();
+		settings.setSchema(schema);
+		this.suggestSearch(settings, null, "title", titleTextField.getText());
     }
 
 
@@ -1433,6 +1456,8 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 		sortedTools.clear();
 		sortedInputs.clear();
 		sortedOutputs.clear();
+		
+		this.popupTitle.hide();
 
 		return;
 
@@ -1862,4 +1887,36 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
 	}
 
+	
+	private void suggestSearch(QuerySettings settings, Identifiable context, String key, String valuePrefix) {
+
+		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>() {
+
+			boolean success = true;
+			List<String> results = null;
+
+			@Override
+			protected Boolean doInBackground() throws Exception {
+				results = search.suggest(settings, null, key, valuePrefix);
+				if (results.isEmpty()) {
+					success = false;
+				}
+				System.out.println("Suggest!");
+				return success;
+			}
+
+			@Override
+			protected void done() {
+				for(String value: results) {
+					MenuForAll.add(value);
+				}
+				switch(key) {
+				case "title":
+					popupTitle.show(titleTextField, 1, 1);
+					break;
+				}
+			}
+		};
+		worker.execute();
+	}
 }
