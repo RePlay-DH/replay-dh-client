@@ -672,7 +672,7 @@ public abstract class GitRemoteWizard {
 			bTransmit.setToolTipText(null);
 		}
 
-		protected String currentBranch(C context) throws GitException {
+		protected String getCurrentBranch(C context) throws GitException {
 
 			JGitAdapter gitAdapter = JGitAdapter.fromClient(worker.environment.getClient());
 			RevCommit head;
