@@ -22,6 +22,8 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 	
 	public MetadataCatalogTestImpl(WorkflowSchema schema) {
 		this.schema=schema;
+		result = new SimpleResult();
+		this.createObjects();
 	}
 	
 	private WorkflowSchema schema;
@@ -29,10 +31,11 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 	private DefaultResource resource;
 	private DefaultResource output;
 	private DefaultPerson person;
+	private SimpleResult result;
 
 	@Override
 	public Result query(QuerySettings settings, String fragment) throws CatalogException {
-		SimpleResult result = new SimpleResult();
+		result.clear();
 		Map<Identifiable, List<String>> idValues = new HashMap<>();
 		List<String> stringsTool = new ArrayList<>();
 		List<String> stringsResource = new ArrayList<>();
@@ -53,63 +56,131 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 		stringsPerson.add(person.getRole());
 		stringsPerson.add(person.getIdentifier(schema.getDefaultNameIdentifierType()).getId());
 		idValues.put(person, stringsPerson);
+		boolean found=false;
 		for(String value : idValues.get(tool)) {
 			if(value.startsWith(fragment)) {
-				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-					if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+				if(!(result.isEmpty())) {
+					for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+						if(tool.equals(iter.next())) {
+							found=true;
+							break;
+						}
+					}
+					if(found==false) {
 						result.add(tool);
 					}
+				} else {
+					result.add(tool);
 				}
-			} else if(value.endsWith(fragment)) {
-				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-					if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+			} else if (value.endsWith(fragment)) {
+				if(!(result.isEmpty())) {
+					for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext();) {
+						if (tool.equals(iter.next())) {
+							found=true;
+							break;
+						}
+					}
+					if(found==false) {
 						result.add(tool);
 					}
+				} else {
+					result.add(tool);
 				}
 			}
 		}
+		found=false;
 		for(String value : idValues.get(resource)) {
 			if(value.startsWith(fragment)) {
-				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-					if(!(resource.getSystemId().equals(iter.next().getSystemId()))) {
+				if(!(result.isEmpty())) {
+					for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+						if(resource.equals(iter.next())) {
+							found=true;
+							break;
+						}
+					}
+					if(found==false) {
 						result.add(resource);
 					}
+				} else {
+					result.add(resource);
 				}
-			} else if(value.endsWith(fragment)) {
-				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-					if(!(resource.getSystemId().equals(iter.next().getSystemId()))) {
+			} else if (value.endsWith(fragment)) {
+				if(!(result.isEmpty())) {
+					for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext();) {
+						if(resource.equals(iter.next())) {
+							found=true;
+							break;
+						}
+					}
+					if(found==false) {
 						result.add(resource);
 					}
+				} else {
+					result.add(resource);
 				}
 			}
 		}
+		found=false;
 		for(String value : idValues.get(output)) {
 			if(value.startsWith(fragment)) {
-				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-					if(!(output.getSystemId().equals(iter.next().getSystemId()))) {
+				if(!(result.isEmpty())) {
+					for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+						if(output.equals(iter.next())) {
+							found=true;
+							break;
+						}
+					}
+					if(found==false) {
 						result.add(output);
 					}
+				} else {
+					result.add(output);
 				}
-			} else if(value.endsWith(fragment)) {
-				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-					if(!(output.getSystemId().equals(iter.next().getSystemId()))) {
+			} else if (value.endsWith(fragment)) {
+				if(!(result.isEmpty())) {
+					for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext();) {
+						if(output.equals(iter.next())) {
+							found=true;
+							break;
+						}
+					}
+					if(found==false) {
 						result.add(output);
 					}
+				} else {
+					result.add(output);
 				}
 			}
 		}
+		found=false;
 		for(String value : idValues.get(person)) {
 			if(value.startsWith(fragment)) {
-				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-					if(!(person.getSystemId().equals(iter.next().getSystemId()))) {
+				if(!(result.isEmpty())) {
+					for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+						if(person.equals(iter.next())) {
+							found=true;
+							break;
+						}
+					}
+					if(found==false) {
 						result.add(person);
 					}
+				} else {
+					result.add(person);
 				}
-			} else if(value.endsWith(fragment)) {
-				for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
-					if(!(person.getSystemId().equals(iter.next().getSystemId()))) {
+			} else if (value.endsWith(fragment)) {
+				if(!(result.isEmpty())) {
+					for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext();) {
+						if(person.equals(iter.next())) {
+							found=true;
+							break;
+						}
+					}
+					if(found==false) {
 						result.add(person);
 					}
+				} else {
+					result.add(person);
 				}
 			}
 		}
@@ -147,7 +218,7 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 				}
 			}
 			if(constraint.getKey().equals("env")) {
-				if (constraint.getValue().equals("os.arch")) {
+				if (constraint.getValue().equals("x86_64")) {
 					/*if(!(result.isEmpty())) {
 						for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
 							if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
@@ -156,6 +227,19 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 						}
 					} else {*/
 						result.add(tool);
+					//}
+				}
+			}
+			if(constraint.getKey().equals("name")) {
+				if (constraint.getValue().equals("Schmidt")) {
+					/*if(!(result.isEmpty())) {
+						for (Iterator<Identifiable> iter = result.iterator(); iter.hasNext(); ) {
+							if(!(tool.getSystemId().equals(iter.next().getSystemId()))) {
+								result.add(tool);
+							}
+						}
+					} else {*/
+						result.add(person);
 					//}
 				}
 			}
@@ -193,6 +277,6 @@ public class MetadataCatalogTestImpl implements MetadataCatalog {
 		output.addIdentifier(new Identifier(schema.getDefaultPathIdentifierType(), "output/dir/result.xml"));
 		
 		person = DefaultPerson.withRole("annotator");
-		person.addIdentifier(new Identifier(schema.getDefaultNameIdentifierType(), "约翰 "));
+		person.addIdentifier(new Identifier(schema.getDefaultNameIdentifierType(), "Schmidt"));
 	}
 }

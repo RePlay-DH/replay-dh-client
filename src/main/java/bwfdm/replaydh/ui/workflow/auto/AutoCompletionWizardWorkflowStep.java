@@ -116,8 +116,13 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
     	//scrollablePanel = new ScrollablePanel();
     	//scrollablePanel.setScrollableWidth(ScrollableSizeHint.FIT);
     	objectsPanel = new JPanel();
+    	
+    	search = new MetadataCatalogTestImpl(schema);
+    	//search.createObjects();
 	}
 
+	private MetadataCatalogTestImpl search;
+	
 	private JDialog wizardWindow;
 	private ResourceManager rm = ResourceManager.getInstance();
 	
@@ -127,6 +132,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	
 	private JPanel mainPanelWizard;
 	private List<GUIElementMetadata> dd = new ArrayList<>();
+	
+	private GUIElement simpleSearch;
 	
 	private JComboBox<String> ddKeys = new JComboBox<>();
 	
@@ -236,7 +243,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		propertypanels = new HashMap<>();
 		elementsofproperty = new HashMap<>();
 		
-		GUIElement simpleSearch = createGUIElement();
+		simpleSearch = createGUIElement();
 		simpleSearch.getLabel().setText(rm.get("replaydh.wizard.metadataAutoWizard.simpleSearch"));
 		simpleSearch.getButton().setVisible(false);
 		simpleSearch.getMinusbutton().setVisible(false);
@@ -364,6 +371,11 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 				QuerySettings settings = new QuerySettings();
 				settings.setSchema(schema);
 				this.searchWithConstraints(settings, constraints, this);
+			}
+			if(!(simpleSearch.getTextfield().getText().isEmpty())) {
+				QuerySettings settings = new QuerySettings();
+				settings.setSchema(schema);
+				this.globalSearch(settings, simpleSearch.getTextfield().getText(), this);
 			}
 		}
 		
@@ -616,15 +628,14 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
 
 			boolean success=true;
-			MetadataCatalogTestImpl search = new MetadataCatalogTestImpl(settings.getSchema());
 			Result results = null;
 			@Override
 			protected Boolean doInBackground() throws Exception {
-				search.createObjects();
 				results=search.query(settings, constraints);
 				if(results.isEmpty()) {
 					success=false;
 				}
+				System.out.println("Defined!");
 				return success;
 			}
 			@Override
@@ -675,30 +686,127 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		worker.execute();
 	}
 	
+	private void globalSearch(QuerySettings settings, String fragment, AutoCompletionWizardWorkflowStep wizard) {
+
+		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>() {
+
+			boolean success = true;
+			Result results = null;
+
+			@Override
+			protected Boolean doInBackground() throws Exception {
+				results = search.query(settings, fragment);
+				if (results.isEmpty()) {
+					success = false;
+				}
+				System.out.println("Global!");
+				return success;
+			}
+
+			@Override
+			protected void done() {
+				if(success) {
+					for(Identifiable result : results) {
+						switch (role) {
+						case PERSON:
+							toolPanel.setVisible(false);
+							inputResourcesPanel.setVisible(false);
+							outputResourcesPanel.setVisible(false);
+							if(result.getType().equals(Type.PERSON)) {
+								wizard.addIdentifiable(result, Role.PERSON);
+							}
+							break;
+
+						case TOOL:
+							personsPanel.setVisible(false);
+							inputResourcesPanel.setVisible(false);
+							outputResourcesPanel.setVisible(false);
+							if(result.getType().equals(Type.TOOL)) {
+								wizard.addIdentifiable(result, Role.TOOL);
+							}
+							break;
+
+						case INPUT:
+							toolPanel.setVisible(false);
+							personsPanel.setVisible(false);
+							outputResourcesPanel.setVisible(false);
+							if(result.getType().equals(Type.RESOURCE)) {
+								wizard.addIdentifiable(result, Role.INPUT);
+							}
+							break;
+
+						case OUTPUT:
+							toolPanel.setVisible(false);
+							personsPanel.setVisible(false);
+							inputResourcesPanel.setVisible(false);
+							if(result.getType().equals(Type.RESOURCE)) {
+								wizard.addIdentifiable(result, Role.OUTPUT);
+							}
+							break; 
+						}
+					}
+				}
+			}
+		};
+		worker.execute();
+	}
+		
+	
 	private void addIdentifiable(Identifiable identifiable, Role role) {
-		sortedPersons.clear();
-		sortedTools.clear();
-		sortedInputs.clear();
-		sortedOutputs.clear();
+		boolean found=false;
 		switch (role) {
 		case PERSON:
 			toolPanel.setVisible(false);
-        	sortedPersons.add((Person) identifiable);
+			if(!(sortedPersons.isEmpty())) {
+				for(Identifiable object : sortedPersons) {
+					if(object.equals(identifiable)) {
+						found=true;
+					}
+				}
+			}
+			if (found == false) {
+	        	sortedPersons.add((Person) identifiable);
+			}
 			break;
 
 		case TOOL:
 			personsPanel.setVisible(false);
-			sortedTools.add((Tool) identifiable);
+			if(!(sortedTools.isEmpty())) {
+				for(Identifiable object : sortedTools) {
+					if(object.equals(identifiable)) {
+						found=true;
+					}
+				}
+			}
+			if (found == false) {
+				sortedTools.add((Tool) identifiable);
+			}
 			break;
 
 		case INPUT:
-			personsPanel.setVisible(false);
-			sortedInputs.add((Resource) identifiable);
+			if(!(sortedInputs.isEmpty())) {
+				for(Identifiable object : sortedInputs) {
+					if(object.equals(identifiable)) {
+						found=true;
+					}
+				}
+			}
+			if (found == false) {
+				sortedInputs.add((Resource) identifiable);
+			}
 			break;
 
 		case OUTPUT:
-			personsPanel.setVisible(false);
-			sortedOutputs.add((Resource) identifiable);
+			if(!(sortedOutputs.isEmpty())) {
+				for(Identifiable object : sortedOutputs) {
+					if(object.equals(identifiable)) {
+						found=true;
+					}
+				}
+			}
+			if (found == false) {
+				sortedOutputs.add((Resource) identifiable);
+			}
 			//contentChanged = true;
 			break;
 
@@ -1317,6 +1425,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
     		contentPanel.add(element.getViewPanel());
     	}
     	objectsPanel.setVisible(true);
+    	objectsPanel.repaint();
     	objectsPanel.revalidate();
     	Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, mainPanelWizard);
 		if (parentComponent != null) {
