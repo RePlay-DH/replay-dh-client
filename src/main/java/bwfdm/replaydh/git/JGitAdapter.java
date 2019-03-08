@@ -111,7 +111,7 @@ import bwfdm.replaydh.workflow.schema.WorkflowSchema;
  * @author Markus Gärtner
  *
  */
-public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker/*, PropertyChangeListener*/ {
+public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker {
 
 	private static final Logger log = LoggerFactory.getLogger(JGitAdapter.class);
 

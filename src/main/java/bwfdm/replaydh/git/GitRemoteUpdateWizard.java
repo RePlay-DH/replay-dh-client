@@ -426,13 +426,18 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 					// Figure out IF we need to merge
 
+					/*
+					 *  List of remote tracking refs that need to be checked for merging.
+					 *  Note that this does not contain
+					 */
+					List<String> remoteRefsToMerge = new ArrayList<>();
+
 					if(!updatesByResultType.isEmpty()) {
 						// We got tracking updates, now base our merge on that
-						List<TrackingRefUpdate> refsNeedingMerge = extractMergeRefs(getUpdatedRefs(updatesByResultType));
-
-						if(refsNeedingMerge.isEmpty()) {
-
-						}
+						extractMergeRefs(getUpdatedRefs(updatesByResultType))
+							.stream()
+							.map(TrackingRefUpdate::getLocalName)
+							.forEach(remoteRefsToMerge::add);
 					} else {
 						// No updates, but we might still have mergable artifacts from a previous fetch
 

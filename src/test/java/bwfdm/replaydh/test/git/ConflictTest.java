@@ -28,7 +28,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ListBranchCommand.ListMode;
 import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.Status;
@@ -39,6 +41,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.merge.ResolveMerger;
 import org.eclipse.jgit.merge.ThreeWayMerger;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.TrackingRefUpdate;
 import org.junit.Test;
@@ -76,6 +79,81 @@ public class ConflictTest extends RepositoryTest {
 
 			Status status = local.status().call();
 			assertTrue(status.getConflicting().contains("a"));
+		}
+	}
+
+	@Test
+	public void testConflictingMergeOnBranchDuringPull() throws Exception {
+		try(Git local = createLocalGit();
+				Git other = createOtherGit();
+				Git remote = createRemoteGit()) {
+
+			addRemote(local, remote);
+			addRemote(other, remote);
+
+			// Clean split point
+			RevCommit root = local.commit().setMessage("root").call();
+
+			// Create common ground for both repos
+			makeLocalFile("x", "shared");
+			local.add().addFilepattern("x").call();
+			local.commit().setMessage("x").call();
+			local.checkout()
+				.setName("crash")
+				.setCreateBranch(true)
+				.setStartPoint(root)
+				.call();
+			local.push().setPushAll().call();
+			assertTrue(other.fetch().setCheckFetchedObjects(true).call()
+					.getTrackingRefUpdates()
+					.stream()
+					.map(TrackingRefUpdate::getResult)
+					.noneMatch(r -> r != Result.NEW));
+			assertEquals(MergeStatus.FAST_FORWARD, other.merge().include(
+					other.getRepository().exactRef("refs/remotes/origin/master")).call().getMergeStatus());
+			assertEquals("shared", readOtherFile("x"));
+			assertEquals("refs/heads/crash", other.checkout()
+					.setCreateBranch(true)
+					.setName("crash")
+					.setStartPoint("refs/remotes/origin/crash")
+					.setUpstreamMode(SetupUpstreamMode.TRACK)
+					.call().getName());
+			assertEquals("crash", local.getRepository().getBranch());
+			assertEquals("crash", other.getRepository().getBranch());
+
+
+			makeLocalFile("a", "a\nb\nc");
+			local.add().addFilepattern("a").call();
+			local.commit().setMessage("a1").call();
+
+			makeOtherFile("a", "a\nbc\nc");
+			other.add().addFilepattern("a").call();
+			other.commit().setMessage("a").call();
+
+			other.push().setPushAll().call();
+
+			local.checkout().setName("master").call();
+
+			local.branchList().setListMode(ListMode.ALL).call().forEach(System.out::println);
+
+			for(TrackingRefUpdate refUpdate : local.fetch().setCheckFetchedObjects(true).call()
+					.getTrackingRefUpdates()) {
+				System.out.println(refUpdate);
+
+				String remoteBranch = refUpdate.getLocalName();
+				String localBranch = refUpdate.getRemoteName();
+
+				Repository repo = local.getRepository();
+
+				ThreeWayMerger merger = MergeStrategy.RECURSIVE.newMerger(repo, true);
+				ObjectId localHead = repo.resolve(localBranch);
+				ObjectId fetchHead = refUpdate.getNewObjectId();
+
+				boolean noProblems = merger.merge(
+						localHead, fetchHead);
+
+				assertFalse(noProblems);
+			}
 		}
 	}
 
