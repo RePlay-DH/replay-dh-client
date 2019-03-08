@@ -767,6 +767,8 @@ public class GuiUtils {
 
 		dialog.setVisible(true);
 
+		editor.close();
+
 		//editor.setControl(null);
 
 		return result.get();
@@ -856,6 +858,8 @@ public class GuiUtils {
 		editor.setControl(control);
 
 		dialog.setVisible(true);
+
+		editor.close();
 
 		//editor.setControl(null);
 
