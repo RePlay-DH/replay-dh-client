@@ -81,7 +81,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 				parent, "gitRemoteUpdaterWizard",
 				ResourceManager.getInstance().get("replaydh.wizard.gitRemoteUpdater.title"),
 				environment,
-				CHOOSE_REMOTE, SELECT_SCOPE, UPDATE, CHECK_MERGE);
+				CHOOSE_REMOTE, SELECT_SCOPE, UPDATE, CHECK_MERGE, RESOLVE_CONFLICTS, FINISH);
 		return wizard;
 	}
 
@@ -338,7 +338,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			if(context.error!=null) {
 				// Operation failed with an exception, so don't bother post-processing
 				epInfo.setThrowable(context.error);
-				taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.headerError"));
+				taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.headerError"));
 			} else if(context.result!=null) {
 				// We got a result, which can still signal a failure
 				final FetchResult fetchResult = context.result;
@@ -357,25 +357,25 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 				 */
 				if(hasFailed(updatesByResultType.keySet())) {
 					// Fetching failed for at least one ref
-					String headerKey = "replaydh.wizard.gitRemoteUpdater.finish.headerUpdateFailed";
+					String headerKey = "replaydh.wizard.gitRemoteUpdater.checkMerge.headerUpdateFailed";
 					if(updatesByResultType.containsKey(Result.LOCK_FAILURE)) {
 						// Local concurrency issues might be resolvable with another try
-						headerKey = "replaydh.wizard.gitRemoteUpdater.finish.headerConcurrentProcess";
+						headerKey = "replaydh.wizard.gitRemoteUpdater.checkMerge.headerConcurrentProcess";
 					} else if(updatesByResultType.containsKey(Result.IO_FAILURE)) {
 						// Same for I/O stuff, if user can fix access rights or network issues
-						headerKey = "replaydh.wizard.gitRemoteUpdater.finish.headerIoProblem";
+						headerKey = "replaydh.wizard.gitRemoteUpdater.checkMerge.headerIoProblem";
 					}
 
 					taHeader.setText(rm.get(headerKey));
 					epInfo.setText(fetchResult.toString()); // display raw info
 				} else if(hasChanged(updatesByResultType.keySet())) {
 					// Local refs changed and we need to merge (or at least try...)
-					taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.headerChanged"));
+					taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.headerChanged"));
 					epInfo.setVisible(false);
 					canTryMerge = true;
 				} else {
 					// Nothing changed
-					taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.headerNoChanges"));
+					taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.headerNoChanges"));
 					epInfo.setVisible(false);
 					canTryMerge = true;
 				}
@@ -387,7 +387,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 			} else {
 				// Something weird happened and we don't have anything substantial to report
-				taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.headerMissingInfo"));
+				taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.headerMissingInfo"));
 				epInfo.setText(context.finalMessage);
 			}
 
@@ -434,7 +434,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 					// Tell GUI we're busy
 					publish(() -> {
-						lIcon.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.dryRunActive"));
+						lIcon.setText(rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.dryRunActive"));
 						lIcon.setVisible(true);
 						epInfo.setVisible(false);
 					});
@@ -503,7 +503,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 					publish(() -> {
 						String existingText = taHeader.getText();
 						taHeader.setText(existingText+"\n\n"
-								+rm.get("replaydh.wizard.gitRemoteUpdater.finish.dryRunMessage"));
+								+rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.dryRunMessage"));
 					});
 
 					/*
