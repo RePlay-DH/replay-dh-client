@@ -409,8 +409,8 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 	private void refreshActions() {
 		final Object selectedCell = getSelectedCell();
 		final WorkflowStep selectedStep = getSelectedStep();
-		final WorkflowStep activeStep = workflow.getActiveStep();
-		final WorkflowStep initialStep = workflow.getInitialStep();
+		final WorkflowStep activeStep = workflow==null ? null : workflow.getActiveStep();
+		final WorkflowStep initialStep = workflow==null ? null : workflow.getInitialStep();
 
 		final int selectedStepCount = graph.getSelectionCount();
 
@@ -427,7 +427,7 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 
 		boolean isWorkflowEmpty = WorkflowUtils.isEmpty(getWorkflow());
 
-		boolean activeStepIsLeaf = WorkflowUtils.isLeaf(activeStep);
+		boolean activeStepIsLeaf = activeStep!=null && WorkflowUtils.isLeaf(activeStep);
 
 		actionManager.setEnabled(isSingleSelectedStep && canCompressStep,
 				"replaydh.ui.core.workflowGraph.compressStep");

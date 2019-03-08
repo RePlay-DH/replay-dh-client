@@ -23,10 +23,12 @@ import static java.util.Objects.requireNonNull;
 
 import java.awt.Component;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -46,8 +48,12 @@ import org.eclipse.jgit.api.GitCommand;
 import org.eclipse.jgit.api.RemoteAddCommand;
 import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
@@ -99,6 +105,9 @@ public abstract class GitRemoteWizard {
 
 		/** The scope on which the operation should take effect */
 		public Scope scope;
+
+		/** The branch we restricted the operation to */
+		public String branch;
 
 		public GitRemoteContext(Git git) {
 			this.git = requireNonNull(git);
@@ -663,6 +672,32 @@ public abstract class GitRemoteWizard {
 			bTransmit.setToolTipText(null);
 		}
 
+		protected String currentBranch(C context) throws GitException {
+
+			JGitAdapter gitAdapter = JGitAdapter.fromClient(worker.environment.getClient());
+			RevCommit head;
+			try {
+				head = gitAdapter.head();
+			} catch (IOException e) {
+				throw new GitException("Failed to obtain current HEAD", e);
+			}
+
+			Map<ObjectId, String> namedRefs;
+			try {
+				namedRefs = context.git.nameRev().add(head).call();
+			} catch (MissingObjectException | JGitInternalException | GitAPIException e) {
+				throw new GitException("Error while trying to fetch branch name for HEAD: "+head, e);
+			}
+
+			if(namedRefs.isEmpty())
+				throw new GitException("Repository inconsistency detected: no branch pointing to current HEAD: "+head);
+
+			String branch = namedRefs.get(head);
+			context.branch = branch;
+
+			return branch;
+		}
+
 		@Override
 		public void refresh(RDHEnvironment environment, C context) {
 			checkState("Worker for push operation already set", worker==null);
@@ -689,6 +724,8 @@ public abstract class GitRemoteWizard {
 		public void cancel(RDHEnvironment environment, C context) {
 			// We don't allow backtracking while worker is still active, so it's safe to cleanup here
 			worker = null;
+
+			context.branch = null;
 		};
 
 		@Override

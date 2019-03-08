@@ -19,14 +19,13 @@
 package bwfdm.replaydh.git;
 
 import java.awt.Window;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,19 +37,16 @@ import javax.swing.SwingWorker;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.JGitInternalException;
-import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.merge.MergeStrategy;
-import org.eclipse.jgit.merge.ThreeWayMerger;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.TrackingRefUpdate;
+import org.eclipse.jgit.transport.Transport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,9 +89,6 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		public MergeResult mergeDryRunResult;
 
 		public MergeResult mergeResult;
-
-		/** The branch we restricted the update to */
-		public String branch;
 
 		public GitRemoteUpdaterContext(Git git) {
 			super(git);
@@ -196,27 +189,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 			// If desired, we have to restrict updates to the current branch
 			if(context.scope==Scope.WORKSPACE) {
-				JGitAdapter gitAdapter = JGitAdapter.fromClient(worker.environment.getClient());
-				RevCommit head;
-				try {
-					head = gitAdapter.head();
-				} catch (IOException e) {
-					throw new GitException("Failed to obtain current HEAD", e);
-				}
-
-				Map<ObjectId, String> namedRefs;
-				try {
-					namedRefs = context.git.nameRev().add(head).call();
-				} catch (MissingObjectException | JGitInternalException | GitAPIException e) {
-					throw new GitException("Error while trying to fetch branch name for HEAD: "+head, e);
-				}
-
-				if(namedRefs.isEmpty())
-					throw new GitException("Repository inconsistency detected: no branch pointing to current HEAD: "+head);
-
-				String branch = namedRefs.get(head);
-				context.branch = branch;
-
+				String branch = currentBranch(context);
 				command.setRefSpecs(new RefSpec(Constants.R_HEADS+branch));
 			}
 
@@ -421,30 +394,37 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 					final Repository repo = context.git.getRepository();
 
-					// Maps from local commits to the remote ones.
-					final Map<String, String> mergeMap = new HashMap<>();
-
 					// Figure out IF we need to merge
 
-					/*
-					 *  List of remote tracking refs that need to be checked for merging.
-					 *  Note that this does not contain
-					 */
-					List<String> remoteRefsToMerge = new ArrayList<>();
+
+					List<RefSpec> refSpecs;
+					if(context.scope==Scope.WORKSPACE) {
+						refSpecs = Arrays.asList(new RefSpec(context.branch));
+					} else {
+						refSpecs = context.remoteConfig.getFetchRefSpecs();
+					}
+
+					refSpecs.forEach(System.out::println);
+
+					// All the refs we might potentially have to merge
+
+					// Maps from remote ref to local branch
+					final List<RemoteRefUpdate> refUpdates = new ArrayList<>(
+							Transport.findRemoteRefUpdatesFor(repo, refSpecs, null));
+
+					System.out.println(repo.getConfig().toText());
 
 					if(!updatesByResultType.isEmpty()) {
 						// We got tracking updates, now base our merge on that
 						extractMergeRefs(getUpdatedRefs(updatesByResultType))
 							.stream()
-							.map(TrackingRefUpdate::getLocalName)
-							.forEach(remoteRefsToMerge::add);
-					} else {
-						// No updates, but we might still have mergable artifacts from a previous fetch
+							.filter(this::isNotNeededInMerge)
+							.forEach(tru -> {
 
-						//TODO compare refs and see if anything is new
+							});
 					}
 
-					if(mergeMap.isEmpty()) {
+					if(refUpdates.isEmpty()) {
 						return null;
 					}
 
@@ -469,19 +449,41 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 					 *         branch and ask user to switch to the conflicting branch later.
 					 */
 
-					for(Entry<ObjectId, ObjectId> pairToBeMerged : mergeMap.entrySet()) {
-						ThreeWayMerger merger = MergeStrategy.RECURSIVE.newMerger(repo, true);
-
-						ObjectId ours = pairToBeMerged.getKey();
-						ObjectId theirs = pairToBeMerged.getValue();
-
-						if(!merger.merge(ours, theirs)) {
-
-						}
+					for(RemoteRefUpdate toBeMerged : refUpdates) {
+//						ThreeWayMerger merger = MergeStrategy.RECURSIVE.newMerger(repo, true);
+//
+//						ObjectId ours = pairToBeMerged.getKey();
+//						ObjectId theirs = pairToBeMerged.getValue();
+//
+//						if(!merger.merge(ours, theirs)) {
+//
+//						}
 					}
 
 					// TODO Auto-generated method stub
 					return null;
+				}
+
+				private boolean isNotNeededInMerge(TrackingRefUpdate refUpdate) {
+					ObjectId oldId = refUpdate.getOldObjectId();
+					ObjectId newId = refUpdate.getNewObjectId();
+
+					// Previously empty, should be no problem to merge
+					if(oldId==ObjectId.zeroId()) {
+						return true;
+					}
+
+					// Not sure if we'll ever encounter that case, but just to make sure
+					if(oldId.equals(newId)) {
+						return true;
+					}
+
+					// Deletion, also not an issue content-wise
+					if(newId==ObjectId.zeroId()) {
+						return true;
+					}
+
+					return false;
 				}
 
 				@Override

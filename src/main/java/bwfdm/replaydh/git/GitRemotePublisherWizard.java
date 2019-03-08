@@ -116,6 +116,31 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 		@Override
 		public Page<GitRemotePublisherContext> next(RDHEnvironment environment,
 				GitRemotePublisherContext context) {
+			if(!defaultProcessNext(environment, context)) {
+				return null;
+			}
+
+			// TODO figure out if we have multiple branches
+
+			return SELECT_SCOPE;
+		}
+	};
+
+	/**
+	 * Let user decide if we should only update current branch or entire repository
+	 */
+	private static final SelectScopeStep<Iterable<PushResult>, GitRemotePublisherContext> SELECT_SCOPE
+		= new SelectScopeStep<Iterable<PushResult>, GitRemotePublisherContext>(
+			"selectScope",
+			"replaydh.wizard.gitRemotePublisher.selectScope.title",
+			"replaydh.wizard.gitRemotePublisher.selectScope.description",
+			"replaydh.wizard.gitRemotePublisher.selectScope.header",
+			"replaydh.wizard.gitRemotePublisher.selectScope.workspaceScope",
+			"replaydh.wizard.gitRemotePublisher.selectScope.workflowScope") {
+
+		@Override
+		public Page<GitRemotePublisherContext> next(RDHEnvironment environment,
+				GitRemotePublisherContext context) {
 			return defaultProcessNext(environment, context) ? EXPORT : null;
 		}
 	};
@@ -139,8 +164,12 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 				return null;
 			}
 
+			// Only if specifically requested will we push all branches
+			if(context.scope==Scope.WORKFLOW) {
+				command.setPushAll();
+			}
+
 			command.setRemote(context.getRemote());
-			command.setPushAll();
 			command.setPushTags();
 			command.setAtomic(true);
 
