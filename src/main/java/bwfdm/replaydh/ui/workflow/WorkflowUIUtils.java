@@ -21,6 +21,7 @@ package bwfdm.replaydh.ui.workflow;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.Dialog.ModalityType;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -259,9 +260,11 @@ public final class WorkflowUIUtils {
 		final Frame owner = parent==null ? null : (Frame)SwingUtilities.getAncestorOfClass(Frame.class, parent);
 
 		final JDialog dialog = new JDialog(owner, title, true);
+		dialog.setModalityType(ModalityType.APPLICATION_MODAL);
 		dialog.add(panel);
 		dialog.pack();
 		dialog.setLocationRelativeTo(parent);
+		dialog.setAlwaysOnTop(true);
 
 		final MutableObject<Identifier> result = new MutableObject<>();
 

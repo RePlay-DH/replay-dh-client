@@ -3,6 +3,7 @@ package bwfdm.replaydh.ui.workflow.auto;
 import static java.util.Objects.requireNonNull;
 
 import java.awt.Color;
+import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
@@ -216,7 +217,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		this.type=type;
 		this.role=role;
 		wizardWindow = new JDialog();
-		wizardWindow.setModal(true);
+		wizardWindow.setModalityType(ModalityType.APPLICATION_MODAL);
 		mainPanelWizard=this.createWizardPanel();
 		wizardWindow.add(mainPanelWizard);
 		objectsPanel.setVisible(false);
@@ -1345,7 +1346,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
      */
     private <T extends Identifiable> void processRemoveButtonPush(IdentifiableEditorElement<T> element, JButton removeButton){
 
-    	if(JOptionPane.showOptionDialog(null,
+    	if(JOptionPane.showOptionDialog(wizardWindow,
     			ResourceManager.getInstance().get("replaydh.ui.editor.workflowStep.dialogs.removeElement.message"),
     			ResourceManager.getInstance().get("replaydh.ui.editor.workflowStep.dialogs.removeElement.title"),
     			JOptionPane.YES_NO_OPTION,
