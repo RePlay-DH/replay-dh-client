@@ -450,7 +450,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 			return;
 		}
         
-        AutoCompletionWizardWorkflowStep autoWizard = new AutoCompletionWizardWorkflowStep(this.schema, environment);
+        AutoCompletionWizardWorkflowStep autoWizard = new AutoCompletionWizardWorkflowStep(this.schema, environment, this);
         
         if(source == btnAddAutoPerson){
         	autoWizard.createWizard(this.schema, Role.PERSON, Type.PERSON);
@@ -504,7 +504,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
         }
     }//actionPerformed
 
-    private void addIdentifiable(Identifiable identifiable, Role role) {
+    public void addIdentifiable(Identifiable identifiable, Role role) {
     	switch (role) {
 		case PERSON:
 			workflowStepEditable.addPerson((Person) identifiable);
@@ -551,7 +551,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 	 * Create/Update the whole model of the editor.
 	 * @param workflowstep
 	 */
-	private void updateIdentifiableEditorElements(WorkflowStep workflowStep){
+	public void updateIdentifiableEditorElements(WorkflowStep workflowStep){
 
 		//TODO: delete workflowStep as input parameter
 
@@ -699,7 +699,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
      * That's why the best option is to use a private variable of the class "WorkflowStepUIEditor"
      *
      */
-    private void updateEditorView(){
+    public void updateEditorView(){
 
 //    	// Variables for view
 //    	int index;

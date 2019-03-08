@@ -11,6 +11,7 @@ import java.awt.event.ActionListener;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,6 +26,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
@@ -40,6 +42,7 @@ import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.workflow.IdentifiableEditor;
+import bwfdm.replaydh.ui.workflow.WorkflowStepUIEditor;
 import bwfdm.replaydh.ui.workflow.WorkflowUIUtils;
 import bwfdm.replaydh.ui.workflow.auto.GUIElement;
 import bwfdm.replaydh.ui.workflow.auto.GUIElementMetadata;
@@ -70,9 +73,10 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
  */
 public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	
-	public AutoCompletionWizardWorkflowStep(WorkflowSchema schema, RDHEnvironment environment) {
+	public AutoCompletionWizardWorkflowStep(WorkflowSchema schema, RDHEnvironment environment, WorkflowStepUIEditor wfseditor) {
 		this.schema=schema;
 		this.environment=environment;
+		this.wfseditor=wfseditor;
 		// Create Lists of IdentifiableEditorElements
       	personEditorElementsList = new ArrayList<IdentifiableEditorElement<Person>>();
     	inputResourceEditorElementsList = new ArrayList<IdentifiableEditorElement<Resource>>();
@@ -139,6 +143,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	
 	// Scrollable panel with all persons/tool/resources
     private JPanel objectsPanel;
+    
+    private WorkflowStepUIEditor wfseditor = null;
 	
 	// Panels with all persons, tool, input/output resources
     private CategoryPanel personsPanel;
@@ -359,6 +365,44 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 				this.searchWithConstraints(settings, constraints, this);
 			}
 		}
+		
+		List<IdentifiableEditorElement> collectedEditorElements = new ArrayList<>();
+        collectedEditorElements.addAll(personEditorElementsList);
+        collectedEditorElements.addAll(inputResourceEditorElementsList);
+        collectedEditorElements.addAll(outputResourceEditorElementsList);
+        collectedEditorElements.addAll(toolEditorElementsList);
+
+        for (IdentifiableEditorElement<Identifiable> element: collectedEditorElements){
+        	if (Arrays.asList(element.getButtons()).contains(source)){
+        		// Analyze the pushed button
+                for (JButton btn : element.getButtons()){
+            		if (btn == source){
+
+            			// Remove identifiable
+            			if ((btn.getName() == toolTipRemovePerson)
+                    			|| (btn.getName() == toolTipRemoveInputResource)
+                    			|| (btn.getName() == toolTipRemoveOutputResource)
+                    			|| (btn.getName() == toolTipRemoveTool)){
+                    		processRemoveButtonPush(element, btn);
+
+                    	// Expanded view
+            			} else if (btn.getName() == toolTipExpandedView){
+                    		processExpandedViewButtonPush(element);
+
+                    	// Collapsed view
+            			} else if (btn.getName() == toolTipCollapsedView){
+                        	processCollapsedViewButtonPush(element);
+                    	} else if ((btn.getName() == toolTipAddPerson)
+                    			|| (btn.getName() == toolTipAddInputResource)
+                    			|| (btn.getName() == toolTipAddOutputResource)
+                    			|| (btn.getName() == toolTipAddTool)){
+                    		processAddButtonPush(element, btn);
+            			}
+            		}
+            	}
+        		break;
+        	}
+        }
 	}
 	
 	/**
@@ -697,6 +741,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	    					personElementHeader + " " + i,
 							person,
 							this.schema,
+							createButton(toolTipAddPerson, iconAdd, buttonPreferredSize, actionListenerIdentifiableEditorElement), //"add" button
 							createButton(toolTipRemovePerson, iconRemove, buttonPreferredSize, actionListenerIdentifiableEditorElement), //"remove" button
 				    		createButton(toolTipExpandedView, iconExpanded, buttonPreferredSize, actionListenerIdentifiableEditorElement)  //"more info" button
 				    		);
@@ -712,6 +757,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	    					inputResourceElementHeader + " " + i,
 							inputResource,
 							this.schema,
+							createButton(toolTipAddInputResource, iconAdd, buttonPreferredSize, actionListenerIdentifiableEditorElement), //"add" button
 							createButton(toolTipRemoveInputResource, iconRemove, buttonPreferredSize, actionListenerIdentifiableEditorElement), //"remove" button
 				    		createButton(toolTipExpandedView, iconExpanded, buttonPreferredSize, actionListenerIdentifiableEditorElement)  //"more info" button
 				    		);
@@ -727,6 +773,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	    					outputResourceElementHeader + " " + i,
 							outputResource,
 							this.schema,
+							createButton(toolTipAddOutputResource, iconAdd, buttonPreferredSize, actionListenerIdentifiableEditorElement), //"add" button
 							createButton(toolTipRemoveOutputResource, iconRemove, buttonPreferredSize, actionListenerIdentifiableEditorElement), //"remove" button
 				    		createButton(toolTipExpandedView, iconExpanded, buttonPreferredSize, actionListenerIdentifiableEditorElement)  //"more info" button
 				    		);
@@ -741,6 +788,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		    					toolElementHeader,
 								tool,
 								this.schema,
+								createButton(toolTipAddTool, iconAdd, buttonPreferredSize, actionListenerIdentifiableEditorElement), //"add" button
 								createButton(toolTipRemoveTool, iconRemove, buttonPreferredSize, actionListenerIdentifiableEditorElement), //"remove" button
 					    		createButton(toolTipExpandedView, iconExpanded, buttonPreferredSize, actionListenerIdentifiableEditorElement) //"more info" button
 					    		);
@@ -1290,5 +1338,115 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	private void showResourceDialog(Role role, URI uri) {
 		//TODO implement actual dialog
 		GuiUtils.showDefaultInfo(null, "Dialog for describing URL resource");
+	}
+	
+	/**
+     * Process "remove button"
+     */
+    private <T extends Identifiable> void processRemoveButtonPush(IdentifiableEditorElement<T> element, JButton removeButton){
+
+    	if(JOptionPane.showOptionDialog(null,
+    			ResourceManager.getInstance().get("replaydh.ui.editor.workflowStep.dialogs.removeElement.message"),
+    			ResourceManager.getInstance().get("replaydh.ui.editor.workflowStep.dialogs.removeElement.title"),
+    			JOptionPane.YES_NO_OPTION,
+    			JOptionPane.PLAIN_MESSAGE,
+    			null,
+    			new String[]{ResourceManager.getInstance().get("replaydh.labels.yes"), ResourceManager.getInstance().get("replaydh.labels.no")},
+    			"Default") == JOptionPane.YES_OPTION){
+
+	    	if(removeButton.getName() == toolTipRemovePerson){
+				//applyLocalEditors(personEditorElementsList); //apply local editors
+				//workflowStepEditable.removePerson((Person)element.getIdentifiableObject());
+	    		sortedPersons.remove((Person)element.getIdentifiableObject());
+	    	} else if (removeButton.getName() == toolTipRemoveTool){
+				//applyLocalEditors(toolEditorElementsList); //apply local editors
+				//workflowStepEditable.setTool(null);
+				sortedTools.remove((Tool)element.getIdentifiableObject());
+			} else if (removeButton.getName() == toolTipRemoveInputResource){
+				//applyLocalEditors(inputResourceEditorElementsList); //apply local editors
+				//workflowStepEditable.removeInput((Resource)element.getIdentifiableObject());
+				sortedInputs.remove((Resource)element.getIdentifiableObject());
+			} else if (removeButton.getName() == toolTipRemoveOutputResource){
+				//applyLocalEditors(outputResourceEditorElementsList); //apply local editors
+				//workflowStepEditable.removeOutput((Resource)element.getIdentifiableObject());
+				sortedOutputs.remove((Resource)element.getIdentifiableObject());
+			}
+
+	    	//contentChanged = true;
+
+	    	updateIdentifiableEditorElements();
+			updateEditorView();
+    	}
+    }
+    
+    /**
+     * Process "add button"
+     */
+    private <T extends Identifiable> void processAddButtonPush(IdentifiableEditorElement<T> element, JButton addButton){
+
+		if (addButton.getName() == toolTipAddPerson) {
+			// applyLocalEditors(personEditorElementsList); //apply local editors
+			// workflowStepEditable.removePerson((Person)element.getIdentifiableObject());
+			//sortedPersons.remove((Person) element.getIdentifiableObject());
+			this.wfseditor.addIdentifiable((Person) element.getIdentifiableObject(), role);
+		} else if (addButton.getName() == toolTipAddTool) {
+			// applyLocalEditors(toolEditorElementsList); //apply local editors
+			// workflowStepEditable.setTool(null);
+			//sortedTools.remove((Tool) element.getIdentifiableObject());
+			this.wfseditor.addIdentifiable((Tool) element.getIdentifiableObject(), role);
+		} else if (addButton.getName() == toolTipAddInputResource) {
+			// applyLocalEditors(inputResourceEditorElementsList); //apply local editors
+			// workflowStepEditable.removeInput((Resource)element.getIdentifiableObject());
+			//sortedInputs.remove((Resource) element.getIdentifiableObject());
+			this.wfseditor.addIdentifiable((Resource) element.getIdentifiableObject(), role);
+		} else if (addButton.getName() == toolTipAddOutputResource) {
+			// applyLocalEditors(outputResourceEditorElementsList); //apply local editors
+			// workflowStepEditable.removeOutput((Resource)element.getIdentifiableObject());
+			//sortedOutputs.remove((Resource) element.getIdentifiableObject());
+			this.wfseditor.addIdentifiable((Resource) element.getIdentifiableObject(), role);
+		}
+
+		// contentChanged = true;
+		this.wfseditor.updateIdentifiableEditorElements(this.wfseditor.getEditingItem());
+		this.wfseditor.updateEditorView();
+    }
+    
+    /**
+     * Process "expanded view button"
+     */
+    private <T extends Identifiable> void processExpandedViewButtonPush(IdentifiableEditorElement<T> element){
+
+    	element.setExpanded(true);
+
+    	// Change button "show more elements" to "show less elements"
+    	for(JButton btn: element.getButtons()){
+    		if(btn.getName() == toolTipExpandedView){
+    			btn.setName(toolTipCollapsedView);
+    			btn.setToolTipText(toolTipCollapsedView);
+    			btn.setIcon(iconCollapsed);
+    			break;
+    		}
+    	}
+    	updateEditorView();
+    }
+
+
+    /**
+     * Process "collapsed view button"
+     */
+    private <T extends Identifiable> void processCollapsedViewButtonPush(IdentifiableEditorElement<T> element){
+
+    	element.setExpanded(false);
+
+    	// Change button "show more elements" to "show less elements"
+    	for(JButton btn: element.getButtons()){
+    		if(btn.getName() == toolTipCollapsedView){
+    			btn.setName(toolTipExpandedView);
+    			btn.setToolTipText(toolTipExpandedView);
+    			btn.setIcon(iconExpanded);
+    			break;
+    		}
+    	}
+    	updateEditorView();
 	}
 }
