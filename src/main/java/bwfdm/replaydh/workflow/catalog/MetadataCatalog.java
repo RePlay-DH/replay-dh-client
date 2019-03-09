@@ -37,6 +37,11 @@ import bwfdm.replaydh.workflow.schema.WorkflowSchema;
  */
 public interface MetadataCatalog {
 
+	public static final String TITLE_KEY = "title";
+	public static final String DESCRIPTION_KEY = "title";
+	public static final String ROLE_KEY = "title";
+	public static final String TYPE_KEY = "title";
+
 	/**
 	 * Simple search "google style".
 	 * <p>
@@ -104,7 +109,7 @@ public interface MetadataCatalog {
 			requireNonNull(s);
 			checkArgument("Keys and values must not be empty", !s.isEmpty());
 
-			return s;
+			return s.intern();
 		}
 
 		public Constraint(String key, String value) {
@@ -122,14 +127,14 @@ public interface MetadataCatalog {
 
 	}
 
-	public static final int DEFAULT_RESULT_LIMIT = 100;
+	public static final int DEFAULT_RESULT_LIMIT = 20;
 
 	/**
 	 * Additional settings to customize the behavior of the query engine in
 	 * a catalog.
 	 * <p>
 	 * Each instance of this class is intended to be used only for a single
-	 * invokaction of a query method. An exception is the global sharable
+	 * invocation of a query method. An exception is the global sharable
 	 * {@link MetadataCatalog#EMPTY_SETTINGS} object.
 	 *
 	 * @author Markus Gärtner

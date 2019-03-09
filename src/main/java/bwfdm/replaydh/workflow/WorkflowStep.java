@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Models the result of a single action in a workflow graph.
@@ -149,6 +150,8 @@ public interface WorkflowStep {
      * @return
      */
     Map<String, String> getProperties();
+
+    void forEachIdentifiable(Consumer<? super Identifiable> action);
 
     // MODIFICATION METHODS
 
