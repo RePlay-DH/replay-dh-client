@@ -73,7 +73,7 @@ public class MetadataCache implements MetadataCatalog {
 			clear();
 
 			// Only access workflow data if it's still 'alive'
-			if(!workflow.isClosed()) {
+			if(workflow!=null && !workflow.isClosed()) {
 				workflow.forEachStep(this::addWorkflowStep0);
 			}
 		}
