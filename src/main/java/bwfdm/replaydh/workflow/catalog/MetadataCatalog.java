@@ -22,6 +22,8 @@ import static bwfdm.replaydh.utils.RDHUtils.checkArgument;
 import static bwfdm.replaydh.utils.RDHUtils.checkState;
 import static java.util.Objects.requireNonNull;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -38,9 +40,18 @@ import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 public interface MetadataCatalog {
 
 	public static final String TITLE_KEY = "title";
-	public static final String DESCRIPTION_KEY = "title";
-	public static final String ROLE_KEY = "title";
-	public static final String TYPE_KEY = "title";
+	public static final String DESCRIPTION_KEY = "description";
+	public static final String ROLE_KEY = "role";
+	public static final String TYPE_KEY = "type";
+	public static final String ENVIRONMENT_KEY = "environment";
+	public static final String PARAMETERS_KEY = "parameters";
+
+	/**
+	 * Magic {@code key} string to signal that the {@link #suggest(QuerySettings, Identifiable, String, String) suggest}
+	 * method should not restrict the search to a specific key, but instead return
+	 * all candidates it can find for all stored keys.
+	 */
+//	public static final String ANY = new StringBuilder().toString();
 
 	/**
 	 * Simple search "google style".
@@ -125,9 +136,20 @@ public interface MetadataCatalog {
 			return value;
 		}
 
+		/**
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return key+"="+value;
+		}
 	}
 
 	public static final int DEFAULT_RESULT_LIMIT = 20;
+
+	public static QuerySettings settings() {
+		return new QuerySettings();
+	}
 
 	/**
 	 * Additional settings to customize the behavior of the query engine in
@@ -166,14 +188,28 @@ public interface MetadataCatalog {
 			return resultLimit;
 		}
 
-		public void setResultLimit(int resultLimit) {
+		public QuerySettings setResultLimit(int resultLimit) {
 			checkEditable();
 			checkArgument("Result limit must be greater than 0: "+resultLimit, resultLimit>0);
 			this.resultLimit = resultLimit;
+			return this;
 		}
 
 
 	}
+
+	public static final Result EMPTY_RESULT = new Result() {
+
+		@Override
+		public Iterator<Identifiable> iterator() {
+			return Collections.emptyIterator();
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return true;
+		}
+	};
 
 	/**
 	 * Abstraction for results of querying a {@link MetadataCatalog}.
@@ -199,5 +235,17 @@ public interface MetadataCatalog {
 		 */
 		@Override
 		Iterator<Identifiable> iterator();
+
+		default List<Identifiable> asList() {
+			if(isEmpty()) {
+				return Collections.emptyList();
+			} else {
+				List<Identifiable> tmp = new ArrayList<>();
+				for (Iterator<Identifiable> it = iterator(); it.hasNext();) {
+					tmp.add(it.next());
+				}
+				return tmp;
+			}
+		}
 	}
 }

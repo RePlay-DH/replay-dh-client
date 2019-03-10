@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import bwfdm.replaydh.core.RDHClient;
 import bwfdm.replaydh.resources.ResourceManager;
@@ -59,6 +60,8 @@ public interface Identifiable {
 	void setDescription(String description);
 
 	void forEachIdentifier(Consumer<? super Identifier> action);
+
+	boolean hasIdentifier(Predicate<? super Identifier> predicate);
 
     /**
      * Returns a {@link Set} of identifiers associated with this entity.
@@ -233,19 +236,25 @@ public interface Identifiable {
      *
      */
     public enum Type {
-    	RESOURCE("resource"),
-    	PERSON("person"),
-    	TOOL("tool"),
+    	RESOURCE("resource", Resource.class),
+    	PERSON("person", Person.class),
+    	TOOL("tool", Tool.class),
     	;
 
-    	private Type(String label) {
+    	private Type(String label, Class<? extends Identifiable> clazz) {
 			this.label = label;
+			this.clazz = clazz;
 		}
 
 		private final String label;
+		private final Class<? extends Identifiable> clazz;
 
 		public String getLabel() {
 			return label;
+		}
+
+		public Class<? extends Identifiable> getExpectedClass() {
+			return clazz;
 		}
 
 		public String getDisplayLabel() {

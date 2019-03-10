@@ -96,9 +96,10 @@ import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Resource;
 import bwfdm.replaydh.workflow.ResourceCache;
 import bwfdm.replaydh.workflow.Workflow;
+import bwfdm.replaydh.workflow.catalog.InMemoryMetadataCatalog;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
 import bwfdm.replaydh.workflow.impl.DefaultResource;
 import bwfdm.replaydh.workflow.resolver.IdentifiableResolver;
-import bwfdm.replaydh.workflow.resolver.LocalIdentifiableResolver;
 import bwfdm.replaydh.workflow.schema.SchemaManager;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 import bwfdm.replaydh.workflow.schema.impl.LocalSchemaManager;
@@ -208,6 +209,8 @@ public class RDHClient {
 	private final Lazy<ResourceCache> resourceCache = Lazy.create(this::createResourceCache, true);
 
 	private final Lazy<PluginEngine> pluginEngine = Lazy.create(this::createPluginEngine, true);
+
+	private final Lazy<MetadataCatalog> metadataCatalog = Lazy.create(this::createMetadataCatalog, true);
 
 	private final Lazy<StatLog> statLog = Lazy.create(this::createStatLog, true);
 
@@ -551,6 +554,10 @@ public class RDHClient {
 		return pluginEngine.value();
 	}
 
+	public MetadataCatalog getMetadataCatalog() {
+		return metadataCatalog.value();
+	}
+
 	public SchemaManager getSchemaManager() {
 		return schemaManager.value();
 	}
@@ -825,7 +832,7 @@ public class RDHClient {
 //					.build();
 //
 //			return addAndStartTool(resolver);
-			
+
 			return IdentifiableResolver.NOOP_RESOLVER;
 		}
 	}
@@ -960,6 +967,12 @@ public class RDHClient {
 				throw new RDHException("Plugins folder must point to a directory: "+pluginFolder);
 
 			return addAndStartTool(new PluginEngine(pluginFolder, FileResourceProvider.getSharedInstance()));
+		}
+	}
+
+	private MetadataCatalog createMetadataCatalog() {
+		synchronized (lock) {
+			return addAndStartTool(new InMemoryMetadataCatalog());
 		}
 	}
 
