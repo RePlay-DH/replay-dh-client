@@ -377,7 +377,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	public void applyEdit() {
 		// Special handling of single item edits
 		if(!hasMultipleResources()) {
-			onDoneButtonClicked(null); //TODO we should rework the signature sof all the onXXXClicked methods here
+			onDoneButtonClicked(null);
 		}
 
 		editingItem.clear();

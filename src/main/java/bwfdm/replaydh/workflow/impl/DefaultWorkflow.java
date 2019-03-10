@@ -666,7 +666,7 @@ public class DefaultWorkflow implements Workflow {
 
 		// Id not initialized yet -> create a fresh one
 		if(id==null || UNSET_ID.equals(id)) {
-			id = acceptOrCreateNewId(null); //TODO reset id to null if UNSET
+			id = acceptOrCreateNewId(null);
 			step.setId(id);
 		}
 	}
