@@ -27,12 +27,15 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -454,4 +457,76 @@ public class MetadataCacheTest {
 		}
 	}
 
+	private static final String alNum =
+			  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            + "0123456789"
+            + "abcdefghijklmnopqrstuvxyz";
+
+	private static final Random random = new Random(System.currentTimeMillis());
+
+	private static String randString(int maxLen) {
+		final int len = random.nextInt(maxLen)+1;
+		assertTrue(len>0);
+
+		char[] tmp = new char[len];
+		for(int i=0; i<len; i++) {
+			tmp[i] = alNum.charAt(random.nextInt(alNum.length()));
+		}
+		return new String(tmp);
+	}
+
+	@Test
+	public void testPerformance() throws Exception {
+		final int SIZE = 1_000;
+		final int RUNS = 100;
+
+		final String[] keys = new String[10];
+		for (int i = 0; i < keys.length; i++) {
+			keys[i] = randString(15);
+		}
+
+		final String[] vocabulary = new String[200];
+		for (int i = 0; i < vocabulary.length; i++) {
+			vocabulary[i] = randString(50);
+		}
+
+		Instant begin = Instant.now();
+		for(int i=0; i<SIZE; i++) {
+			store(keys[random.nextInt(keys.length)],
+					vocabulary[random.nextInt(vocabulary.length)]);
+		}
+		Duration dFill = Duration.between(begin, Instant.now());
+		System.out.printf("Time needed to fill cache with %d entries: %s%n",
+				SIZE, dFill);
+
+		begin = Instant.now();
+		for(int i=0; i<RUNS; i++) {
+			cache.query(ES, randString(25));
+		}
+		Duration dSearchText = Duration.between(begin, Instant.now());
+		System.out.printf("Time needed to do %d full text search runs: %s%n",
+				RUNS, dSearchText);
+
+		begin = Instant.now();
+		for(int i=0; i<RUNS; i++) {
+			Constraint[] constraints = new Constraint[random.nextInt(5)+1];
+			for (int j = 0; j < constraints.length; j++) {
+				constraints[j] = new Constraint(keys[random.nextInt(keys.length)],
+						random.nextDouble()<0.1 ? randString(10)
+								: vocabulary[random.nextInt(vocabulary.length)]);
+			}
+			cache.query(ES, Arrays.asList(constraints));
+		}
+		Duration dSearchConstraints = Duration.between(begin, Instant.now());
+		System.out.printf("Time needed to do %d constraint search runs: %s%n",
+				RUNS, dSearchConstraints);
+
+		begin = Instant.now();
+		for(int i=0; i<RUNS; i++) {
+			cache.suggest(ES, null, keys[random.nextInt(keys.length)], randString(15));
+		}
+		Duration dSuggest = Duration.between(begin, Instant.now());
+		System.out.printf("Time needed to do %d auto-complete suggestions: %s%n",
+				RUNS, dSuggest);
+	}
 }
