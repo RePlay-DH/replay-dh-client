@@ -130,6 +130,11 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 	private boolean finished = false;
 
 	/**
+	 * Indicates a request by some page to stop the wizard.
+	 */
+	private boolean markedFinished = false;
+
+	/**
 	 * Client payload used to store the process data and final
 	 * results of the wizard.
 	 */
@@ -178,7 +183,6 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		 */
 
 		// Init UI
-		ResourceManager rm = ResourceManager.getInstance();
 
 		handler = new Handler();
 
@@ -203,13 +207,13 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 			states[i] = label;
 		}
 
-		previousButton = new JButton(rm.get("replaydh.labels.previous"));
+		previousButton = new JButton();
 		previousButton.addActionListener(handler::doPrevious);
 
-		nextButton = new JButton(rm.get("replaydh.labels.next"));
+		nextButton = new JButton();
 		nextButton.addActionListener(handler::doNext);
 
-		cancelButton = new JButton(rm.get("replaydh.labels.cancel"));
+		cancelButton = new JButton();
 		cancelButton.addActionListener(handler::doCancel);
 
 		pageProxy = new JScrollPane(new JLabel("Nothing..."));
@@ -398,19 +402,14 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 	}
 
 	private void refreshPageUI() {
-		ResourceManager rm = ResourceManager.getInstance();
-
 		Page<E> currentPage = activePage();
 		checkState("no active page", currentPage!=null);
 
-		boolean lastPage = isLastPage();
-
 		nextButton.setEnabled(true);
 		previousButton.setEnabled(!isFirstPage());
-		nextButton.setText(lastPage ?
-				rm.get("replaydh.labels.finish")
-				: rm.get("replaydh.labels.next"));
-		cancelButton.setEnabled(!lastPage && currentPage.canCancel());
+		cancelButton.setEnabled(!isLastPage() && currentPage.canCancel());
+
+		refreshButtonLabels();
 
 		int currentActivePageIndex = activePageIndex();
 		states[currentActivePageIndex].setEnabled(true);
@@ -457,6 +456,25 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		previousButton.setEnabled(enabled && !isFirstPage());
 	}
 
+	private void refreshButtonLabels() {
+		ResourceManager rm = ResourceManager.getInstance();
+
+//		boolean nextEnabled = nextButton.isEnabled();
+//		boolean previousEnabled = previousButton.isEnabled();
+//		boolean cancelEnabled = cancelButton.isEnabled();
+		boolean lastPage = isLastPage();
+		boolean isDone = markedFinished;
+
+		previousButton.setText(rm.get("replaydh.labels.previous"));
+		if(isDone) {
+			nextButton.setText(rm.get("replaydh.labels.close"));
+		} else {
+			nextButton.setText(lastPage ?
+					rm.get("replaydh.labels.finish") : rm.get("replaydh.labels.next"));
+		}
+		cancelButton.setText(rm.get("replaydh.labels.cancel"));
+	}
+
 	private void stopWizard(boolean cancel) {
 		canceled = cancel;
 
@@ -494,7 +512,7 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 			Page<E> currentPage = activePage();
 			checkState("No active page", currentPage!=null);
 
-			if(isLastPage()) {
+			if(isLastPage() || markedFinished) {
 				// Finish entire wizard process if this is the last page
 				stopWizard(false);
 			} else {
@@ -558,6 +576,19 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 			Wizard.this.setPage(next);
 		}
 
+		/**
+		 * @see bwfdm.replaydh.ui.helper.Wizard.WizardControl#markFinished()
+		 */
+		@Override
+		public void markFinished() {
+			markedFinished = true;
+
+			previousButton.setEnabled(false);
+			cancelButton.setEnabled(false);
+			nextButton.setEnabled(true);
+
+			refreshButtonLabels();
+		}
 	}
 
 	public interface WizardControl<E extends Object> {
@@ -586,6 +617,12 @@ public class Wizard<E extends Object> extends JDialog implements AutoCloseable {
 		 * button/option).
 		 */
 		void invokeNext(Page<E> next);
+
+		/**
+		 * Tell the wizard that from now on this page is supposed to be
+		 * the last one and it should not continue.
+		 */
+		void markFinished();
 	}
 
 	public interface Page<E extends Object> {

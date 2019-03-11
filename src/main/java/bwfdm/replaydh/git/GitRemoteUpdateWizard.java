@@ -41,6 +41,7 @@ import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.diff.Sequence;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Constants;
@@ -202,6 +203,8 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 	}
 
 	static enum DryRunState {
+		/** All refs are already up to date */
+		UP_TO_DATE(false, false, false),
 		/** An error occurred (no conflicting files) causing the dry run to fail */
 		FAILED_OTHER_REASON(true, false, false),
 		/** Dry run went well, but the real merge yielded a result indicating a fail */
@@ -517,7 +520,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 					try(RevWalk rw = new RevWalk(repo)) {
 						for(RemoteRefUpdate refUpdate : refUpdates) {
-							if(context.branch.equals(refUpdate.getSrcRef())) {
+							if(context.branch.equals(Repository.shortenRefName(refUpdate.getSrcRef()))) {
 								refUpdateCurrentBranch = refUpdate;
 								context.remoteBranch = refUpdate.getRemoteName();
 							}
@@ -555,7 +558,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 					 *  for the active branch, there's no real reason to attempt
 					 *  further.
 					 */
-					if(refUpdateCurrentBranch==null) {
+					if(refUpdateCurrentBranch==null && !refUpdates.isEmpty()) {
 						log.error("Unable to merge - failed to obtain remote ref for current branch");
 						return DryRunState.FAILED_OTHER_REASON;
 					}
@@ -566,8 +569,20 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 							.setFastForward(FastForwardMode.FF_ONLY)
 							.include(repo.exactRef(refUpdateCurrentBranch.getRemoteName()))
 							.call();
-						return context.mergeResult.getMergeStatus().isSuccessful() ?
-								DryRunState.OK_FF : DryRunState.FAILED_MERGE_ATTEMPT;
+
+						MergeStatus mergeStatus = context.mergeResult.getMergeStatus();
+
+						if(!mergeStatus.isSuccessful()) {
+							return DryRunState.FAILED_MERGE_ATTEMPT;
+						}
+
+						switch (mergeStatus) {
+						case ALREADY_UP_TO_DATE: return DryRunState.UP_TO_DATE;
+						case FAST_FORWARD: return DryRunState.OK_FF;
+
+						default:
+							return DryRunState.OK_MERGED;
+						}
 					}
 
 					// Tell User we're doing a merge dry run
@@ -696,60 +711,6 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 						context.error = e.getCause();
 						dryRunState = DryRunState.FAILED_OTHER_REASON;
 					}
-
-					ResourceManager rm = ResourceManager.getInstance();
-					boolean canContinue = !dryRunState.failed;
-					Throwable errorToDisplay = context.error;
-					String infoText;
-
-					switch (dryRunState) {
-					case OK_FF: {
-						// Nothing to merge was found
-						canContinue = false;
-						infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.noMergeNeeded");
-					} break;
-
-					case OK_MERGED: {
-						// We already performed a successful real merge
-						canContinue = false;
-						infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.fullMergeDone");
-					} break;
-
-					case OK_CONFLICTING: {
-						// Merge dry run found conflicts - need to check if they affect current branch
-						MergeDryRunResult dryRunResult = context.mergeDryRunResults.get(context.remoteBranch);
-
-						if(dryRunResult.mergable==Mergable.CONFLICTING) {
-							infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.activeBranchConflict");
-						} else {
-							infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.otherBranchConflict");
-							canContinue = false;
-						}
-					} break;
-
-					case FAILED_MERGE_ATTEMPT: {
-						// Error during merge attempt
-						infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.mergeAttemptFailed");
-					} break;
-
-					case FAILED_OTHER_REASON: {
-						// Something went horribly wrong
-						infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.mergeDryRunFailed");
-					} break;
-
-					default:
-						infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.undefinedResult");
-						break;
-					}
-
-					if(errorToDisplay!=null) {
-						epInfo.setThrowable(errorToDisplay);
-						taHeader.setText(infoText);
-					} else {
-						epInfo.setText(infoText);
-					}
-
-					setNextEnabled(canContinue);
 				};
 			};
 
@@ -757,8 +718,81 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		}
 
 		private void displayResults(RDHEnvironment environment,
-				GitRemoteUpdaterContext context) {
-			//TODO
+				GitRemoteUpdaterContext context, DryRunState dryRunState) {
+
+			ResourceManager rm = ResourceManager.getInstance();
+			boolean canContinue = false;
+			boolean markFinished = false;
+			Throwable errorToDisplay = context.error;
+			String infoText;
+
+			switch (dryRunState) {
+			case UP_TO_DATE: {
+				// Nothing to merge was found
+				markFinished = true;
+				infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.mergeDoneTemplate");
+			} break;
+
+			case OK_FF: {
+				// Nothing to merge was found
+				markFinished = true;
+				infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.noMergeNeeded");
+			} break;
+
+			case OK_MERGED: {
+				// We already performed a successful real merge
+				markFinished = true;
+				infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.fullMergeDone");
+			} break;
+
+			case OK_CONFLICTING: {
+				// Merge dry run found conflicts - need to check if they affect current branch
+				MergeDryRunResult dryRunResult = context.mergeDryRunResults.get(context.remoteBranch);
+
+				if(dryRunResult.mergable==Mergable.CONFLICTING) {
+					// User intervention only required for current branch
+					canContinue = true;
+					infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.activeBranchConflict");
+				} else {
+					markFinished = true;
+					infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.otherBranchConflict");
+				}
+			} break;
+
+			case FAILED_MERGE_ATTEMPT: {
+				// Error during merge attempt
+				String reason = null;
+				MergeResult mergeResult = context.mergeResult;
+				if(mergeResult!=null) {
+					reason = mergeResult.toString();
+				}
+				infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.mergeAttemptFailed", reason);
+			} break;
+
+			case FAILED_OTHER_REASON: {
+				// Something went horribly wrong
+				infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.mergeDryRunFailed");
+			} break;
+
+			default:
+				infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.undefinedResult");
+				break;
+			}
+
+			if(errorToDisplay!=null) {
+				epInfo.setThrowable(errorToDisplay);
+				taHeader.setText(infoText);
+				epInfo.setVisible(true);
+			} else {
+				epInfo.setText(infoText);
+				epInfo.setVisible(infoText!=null);
+			}
+
+			if(markFinished) {
+				markFinished();
+			} else {
+				setNextEnabled(canContinue);
+			}
 		}
 
 		@Override

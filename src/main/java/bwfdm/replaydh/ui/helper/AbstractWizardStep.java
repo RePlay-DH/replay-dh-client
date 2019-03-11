@@ -110,4 +110,10 @@ public abstract class AbstractWizardStep<E extends Object> implements Wizard.Pag
 			control.setPreviousEnabled(enabled);
 		}
 	}
+
+	protected void markFinished() {
+		if(control!=null) {
+			control.markFinished();
+		}
+	}
 }
