@@ -993,6 +993,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	String title = type.getLabel();
 
     	IdentifiableEditor editor = createIdentifiableEditor(schema, type);
+    	editor.setEnvironment(environment);
     	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(identifiableObject)));
     	Frame frame = null;//GuiUtils.getFrame(this.editorPanel);
     	try {
@@ -1952,7 +1953,6 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 				if (results.isEmpty()) {
 					success = false;
 				}
-				System.out.println("Suggest!");
 				return success;
 			}
 

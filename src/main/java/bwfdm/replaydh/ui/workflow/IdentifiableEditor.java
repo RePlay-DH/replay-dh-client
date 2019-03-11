@@ -47,14 +47,18 @@ import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JMenu;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
@@ -63,6 +67,7 @@ import com.jgoodies.forms.factories.DefaultComponentFactory;
 import com.jgoodies.forms.factories.Forms;
 import com.jgoodies.forms.factories.Paddings;
 
+import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
@@ -75,6 +80,8 @@ import bwfdm.replaydh.ui.workflow.IdentifiableEditor.EditProxy;
 import bwfdm.replaydh.utils.Mutable.MutableObject;
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifiable.Type;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
@@ -97,7 +104,7 @@ import bwfdm.replaydh.workflow.schema.WorkflowSchema;
  * @author Markus Gärtner
  *
  */
-public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelectionListener {
+public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelectionListener, DocumentListener {
 
 	public static Builder newBuilder() {
 		return new Builder();
@@ -134,8 +141,20 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	private final JButton bDone, bIgnore, bAddIdentifier;
 	private final JTextField tfTitle; //supposed to not be editable
 	private final JTextArea taDescription;
+	
+    private JPopupMenu popupDescription;
+    private JMenu MenuForDescription;
+    
 	private final JTextField tfParameters;
+	
+	private JPopupMenu popupParameters;
+    private JMenu MenuForParameters;
+    
 	private final JTextArea taEnvironment;
+	
+	private JPopupMenu popupEnvironment;
+    private JMenu MenuForEnvironment;
+    
 	private final JComboBox<CompoundLabel> cbRoleType;
 	private final JSplitPane splitPane;
 	private final JPanel itemPanel;
@@ -162,6 +181,13 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 	//FIXME make use of the editor control to provide feedback
 	private EditorControl editorControl;
+	
+	private RDHEnvironment environment;
+	private MetadataCatalog search = null;
+
+	public void setEnvironment(RDHEnvironment environment) {
+		this.environment = environment;
+	}
 
 	public static void main(String[] args) throws Exception {
 		WorkflowSchema schema = WorkflowSchema.getDefaultSchema();
@@ -192,13 +218,14 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		GuiUtils.showEditorDialogWithControl(frame, editor, true);
 
 		frame.setVisible(false);
+		
 	}
 
 	protected IdentifiableEditor(Builder builder) {
 		schema = builder.getSchema();
 		type = builder.getType();
 		titleSelector = builder.getTitleSelector();
-
+		
 		ResourceManager rm = ResourceManager.getInstance();
 		IconRegistry ir = IconRegistry.getGlobalRegistry();
 
@@ -234,7 +261,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			GuiUtils.autoSelectFullContent(tfTitle);
 			GuiUtils.prepareChangeableBorder(tfTitle);
 		}
-
+		
 		tfParameters = GuiUtils.autoSelectFullContent(new JTextField());
 
 		taEnvironment = GuiUtils.autoSelectFullContent(new JTextArea());
@@ -242,6 +269,30 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 		taDescription = GuiUtils.autoSelectFullContent(new JTextArea());
 		taDescription.setRows(3);
+		
+		popupParameters = new JPopupMenu();
+		tfParameters.add(popupParameters);
+		tfParameters.setComponentPopupMenu(popupParameters);
+		MenuForParameters = new JMenu();
+		popupParameters.add(MenuForParameters);
+		
+		tfParameters.getDocument().addDocumentListener(this);
+		
+		popupEnvironment = new JPopupMenu();
+		taEnvironment.add(popupEnvironment);
+		taEnvironment.setComponentPopupMenu(popupEnvironment);
+		MenuForEnvironment = new JMenu();
+		popupEnvironment.add(MenuForEnvironment);
+		
+		taEnvironment.getDocument().addDocumentListener(this);
+		
+		popupDescription = new JPopupMenu();
+		taDescription.add(popupDescription);
+		taDescription.setComponentPopupMenu(popupDescription);
+		MenuForDescription = new JMenu();
+		popupDescription.add(MenuForDescription);
+		
+		taDescription.getDocument().addDocumentListener(this);
 
 		bDone = new JButton(rm.get("replaydh.ui.editor.resourceCache.confirm.label"));
 		bDone.setToolTipText(rm.get("replaydh.ui.editor.resourceCache.confirm.description"));
@@ -1166,5 +1217,94 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 			return new IdentifiableEditor(this);
 		}
+	}
+
+	@Override
+	public void insertUpdate(DocumentEvent e) {
+		// TODO Auto-generated method stub
+		Object source = e.getDocument();
+		QuerySettings settings = new QuerySettings();
+		settings.setSchema(schema);
+		int numberOfItems = MenuForDescription.getItemCount();
+		if ((numberOfItems == 0) && (source == taDescription.getDocument())) {
+			this.suggestSearch(settings, null, "description", taDescription.getText());
+			popupDescription.show(taDescription, 1, 1);
+		} else if (source == taDescription.getDocument()) {
+			popupDescription.show(taDescription, 1, 1);
+		}
+		numberOfItems = MenuForParameters.getItemCount();
+		if ((numberOfItems == 0) && (source == tfParameters.getDocument())) {
+			this.suggestSearch(settings, null, "parameters", tfParameters.getText());
+			popupParameters.show(tfParameters, 1, 1);
+		} else if (source == tfParameters.getDocument()) {
+			popupParameters.show(tfParameters, 1, 1);
+		}
+		numberOfItems = MenuForEnvironment.getItemCount();
+		if ((numberOfItems == 0) && (source == taEnvironment.getDocument())) {
+			this.suggestSearch(settings, null, "parameters", taEnvironment.getText());
+			popupEnvironment.show(taEnvironment, 1, 1);
+		} else if (source == taEnvironment.getDocument()) {
+			popupEnvironment.show(taEnvironment, 1, 1);
+		}
+	}
+
+	@Override
+	public void removeUpdate(DocumentEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void changedUpdate(DocumentEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	private void suggestSearch(QuerySettings settings, Identifiable context, String key, String valuePrefix) {
+
+		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>() {
+
+			boolean success = true;
+			List<String> results = null;
+
+			@Override
+			protected Boolean doInBackground() throws Exception {
+				if(search == null) {
+					search=environment.getClient().getMetadataCatalog();
+				}
+				results = search.suggest(settings, null, key, valuePrefix);
+				if (results.isEmpty()) {
+					success = false;
+				}
+				return success;
+			}
+
+			@Override
+			protected void done() {
+				if (success) {
+					switch(key) {
+					case "parameters":
+						for(String value: results) {
+							MenuForParameters.add(value);
+						}
+						popupParameters.add(MenuForParameters);
+						break;
+					case "description":
+						for(String value: results) {
+							MenuForDescription.add(value);
+						}
+						popupDescription.add(MenuForDescription);
+						break;
+					case "environment":
+						for(String value: results) {
+							MenuForEnvironment.add(value);
+						}
+						popupEnvironment.add(MenuForEnvironment);
+						break;
+					}
+				}
+			}
+		};
+		worker.execute();
 	}
 }

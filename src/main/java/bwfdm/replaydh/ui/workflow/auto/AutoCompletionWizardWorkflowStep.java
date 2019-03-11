@@ -619,7 +619,6 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 				if(results.isEmpty()) {
 					success=false;
 				}
-				System.out.println("Defined!");
 				return success;
 			}
 			@Override
@@ -683,7 +682,6 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 				if (results.isEmpty()) {
 					success = false;
 				}
-				System.out.println("Global!");
 				return success;
 			}
 
