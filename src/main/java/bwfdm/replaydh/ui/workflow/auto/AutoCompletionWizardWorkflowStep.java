@@ -33,6 +33,8 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.border.Border;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
@@ -53,7 +55,7 @@ import bwfdm.replaydh.workflow.Resource;
 import bwfdm.replaydh.workflow.Tool;
 import bwfdm.replaydh.workflow.Identifiable.Role;
 import bwfdm.replaydh.workflow.Identifiable.Type;
-import bwfdm.replaydh.workflow.catalog.InMemoryMetadataCatalog;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Constraint;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result;
@@ -71,7 +73,7 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
  * @author Florian Fritze
  *
  */
-public class AutoCompletionWizardWorkflowStep implements ActionListener {
+public class AutoCompletionWizardWorkflowStep implements ActionListener, DocumentListener {
 	
 	public AutoCompletionWizardWorkflowStep(WorkflowSchema schema, RDHEnvironment environment, WorkflowStepUIEditor wfseditor) {
 		this.schema=schema;
@@ -116,13 +118,13 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
     	//scrollablePanel.setScrollableWidth(ScrollableSizeHint.FIT);
     	objectsPanel = new JPanel();
     	
-    	search = new InMemoryMetadataCatalog();
+    	search = this.environment.getClient().getMetadataCatalog();
     	
     	collectionEntries = new HashMap<>();
     	//search.createObjects();
 	}
 
-	private InMemoryMetadataCatalog search;
+	private MetadataCatalog search;
 	
 	private JDialog wizardWindow;
 	private ResourceManager rm = ResourceManager.getInstance();
@@ -250,6 +252,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		simpleSearch.getLabel().setText(rm.get("replaydh.wizard.metadataAutoWizard.simpleSearch"));
 		simpleSearch.getButton().setVisible(false);
 		simpleSearch.getMinusbutton().setVisible(false);
+		simpleSearch.getTextfield().getDocument().addDocumentListener(this);
 		
 		GUIElementMetadata chooseProperties = createGUIElement("keys");
 		ddKeys = new JComboBox();
@@ -353,6 +356,15 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 				elementsofproperty.get("defaultdd").remove(i);
 				refreshPanel("defaultdd");
 			}
+			elementsofproperty.get("defaultdd").get(0).getTextfield().setText("");
+			simpleSearch.getTextfield().setText("");
+			objectsPanel.removeAll();
+			objectsPanel.repaint();
+	    	objectsPanel.revalidate();
+	    	Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, mainPanelWizard);
+			if (parentComponent != null) {
+				parentComponent.pack();
+			}
 		}
 		if (source == searchButton.getExtraButton()) {
 			MetadataKeys keys;
@@ -373,7 +385,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 				settings.setSchema(schema);
 				this.searchWithConstraints(settings, constraints, this);
 			}
-			if(!(simpleSearch.getTextfield().getText().isEmpty())) {
+			if((!(simpleSearch.getTextfield().getText().isEmpty())) && (empty == true)) {
 				QuerySettings settings = new QuerySettings();
 				settings.setSchema(schema);
 				this.globalSearch(settings, simpleSearch.getTextfield().getText(), this);
@@ -479,6 +491,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 			}
 			
 			oneguielement.getKeysDropdown().addActionListener(this);
+			
+			oneguielement.getTextfield().getDocument().addDocumentListener(this);
 
 			propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
 
@@ -1511,5 +1525,23 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
     		}
     	}
     	updateEditorView();
+	}
+
+	@Override
+	public void insertUpdate(DocumentEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void removeUpdate(DocumentEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void changedUpdate(DocumentEvent e) {
+		// TODO Auto-generated method stub
+		
 	}
 }
