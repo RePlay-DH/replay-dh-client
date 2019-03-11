@@ -42,12 +42,14 @@ import bwfdm.replaydh.workflow.Resource;
 import bwfdm.replaydh.workflow.Tool;
 import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.WorkflowStep;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Constraint;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
 
 /**
  * @author Markus Gärtner
  *
  */
-public class MetadataCache implements MetadataCatalog {
+public class MetadataCache {
 
 	//TODO currently we use the loca-independent strings for keys. but should we maybe change since we're only working on "live" data anyway?
 
@@ -79,11 +81,7 @@ public class MetadataCache implements MetadataCatalog {
 		}
 	}
 
-	/**
-	 * @see bwfdm.replaydh.workflow.catalog.MetadataCatalog#query(bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings, java.lang.String)
-	 */
-	@Override
-	public Result query(QuerySettings settings, String fragment) throws CatalogException {
+	public List<Identifiable> query(QuerySettings settings, String fragment) throws CatalogException {
 		requireNonNull(settings, "Settings must not be null");
 		requireNonNull(fragment, "Fragment must not be null");
 
@@ -93,11 +91,7 @@ public class MetadataCache implements MetadataCatalog {
 		return scan(settings, fullTextScanner(fragment));
 	}
 
-	/**
-	 * @see bwfdm.replaydh.workflow.catalog.MetadataCatalog#query(bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings, java.util.List)
-	 */
-	@Override
-	public Result query(QuerySettings settings, List<Constraint> constraints) throws CatalogException {
+	public List<Identifiable> query(QuerySettings settings, List<Constraint> constraints) throws CatalogException {
 		requireNonNull(settings, "Settings must not be null");
 		requireNonNull(constraints, "Constraint list must not be null");
 		checkArgument("Constraint list must not be empty", !constraints.isEmpty());
@@ -113,19 +107,13 @@ public class MetadataCache implements MetadataCatalog {
 		return new FullTextScanner(value);
 	}
 
-	private Result scan(QuerySettings settings, Predicate<? super Identifiable> constraint) {
-		List<Identifiable> hits = identifiableCache.parallelStream() // needs testing to make sure we're not suffocating the EDT
+	private List<Identifiable> scan(QuerySettings settings, Predicate<? super Identifiable> constraint) {
+		return identifiableCache.parallelStream() // needs testing to make sure we're not suffocating the EDT
 			.filter(constraint)
 			.limit(settings.getResultLimit())
 			.collect(Collectors.toList());
-
-		return new SimpleResult(hits);
 	}
 
-	/**
-	 * @see bwfdm.replaydh.workflow.catalog.MetadataCatalog#suggest(bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings, bwfdm.replaydh.workflow.Identifiable, java.lang.String, java.lang.String)
-	 */
-	@Override
 	public List<String> suggest(QuerySettings settings, Identifiable context, String key, String valuePrefix)
 			throws CatalogException {
 		requireNonNull(settings, "Settings must not be null");
@@ -181,28 +169,28 @@ public class MetadataCache implements MetadataCatalog {
 	}
 
 	private void updateWorkflowStep0(WorkflowStep step) {
-		storeProperty(TITLE_KEY, step.getTitle());
-		storeProperty(DESCRIPTION_KEY, step.getDescription());
+		storeProperty(MetadataCatalog.TITLE_KEY, step.getTitle());
+		storeProperty(MetadataCatalog.DESCRIPTION_KEY, step.getDescription());
 
 		step.forEachIdentifiable(this::storeIdentifiable);
 	}
 
 	private void storeIdentifiable(Identifiable identifiable) {
-		storeProperty(DESCRIPTION_KEY, identifiable.getDescription());
+		storeProperty(MetadataCatalog.DESCRIPTION_KEY, identifiable.getDescription());
 
 		switch (identifiable.getType()) {
 		case PERSON:
-			storeProperty(ROLE_KEY, ((Person)identifiable).getRole());
+			storeProperty(MetadataCatalog.ROLE_KEY, ((Person)identifiable).getRole());
 			break;
 
 		case TOOL: {
 			Tool tool = (Tool) identifiable;
-			storeProperty(ENVIRONMENT_KEY, tool.getEnvironment());
-			storeProperty(PARAMETERS_KEY, tool.getParameters());
+			storeProperty(MetadataCatalog.ENVIRONMENT_KEY, tool.getEnvironment());
+			storeProperty(MetadataCatalog.PARAMETERS_KEY, tool.getParameters());
 		} // fall-through to RESOURCE for the type property
 
 		case RESOURCE:
-			storeProperty(TYPE_KEY, ((Resource)identifiable).getResourceType());
+			storeProperty(MetadataCatalog.TYPE_KEY, ((Resource)identifiable).getResourceType());
 			break;
 
 		default:
@@ -293,19 +281,19 @@ public class MetadataCache implements MetadataCatalog {
 
 			for(Constraint constraint : constraints) {
 				switch (constraint.getKey()) {
-				case ROLE_KEY:
+				case MetadataCatalog.ROLE_KEY:
 					tmp.add(new TypeSpecificConstraint<>(constraint, Person.class, Person::getRole));
 					break;
-				case ENVIRONMENT_KEY:
+				case MetadataCatalog.ENVIRONMENT_KEY:
 					tmp.add(new TypeSpecificConstraint<>(constraint, Tool.class, Tool::getEnvironment));
 					break;
-				case PARAMETERS_KEY:
+				case MetadataCatalog.PARAMETERS_KEY:
 					tmp.add(new TypeSpecificConstraint<>(constraint, Tool.class, Tool::getParameters));
 					break;
-				case TYPE_KEY:
+				case MetadataCatalog.TYPE_KEY:
 					tmp.add(new TypeSpecificConstraint<>(constraint, Resource.class, Resource::getResourceType));
 					break;
-				case DESCRIPTION_KEY:
+				case MetadataCatalog.DESCRIPTION_KEY:
 					tmp.add(i -> matches(constraint.getValue(), i.getDescription()));
 					break;
 

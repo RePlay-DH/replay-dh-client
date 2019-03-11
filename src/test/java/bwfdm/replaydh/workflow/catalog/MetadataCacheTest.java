@@ -54,7 +54,6 @@ import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.WorkflowStep;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Constraint;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
-import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result;
 import bwfdm.replaydh.workflow.impl.DefaultPerson;
 import bwfdm.replaydh.workflow.impl.DefaultResource;
 import bwfdm.replaydh.workflow.impl.DefaultTool;
@@ -306,7 +305,7 @@ public class MetadataCacheTest {
 				"x1", "x10", "x11");
 	}
 
-	private void assertResult(Result result, Identifiable...expected) {
+	private void assertResult(List<Identifiable> result, Identifiable...expected) {
 		assertNotNull("Null result", result);
 
 		if(expected.length==0) {
