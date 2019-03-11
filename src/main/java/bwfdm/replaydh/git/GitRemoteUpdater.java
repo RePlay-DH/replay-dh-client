@@ -25,12 +25,10 @@ import java.awt.Window;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.Set;
 
 import javax.swing.SwingUtilities;
 
-import org.eclipse.jgit.api.MergeResult;
-import org.eclipse.jgit.api.PullResult;
-import org.eclipse.jgit.transport.FetchResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,11 +154,7 @@ public class GitRemoteUpdater {
 					if(showWizard(parent, context)) {
 						log.info("Finished updating local workspace");
 
-						// Post-processing: refresh state of our git adapter based on pull result
-//						if(context.commandCompleted) {
-//							environment.execute(() -> handlePullResult(gitAdapter, context.result));
-//						}
-						//TODO do we actually need cleanup or maintenance work if the wizard itself takes care already?
+						environment.execute(() -> handleUpdateResult(gitAdapter, context));
 					} else {
 						log.info("Updating local workspace cancelled");
 					}
@@ -196,11 +190,14 @@ public class GitRemoteUpdater {
 		return wizardDone;
 	}
 
-	private void handlePullResult(JGitAdapter gitAdapter, PullResult pullResult) {
+	private void handleUpdateResult(JGitAdapter gitAdapter, GitRemoteUpdaterContext context) {
 
-		FetchResult fetchResult = pullResult.getFetchResult();
-		MergeResult mergeResult = pullResult.getMergeResult();
+		Set<String> branches = null;
 
-		//TODO check the PullResult and make the gitAdapter refresh data
+		try {
+			gitAdapter.refreshWorkflow(branches);
+		} catch (GitException e) {
+			log.error("Failed to refresh workflow after Git fetch+merge");
+		}
 	}
 }

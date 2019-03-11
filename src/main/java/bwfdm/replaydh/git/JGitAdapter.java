@@ -66,6 +66,11 @@ import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.dircache.DirCache;
+import org.eclipse.jgit.events.ListenerHandle;
+import org.eclipse.jgit.events.RefsChangedEvent;
+import org.eclipse.jgit.events.RefsChangedListener;
+import org.eclipse.jgit.events.WorkingTreeModifiedEvent;
+import org.eclipse.jgit.events.WorkingTreeModifiedListener;
 import org.eclipse.jgit.ignore.IgnoreNode;
 import org.eclipse.jgit.ignore.IgnoreNode.MatchResult;
 import org.eclipse.jgit.lib.Constants;
@@ -194,6 +199,8 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 	private final List<TrackerListener> trackerListeners = new CopyOnWriteArrayList<>();
 
+	private final Handler handler = new Handler();
+
 	/**
 	 * Package-private so that the {@link GitArchiveExporter}
 	 * can use it for interaction with git.
@@ -294,6 +301,8 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		if(nextStepId!=null) {
 			workflow.setNextStepNumber(Integer.parseInt(nextStepId));
 		}
+
+		handler.registerRepoListeners(git.getRepository());
 
 		getPropertyChangeSupport().firePropertyChange(FileTracker.NAME_WORKFLOW, null, workflow);
 	}
@@ -711,6 +720,10 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 					config.setProperty(RDHInfoProperty.NEXT_STEP_ID, String.valueOf(nextStepId));
 
 					saveConfig(infoFile, config);
+				}
+
+				if(git!=null) {
+					handler.unregisterRepoListeners(git.getRepository());
 				}
 			} catch(IOException e) {
 				log.error("Failed to update git info file", e);
@@ -2005,7 +2018,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 				workflowLoaded = true;
 
 			} catch (IOException e) {
-				throw new GitException("General I/O issue when trying to access log of git repository", e);
+				throw new GitException("General I/O issue when trying to access ref database git repository", e);
 			} finally {
 
 				workflow.setIgnoreEventRequests(false);
@@ -2016,10 +2029,10 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		workflow.fireStateChanged();
 	}
 
-	void refreshWorkflow() throws GitException {
+	void refreshWorkflow(Set<String> branches) throws GitException {
 		synchronized (gitLock) {
-			// Avoid loading the git twice
-			if(workflowLoaded) {
+			// This is the incremental refresh method, we expect the workflow to be loaded at least partly
+			if(!workflowLoaded) {
 				return;
 			}
 
@@ -2028,20 +2041,23 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 			try(RevWalk revWalk = new RevWalk(repo)) {
 
-				Collection<Ref> allRefs = repo.getRefDatabase().getRefs(Constants.R_HEADS).values();
-                for( Ref ref : allRefs ) {
+				Collection<Ref> refs;
+				if(branches==null || branches.isEmpty()) {
+					refs = repo.getRefDatabase().getRefs(Constants.R_HEADS).values();
+				} else {
+					refs = new ArrayList<>(branches.size());
+					for(String branch : branches) {
+						refs.add(repo.findRef(branch));
+					}
+				}
+                for( Ref ref : refs ) {
                     revWalk.markStart(revWalk.parseCommit(getTarget(ref, repo)));
                 }
 
-//				Iterable<RevCommit> commits = git.log().all().call();
-
 				buildWorkflowGraph(revWalk, Constants.HEAD, true);
 
-				// Finally switch flag so we don't ever attempt to load the workflow a second time
-				workflowLoaded = true;
-
 			} catch (IOException e) {
-				throw new GitException("General I/O issue when trying to access log of git repository", e);
+				throw new GitException("General I/O issue when trying to refresh workflow based on branch list", e);
 			} finally {
 
 				workflow.setIgnoreEventRequests(false);
@@ -2249,6 +2265,38 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 	private boolean isNonJsonString(String s) {
 		return s.indexOf('{')==-1;
+	}
+
+	private class Handler implements RefsChangedListener, WorkingTreeModifiedListener {
+
+		private ListenerHandle refsChangedHandle;
+		private ListenerHandle workingTreeModifiedHandle;
+
+		private void registerRepoListeners(Repository repo) {
+			refsChangedHandle = repo.getListenerList().addRefsChangedListener(this);
+			workingTreeModifiedHandle = repo.getListenerList().addWorkingTreeModifiedListener(this);
+		}
+
+		private void unregisterRepoListeners(Repository repo) {
+			if(refsChangedHandle!=null) {
+				refsChangedHandle.remove();
+			}
+			if(workingTreeModifiedHandle!=null) {
+				workingTreeModifiedHandle.remove();
+			}
+		}
+
+		@Override
+		public void onWorkingTreeModified(WorkingTreeModifiedEvent event) {
+			// TODO Auto-generated method stub
+//			System.out.println(event);
+		}
+
+		@Override
+		public void onRefsChanged(RefsChangedEvent event) {
+			// TODO Auto-generated method stub
+//			System.out.println(event);
+		}
 	}
 
 	/**

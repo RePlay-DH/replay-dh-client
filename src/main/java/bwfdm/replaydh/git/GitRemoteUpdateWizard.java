@@ -98,8 +98,10 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		/** Backup pointer to head before the pull attempt */
 		public RevCommit currentHead;
 
+		/** Maps shortened ref names to the results of merge dry runs */
 		Map<String, MergeDryRunResult> mergeDryRunResults = new HashMap<>();
 
+		/** If we actualyl attempt a merge, this holds the result */
 		public MergeResult mergeResult;
 
 		/** Branch to merge our current HEAD with */
@@ -498,7 +500,8 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 					// Back to square 1: we might have artifacts from an earlier fetch
 					List<RefSpec> refSpecs;
 					if(context.scope==Scope.WORKSPACE) {
-						refSpecs = Arrays.asList(new RefSpec(context.branch));
+						refSpecs = Arrays.asList(new RefSpec(
+								Constants.R_HEADS+context.branch+":"+Constants.R_REMOTES+context.getRemote()+'/'+context.branch));
 					} else {
 						refSpecs = context.remoteConfig.getFetchRefSpecs();
 					}
@@ -522,7 +525,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 						for(RemoteRefUpdate refUpdate : refUpdates) {
 							if(context.branch.equals(Repository.shortenRefName(refUpdate.getSrcRef()))) {
 								refUpdateCurrentBranch = refUpdate;
-								context.remoteBranch = refUpdate.getRemoteName();
+								context.remoteBranch = refUpdateCurrentBranch.getRemoteName();
 							}
 
 							ObjectId srcId = repo.resolve(refUpdate.getSrcRef());
@@ -546,7 +549,9 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 							dryRunResult.localId = srcId;
 							dryRunResult.remoteId = remoteId;
 
-							context.mergeDryRunResults.put(dryRunResult.localBranch, dryRunResult);
+							context.mergeDryRunResults.put(
+									Repository.shortenRefName(dryRunResult.localBranch),
+									dryRunResult);
 						}
 						rw.dispose();
 					}
@@ -612,7 +617,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 						if(merger instanceof ResolveMerger) {
 							((ResolveMerger)merger).setCommitNames(new String[] {
-									"BASE", "HEAD", dryRunResult.remoteBranch });
+									"BASE", "HEAD", Repository.shortenRefName(dryRunResult.remoteBranch) });
 						}
 
 						try {
@@ -711,6 +716,8 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 						context.error = e.getCause();
 						dryRunState = DryRunState.FAILED_OTHER_REASON;
 					}
+
+					displayResults(environment, context, dryRunState);
 				};
 			};
 
@@ -747,7 +754,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 			case OK_CONFLICTING: {
 				// Merge dry run found conflicts - need to check if they affect current branch
-				MergeDryRunResult dryRunResult = context.mergeDryRunResults.get(context.remoteBranch);
+				MergeDryRunResult dryRunResult = context.mergeDryRunResults.get(context.branch);
 
 				if(dryRunResult.mergable==Mergable.CONFLICTING) {
 					// User intervention only required for current branch
@@ -798,8 +805,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		@Override
 		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment,
 				GitRemoteUpdaterContext context) {
-			//TODO
-			return null;
+			return RESOLVE_CONFLICTS;
 		}
 	};
 
@@ -817,6 +823,11 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			// TODO Auto-generated method stub
 			return null;
 		}
+
+		@Override
+		public void refresh(RDHEnvironment environment, GitRemoteUpdaterContext context) {
+			System.out.println();
+		};
 
 		@Override
 		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment, GitRemoteUpdaterContext context) {

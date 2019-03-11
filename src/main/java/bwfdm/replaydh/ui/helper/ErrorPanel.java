@@ -79,6 +79,7 @@ public class ErrorPanel extends JPanel {
 	}
 
 	public ErrorPanel refreshContent() {
+		taOutput.setLineWrap(false);
 		if(throwable==null) {
 			taOutput.setText(null);
 		} else if(cbShowStackTrace.isVisible()) {
@@ -97,6 +98,7 @@ public class ErrorPanel extends JPanel {
 	 * @return
 	 */
 	public ErrorPanel setText(String text) {
+		taOutput.setLineWrap(true);
 		taOutput.setText(text);
 		cbShowStackTrace.setVisible(false);
 		return this;
