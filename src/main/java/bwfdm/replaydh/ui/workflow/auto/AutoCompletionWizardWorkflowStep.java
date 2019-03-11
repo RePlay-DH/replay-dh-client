@@ -358,13 +358,13 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 			}
 			elementsofproperty.get("defaultdd").get(0).getTextfield().setText("");
 			simpleSearch.getTextfield().setText("");
-			objectsPanel.removeAll();
-			objectsPanel.repaint();
-	    	objectsPanel.revalidate();
-	    	Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, mainPanelWizard);
-			if (parentComponent != null) {
-				parentComponent.pack();
-			}
+			sortedPersons.clear();
+			sortedTools.clear();
+			sortedInputs.clear();
+			sortedOutputs.clear();
+			updateIdentifiableEditorElements();
+			updateEditorView();
+			objectsPanel.setVisible(false);
 		}
 		if (source == searchButton.getExtraButton()) {
 			MetadataKeys keys;
