@@ -59,6 +59,9 @@ import com.mxgraph.model.mxICell;
 import com.mxgraph.swing.mxGraphComponent;
 import com.mxgraph.swing.handler.mxRubberband;
 import com.mxgraph.util.mxConstants;
+import com.mxgraph.util.mxEvent;
+import com.mxgraph.util.mxEventObject;
+import com.mxgraph.util.mxEventSource.mxIEventListener;
 import com.mxgraph.view.mxCellState;
 import com.mxgraph.view.mxGraph;
 import com.mxgraph.view.mxStylesheet;
@@ -357,6 +360,8 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 		graphComponent.getGraphControl().addMouseListener(handler);
 		graphComponent.getGraphControl().addMouseWheelListener(handler);
 
+		graph.getSelectionModel().addListener(null, handler);
+
 		return graphComponent;
 	}
 
@@ -402,10 +407,11 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 	}
 
 	private void refreshActions() {
+		final Workflow workflow = getWorkflow();
 		final Object selectedCell = getSelectedCell();
 		final WorkflowStep selectedStep = getSelectedStep();
-		final WorkflowStep activeStep = workflow.getActiveStep();
-		final WorkflowStep initialStep = workflow.getInitialStep();
+		final WorkflowStep activeStep = workflow==null ? null : workflow.getActiveStep();
+		final WorkflowStep initialStep = workflow==null ? null : workflow.getInitialStep();
 
 		final int selectedStepCount = graph.getSelectionCount();
 
@@ -420,7 +426,9 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 
 		boolean isSingleUncompressedStep = isSingleSelectedStep && !canExpandStep;
 
-		boolean isWorkflowEmpty = WorkflowUtils.isEmpty(getWorkflow());
+		boolean isWorkflowEmpty = workflow!=null && WorkflowUtils.isEmpty(getWorkflow());
+
+		boolean activeStepIsLeaf = activeStep!=null && WorkflowUtils.isLeaf(activeStep);
 
 		actionManager.setEnabled(isSingleSelectedStep && canCompressStep,
 				"replaydh.ui.core.workflowGraph.compressStep");
@@ -438,6 +446,8 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 				"replaydh.ui.core.workflowGraph.exportMetadata",
 				"replaydh.ui.core.workflowGraph.exportResources",
 				"replaydh.ui.core.workflowGraph.publishResources");
+		actionManager.setEnabled(activeStepIsLeaf,
+				"replaydh.ui.core.workflowGraph.updateRepository");
 	}
 
 	private String createLabel(Object cell) {
@@ -696,6 +706,8 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 				GuiUtils.invokeEDTLater(() -> focusStep(workflow.getActiveStep()));
 			}
 		}
+
+		refreshActions();
 	}
 
 	public void setWorkflow(Workflow workflow) {
@@ -1128,7 +1140,7 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 		}
 	}
 
-	private class Handler extends MouseAdapter implements WorkflowListener {
+	private class Handler extends MouseAdapter implements WorkflowListener, mxIEventListener {
 
 		/**
 		 * Check to make sure that we only ever react to
@@ -1244,6 +1256,16 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 		public void activeWorkflowStepChanged(Workflow workflow, WorkflowStep oldActiveStep,
 				WorkflowStep newActiveStep) {
 			maybeInitRebuild(workflow);
+		}
+
+		/**
+		 * @see com.mxgraph.util.mxEventSource.mxIEventListener#invoke(java.lang.Object, com.mxgraph.util.mxEventObject)
+		 */
+		@Override
+		public void invoke(Object sender, mxEventObject evt) {
+			if(mxEvent.CHANGE.equals(evt.getName())) {
+				refreshActions();
+			}
 		}
 
 	}

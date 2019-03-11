@@ -16,13 +16,18 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.workflow.export.git;
+package bwfdm.replaydh.git;
 
 import static java.util.Objects.requireNonNull;
 
 import java.awt.Component;
 import java.awt.Window;
-import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
@@ -37,14 +42,12 @@ import org.eclipse.jgit.api.PushCommand;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
-import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.jgoodies.forms.builder.FormBuilder;
 
 import bwfdm.replaydh.core.RDHEnvironment;
-import bwfdm.replaydh.git.GitException;
-import bwfdm.replaydh.git.GitUtils;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.ErrorPanel;
@@ -52,13 +55,14 @@ import bwfdm.replaydh.ui.helper.Wizard;
 import bwfdm.replaydh.ui.helper.Wizard.Page;
 import bwfdm.replaydh.ui.icons.IconRegistry;
 import bwfdm.replaydh.workflow.export.WorkflowExportInfo;
-import bwfdm.replaydh.workflow.git.GitRemoteWizard;
 
 /**
  * @author Markus Gärtner
  *
  */
 public class GitRemotePublisherWizard extends GitRemoteWizard {
+
+	private static final Logger log = LoggerFactory.getLogger(GitRemotePublisherWizard.class);
 
 	public static Wizard<GitRemotePublisherContext> getWizard(Window parent, RDHEnvironment environment) {
 		@SuppressWarnings("unchecked")
@@ -83,6 +87,20 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 		}
 	}
 
+	private static final EnumSet<Status> UNCHANGED = EnumSet.of(
+			Status.NOT_ATTEMPTED, Status.UP_TO_DATE);
+
+	private static final EnumSet<Status> CHANGED = EnumSet.of(
+			Status.OK);
+
+	private static final EnumSet<Status> FAILED;
+	static {
+		EnumSet<Status> failed = EnumSet.allOf(Status.class);
+		failed.removeAll(CHANGED);
+		failed.removeAll(UNCHANGED);
+		FAILED = failed;
+	}
+
 	/**
 	 * First step: Let user provide or select a remote repository URL
 	 */
@@ -94,6 +112,31 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 			null,
 			"replaydh.wizard.gitRemotePublisher.chooseRemote.middle",
 			null) {
+
+		@Override
+		public Page<GitRemotePublisherContext> next(RDHEnvironment environment,
+				GitRemotePublisherContext context) {
+			if(!defaultProcessNext(environment, context)) {
+				return null;
+			}
+
+			// TODO figure out if we have multiple branches
+
+			return SELECT_SCOPE;
+		}
+	};
+
+	/**
+	 * Let user decide if we should only update current branch or entire repository
+	 */
+	private static final SelectScopeStep<Iterable<PushResult>, GitRemotePublisherContext> SELECT_SCOPE
+		= new SelectScopeStep<Iterable<PushResult>, GitRemotePublisherContext>(
+			"selectScope",
+			"replaydh.wizard.gitRemotePublisher.selectScope.title",
+			"replaydh.wizard.gitRemotePublisher.selectScope.description",
+			"replaydh.wizard.gitRemotePublisher.selectScope.header",
+			"replaydh.wizard.gitRemotePublisher.selectScope.workspaceScope",
+			"replaydh.wizard.gitRemotePublisher.selectScope.workflowScope") {
 
 		@Override
 		public Page<GitRemotePublisherContext> next(RDHEnvironment environment,
@@ -112,41 +155,25 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 			"replaydh.wizard.gitRemotePublisher.export.description") {
 
 		@Override
-		protected PushCommand createGitCommand(GitRemotePublisherContext context)
-					throws GitException, URISyntaxException {
+		protected PushCommand createGitCommand(
+				GitWorker<Iterable<PushResult>,PushCommand,GitRemotePublisherContext> worker) throws GitException {
+			GitRemotePublisherContext context = worker.context;
 			PushCommand command = context.git.push();
 
-			URIish remoteUri = null;
-			String remoteName = null;
-
-			if(context.remoteConfig!=null) {
-				remoteName = context.remoteConfig.getName();
-				remoteUri = getUsablePushUri(context.remoteConfig);
-				command.setRemote(remoteName);
-			} else {
-				remoteUri = context.remoteUrl;
-				command.setRemote(remoteUri.toString());
-			}
-
-			if(!GitUtils.prepareTransportCredentials(command, remoteUri, remoteName,
-					(username, password) -> {
-						context.credentials = new UsernamePasswordCredentialsProvider(username, password);
-						return context.credentials;
-					})) {
+			if(!configureTransportCommand(command, context)) {
 				return null;
 			}
 
-			command.setPushAll();
+			// Only if specifically requested will we push all branches
+			if(context.scope==Scope.WORKFLOW) {
+				command.setPushAll();
+			}
+
+			command.setRemote(context.getRemote());
 			command.setPushTags();
 			command.setAtomic(true);
 
 			return command;
-		};
-
-		@Override
-		protected GitMonitoringWorker<Iterable<PushResult>,PushCommand,GitRemotePublisherContext> createWorker(
-				RDHEnvironment environment, PushCommand command, GitRemotePublisherContext context) {
-			return new GitMonitoringWorker<>(this, context, command);
 		};
 
 		@Override
@@ -198,20 +225,48 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 			if(pushResult==null) {
 				epInfo.setText(null);
 			} else {
-				//TODO properly process the displayed data for non-technical users
-				StringBuilder sb = new StringBuilder();
 
-				sb.append(pushResult.getMessages());
+				//Create a more comfortable result lookup
+				Map<Status, List<RemoteRefUpdate>> updatesByStatus
+						= getUpdatesByStatus(pushResult);
 
-				String LB = "\n\n";
+				String headerKey;
 
-				pushResult.getRemoteUpdates()
-					.stream()
-					.sorted((u1, u2) -> u1.getRemoteName().compareTo(u2.getRemoteName()))
-					.forEach(refUpdate -> sb.append(LB).append(refUpdate.toString()));  //TODO ugly, as this is not localized
+				/*
+				 *  Depending on what every RemoteRefUpdate reports, we need
+				 *  to inform the user appropriately.
+				 */
+				if(hasFailed(updatesByStatus.keySet())) {
+					// Push rejected - nothing updated on remote
+					headerKey = "replaydh.wizard.gitRemotePublisher.finish.headerRejected";
+				} else if(hasChanged(updatesByStatus.keySet())) {
+					// Push succeeded - remote updated
+					headerKey = "replaydh.wizard.gitRemotePublisher.finish.headerAccepted";
+				} else {
+					// Remote already up2date
+					headerKey = "replaydh.wizard.gitRemotePublisher.finish.headerNoChanges";
+				}
 
-				epInfo.setText(sb.toString());
+				taHeader.setText(ResourceManager.getInstance().get(headerKey));
+
+				showRawResult(pushResult);
 			}
+		}
+
+		private void showRawResult(PushResult pushResult) {
+			//TODO properly process the displayed data for non-technical users
+			StringBuilder sb = new StringBuilder();
+
+			sb.append(pushResult.getMessages());
+
+			String LB = "\n\n";
+
+			pushResult.getRemoteUpdates()
+				.stream()
+				.sorted((u1, u2) -> u1.getRemoteName().compareTo(u2.getRemoteName()))
+				.forEach(refUpdate -> sb.append(LB).append(refUpdate.toString()));  //TODO ugly, as this is not localized
+
+			epInfo.setText(sb.toString());
 		}
 
 		@Override
@@ -221,14 +276,25 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 			cbResults.removeAllItems();
 
 			if(context.error!=null) {
+				// Major error prevented execution of the command
 				cbResults.setVisible(false);
 				epInfo.setThrowable(context.error);
 				taHeader.setText(rm.get("replaydh.wizard.gitRemotePublisher.finish.headerError"));
 			} else if(context.result!=null) {
+				// We got a result which may still indicate an error
+
+				for(PushResult pushResult : context.result) {
+					cbResults.addItem(pushResult);
+
+					log.info("Raw result of pushing to {}: {}",
+							pushResult.getURI(), pushResult);
+				}
+
 				context.result.forEach(cbResults::addItem);
 				if(cbResults.getItemCount()>0) {
 					GuiUtils.invokeEDTLater(() -> cbResults.setSelectedIndex(0));
 
+					// Switch to detect if at least one ref got rejected
 					boolean accepted = true;
 					for(PushResult pushResult : context.result) {
 						if(isRejectedPushResult(pushResult)) {
@@ -238,6 +304,7 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 					}
 
 					if(accepted) {
+						// Everything was
 						taHeader.setText(rm.get("replaydh.wizard.gitRemotePublisher.finish.headerAccepted"));
 					} else {
 						taHeader.setText(rm.get("replaydh.wizard.gitRemotePublisher.finish.headerRejected"));
@@ -246,12 +313,37 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 					taHeader.setText(rm.get("replaydh.wizard.gitRemotePublisher.finish.headerMissingInfo"));
 				}
 			} else {
+				// Something weird happened, possibly an issue with the dialog flow
 				taHeader.setText(rm.get("replaydh.wizard.gitRemotePublisher.finish.headerMissingInfo"));
 				epInfo.setText(context.finalMessage);
 			}
 
 			setPreviousEnabled(false);
 		};
+
+		private Map<Status, List<RemoteRefUpdate>> getUpdatesByStatus(PushResult pushResult) {
+			Map<Status, List<RemoteRefUpdate>> result = new HashMap<>();
+
+			pushResult.getRemoteUpdates().forEach(update ->
+					result.computeIfAbsent(update.getStatus(), r -> new ArrayList<>()).add(update));
+
+			return result;
+		}
+
+		/**
+		 * Check if the given set of occurred results contains any indicating a fail.
+		 */
+		private boolean hasFailed(Set<Status> results) {
+			return results.stream().anyMatch(FAILED::contains);
+		}
+
+		/**
+		 * Check if the given set of occurred results contains any indicating a
+		 * successful physical change.
+		 */
+		private boolean hasChanged(Set<Status> results) {
+			return results.stream().anyMatch(CHANGED::contains);
+		}
 
 		@Override
 		public boolean close() {

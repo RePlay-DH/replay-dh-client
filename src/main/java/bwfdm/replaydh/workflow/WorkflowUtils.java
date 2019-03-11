@@ -100,6 +100,18 @@ public class WorkflowUtils {
 		return !workflow.hasNextSteps(workflow.getInitialStep());
 	}
 
+	public static boolean isEmpty(WorkflowStep step) {
+    	return step.getRecordingTime()==null
+    			&& step.getInputCount()==0
+    			&& step.getOutputCount()==0
+    			&& step.getPersonsCount()==0
+    			&& step.getTool()==null;
+    }
+
+	public static boolean isForeignCommit(WorkflowStep step) {
+    	return isEmpty(step) && WorkflowStep.FOREIGN_COMMIT_HEADER.equals(step.getTitle());
+    }
+
 	// WORKFLOW TRAVERSAL
 
 	/**

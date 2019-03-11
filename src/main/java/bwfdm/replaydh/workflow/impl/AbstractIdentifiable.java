@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifier;
@@ -87,6 +88,19 @@ public abstract class AbstractIdentifiable implements Identifiable {
 	@Override
 	public void forEachIdentifier(Consumer<? super Identifier> action) {
 		identifiers.values().forEach(action);
+	}
+
+	/**
+	 * @see bwfdm.replaydh.workflow.Identifiable#hasIdentifier(java.util.function.Predicate)
+	 */
+	@Override
+	public boolean hasIdentifier(Predicate<? super Identifier> predicate) {
+		for(Identifier identifier : identifiers.values()) {
+			if(predicate.test(identifier)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static final String key(Identifier identifier) {

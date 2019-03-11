@@ -120,6 +120,7 @@ public abstract class AbstractDialogWorker<T extends Object, V extends Object> e
 	public void start() {
 		execute();
 		taInfo.setText(getMessage(MessageType.RUNNING, null));
+		dialog.pack();
 		dialog.setVisible(true);
 	}
 

@@ -27,8 +27,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import bwfdm.replaydh.utils.IdentityHashSet;
+import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
 import bwfdm.replaydh.workflow.Tool;
@@ -210,6 +212,21 @@ public class DefaultWorkflowStep implements WorkflowStep {
 	@Override
 	public Workflow getWorkflow() {
 		return workflow;
+	}
+
+	/**
+	 * @see bwfdm.replaydh.workflow.WorkflowStep#forEachIdentifiable(java.util.function.Consumer)
+	 */
+	@Override
+	public void forEachIdentifiable(Consumer<? super Identifiable> action) {
+		if(persons!=null)
+			persons.forEach(action);
+		if(input!=null)
+			input.forEach(action);
+		if(tool!=null)
+			action.accept(tool);
+		if(output!=null)
+			output.forEach(action);
 	}
 
 	/**

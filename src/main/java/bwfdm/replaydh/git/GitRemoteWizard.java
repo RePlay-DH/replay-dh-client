@@ -16,21 +16,22 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.workflow.git;
+package bwfdm.replaydh.git;
 
 import static bwfdm.replaydh.utils.RDHUtils.checkState;
 import static java.util.Objects.requireNonNull;
 
 import java.awt.Component;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.function.Consumer;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
@@ -47,8 +48,12 @@ import org.eclipse.jgit.api.GitCommand;
 import org.eclipse.jgit.api.RemoteAddCommand;
 import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
@@ -59,8 +64,6 @@ import com.jgoodies.forms.builder.FormBuilder;
 
 import bwfdm.replaydh.core.RDHClient;
 import bwfdm.replaydh.core.RDHEnvironment;
-import bwfdm.replaydh.git.GitException;
-import bwfdm.replaydh.git.JGitAdapter;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.AbstractWizardStep;
@@ -82,14 +85,8 @@ public abstract class GitRemoteWizard {
 	public static class GitRemoteContext<T> implements AutoCloseable {
 		public final Git git;
 
-		/** Actual URL for the remote if provided by user */
-		public URIish remoteUrl;
-
 		/** Registered config for the remote if selected by user */
 		public RemoteConfig remoteConfig;
-
-		/** Label for registering the remote */
-		public String refName;
 
 		/** The last message created while performing the remote operation */
 		public String finalMessage;
@@ -106,6 +103,12 @@ public abstract class GitRemoteWizard {
 		/** Flag to signal the command finished without 'error' but may still have failed */
 		public boolean commandCompleted;
 
+		/** The scope on which the operation should take effect */
+		public Scope scope;
+
+		/** The branch we restricted the operation to */
+		public String branch;
+
 		public GitRemoteContext(Git git) {
 			this.git = requireNonNull(git);
 		}
@@ -115,14 +118,19 @@ public abstract class GitRemoteWizard {
 		}
 
 		public String getRemote() {
-			String url = null;
-			if(remoteUrl!=null) {
-				url = remoteUrl.toString();
+			return remoteConfig==null ? null : remoteConfig.getName();
+		}
+
+		public void prepare() {
+			cleanupTempRemote();
+		}
+
+		private void cleanupTempRemote() {
+			try {
+				GitUtils.cleanupTempRemote(git);
+			} catch (GitAPIException e) {
+				GuiUtils.invokeEDT(() -> GuiUtils.showErrorDialog(GuiUtils.getActiveWindow(), e));
 			}
-			if(url==null && remoteConfig!=null) {
-				url = remoteConfig.getName();
-			}
-			return url;
 		}
 
 		/**
@@ -134,21 +142,9 @@ public abstract class GitRemoteWizard {
 				credentials.clear();
 				credentials = null;
 			}
-		}
-	}
 
-	protected static URIish getUsablePushUri(RemoteConfig config) {
-		List<URIish> pushUris = config.getPushURIs();
-		if(!pushUris.isEmpty()) {
-			return pushUris.get(0);
+			cleanupTempRemote();
 		}
-
-		List<URIish> rawUris = config.getURIs();
-		if(!rawUris.isEmpty()) {
-			return rawUris.get(0);
-		}
-
-		return null;
 	}
 
 	/**
@@ -167,7 +163,7 @@ public abstract class GitRemoteWizard {
 	protected static final String CHOOSE_NEW_REPO = "";
 
 	/**
-	 * First step: Let user provide or select a remote repository URL
+	 * Let user provide or select a remote repository URL
 	 */
 	protected abstract static class ChooseRemoteStep<T, C extends GitRemoteContext<T>> extends GitRemoteStep<T,C> {
 
@@ -190,8 +186,6 @@ public abstract class GitRemoteWizard {
 
 		private JComboBox<Object> cbRemote;
 		private JTextField tfRemoteName;
-
-		private final Matcher legalRemoteNameMatcher = Pattern.compile("[a-zA-Z]+").matcher("");
 
 		@Override
 		protected JPanel createPanel() {
@@ -236,8 +230,12 @@ public abstract class GitRemoteWizard {
 				return true;
 			}
 
-			// Syntax check
-			if(!legalRemoteNameMatcher.reset(name).matches()) {
+			if(GitUtils.TEMP_RDH_REMOTE.equals(name)) {
+				return false;
+			}
+
+			// Remote names are part of a ref string
+			if(!Repository.isValidRefName(name)) {
 				return false;
 			}
 
@@ -271,17 +269,20 @@ public abstract class GitRemoteWizard {
 			cbRemote.removeAllItems();
 			cbRemote.addItem(CHOOSE_NEW_REPO);
 
-			if(context.remoteUrl!=null) {
-				cbRemote.addItem(context.remoteUrl);
-			}
-
 			Repository repo = context.git.getRepository();
 
 			try {
-				RemoteConfig.getAllRemoteConfigs(repo.getConfig()).forEach(cbRemote::addItem);
+				RemoteConfig.getAllRemoteConfigs(repo.getConfig())
+					.stream()
+					.filter(rc -> !GitUtils.isTemporaryRemote(rc))
+					.forEach(cbRemote::addItem);
 			} catch (URISyntaxException e) {
 				log.error("Failed to read existing remote entries", e);
 				GuiUtils.showErrorDialog(getPageComponent(), e);
+			}
+
+			if(context.remoteConfig!=null && GitUtils.isTemporaryRemote(context.remoteConfig)) {
+				cbRemote.setSelectedItem(context.remoteConfig.getURIs().get(0).toString());
 			}
 
 			refreshRemoteEditable();
@@ -339,7 +340,6 @@ public abstract class GitRemoteWizard {
 		@Override
 		public void cancel(RDHEnvironment environment, C context) {
 			context.remoteConfig = null;
-			context.remoteUrl = null;
 		};
 
 		/**
@@ -361,8 +361,9 @@ public abstract class GitRemoteWizard {
 			if(item instanceof RemoteConfig) {
 				context.remoteConfig = (RemoteConfig) item;
 			} else if(item instanceof String) {
+				URIish uri;
 				try {
-					context.remoteUrl = new URIish((String) item);
+					uri = new URIish((String) item);
 				} catch (URISyntaxException e) {
 					log.error("Invalid remote url: {}", item, e);
 					GuiUtils.showErrorDialog(panel(), e);
@@ -370,12 +371,15 @@ public abstract class GitRemoteWizard {
 				}
 
 				String remoteName = tfRemoteName.getText();
+				if(remoteName==null || remoteName.isEmpty()) {
+					remoteName = GitUtils.TEMP_RDH_REMOTE;
+				}
+
 				// Additional sanity check
-				if(remoteName!=null && !remoteName.isEmpty()
-						&& checkLegalRemoteName(remoteName)) {
+				if(context.remoteConfig==null || !remoteName.equals(context.remoteConfig.getName())) {
 					RemoteAddCommand addCommand = context.git.remoteAdd();
 					addCommand.setName(remoteName);
-					addCommand.setUri(context.remoteUrl);
+					addCommand.setUri(uri);
 
 					// Save and directly use new remote config
 					try {
@@ -384,7 +388,7 @@ public abstract class GitRemoteWizard {
 						log.error("Failed to add new remote config", e);
 						GuiUtils.showErrorDialog(panel, null,
 								"replaydh.wizard.gitRemote.chooseRemote.addRemoteFailed", e);
-						// Failing to store the URL doesn't have to stop us from pushing
+						return false;
 					}
 				}
 			}
@@ -393,8 +397,143 @@ public abstract class GitRemoteWizard {
 		}
 	}
 
+	public enum Scope {
+		/**
+		 * Only consider changes related to the current workspace (branch)
+		 */
+		WORKSPACE("workspace"),
+		/**
+		 * Push or fetch everything for the entire workflow (repository)
+		 */
+		WORKFLOW("workflow"),
+		;
+		private final String key;
+
+		private Scope(String key) {
+			this.key = "replaydh.wizard.gitRemote.scope."+key;
+		}
+
+		/**
+		 * @see java.lang.Enum#toString()
+		 */
+		@Override
+		public String toString() {
+			return ResourceManager.getInstance().get(key);
+		}
+	}
+
 	/**
-	 *
+	 * Let user provide or select a remote repository URL
+	 */
+	protected abstract static class SelectScopeStep<T, C extends GitRemoteContext<T>> extends GitRemoteStep<T,C> {
+
+		private static String DEFAULT_HEADER_SECTION_KEY = "replaydh.wizard.gitRemote.selectScope.header";
+		private static String DEFAULT_WORKSPACE_SCOPE_KEY = "replaydh.wizard.gitRemote.selectScope.workspaceScope";
+		private static String DEFAULT_WORKFLOW_SCOPE_KEY = "replaydh.wizard.gitRemote.selectScope.workflowScope";
+
+		private static final Scope DEFAULT_SCOPE = Scope.WORKSPACE;
+
+		public SelectScopeStep(String id, String titleKey, String descriptionKey,
+				String headerSectionKey, String workspaceScopeKey, String workflowScopeKey) {
+			super(id, titleKey, descriptionKey);
+
+			this.headerSectionKey = headerSectionKey!=null ? headerSectionKey : DEFAULT_HEADER_SECTION_KEY;
+			this.workspaceScopeKey = workspaceScopeKey!=null ? workspaceScopeKey : DEFAULT_WORKSPACE_SCOPE_KEY;
+			this.workflowScopeKey = workflowScopeKey!=null ? workflowScopeKey : DEFAULT_WORKFLOW_SCOPE_KEY;
+		}
+
+		private final String headerSectionKey;
+		private final String workspaceScopeKey;
+		private final String workflowScopeKey;
+
+		private JComboBox<Scope> cbScope;
+		private JTextArea taInfo;
+
+		@Override
+		protected JPanel createPanel() {
+
+			ResourceManager rm = ResourceManager.getInstance();
+
+			cbScope = new JComboBox<>(Scope.values());
+			cbScope.addActionListener(ae -> onScopeSelected());
+
+			taInfo = GuiUtils.createTextArea("");
+
+			return FormBuilder.create()
+					.columns("pref, 4dlu, fill:pref:grow")
+					.rows("pref, 6dlu, pref, 6dlu, pref")
+					.add(GuiUtils.createTextArea(rm.get(headerSectionKey))).xyw(1, 1, 3)
+
+					.addLabel(rm.get("replaydh.wizard.gitRemote.scope.label")+":").xy(1, 3)
+					.add(cbScope).xy(3, 3)
+					.add(taInfo).xyw(1, 5, 3)
+
+					.build();
+		}
+
+		@Override
+		public void refresh(RDHEnvironment environment, C context) {
+			if(context.remoteConfig==null) {
+				cbScope.setEnabled(false);
+				taInfo.setText(ResourceManager.getInstance().get("replaydh.wizard.gitRemote.selectScope.noRemote"));
+			} else {
+				cbScope.setEnabled(true);
+
+				Scope scope = context.scope;
+				if(scope==null) {
+					scope = DEFAULT_SCOPE;
+				}
+				cbScope.setSelectedItem(scope);
+			}
+		};
+
+		private void onScopeSelected() {
+			Scope scope = (Scope) cbScope.getSelectedItem();
+
+			String infoKey;
+
+			switch (scope) {
+			case WORKSPACE:
+				infoKey = workspaceScopeKey;
+				break;
+
+			case WORKFLOW:
+				infoKey = workflowScopeKey;
+				break;
+
+			default:
+				throw new IllegalStateException("Unknown scope: "+scope);
+			}
+
+			taInfo.setText(ResourceManager.getInstance().get(infoKey));
+		}
+
+		/**
+		 * Default processing of the current page. Will return {@code true} if no errors
+		 * were encountered and the wizard can continue.
+		 *
+		 * @param environment
+		 * @param context
+		 * @return
+		 */
+		protected boolean defaultProcessNext(RDHEnvironment environment,
+				C context) {
+
+			Scope scope = (Scope)cbScope.getSelectedItem();
+
+			// Make sure we don't use the selection if situation prohibits WORKSPACE
+			if(!cbScope.isEnabled()) {
+				scope = null;
+			}
+
+			context.scope = scope;
+
+			return true;
+		}
+	}
+
+	/**
+	 * Provide an interface for executing an arbitrary {@link GitCommand}
 	 */
 	protected static abstract class PerformOperationStep<T, G extends GitCommand<T>, C extends GitRemoteContext<T>>
 			extends GitRemoteStep<T,C> {
@@ -431,13 +570,15 @@ public abstract class GitRemoteWizard {
 			if(worker.getState()==StateValue.PENDING) {
 				bTransmit.setText(ResourceManager.getInstance().get("replaydh.labels.cancel"));
 				worker.execute();
-				refreshPreviousEnabled();
 			} else {
 				// Otherwise it's a cancel request
 				worker.cancel(false); //TODO for now we don't want to interrupt the worker thread
 			}
 
-			GuiUtils.invokeEDTLater(this::refreshButton);
+			GuiUtils.invokeEDTLater(() -> {
+				refreshButton();
+				refreshPreviousEnabled();
+			});
 		}
 
 		private void refreshButton() {
@@ -477,9 +618,85 @@ public abstract class GitRemoteWizard {
 			return worker!=null && !worker.isDone() && worker.getState()!=StateValue.PENDING;
 		}
 
-		protected abstract G createGitCommand(C context) throws GitException, URISyntaxException;
+		protected GitWorker<T, G, C> createWorker(RDHEnvironment environment, C context) {
+			return defaultCreateWorker(environment, context);
+		}
 
-		protected abstract GitWorker<T, G, C> createWorker(RDHEnvironment environment, G command, C context);
+		protected final GitWorker<T, G, C> defaultCreateWorker(RDHEnvironment environment, C context) {
+			return new GitWorker<>(environment, context, this::createGitCommand,
+					this::handleWorkerResult, this::handleWorkerChunks);
+		}
+
+		/**
+		 * Construct a non-null one-time-usage command.
+		 *
+		 * @param worker
+		 * @return
+		 * @throws GitException
+		 */
+		protected abstract G createGitCommand(GitWorker<T, G, C> worker) throws GitException;
+
+		protected boolean configureTransportCommand(TransportCommand<?, ?> command, C context) throws GitException {
+			RemoteConfig config = context.remoteConfig;
+
+			URIish remoteUri = config.getURIs().get(0);
+			String remoteName = config.getName();
+
+			return GitUtils.prepareTransportCredentials(command, remoteUri, remoteName,
+					(username, password) -> {
+						context.credentials = new UsernamePasswordCredentialsProvider(username, password);
+						return context.credentials;
+					});
+		}
+
+		protected void handleWorkerChunks(List<String> chunks) {
+			if(!chunks.isEmpty()) {
+				taInfo.setText(chunks.get(chunks.size()-1));
+			}
+		}
+
+		protected void handleWorkerResult(GitWorker<T, G, C> worker) {
+			ResourceManager rm = ResourceManager.getInstance();
+
+			// Store last displayed info
+			worker.context.finalMessage = taInfo.getText();
+
+			taInfo.setText(rm.get("replaydh.wizard.gitRemote.execute.workerFinished"));
+
+			refreshNextEnabled();
+			refreshPreviousEnabled();
+
+			bTransmit.setEnabled(false);
+			bTransmit.setIcon(null);
+			bTransmit.setText("-");
+			bTransmit.setToolTipText(null);
+		}
+
+		protected String getCurrentBranch(C context) throws GitException {
+
+			JGitAdapter gitAdapter = JGitAdapter.fromClient(worker.environment.getClient());
+			RevCommit head;
+			try {
+				head = gitAdapter.head();
+			} catch (IOException e) {
+				throw new GitException("Failed to obtain current HEAD", e);
+			}
+
+			Map<ObjectId, String> namedRefs;
+			try {
+				namedRefs = context.git.nameRev().add(head).call();
+			} catch (MissingObjectException | JGitInternalException | GitAPIException e) {
+				throw new GitException("Error while trying to fetch branch name for HEAD: "+head, e);
+			}
+
+			if(namedRefs.isEmpty())
+				throw new GitException("Repository inconsistency detected: no branch pointing to current HEAD: "+head);
+
+			String branch = namedRefs.get(head);
+			context.branch = branch;
+
+			return branch;
+		}
 
 		@Override
 		public void refresh(RDHEnvironment environment, C context) {
@@ -487,17 +704,7 @@ public abstract class GitRemoteWizard {
 
 			ResourceManager rm = ResourceManager.getInstance();
 
-			G command = null;
-			try {
-				command = createGitCommand(context);
-			} catch (GitException | URISyntaxException e) {
-				log.error("Failed to prepare git command", e);
-				context.error = e;
-			}
-
-			if(command!=null) {
-				worker = createWorker(environment, command, context);
-			}
+			worker = createWorker(environment, context);
 
 			bTransmit.setText(rm.get("replaydh.labels.start"));
 			bTransmit.setEnabled(worker!=null);
@@ -517,6 +724,8 @@ public abstract class GitRemoteWizard {
 		public void cancel(RDHEnvironment environment, C context) {
 			// We don't allow backtracking while worker is still active, so it's safe to cleanup here
 			worker = null;
+
+			context.branch = null;
 		};
 
 		@Override
@@ -529,22 +738,76 @@ public abstract class GitRemoteWizard {
 		};
 	};
 
-	protected static abstract class GitWorker<T, G extends GitCommand<T>, C extends GitRemoteContext<T>>
-			extends SwingWorker<T, String> {
-		private final PerformOperationStep<T, G, C> step;
-		protected final C context;
+	@FunctionalInterface
+	public interface CommandGenerator<T, G extends GitCommand<T>, C extends GitRemoteContext<T>> {
+		G createCommand(GitWorker<T, G, C> worker) throws GitException;
+	}
 
-		protected GitWorker(PerformOperationStep<T, G, C> step, C context) {
-			this.step = step;
-			this.context = context;
+	@FunctionalInterface
+	public interface ResultHandler<T, G extends GitCommand<T>, C extends GitRemoteContext<T>> {
+		void handleResult(GitWorker<T, G, C> worker);
+	}
+
+	public static class GitWorker<T, G extends GitCommand<T>, C extends GitRemoteContext<T>>
+			extends SwingWorker<T, String>  implements ProgressMonitor {
+
+		protected final CommandGenerator<T, G, C> commandGen;
+		protected final ResultHandler<T, G, C> resultHandler;
+		protected final Consumer<List<String>> chunkHandler;
+		public final RDHEnvironment environment;
+		public final C context;
+
+		private boolean doMonitor = true;
+
+		protected GitWorker(
+				RDHEnvironment environment,
+				C context,
+				CommandGenerator<T, G, C> commandGen,
+				ResultHandler<T, G, C> resultHandler,
+				Consumer<List<String>> chunkHandler) {
+			this.environment = requireNonNull(environment);
+			this.context = requireNonNull(context);
+			this.commandGen = requireNonNull(commandGen);
+			this.resultHandler = requireNonNull(resultHandler);
+			this.chunkHandler = chunkHandler;
+		}
+
+		public GitWorker<T, G, C> monitor(boolean doMonitor) {
+			this.doMonitor = doMonitor;
+			return this;
+		}
+
+		@Override
+		protected T doInBackground() throws Exception {
+			G command = commandGen.createCommand(this);
+
+			if(command==null)
+				throw new IllegalStateException("COnstruction of Git command failed");
+
+			if(doMonitor) {
+				attachProgressMonitor(command);
+			}
+
+			return command.call();
+		}
+
+		protected void attachProgressMonitor(G command) {
+			try {
+				command.getClass().getMethod("setProgressMonitor", ProgressMonitor.class).invoke(command, this);
+			} catch (IllegalAccessException | IllegalArgumentException | SecurityException e) {
+				log.error("Unable to access method to attach progress monitor", e);
+			} catch (InvocationTargetException e) {
+				log.error("Unexpected error while attaching progress monitor", e.getCause());
+			} catch (NoSuchMethodException e) {
+				log.error("Command is missing method to attach progress monitor: {}", command.getClass(), e);
+			}
 		}
 
 		@Override
 		protected final void done() {
-			ResourceManager rm = ResourceManager.getInstance();
-
 			try {
 				context.result = get();
+				context.commandCompleted = true;
 			} catch (InterruptedException | CancellationException e) {
 				/*
 				 *  Assumed to be user-originated cancellation.
@@ -561,31 +824,18 @@ public abstract class GitRemoteWizard {
 						context.getRemote(), e.getCause());
 			}
 
-			// Store last displayed info
-			context.finalMessage = step.taInfo.getText();
-
-			step.taInfo.setText(rm.get("replaydh.wizard.gitRemote.execute.workerFinished"));
-
-			step.refreshNextEnabled();
-			step.refreshPreviousEnabled();
-
-			step.bTransmit.setEnabled(false);
-			step.bTransmit.setIcon(null);
-			step.bTransmit.setText("-");
-			step.bTransmit.setToolTipText(null);
+			resultHandler.handleResult(this);
 		};
 
 		@Override
 		protected void process(List<String> chunks) {
-			if(!chunks.isEmpty()) {
-				step.taInfo.setText(chunks.get(chunks.size()-1));
+			if(chunkHandler!=null) {
+				chunkHandler.accept(chunks);
 			}
 		};
-	}
 
-	protected static class GitMonitoringWorker<T, G extends TransportCommand<G, T>, C extends GitRemoteContext<T>>
-			extends GitWorker<T, G, C> implements ProgressMonitor {
 
+		// PROGRESS MONITOR STUFF
 
 		/** total number of tasks */
 		private int totalTasks = -1;
@@ -597,13 +847,6 @@ public abstract class GitRemoteWizard {
 		private final List<String> tasks = new ArrayList<>();
 
 		private String task;
-
-		private final G command;
-
-		public GitMonitoringWorker(PerformOperationStep<T, G, C> step, C context, G command) {
-			super(step, context);
-			this.command = requireNonNull(command);
-		}
 
 		/**
 		 * @see org.eclipse.jgit.lib.ProgressMonitor#start(int)
@@ -678,32 +921,6 @@ public abstract class GitRemoteWizard {
 
 			publish(sb.toString());
 		}
-
-		protected void attachProgressMonitor() {
-			try {
-				command.getClass().getMethod("setProgressMonitor", ProgressMonitor.class).invoke(command, this);
-			} catch (IllegalAccessException | IllegalArgumentException | SecurityException e) {
-				log.error("Unable to access method to attach progress monitor", e);
-			} catch (InvocationTargetException e) {
-				log.error("Unexpected error while attaching progress monitor", e.getCause());
-			} catch (NoSuchMethodException e) {
-				log.error("Command is missing method to attach progress monitor: {}", command.getClass(), e);
-			}
-		}
-
-		/**
-		 * @see javax.swing.SwingWorker#doInBackground()
-		 */
-		@Override
-		protected T doInBackground() throws Exception {
-			attachProgressMonitor();
-
-			T result = command.call();
-
-			context.commandCompleted = true;
-
-			return result;
-		}
 	}
 
 	private static class RemoteListeCellRenderer extends DefaultListCellRenderer {
@@ -722,11 +939,10 @@ public abstract class GitRemoteWizard {
 			// Entries are either Strings or RemoteConfig instances
 			if(value instanceof RemoteConfig) {
 				RemoteConfig config = (RemoteConfig) value;
-				URIish uri = getUsablePushUri(config);
-				if(uri!=null) {
-					value = String.format("%s - %s", config.getName(), uri.toString());
-					tooltip = uri.toString();
-				}
+				URIish uri = config.getURIs().get(0);
+
+				value = String.format("%s - %s", config.getName(), uri.toString());
+				tooltip = uri.toString();
 			} else if(CHOOSE_NEW_REPO.equals(value)) {
 				value = ResourceManager.getInstance().get("replaydh.wizard.gitRemote.chooseRemote.addNewUrl");
 			} else if(value!=null) {

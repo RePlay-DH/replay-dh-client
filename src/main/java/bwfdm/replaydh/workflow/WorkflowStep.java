@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Models the result of a single action in a workflow graph.
@@ -31,6 +32,7 @@ import java.util.Set;
 public interface WorkflowStep {
 
 	public static final String PROPERTY_INTERNAL_INFO = "RDH_internalInfo";
+	public String FOREIGN_COMMIT_HEADER = "???";
 
 	/**
 	 * Returns the unique id for this step that was assigned by the host
@@ -148,6 +150,8 @@ public interface WorkflowStep {
      * @return
      */
     Map<String, String> getProperties();
+
+    void forEachIdentifiable(Consumer<? super Identifiable> action);
 
     // MODIFICATION METHODS
 

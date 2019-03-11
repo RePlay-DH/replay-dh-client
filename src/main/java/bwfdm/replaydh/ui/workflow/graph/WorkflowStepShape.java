@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.workflow.graph;
@@ -73,7 +73,8 @@ public class WorkflowStepShape extends mxRectangleShape {
 	public static Rectangle getPreferredCellSize(WorkflowStep step) {
 		Rectangle r = new Rectangle(0, 64);
 
-		if(!WorkflowUtils.isInitial(step)) {
+		if(!WorkflowUtils.isInitial(step)
+				&& !WorkflowUtils.isForeignCommit(step)) {
 			int inputs = step.getInputCount();
 			int outputs = step.getOutputCount();
 			int persons = step.getPersonsCount();
@@ -112,6 +113,21 @@ public class WorkflowStepShape extends mxRectangleShape {
 	public static final Icon ICON_TOOL = ICON_REGISTRY.getIcon("Job-64.png");
 	public static final Icon ICON_RESOURCE_INPUT = ICON_REGISTRY.getIcon("Google Forms-64.png");
 	public static final Icon ICON_RESOURCE_OUTPUT = ICON_REGISTRY.getIcon("Google Forms-64.png");
+	public static final Icon ICON_UNKNOWN = ICON_REGISTRY.getIcon("icons8-question-mark-64.png");
+
+	private static final Image FOREIGN_COMMIT_IMAGE;
+	static {
+
+		BufferedImage image = new BufferedImage(
+				ICON_UNKNOWN.getIconWidth(),
+				ICON_UNKNOWN.getIconHeight(),
+				BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g = image.createGraphics();
+		ICON_UNKNOWN.paintIcon(null, g, 0, 0);
+		g.dispose();
+
+		FOREIGN_COMMIT_IMAGE = image;
+	}
 
 	/**
 	 * @see com.mxgraph.shape.mxRectangleShape#paintShape(com.mxgraph.canvas.mxGraphics2DCanvas, com.mxgraph.view.mxCellState)
@@ -161,6 +177,11 @@ public class WorkflowStepShape extends mxRectangleShape {
 		Object cell = state.getCell();
 		mxGraph graph = state.getView().getGraph();
 		WorkflowStep step = (WorkflowStep) graph.getModel().getValue(cell);
+
+		// Don't bother constructing complex images for foreign commits
+		if(WorkflowUtils.isForeignCommit(step)) {
+			return FOREIGN_COMMIT_IMAGE;
+		}
 
 		// Do we rly need a Graphics2D instead of regular Graphics object?
 		Graphics2D g = image.createGraphics();

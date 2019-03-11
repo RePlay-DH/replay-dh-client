@@ -32,8 +32,11 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.IntConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHException;
@@ -357,10 +360,15 @@ public class RDHUtils {
 		case MODIFIED: return rm.get("replaydh.trackingStatus.modified");
 		case MISSING: return rm.get("replaydh.trackingStatus.missing");
 		case CORRUPTED: return rm.get("replaydh.trackingStatus.corrupted");
-	
+
 		default:
 			throw new IllegalArgumentException("unknown tracking status: "+status);
 		}
+	}
+
+	public static <T> List<T> toList(Iterable<T> source) {
+		return StreamSupport.stream(source.spliterator(), false)
+				.collect(Collectors.toList());
 	}
 }
 

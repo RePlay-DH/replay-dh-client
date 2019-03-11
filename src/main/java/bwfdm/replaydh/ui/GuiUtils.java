@@ -61,6 +61,7 @@ import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.FocusManager;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -155,6 +156,10 @@ public class GuiUtils {
 		frame.setIconImages(defaultRDHIcons);
 
 		frame.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE); //TODO really needed that way?
+	}
+
+	public static Window getActiveWindow() {
+		return FocusManager.getCurrentManager().getActiveWindow();
 	}
 
 	/**
@@ -762,6 +767,8 @@ public class GuiUtils {
 
 		dialog.setVisible(true);
 
+		editor.close();
+
 		//editor.setControl(null);
 
 		return result.get();
@@ -851,6 +858,8 @@ public class GuiUtils {
 		editor.setControl(control);
 
 		dialog.setVisible(true);
+
+		editor.close();
 
 		//editor.setControl(null);
 

@@ -111,7 +111,7 @@ import bwfdm.replaydh.workflow.schema.WorkflowSchema;
  * @author Markus Gärtner
  *
  */
-public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker/*, PropertyChangeListener*/ {
+public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker {
 
 	private static final Logger log = LoggerFactory.getLogger(JGitAdapter.class);
 
@@ -1830,9 +1830,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	private void checkout(WorkflowStep step) throws IOException, GitException {
 		synchronized (gitLock) {
 			// Fetch the commit the target step is pointing to
-			RevCommit commit = loadId(step);
+			final RevCommit commit = loadId(step);
 			// Fetch the current head
-			RevCommit head = head();
+			final RevCommit head = head();
 
 			/*
 			 *  Exit early in case we are already at the right commit.
@@ -1846,8 +1846,26 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			//TODO check if we have a clean working dir state and ask user to clean it?
 
 //			ensureReachable(head);
+			String nameToCheckout = null;
 
-			CheckoutCommand cmd = git.checkout().setName(commit.name());
+			if(WorkflowUtils.isLeaf(step)) {
+				// Find the branch the leaf commit is associated with
+				ExecutionResult<Map<ObjectId, String>> result = executeCommand(git.nameRev().add(commit));
+				if(result.hasFailed()) {
+					// This will leave us in a detached head state, but we can live with that
+					log.error("Failed to resolve branch for commit {}", commit, result.exception);
+				} else {
+					nameToCheckout = result.result.get(commit);
+				}
+				//TODO should we do something in case no branch pointed to 'commit' ?
+			}
+
+			if(nameToCheckout==null){
+				nameToCheckout = commit.name();
+			}
+
+			// Run command and verify new state
+			CheckoutCommand cmd = git.checkout().setName(nameToCheckout);
 			ExecutionResult<Ref> result = executeCommand(cmd);
 			if(result.hasFailed()) {
 				throw new GitException("Failed to checkout existing commit "+commit, result.exception);
@@ -1863,6 +1881,23 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 	RevCommit head() throws IOException {
 		return resolve(Constants.HEAD);
+	}
+
+	/**
+	 * Returns the branch {@link Ref} that {@code HEAD} currently points to
+	 * or {@code null} if the repository is currently in detached head state.
+	 * @return
+	 * @throws IOException
+	 */
+	Ref branch() throws IOException {
+		Ref head = git.getRepository().exactRef(Constants.HEAD);
+		if(head==null)
+			throw new IllegalStateException("No HEAD");
+		if(head.isSymbolic()) {
+			return head.getTarget();
+		}
+
+		return null;
 	}
 
 	private WorkflowStep lookupStep(RevCommit commit) {
@@ -2000,7 +2035,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 //				Iterable<RevCommit> commits = git.log().all().call();
 
-				buildWorkflowGraph(revWalk, Constants.HEAD, false);
+				buildWorkflowGraph(revWalk, Constants.HEAD, true);
 
 				// Finally switch flag so we don't ever attempt to load the workflow a second time
 				workflowLoaded = true;
@@ -2018,10 +2053,12 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	}
 
 	private void buildWorkflowGraph(Iterable<RevCommit> source, String active,
-			boolean reportExistingNodes)
+			boolean incremental)
 				throws GitException, IOException {
 
-		resetStepLookup();
+		if(!incremental) {
+			resetStepLookup();
+		}
 
 		/*
 		 *  The 'source' will usually be an instance of RevWalk
@@ -2035,7 +2072,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		// Treat our initial commit special
 		final RevCommit initialCommit = resolve(GitUtils.TAG_SOURCE);
 
-		if(isVerbose()) {
+		if(isVerbose() && !incremental) {
 			StringBuilder sb = new StringBuilder("----- Commits for graph -----");
 			for(RevCommit commit : commits) {
 				sb.append("\n  ").append(commit);
@@ -2055,7 +2092,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 			// Sanity check against duplicate step creation (should normally never happen)
 			if(lookupStep(commit)!=null) {
-				if(isVerbose()) {
+				if(isVerbose() && !incremental) {
 					log.info("Redundant graph node for commit: {}", commit);
 				}
 				continue;
@@ -2185,7 +2222,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 					 *  we'll at least be able to visualize them in the client.
 					 */
 					step.setDescription(message);
-					step.setTitle(GitUtils.FOREIGN_COMMIT_HEADER);
+					step.setTitle(WorkflowStep.FOREIGN_COMMIT_HEADER);
 				} else {
 					// We expect valid JSON data here
 					Options options = new Options();

@@ -21,10 +21,12 @@ package bwfdm.replaydh.workflow.catalog;
 import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 import bwfdm.replaydh.workflow.Identifiable;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result;
 
 /**
  * Implements a {@link MetadataCatalog.Result} that is backed by a
@@ -35,7 +37,26 @@ import bwfdm.replaydh.workflow.Identifiable;
  */
 public class SimpleResult implements MetadataCatalog.Result {
 
-	private final List<Identifiable> identifiables = new ArrayList<>();
+	private final List<Identifiable> identifiables;
+
+	public SimpleResult() {
+		identifiables = new ArrayList<>();
+	}
+
+	public SimpleResult(int capacity) {
+		identifiables = new ArrayList<>(capacity);
+	}
+
+	/**
+	 * Wraps around the given list of identifiables, resulting
+	 * in a {@link Result} that can't be modified further. Later changes
+	 * to the provided list by external sources will however be reflected
+	 * in this result.
+	 * @param identifiables
+	 */
+	public SimpleResult(List<Identifiable> identifiables) {
+		this.identifiables = Collections.unmodifiableList(identifiables);
+	}
 
 	/**
 	 * @see bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result#isEmpty()
@@ -51,6 +72,14 @@ public class SimpleResult implements MetadataCatalog.Result {
 	@Override
 	public Iterator<Identifiable> iterator() {
 		return identifiables.iterator();
+	}
+
+	/**
+	 * @see bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result#asList()
+	 */
+	@Override
+	public List<Identifiable> asList() {
+		return Collections.unmodifiableList(identifiables);
 	}
 
 	public void add(Identifiable identifiable) {
