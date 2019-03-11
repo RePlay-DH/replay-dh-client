@@ -55,9 +55,11 @@ import bwfdm.replaydh.workflow.Tool;
 import bwfdm.replaydh.workflow.Identifiable.Role;
 import bwfdm.replaydh.workflow.Identifiable.Type;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalogTestImpl;
+import bwfdm.replaydh.workflow.catalog.InMemoryMetadataCatalog;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Constraint;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result;
+import bwfdm.replaydh.workflow.export.dataverse.CollectionEntry;
 import bwfdm.replaydh.workflow.schema.IdentifierSchema;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 import bwfdm.replaydh.ui.GuiUtils;
@@ -117,11 +119,13 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
     	//scrollablePanel.setScrollableWidth(ScrollableSizeHint.FIT);
     	objectsPanel = new JPanel();
     	
-    	search = new MetadataCatalogTestImpl(schema);
+    	search = new InMemoryMetadataCatalog();
+    	
+    	collectionEntries = new HashMap<>();
     	//search.createObjects();
 	}
 
-	private MetadataCatalogTestImpl search;
+	private InMemoryMetadataCatalog search;
 	
 	private JDialog wizardWindow;
 	private ResourceManager rm = ResourceManager.getInstance();
@@ -132,6 +136,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 	
 	private JPanel mainPanelWizard;
 	private List<GUIElementMetadata> dd = new ArrayList<>();
+	
+	private Map<String, String> collectionEntries;
 	
 	private GUIElement simpleSearch;
 	
@@ -249,11 +255,13 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		simpleSearch.getMinusbutton().setVisible(false);
 		
 		GUIElementMetadata chooseProperties = createGUIElement("keys");
-		if(this.environment.getLocale().getLanguage().equals(new Locale("de").getLanguage())) {
-			ddKeys = new JComboBox(ddTypesDe.values());
-		} else {
-			ddKeys = new JComboBox(ddTypesEng.values());
+		ddKeys = new JComboBox();
+		for (MetadataKeys value : MetadataKeys.values()) {
+			String item = value.getDisplayLabel(value.getLocaString());
+			collectionEntries.put(item, value.getKey());
+			ddKeys.addItem(item);
 		}
+
 		ddKeys.addActionListener(this);
 		chooseProperties.getKeysDropdown().setModel(ddKeys.getModel());
 		dd.add(chooseProperties);
@@ -350,6 +358,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 			}
 		}
 		if (source == searchButton.getExtraButton()) {
+			MetadataKeys keys;
 			boolean empty=true;
 			List<Constraint> constraints = new ArrayList<>();
 			for(Iterator<GUIElementMetadata> elements = elementsofproperty.get("defaultdd").iterator();elements.hasNext();) {
@@ -357,13 +366,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 				if(!(element.getTextfield().getText().isEmpty())) {
 					empty=false;
 					Constraint constraint;
-					if(this.environment.getLocale().getLanguage().equals(new Locale("de").getLanguage())) {
-						String key = getKeyddTypesDe(element.getKeysDropdown().getSelectedItem().toString());
-						constraint = new Constraint(key,element.getTextfield().getText());
-					} else {
-						String key = getKeyddTypesEng(element.getKeysDropdown().getSelectedItem().toString());
-						constraint = new Constraint(key,element.getTextfield().getText());
-					}
+					String key = collectionEntries.get(element.getKeysDropdown().getSelectedItem().toString());
+					constraint = new Constraint(key, element.getTextfield().getText());
 					constraints.add(constraint);
 				}
 			}
@@ -472,10 +476,9 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 				}
 			}
 			
-			if(this.environment.getLocale().getLanguage().equals(new Locale("de").getLanguage())) {
-				ddKeys = new JComboBox(ddTypesDe.values());
-			} else {
-				ddKeys = new JComboBox(ddTypesEng.values());
+			for (MetadataKeys value : MetadataKeys.values()) {
+				String item = value.getDisplayLabel(value.getLocaString());
+				ddKeys.addItem(item);
 			}
 			ddKeys.addActionListener(this);
 			
@@ -547,81 +550,36 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 		return type==Type.PERSON;
 	}
 	
-	public enum ddTypesEng {
-		Title,
-		Name,
-		Type,
-		Identifier,
-		Parameter,
-		Nameversion,
-		Environment
-	}
 	
-	public enum ddTypesDe {
-		Titel,
-		Name,
-		Typ,
-		Identifier,
-		Parameter,
-		Namensversion,
-		Environment
-	}
-	
-	public static String getKeyddTypesEng(String type) {
-		String returnType = null;
-		switch(type) {
-		case "Title":
-			returnType="title";
-			break;
-		case "Name":
-			returnType="name";
-			break;
-		case "Type":
-			returnType="type";
-			break;
-		case "Identifier":
-			returnType="id";
-			break;
-		case "Parameter":
-			returnType="parameter";
-			break;
-		case "Nameversion":
-			returnType="namever";
-			break;
-		case "Environment":
-			returnType="env";
-			break;
+	public enum MetadataKeys {
+		TITLE_KEY("title","replaydh.wizard.metadataAutoWizard.title"),
+		DESCRIPTION_KEY("description","replaydh.wizard.metadataAutoWizard.description"),
+		ROLE_KEY("role","replaydh.wizard.metadataAutoWizard.role"),
+		TYPE_KEY("type","replaydh.wizard.metadataAutoWizard.type"),
+		ENVIRONMENT_KEY("environment","replaydh.wizard.metadataAutoWizard.environment"),
+		PARAMETERS_KEY("parameters","replaydh.wizard.metadataAutoWizard.parameters");
+		
+		String key;
+		String locaString;
+		
+		private MetadataKeys(String key, String locaString) {
+	        this.key = key;
+	        this.locaString=locaString;
+	    }
+
+	    public String getLocaString() {
+	        return locaString;
+	    }
+	    
+	    public String getKey() {
+	    	return key;
+	    }
+		
+		public String getDisplayLabel(String key) {
+			return ResourceManager.getInstance().get(key);
 		}
-		return returnType;
 	}
 	
-	public static String getKeyddTypesDe(String type) {
-		String returnType = null;
-		switch(type) {
-		case "Titel":
-			returnType="title";
-			break;
-		case "Name":
-			returnType="name";
-			break;
-		case "Typ":
-			returnType="type";
-			break;
-		case "Identifier":
-			returnType="id";
-			break;
-		case "Parameter":
-			returnType="parameter";
-			break;
-		case "Namensversion":
-			returnType="namever";
-			break;
-		case "Environment":
-			returnType="env";
-			break;
-		}
-		return returnType;
-	}
 	
 	private void searchWithConstraints(QuerySettings settings, List<Constraint> constraints, AutoCompletionWizardWorkflowStep wizard) {
 		
