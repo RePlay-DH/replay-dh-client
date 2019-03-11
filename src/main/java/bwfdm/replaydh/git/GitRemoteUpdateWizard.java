@@ -22,6 +22,7 @@ import java.awt.Window;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +39,7 @@ import javax.swing.SwingWorker;
 
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.diff.Sequence;
 import org.eclipse.jgit.dircache.DirCacheEntry;
@@ -98,6 +100,9 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		Map<String, MergeDryRunResult> mergeDryRunResults = new HashMap<>();
 
 		public MergeResult mergeResult;
+
+		/** Branch to merge our current HEAD with */
+		public String remoteBranch;
 
 		public GitRemoteUpdaterContext(Git git) {
 			super(git);
@@ -262,7 +267,10 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 				return null;
 			}
 
-			// TODO figure out if we have multiple branches
+			/*
+			 *  We could check for multiple branches and decide to skip the scope
+			 *  selection, but we rly can't predict if there are new remote branches.
+			 */
 
 			return SELECT_SCOPE;
 		}
@@ -499,14 +507,21 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 					 *  Maps from remote ref to local branch names
 					 */
 					final List<RemoteRefUpdate> refUpdates =
-							Transport.findRemoteRefUpdatesFor(repo, refSpecs, null)
+							Transport.findRemoteRefUpdatesFor(repo, refSpecs, Collections.emptyList())
 								.stream()
 								// Ignore all marker branches for merging (as they don't point to movable commits)
 								.filter(refUpdate -> !GitUtils.isRdhMarkerBranch(refUpdate.getSrcRef()))
 								.collect(Collectors.toList());
 
+					RemoteRefUpdate refUpdateCurrentBranch = null;
+
 					try(RevWalk rw = new RevWalk(repo)) {
 						for(RemoteRefUpdate refUpdate : refUpdates) {
+							if(context.branch.equals(refUpdate.getSrcRef())) {
+								refUpdateCurrentBranch = refUpdate;
+								context.remoteBranch = refUpdate.getRemoteName();
+							}
+
 							ObjectId srcId = repo.resolve(refUpdate.getSrcRef());
 							ObjectId remoteId = repo.resolve(refUpdate.getRemoteName());
 
@@ -533,12 +548,26 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 						rw.dispose();
 					}
 
-					//TODO debug -> remove
-					context.mergeDryRunResults.values().forEach(System.out::println);
+//					context.mergeDryRunResults.values().forEach(System.out::println);
+
+					/*
+					 *  Fail-fast check: If we can't even locate our target
+					 *  for the active branch, there's no real reason to attempt
+					 *  further.
+					 */
+					if(refUpdateCurrentBranch==null) {
+						log.error("Unable to merge - failed to obtain remote ref for current branch");
+						return DryRunState.FAILED_OTHER_REASON;
+					}
 
 					if(context.mergeDryRunResults.isEmpty()) {
-						log.info("Nothing to merge - aborting dry run");
-						return DryRunState.OK_FF;
+						log.info("Nothing to merge - aborting dry run and doing a real fast-forward merge");
+						context.mergeResult = context.git.merge()
+							.setFastForward(FastForwardMode.FF_ONLY)
+							.include(repo.exactRef(refUpdateCurrentBranch.getRemoteName()))
+							.call();
+						return context.mergeResult.getMergeStatus().isSuccessful() ?
+								DryRunState.OK_FF : DryRunState.FAILED_MERGE_ATTEMPT;
 					}
 
 					// Tell User we're doing a merge dry run
@@ -653,36 +682,71 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 				protected void done() {
 					lIcon.setVisible(false);
 
-					boolean canContinue = true;
+					DryRunState dryRunState;
 
 					try {
-						//TODO use the DryRunState to decide what to do next and what to display to the user
-						DryRunState state = get();
+						dryRunState = get();
 					} catch (InterruptedException | CancellationException e) {
 						// Operation cancelled (no idea how)
 						log.info("Merge dry run cancelled");
-						canContinue = false;
+						dryRunState = DryRunState.FAILED_OTHER_REASON; // not the best option, maybe add CANCELLED
 					} catch (ExecutionException e) {
 						log.error("Error during merge dry run", e.getCause());
 
 						context.error = e.getCause();
-						canContinue = false;
+						dryRunState = DryRunState.FAILED_OTHER_REASON;
 					}
 
-					Throwable errorToDisplay = null;
+					ResourceManager rm = ResourceManager.getInstance();
+					boolean canContinue = !dryRunState.failed;
+					Throwable errorToDisplay = context.error;
+					String infoText;
 
-					if(context.error!=null) {
+					switch (dryRunState) {
+					case OK_FF: {
+						// Nothing to merge was found
+						canContinue = false;
+						infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.noMergeNeeded");
+					} break;
+
+					case OK_MERGED: {
+						// We already performed a successful real merge
+						canContinue = false;
+						infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.fullMergeDone");
+					} break;
+
+					case OK_CONFLICTING: {
+						// Merge dry run found conflicts - need to check if they affect current branch
+						MergeDryRunResult dryRunResult = context.mergeDryRunResults.get(context.remoteBranch);
+
+						if(dryRunResult.mergable==Mergable.CONFLICTING) {
+							infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.activeBranchConflict");
+						} else {
+							infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.otherBranchConflict");
+							canContinue = false;
+						}
+					} break;
+
+					case FAILED_MERGE_ATTEMPT: {
+						// Error during merge attempt
+						infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.mergeAttemptFailed");
+					} break;
+
+					case FAILED_OTHER_REASON: {
 						// Something went horribly wrong
-						errorToDisplay = context.error;
-					} else if(context.mergeResult!=null) {
-						// We already performed a real merge, which SHOULD have succeeded
-						canContinue = context.mergeResult.getMergeStatus().isSuccessful();
-					} else if(!context.mergeDryRunResults.isEmpty()) {
-						// Dry run finished, but we didn't do a succesful real merge
+						infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.mergeDryRunFailed");
+					} break;
 
-						//TODO
+					default:
+						infoText = rm.get("replaydh.wizard.gitRemoteUpdater.checkMerge.undefinedResult");
+						break;
+					}
+
+					if(errorToDisplay!=null) {
+						epInfo.setThrowable(errorToDisplay);
+						taHeader.setText(infoText);
 					} else {
-						// Nothing to check for merging
+						epInfo.setText(infoText);
 					}
 
 					setNextEnabled(canContinue);
