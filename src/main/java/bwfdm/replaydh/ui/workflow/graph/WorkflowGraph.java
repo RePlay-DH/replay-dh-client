@@ -408,10 +408,11 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 
 	private void refreshActions() {
 		final Workflow workflow = getWorkflow();
+		final boolean isValidWorkflow = workflow!=null && !workflow.isClosed();
 		final Object selectedCell = getSelectedCell();
 		final WorkflowStep selectedStep = getSelectedStep();
-		final WorkflowStep activeStep = workflow==null ? null : workflow.getActiveStep();
-		final WorkflowStep initialStep = workflow==null ? null : workflow.getInitialStep();
+		final WorkflowStep activeStep = isValidWorkflow ? workflow.getActiveStep() : null;
+		final WorkflowStep initialStep = isValidWorkflow ? workflow.getInitialStep() : null;
 
 		final int selectedStepCount = graph.getSelectionCount();
 
