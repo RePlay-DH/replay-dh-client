@@ -100,12 +100,12 @@ public class InMemoryMetadataCatalog extends AbstractRDHTool implements Metadata
 
 	@Override
 	public Result query(QuerySettings settings, String fragment) throws CatalogException {
-		return cache.query(settings, fragment);
+		return new LazyCloningResult(cache.query(settings, fragment));
 	}
 
 	@Override
 	public Result query(QuerySettings settings, List<Constraint> constraints) throws CatalogException {
-		return cache.query(settings, constraints);
+		return new LazyCloningResult(cache.query(settings, constraints));
 	}
 
 	@Override

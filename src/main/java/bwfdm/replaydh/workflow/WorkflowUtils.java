@@ -198,6 +198,17 @@ public class WorkflowUtils {
 		}
 	}
 
+	public static Identifiable clone(Identifiable source) {
+		switch (source.getType()) {
+		case PERSON: return DefaultPerson.copyPerson((Person) source);
+		case RESOURCE: return DefaultResource.copyResource((Resource) source);
+		case TOOL: return DefaultTool.copyTool((Tool) source);
+
+		default:
+			throw new IllegalArgumentException("Unknown identifiable type: "+source.getType());
+		}
+	}
+
 	public static Workflow createLinearWorkflow(WorkflowSchema schema) {
 		Workflow workflow = new DefaultWorkflow(schema);
 

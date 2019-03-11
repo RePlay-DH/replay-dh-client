@@ -1005,15 +1005,6 @@ public class GuiUtils {
     	return label;
     }
 
-    public static Component createInfoDisplay(String message, Throwable t, boolean displayFullStack) {
-    	checkArgument("Must provide either a message or exception with a valid message",
-    			message!=null || (t!=null && t.getMessage()!=null));
-
-    	//TODO create textarea, scrollpane, etc (for full stack trace with nested exceptions use list?)
-
-    	throw new UnsupportedOperationException("needs implementation");
-    }
-
     public static void beep() {
 		try {
 			Toolkit.getDefaultToolkit().beep();
