@@ -27,11 +27,13 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
@@ -217,14 +219,18 @@ public abstract class GitRemoteWizard {
 					.add(cbRemote).xy(3, 3)
 					.add(GuiUtils.createTextArea(rm.get(middleSectionKey))).xyw(1, 5, 3)
 
-					.addLabel(rm.get("replaydh.wizard.gitRemote.chooseRemote.remoteName")+":").xy(1, 7)
+					.addLabel(isAllowRemoteName(), rm.get("replaydh.wizard.gitRemote.chooseRemote.remoteName")+":").xy(1, 7)
 					.add(tfRemoteName).xy(3, 7, "left, center")
 					.add(GuiUtils.createTextArea(rm.get(footerSectionKey))).xyw(1, 9, 3)
 
 					.build();
 		}
 
-		private boolean checkLegalRemoteName(String name) {
+		protected boolean isAllowRemoteName() {
+			return true;
+		}
+
+		protected boolean checkLegalRemoteName(String name) {
 			// Empty or unset name means we don't need to save the remote
 			if(name==null || name.isEmpty()) {
 				return true;
@@ -263,23 +269,31 @@ public abstract class GitRemoteWizard {
 			return result;
 		}
 
+		protected List<Object> getRemotes(RDHEnvironment environment, C context) {
+
+			Repository repo = context.git.getRepository();
+			try {
+				return RemoteConfig.getAllRemoteConfigs(repo.getConfig())
+					.stream()
+					.filter(rc -> !GitUtils.isTemporaryRemote(rc))
+					.collect(Collectors.toList());
+			} catch (URISyntaxException e) {
+				log.error("Failed to read existing remote entries", e);
+				GuiUtils.showErrorDialog(getPageComponent(), e);
+				return Collections.emptyList();
+			}
+		}
+
 		@Override
 		public void refresh(RDHEnvironment environment, C context) {
 
 			cbRemote.removeAllItems();
 			cbRemote.addItem(CHOOSE_NEW_REPO);
 
-			Repository repo = context.git.getRepository();
+			tfRemoteName.setVisible(isAllowRemoteName());
 
-			try {
-				RemoteConfig.getAllRemoteConfigs(repo.getConfig())
-					.stream()
-					.filter(rc -> !GitUtils.isTemporaryRemote(rc))
-					.forEach(cbRemote::addItem);
-			} catch (URISyntaxException e) {
-				log.error("Failed to read existing remote entries", e);
-				GuiUtils.showErrorDialog(getPageComponent(), e);
-			}
+			getRemotes(environment, context).forEach(cbRemote::addItem);
+
 
 			if(context.remoteConfig!=null && GitUtils.isTemporaryRemote(context.remoteConfig)) {
 				cbRemote.setSelectedItem(context.remoteConfig.getURIs().get(0).toString());
@@ -330,7 +344,7 @@ public abstract class GitRemoteWizard {
 			}
 
 			// If user is allowed to edit remote name we need to check its validity as well
-			if(tfRemoteName.isEditable()) {
+			if(isAllowRemoteName() && tfRemoteName.isEditable()) {
 				nextEnabled &= !GuiUtils.isErrorBorderActive(tfRemoteName);
 			}
 
@@ -565,6 +579,13 @@ public abstract class GitRemoteWizard {
 					.build();
 		}
 
+		protected void displayText(String info) {
+			taHeader.setText(info);
+
+			bTransmit.setVisible(false);
+			taInfo.setVisible(false);
+		}
+
 		private void onTransmitButtonClicked(ActionEvent ae) {
 			// If worker is pending we need to start it
 			if(worker.getState()==StateValue.PENDING) {
@@ -703,6 +724,9 @@ public abstract class GitRemoteWizard {
 			checkState("Worker for push operation already set", worker==null);
 
 			ResourceManager rm = ResourceManager.getInstance();
+
+			bTransmit.setVisible(true);
+			taInfo.setVisible(true);
 
 			worker = createWorker(environment, context);
 

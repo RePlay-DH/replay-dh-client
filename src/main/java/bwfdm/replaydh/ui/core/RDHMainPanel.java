@@ -86,6 +86,8 @@ import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHException;
 import bwfdm.replaydh.core.RDHProperty;
 import bwfdm.replaydh.core.Workspace;
+import bwfdm.replaydh.git.GitRemoteImporterWizard;
+import bwfdm.replaydh.git.GitRemoteImporterWizard.GitRemoteImporterContext;
 import bwfdm.replaydh.git.GitUtils;
 import bwfdm.replaydh.io.FileTracker;
 import bwfdm.replaydh.io.IOUtils;
@@ -535,6 +537,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		actionMapper.mapToggle("replaydh.ui.core.mainPanel.toggleAlwaysOnTop", handler::toggleAlwaysOnTop);
 		actionMapper.mapToggle("replaydh.ui.core.mainPanel.toggleTrackerActive", handler::toggleTrackerStatus);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.changeWorkspace", handler::changeWorkspace);
+		actionMapper.mapTask("replaydh.ui.core.mainPanel.importWorkspace", handler::importWorkspace);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.importWorkflowSchema", handler::importWorkflowSchema);
 	}
 
@@ -1551,6 +1554,18 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		}
 
+		private void importWorkspace() {
+			GitRemoteImporterContext context = new GitRemoteImporterContext(environment);
+
+			// Show the wizard for cloning and verifying a new repository
+			try(Wizard<GitRemoteImporterContext> wizard = GitRemoteImporterWizard.getWizard(
+					GuiUtils.getActiveWindow(),
+					environment)) {
+
+				wizard.startWizard(context);
+			}
+		}
+
 		private void importWorkflowSchema() {
 
 			final AddWorkflowSchemaContext context = AddWorkflowSchemaContext.blank();
@@ -1945,6 +1960,12 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		 */
 		@Override
 		protected Boolean doInBackground() throws Exception {
+
+			if(!fileTracker.canApplyTrackingUpdate()) {
+				log.info("Recording of new step preemptively aborted by file tracker");
+				GuiUtils.beep();
+				return Boolean.FALSE;
+			}
 
 			// Flag signaling user confirmation
 			boolean opSuccess = false;

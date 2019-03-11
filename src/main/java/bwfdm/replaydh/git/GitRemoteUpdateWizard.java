@@ -933,6 +933,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			lIcon.setIcon(IconRegistry.getGlobalRegistry().getIcon("loading-64.gif"));
 
 			epInfo = new ErrorPanel();
+			epInfo.setVisible(false);
 
 			return FormBuilder.create()
 					.columns("fill:pref:grow")
@@ -1011,8 +1012,8 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 						// Major fail
 						taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.mergeFailed"));
 						epInfo.setThrowable(context.error);
-					} else if(mergeResult!=null && mergeResult.getMergeStatus().isSuccessful()) {
-						// Success
+					} else if(mergeResult!=null && mergeResult.getMergeStatus()==MergeStatus.CONFLICTING) {
+						// Success (we expected conflicts after all)
 						taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.mergeDone"));
 
 						StringBuilder sb = new StringBuilder();
@@ -1057,6 +1058,13 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		@Override
 		public boolean canCancel() {
 			return worker==null || !worker.isDone();
+		};
+
+		@Override
+		public boolean close() {
+			worker = null;
+
+			return true;
 		};
 
 		@Override

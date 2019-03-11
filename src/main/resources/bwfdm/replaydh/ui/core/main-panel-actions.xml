@@ -35,6 +35,10 @@
 	<!-- Change Workspace -->
 	<action id="replaydh.ui.core.mainPanel.changeWorkspace"
 		name="${id}.name" desc="${id}.description" licon="Documents-icon.png" />
+		
+	<!-- Import Workspace -->
+	<action id="replaydh.ui.core.mainPanel.importWorkspace"
+		name="${id}.name" desc="${id}.description" licon="Documents-icon.png" />
 	
 	<!-- Import Workflow Schema -->
 	<action id="replaydh.ui.core.mainPanel.importWorkflowSchema"
@@ -76,6 +80,7 @@
 	<action-list id="replaydh.ui.core.mainPanel.menuBarList">
 		<action-list id="replaydh.ui.core.mainPanel.menuBarList.file" name="${id}.name">
 			<item type="action" value="replaydh.ui.core.mainPanel.changeWorkspace" />
+			<item type="action" value="replaydh.ui.core.mainPanel.importWorkspace" />
 			<item type="action" value="replaydh.ui.core.mainPanel.importWorkflowSchema" />
 			<separator />
 			<item type="action" value="replaydh.ui.core.mainPanel.openWorkspaceFolder" />

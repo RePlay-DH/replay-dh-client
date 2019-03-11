@@ -392,22 +392,30 @@ public class GuiUtils {
 
 		Object messageObject = message;
 
+		if(message.length()>80) {
+			message = wrapText(message);
+		}
 		synchronized (NEWLINE_REGEX) {
 			if(NEWLINE_REGEX.reset(message).find()) {
-				JTextArea textArea = createTextArea(message);
-
-				//FIXME at some point change this for a better solutions in preserving minimal size of the message component
-				textArea.setLineWrap(false);
-				textArea.setMinimumSize(textArea.getPreferredSize());
-				// END
-
-				messageObject = textArea;
+				messageObject = wrap(message);
 			}
 		}
+
 
 		JOptionPane.showOptionDialog(parent, messageObject,
 				title, JOptionPane.DEFAULT_OPTION, messageType, null,
 				new Object[]{ResourceManager.getInstance().get("replaydh.labels.ok")}, null);
+	}
+
+	private static JTextArea wrap(String s) {
+		JTextArea textArea = createTextArea(s);
+
+		//FIXME at some point change this for a better solutions in preserving minimal size of the message component
+		textArea.setLineWrap(false);
+		textArea.setMinimumSize(textArea.getPreferredSize());
+		// END
+
+		return textArea;
 	}
 
 	public static void showErrorDialog(Component parent, Throwable t) {
@@ -912,15 +920,31 @@ public class GuiUtils {
 
 	/**
 	 * A default limit for characters per line before a linebreak should be forced.
-	 * Chosen to be {@code 70}.
+	 * Chosen to be {@code 90}.
 	 */
-	public static final int DEFAULT_LINE_LIMIT = 70;
+	public static final int DEFAULT_LINE_LIMIT = 90;
 
 	public static final String HTML_LINEBREAK = "<br>";
 
-	private static final StringWrapper plainTextWrapper = new StringWrapper()
+	public static final String PLAIN_LINEBREAK = "\n";
+
+	private static final StringWrapper plainTextBRWrapper = new StringWrapper()
+			.limit(DEFAULT_LINE_LIMIT)
 			.linebreak(HTML_LINEBREAK)
 			.header(HTML_TAG);
+
+	private static final StringWrapper plainTextNLWrapper = new StringWrapper()
+			.limit(DEFAULT_LINE_LIMIT)
+			.linebreak(PLAIN_LINEBREAK);
+
+	public static String wrapText(String text) {
+		if(text==null || text.isEmpty()) {
+			return null;
+		}
+		synchronized (plainTextNLWrapper) {
+			return plainTextNLWrapper.wrap(text);
+		}
+	}
 
 	/**
 	 * Splits a text into lines with at most {@link #DEFAULT_LINE_LIMIT 70} characters.
@@ -938,8 +962,8 @@ public class GuiUtils {
 			return tooltip;
 		}
 
-		synchronized (plainTextWrapper) {
-			return plainTextWrapper.wrap(tooltip);
+		synchronized (plainTextBRWrapper) {
+			return plainTextBRWrapper.wrap(tooltip);
 		}
 	}
 

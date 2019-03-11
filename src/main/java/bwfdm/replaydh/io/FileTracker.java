@@ -88,6 +88,15 @@ public interface FileTracker extends PropertyChangeSource {
 	void clearStatusInfo();
 
 	/**
+	 * Allows the {@link FileTracker} to intercept recording of
+	 * new workflow steps.
+	 *
+	 * @return {@code true} iff the underlying repository is able
+	 * to initiate recording of a new step.
+	 */
+	boolean canApplyTrackingUpdate();
+
+	/**
 	 * Returns all files matching the given {@code status}.
 	 *
 	 * @param status

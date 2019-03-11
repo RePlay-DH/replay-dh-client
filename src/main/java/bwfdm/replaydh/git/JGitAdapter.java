@@ -66,6 +66,7 @@ import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.dircache.DirCache;
+import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -79,6 +80,7 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -102,6 +104,8 @@ import bwfdm.replaydh.io.TrackingAction;
 import bwfdm.replaydh.io.TrackingStatus;
 import bwfdm.replaydh.json.JsonWorkflowStepReader;
 import bwfdm.replaydh.json.JsonWorkflowStepWriter;
+import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.utils.LazyCollection;
 import bwfdm.replaydh.utils.Options;
 import bwfdm.replaydh.workflow.Workflow;
@@ -272,7 +276,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			checkConfig(config);
 
 			// Convert config into proper workspace base (also verifies integrity)
-			final Workspace workspace = createWorkspace(workspacePath, config);
+			final Workspace workspace = createWorkspace(workspacePath, config, getEnvironment().getClient());
 
 			verifyGit(existingGit, workspace, false);
 
@@ -283,6 +287,27 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 			return workspace;
 		}
+	}
+
+	static Workspace checkClonedRepo(Path workspacePath, RDHEnvironment environment) throws IOException, GitException {
+		Path gitDir = getGitDir(workspacePath);
+
+		final Git existingGit = openOrCreate(gitDir.toFile(), false);
+
+		final Path infoFile = getInfoFile(gitDir);
+
+		if(!Files.exists(infoFile, LinkOption.NOFOLLOW_LINKS))
+			throw new GitException("Missing replaydh.info file: "+infoFile);
+
+		// Try to read our configuration
+		final Properties config = loadConfig(infoFile);
+
+		// Convert config into proper workspace base (also verifies integrity)
+		final Workspace workspace = createWorkspace(workspacePath, config, environment.getClient());
+
+		verifyGit(existingGit, workspace, false);
+
+		return workspace;
 	}
 
 	private void checkConfig(Properties config) {
@@ -344,11 +369,11 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Currently we report the .git metadata folder, but in the future
 	 * we might want to change that to the working directory?
 	 */
-	private File reportLocation(Repository repo) {
+	private static File reportLocation(Repository repo) {
 		return repo.getDirectory();
 	}
 
-	private void verifyGit(final Git git, final Workspace workspace, boolean createSource)
+	private static void verifyGit(final Git git, final Workspace workspace, boolean createSource)
 			throws IOException, GitException {
 
 		final Repository repo = git.getRepository();
@@ -519,11 +544,9 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Needs valid schema id stored in config, otherwise {@link GitException}
 	 * will be thrown.
 	 */
-	private Workspace createWorkspace(Path workspacePath, Properties config) throws GitException {
+	private static Workspace createWorkspace(Path workspacePath, Properties config, RDHClient client) throws GitException {
 
 		String schemaId = getAndRemoveProperty(workspacePath, config, RDHInfoProperty.SCHEMA_ID, null);
-
-		final RDHClient client = getEnvironment().getClient();
 
 		WorkflowSchema schema = client.getSchemaManager().lookupSchema(schemaId);
 		if(schema==null)
@@ -549,7 +572,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * @param workspacePath
 	 * @return
 	 */
-	private Path getGitDir(Path workspacePath) {
+	private static Path getGitDir(Path workspacePath) {
 		// Assume default git directory name and try to access repo at that location
 		return workspacePath.resolve(GitUtils.DEFAULT_GIT_DIR_NAME);
 	}
@@ -564,7 +587,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * @throws GitAPIException if creating a new git repository failed
 	 * @throws GitException if an existing repository was expected but not found
 	 */
-	private Git openOrCreate(File gitDir, boolean mayCreateNew) throws IOException, GitException {
+	private static Git openOrCreate(File gitDir, boolean mayCreateNew) throws IOException, GitException {
 		Git git;
 		FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder();
 
@@ -604,7 +627,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * @param git
 	 * @return
 	 */
-	private boolean isValidGit(Git git) {
+	private static boolean isValidGit(Git git) {
 		// Git is considered valid if its repository is not bare
 		return git!=null && !git.getRepository().isBare();
 	}
@@ -654,7 +677,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	/**
 	 * Read new config from given file.
 	 */
-	private Properties loadConfig(Path configFile) throws IOException {
+	private static Properties loadConfig(Path configFile) throws IOException {
 		Properties properties = new Properties(EMPTY_CONFIG);
 
 		try(Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
@@ -779,7 +802,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	/**
 	 * Returns the absolute path to the specified git repository.
 	 */
-	private Path getRootFolder(Git git) {
+	private static Path getRootFolder(Git git) {
 		return git.getRepository().getWorkTree().toPath().toAbsolutePath();
 	}
 
@@ -787,7 +810,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * Returns location of the repository specific default file that contains
 	 * git rules for ignoring files.
 	 */
-	private Path getGitignoreFile(Git git) {
+	private static Path getGitignoreFile(Git git) {
 		return getRootFolder(git).resolve(GitUtils.DEFAULT_IGNORE_FILE_NAME);
 	}
 
@@ -798,7 +821,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	 * @throws IOException in case any of the underlying file operations fail
 	 * @throws GitException
 	 */
-	private void ensureGitignoreFile(Git git) throws IOException, GitException {
+	private static void ensureGitignoreFile(Git git) throws IOException, GitException {
 		Path ignoreFile = getGitignoreFile(git);
 		boolean shouldCreate = Files.notExists(ignoreFile, LinkOption.NOFOLLOW_LINKS);
 
@@ -1256,7 +1279,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		}
 	}
 
-	private String toRelativeGitPath(Path file, Path root) {
+	private static String toRelativeGitPath(Path file, Path root) {
 		Path absoluteFile = file.toAbsolutePath();
 		if(!absoluteFile.startsWith(root)) {
 			return null;
@@ -1558,6 +1581,69 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	}
 
 	/**
+	 * @see bwfdm.replaydh.io.FileTracker#canApplyTrackingUpdate()
+	 */
+	@Override
+	public boolean canApplyTrackingUpdate() {
+
+		RepositoryState repoState = git.getRepository().getRepositoryState();
+
+		switch (repoState) {
+		case MERGING_RESOLVED:
+		case SAFE: return true;
+
+		// This is the only unsafe state our client can get the repo in currently!
+		case MERGING: return checkConflictingFilesBeforeCommit();
+
+		default:
+			// We consider everything else problematic
+			GuiUtils.showError(null,
+					ResourceManager.getInstance().get("replaydh.dialogs.gitError.title"),
+					ResourceManager.getInstance().get("replaydh.dialogs.gitError.badState", repoState));
+			return false;
+		}
+	}
+
+	private boolean checkConflictingFilesBeforeCommit() {
+
+		final Repository repo = git.getRepository();
+		Set<String> conflictingPaths = new HashSet<>();
+
+		try {
+			DirCache dc = repo.readDirCache();
+			for(int i=0; i<dc.getEntryCount(); i++) {
+				DirCacheEntry entry = dc.getEntry(i);
+				if(entry.getStage()>0) {
+					conflictingPaths.add(entry.getPathString());
+				}
+			}
+		} catch(IOException e) {
+			log.error("Failed to scan for conflicting files", e);
+		}
+
+		GuiUtils.checkNotEDT();
+
+		// Ask user
+		Boolean markResolved = GuiUtils.invokeEDTAndWait(
+				() -> GitDialogs.showConflictingFilesList(conflictingPaths));
+
+		if(!markResolved) {
+			return false;
+		}
+
+		AddCommand cmd = git.add()
+				.setUpdate(true);
+		conflictingPaths.forEach(cmd::addFilepattern);
+
+		ExecutionResult<DirCache> result = executeCommand(cmd);
+		if(result.hasFailed()) {
+			log.error("Failed to mark conflicting files as resolved: {}", conflictingPaths, result.exception);
+		}
+
+		return repo.getRepositoryState().canCommit();
+	}
+
+	/**
 	 * {@link Callable#call() executes} the given {@link GitCommand} and wraps it result in
 	 * a nullable {@link Optional}. A return value of {@code null} indicates a failure in
 	 * executing the commend.
@@ -1737,6 +1823,11 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 					// Tell listeners that "something" has changed with the step
 					workflow.fireWorkflowStepChanged(step);
+
+					RevCommit newCommit = result.result;
+					if(newCommit.getParentCount()>1) {
+						refreshWorkflow(null);
+					}
 				}
 
 				// Make sure other entities get informed of the changes

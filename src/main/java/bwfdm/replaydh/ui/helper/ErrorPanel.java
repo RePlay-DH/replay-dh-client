@@ -51,7 +51,7 @@ public class ErrorPanel extends JPanel {
 		cbShowStackTrace.addActionListener(ae -> refreshContent());
 
 		taOutput = GuiUtils.createTextArea("");
-		taOutput.setColumns(60);
+		taOutput.setColumns(50);
 		taOutput.setRows(15);
 		taOutput.setEditable(true);
 		taOutput.setFocusable(true);
