@@ -85,7 +85,7 @@ import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
 import bwfdm.replaydh.workflow.Tool;
 import bwfdm.replaydh.workflow.WorkflowStep;
-import bwfdm.replaydh.workflow.catalog.MetadataCatalogTestImpl;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
 import bwfdm.replaydh.workflow.impl.DefaultPerson;
 import bwfdm.replaydh.workflow.impl.DefaultResource;
@@ -123,10 +123,12 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     Dimension buttonPreferredSize = new Dimension(16,16);
     Dimension buttonBigPreferredSize = new Dimension(32,32);
 
-    private MetadataCatalogTestImpl search;
+    private MetadataCatalog search;
     
     private JPopupMenu popupTitle;
-    private JMenu MenuForAll;
+    private JMenu MenuForTitle;
+    private JPopupMenu popupDescription;
+    private JMenu MenuForDescription;
     
     // Icons
     private Icon iconRemove = IconRegistry.getGlobalRegistry().getIcon("list-remove-5.png");
@@ -239,7 +241,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
     	@Override
     	public void anyUpdate(DocumentEvent e) {
-    		verifyInput();
+    		verifyInput(e);
     	};
     };
 
@@ -254,7 +256,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
     	ResourceManager rm = ResourceManager.getInstance();
     	
-    	search = new MetadataCatalogTestImpl(environment.getWorkspace().getSchema());
+    	search = this.environment.getClient().getMetadataCatalog();
 
     	// Set correct schema in the "setEdititngItem" method
     	schema = environment.getWorkspace().getSchema();//set workflow schema
@@ -280,8 +282,8 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	popupTitle = new JPopupMenu();
     	titleTextField.add(popupTitle);
     	titleTextField.setComponentPopupMenu(popupTitle);
-    	MenuForAll = new JMenu();
-    	popupTitle.add(MenuForAll);
+    	MenuForTitle = new JMenu();
+    	popupTitle.add(MenuForTitle);
 
     	descriptionTextArea = new JTextArea();
     	descriptionTextArea.getDocument().addDocumentListener(documentAdapter);
@@ -289,6 +291,11 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	descriptionTextArea.setRows(4);
     	descriptionTextArea.setColumns(10);
     	descriptionScrollPane = new JScrollPane(descriptionTextArea);
+    	popupDescription = new JPopupMenu();
+    	titleTextField.add(popupDescription);
+    	titleTextField.setComponentPopupMenu(popupDescription);
+    	MenuForDescription = new JMenu();
+    	popupDescription.add(MenuForDescription);
 
     	defaultBorder = titleTextField.getBorder(); //used to have the same border for some similar components such as JTextField, JTextArea etc.777
 
@@ -385,10 +392,58 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     /**
      * Verification of the input in all fields. Set red border to each input field and deactivate "OK" button in case of error.
      */
-    private void verifyInput() {
-
+    private void verifyInput(DocumentEvent e) {
+    	Object source = e.getDocument();
     	inputCorrect = true;
+    	QuerySettings settings = new QuerySettings();
+		settings.setSchema(schema);
+    	// Title
+    	if(wrongInputList.contains(titleTextField.getText())) {
+    		titleTextField.setBorder(redBorder);
+    		inputCorrect = false;
+    	} else {
+    		titleTextField.setBorder(defaultBorder);
+    		int numberOfItems = MenuForTitle.getItemCount();
+    		if (numberOfItems == 0) {
+    			this.suggestSearch(settings, null, "title", titleTextField.getText());
+    			popupTitle.show(titleTextField, 1, 1);
+    		} else if (source == titleTextField.getDocument()){
+    			popupTitle.show(titleTextField, 1, 1);
+    		}
+    	}
 
+    	// Description
+    	if(wrongInputList.contains(descriptionTextArea.getText())) {
+    		descriptionScrollPane.setBorder(redBorder);
+    		inputCorrect = false;
+    	} else {
+    		descriptionScrollPane.setBorder(defaultBorder);
+    		int numberOfItems = MenuForDescription.getItemCount();
+    		if (numberOfItems == 0) {
+    			this.suggestSearch(settings, null, "description", descriptionTextArea.getText());
+    			popupDescription.show(descriptionTextArea, 1, 1);
+    		} else if (source == descriptionTextArea.getDocument()){
+    			popupDescription.show(descriptionTextArea, 1, 1);
+    		}
+    	}
+
+
+    	//TODO: add verification of the identifiables (Persons/Tool/Resources)
+
+
+    	// Disable or enable an "Apply" button based on the "inputCorrect" state
+    	if(editorControl!=null) {
+    		editorControl.setApplyEnabled(inputCorrect);
+    	}
+    }
+    
+    /**
+     * Verification of the input in all fields. Set red border to each input field and deactivate "OK" button in case of error.
+     */
+    private void verifyInput() {
+    	inputCorrect = true;
+    	QuerySettings settings = new QuerySettings();
+		settings.setSchema(schema);
     	// Title
     	if(wrongInputList.contains(titleTextField.getText())) {
     		titleTextField.setBorder(redBorder);
@@ -413,10 +468,6 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	if(editorControl!=null) {
     		editorControl.setApplyEnabled(inputCorrect);
     	}
-    	MenuForAll.removeAll();
-		QuerySettings settings = new QuerySettings();
-		settings.setSchema(schema);
-		//this.suggestSearch(settings, null, "title", titleTextField.getText());
     }
 
 
@@ -1907,13 +1958,21 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
 			@Override
 			protected void done() {
-				for(String value: results) {
-					MenuForAll.add(value);
-				}
-				switch(key) {
-				case "title":
-					popupTitle.show(titleTextField, 1, 1);
-					break;
+				if (success) {
+					switch(key) {
+					case "title":
+						for(String value: results) {
+							MenuForTitle.add(value);
+						}
+						popupTitle.add(MenuForTitle);
+						break;
+					case "description":
+						for(String value: results) {
+							MenuForDescription.add(value);
+						}
+						popupDescription.add(MenuForDescription);
+						break;
+					}
 				}
 			}
 		};
