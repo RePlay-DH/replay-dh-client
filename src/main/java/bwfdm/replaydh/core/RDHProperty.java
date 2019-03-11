@@ -181,6 +181,16 @@ public enum RDHProperty {
 	GIT_IGNORE_HIDDEN("git.ignoreHidden", true),
 
 	/**
+	 * Flag to indicate that any files created by the client as special
+	 * helper or metadata files should be ignored. Note that for now the
+	 * user will NOT be able to change this property through the preferences
+	 * UI as it is prone to cause issues!!
+	 * <p>
+	 * The default value for this property is {@code true}.
+	 */
+	GIT_IGNORE_SPECIAL("git.ignoreSpecial", true),
+
+	/**
 	 * Boolean flag to indicate whether or not the git adapter
 	 * should attach additional internal information to the
 	 * workflow steps it creates out of git commits.

@@ -215,6 +215,12 @@ public class GitUtils {
 		return Files.exists(infoFile, LinkOption.NOFOLLOW_LINKS);
 	}
 
+	public static final String DUPLICATE_MARKER = ".rdh-other";
+
+	public static boolean isSpecialFile(Path file) {
+		return file.getFileName().toString().contains(DUPLICATE_MARKER);
+	}
+
 	/**
 	 * Name of a special remote config that we use for temporary
 	 * storage of push or fetch info.

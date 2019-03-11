@@ -18,6 +18,8 @@
  */
 package bwfdm.replaydh.git;
 
+import static java.util.Objects.requireNonNull;
+
 import java.awt.Window;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
@@ -49,9 +52,9 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
+import org.eclipse.jgit.merge.Merger;
 import org.eclipse.jgit.merge.ResolveMerger;
 import org.eclipse.jgit.merge.ResolveMerger.MergeFailureReason;
-import org.eclipse.jgit.merge.ThreeWayMerger;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.FetchResult;
@@ -86,7 +89,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 				parent, "gitRemoteUpdaterWizard",
 				ResourceManager.getInstance().get("replaydh.wizard.gitRemoteUpdater.title"),
 				environment,
-				CHOOSE_REMOTE, SELECT_SCOPE, UPDATE, CHECK_MERGE, RESOLVE_CONFLICTS, FINISH);
+				CHOOSE_REMOTE, SELECT_SCOPE, UPDATE, CHECK_MERGE, RESOLVE_CONFLICTS, MERGE);
 		return wizard;
 	}
 
@@ -106,6 +109,9 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 		/** Branch to merge our current HEAD with */
 		public String remoteBranch;
+
+		/** In case of conflicts, keep track of user's strategy choice */
+		public ConflictStrategy strategy;
 
 		public GitRemoteUpdaterContext(Git git) {
 			super(git);
@@ -230,6 +236,44 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		}
 	}
 
+	static enum ConflictStrategy {
+		/**
+		 * Normal merging
+		 */
+		MARKER("marker"),
+		/**
+		 * For every conflicting file, create a {@code <name>.other.<filetype>}
+		 * with the content of the remote version.
+		 */
+		DUPLICATE("duplicate"),
+		/**
+		 * Ignore all remote changes
+		 */
+//		OURS("ours"),
+		/**
+		 * Ignore all local changes
+		 */
+//		THEIRS("theirs"),
+		;
+
+		private final String key;
+
+		private ConflictStrategy(String key) {
+			this.key = requireNonNull(key);
+		}
+
+		public String getDescription() {
+			return ResourceManager.getInstance().get(
+					"replaydh.wizard.gitRemoteUpdater.resolveConflicts.strategy."+key+".description");
+		}
+
+		@Override
+		public String toString() {
+			return ResourceManager.getInstance().get(
+					"replaydh.wizard.gitRemoteUpdater.resolveConflicts.strategy."+key+".label");
+		}
+	}
+
 	/**
 	 * Unchanged (up2date or not-attempted)
 	 */
@@ -252,6 +296,8 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		failed.removeAll(UNCHANGED);
 		FAILED = failed;
 	}
+
+	private static final MergeStrategy MERGE_STRATEGY = MergeStrategy.RECURSIVE;
 
 	/**
 	 * First step: Let user provide or select a remote repository URL
@@ -519,13 +565,10 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 								.filter(refUpdate -> !GitUtils.isRdhMarkerBranch(refUpdate.getSrcRef()))
 								.collect(Collectors.toList());
 
-					RemoteRefUpdate refUpdateCurrentBranch = null;
-
 					try(RevWalk rw = new RevWalk(repo)) {
 						for(RemoteRefUpdate refUpdate : refUpdates) {
 							if(context.branch.equals(Repository.shortenRefName(refUpdate.getSrcRef()))) {
-								refUpdateCurrentBranch = refUpdate;
-								context.remoteBranch = refUpdateCurrentBranch.getRemoteName();
+								context.remoteBranch = refUpdate.getRemoteName();
 							}
 
 							ObjectId srcId = repo.resolve(refUpdate.getSrcRef());
@@ -563,7 +606,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 					 *  for the active branch, there's no real reason to attempt
 					 *  further.
 					 */
-					if(refUpdateCurrentBranch==null && !refUpdates.isEmpty()) {
+					if(context.remoteBranch==null && !refUpdates.isEmpty()) {
 						log.error("Unable to merge - failed to obtain remote ref for current branch");
 						return DryRunState.FAILED_OTHER_REASON;
 					}
@@ -572,7 +615,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 						log.info("Nothing to merge - aborting dry run and doing a real fast-forward merge");
 						context.mergeResult = context.git.merge()
 							.setFastForward(FastForwardMode.FF_ONLY)
-							.include(repo.exactRef(refUpdateCurrentBranch.getRemoteName()))
+							.include(repo.exactRef(context.remoteBranch))
 							.call();
 
 						MergeStatus mergeStatus = context.mergeResult.getMergeStatus();
@@ -613,7 +656,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 					for(MergeDryRunResult dryRunResult : context.mergeDryRunResults.values()) {
 						// In-memory merge dry run
-						ThreeWayMerger merger = MergeStrategy.RECURSIVE.newMerger(repo, true);
+						Merger merger = MERGE_STRATEGY.newMerger(repo, true);
 
 						if(merger instanceof ResolveMerger) {
 							((ResolveMerger)merger).setCommitNames(new String[] {
@@ -674,7 +717,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 						// Run a real merge with settings identical to the dry run
 						log.info("merging {} into {}", mergeHead, context.branch);
 						context.mergeResult = context.git.merge()
-								.setStrategy(MergeStrategy.RECURSIVE)
+								.setStrategy(MERGE_STRATEGY)
 								.include(repo.exactRef(mergeHead))
 								.setCommit(false) // We want to be able to decide on the specifics of the commit
 								.call();
@@ -810,7 +853,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 	};
 
 	/**
-	 * Analyze the FetchResult and propose ways to fix any issues.
+	 * List conflicting files and propose ways to solve it.
 	 */
 	private static final GitRemoteStep<FetchResult, GitRemoteUpdaterContext> RESOLVE_CONFLICTS
 		= new GitRemoteStep<FetchResult, GitRemoteUpdaterContext>(
@@ -818,21 +861,50 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			"replaydh.wizard.gitRemoteUpdater.resolveConflicts.title",
 			"replaydh.wizard.gitRemoteUpdater.resolveConflicts.description") {
 
+		private JComboBox<ConflictStrategy> cbStrategy;
+
+		private JTextArea taInfo;
+
 		@Override
 		protected JPanel createPanel() {
-			// TODO Auto-generated method stub
-			return null;
+			ResourceManager rm = ResourceManager.getInstance();
+
+			cbStrategy = new JComboBox<>(ConflictStrategy.values());
+			cbStrategy.addActionListener(ae -> onStrategySelected());
+
+			taInfo = GuiUtils.createTextArea("");
+
+			onStrategySelected();
+
+			return FormBuilder.create()
+					.columns("pref, 4dlu, fill:pref:grow")
+					.rows("pref, 6dlu, pref, 6dlu, pref")
+					.add(GuiUtils.createTextArea(rm.get("replaydh.wizard.gitRemoteUpdater.resolveConflicts.header"))).xyw(1, 1, 3)
+
+					.addLabel(rm.get("replaydh.wizard.gitRemoteUpdater.resolveConflicts.strategy.label")+":").xy(1, 3)
+					.add(cbStrategy).xy(3, 3)
+					.add(taInfo).xyw(1, 5, 3)
+
+					.build();
+		}
+
+		private void onStrategySelected() {
+			ConflictStrategy strategy = (ConflictStrategy) cbStrategy.getSelectedItem();
+			taInfo.setText(strategy==null ? "???" : strategy.getDescription());
 		}
 
 		@Override
 		public void refresh(RDHEnvironment environment, GitRemoteUpdaterContext context) {
-			System.out.println();
+			if(context.strategy!=null) {
+				cbStrategy.setSelectedItem(context.strategy);
+			}
 		};
 
 		@Override
 		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment, GitRemoteUpdaterContext context) {
-			// TODO Auto-generated method stub
-			return null;
+			context.strategy = (ConflictStrategy)cbStrategy.getSelectedItem();
+
+			return MERGE;
 		}
 
 	};
@@ -840,21 +912,155 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 	/**
 	 * Analyze the FetchResult and propose ways to fix any issues.
 	 */
-	private static final GitRemoteStep<FetchResult, GitRemoteUpdaterContext> FINISH
+	private static final GitRemoteStep<FetchResult, GitRemoteUpdaterContext> MERGE
 		= new GitRemoteStep<FetchResult, GitRemoteUpdaterContext>(
 			"finish",
 			"replaydh.wizard.gitRemoteUpdater.finish.title",
 			"replaydh.wizard.gitRemoteUpdater.finish.description") {
 
+		private JTextArea taHeader;
+		private JLabel lIcon;
+		private ErrorPanel epInfo;
+
+		private SwingWorker<?, ?> worker;
+
 		@Override
 		protected JPanel createPanel() {
-			// TODO Auto-generated method stub
-			return null;
+
+			taHeader = GuiUtils.createTextArea("");
+
+			lIcon = new JLabel();
+			lIcon.setIcon(IconRegistry.getGlobalRegistry().getIcon("loading-64.gif"));
+
+			epInfo = new ErrorPanel();
+
+			return FormBuilder.create()
+					.columns("fill:pref:grow")
+					.rows("pref, 6dlu, pref, pref")
+					.add(taHeader).xy(1, 1)
+					.add(lIcon).xy(1, 3, "center, center")
+					.add(epInfo).xy(1, 4, "center, center")
+					.build();
 		}
 
 		@Override
+		public void refresh(RDHEnvironment environment, GitRemoteUpdaterContext context) {
+			setPreviousEnabled(false);
+			lIcon.setVisible(false);
+
+			// Reset previous errors
+			context.error = null;
+
+			switch (context.strategy) {
+			case MARKER:
+				postConflictMarkers(environment, context);
+				break;
+
+			case DUPLICATE:
+				createDuplicates(environment, context);
+				break;
+
+			default:
+				taHeader.setText("Unable to handle selected strategy: "+context.strategy);
+				break;
+			}
+		};
+
+		private void postConflictMarkers(RDHEnvironment environment, GitRemoteUpdaterContext context) {
+			worker = new SwingWorker<MergeResult, Runnable>() {
+
+				@Override
+				protected MergeResult doInBackground() throws Exception {
+					publish(() -> {
+						lIcon.setVisible(true);
+						taHeader.setText("replaydh.wizard.gitRemoteUpdater.finish.mergeActive");
+					});
+
+					return context.git.merge()
+							.setStrategy(MERGE_STRATEGY)
+							.setCommit(false)
+							.include(context.git.getRepository().exactRef(context.remoteBranch))
+							.call();
+				}
+
+				@Override
+				protected void process(List<Runnable> chunks) {
+					chunks.forEach(Runnable::run);
+				};
+
+				@Override
+				protected void done() {
+					lIcon.setVisible(false);
+
+					MergeResult mergeResult = null;
+
+					try {
+						mergeResult = get();
+					} catch (InterruptedException | CancellationException e) {
+						// Operation cancelled (no idea how)
+						log.info("Merge run cancelled");
+					} catch (ExecutionException e) {
+						log.error("Error during merge", e.getCause());
+
+						context.error = e.getCause();
+					}
+
+					ResourceManager rm = ResourceManager.getInstance();
+
+					if(context.error!=null) {
+						// Major fail
+						taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.mergeFailed"));
+						epInfo.setThrowable(context.error);
+					} else if(mergeResult!=null && mergeResult.getMergeStatus().isSuccessful()) {
+						// Success
+						taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.mergeDone"));
+
+						StringBuilder sb = new StringBuilder();
+						mergeResult.getConflicts().keySet()
+							.stream()
+							.sorted()
+							.forEach(path -> sb.append(path).append('\n'));
+						epInfo.setText(sb.toString());
+					} else {
+						// Merge finished with internal problems
+						taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.mergeFailed"));
+						epInfo.setText(mergeResult.toString());
+					}
+					epInfo.setVisible(true);
+				};
+			};
+			worker.execute();
+		}
+
+		private void createDuplicates(RDHEnvironment environment, GitRemoteUpdaterContext context) {
+			worker = new SwingWorker<String, Runnable>() {
+
+				@Override
+				protected String doInBackground() throws Exception {
+					// TODO Auto-generated method stub
+					return null;
+				}
+
+				@Override
+				protected void process(List<Runnable> chunks) {
+					chunks.forEach(Runnable::run);
+				};
+
+				@Override
+				protected void done() {
+					// TODO Auto-generated method stub
+				};
+			};
+			worker.execute();
+		}
+
+		@Override
+		public boolean canCancel() {
+			return worker==null || !worker.isDone();
+		};
+
+		@Override
 		public Page<GitRemoteUpdaterContext> next(RDHEnvironment environment, GitRemoteUpdaterContext context) {
-			// TODO Auto-generated method stub
 			return null;
 		}
 

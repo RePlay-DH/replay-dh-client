@@ -86,6 +86,7 @@ import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHException;
 import bwfdm.replaydh.core.RDHProperty;
 import bwfdm.replaydh.core.Workspace;
+import bwfdm.replaydh.git.GitUtils;
 import bwfdm.replaydh.io.FileTracker;
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.io.LocalFileObject;
@@ -742,6 +743,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		if(environment.getBoolean(RDHProperty.GIT_IGNORE_HIDDEN)) {
 			filter = filter.or(IOUtils::isHidden);
+		}
+
+		if(environment.getBoolean(RDHProperty.GIT_IGNORE_SPECIAL)) {
+			filter = filter.or(GitUtils::isSpecialFile);
 		}
 
 		return filter;
