@@ -28,7 +28,9 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
@@ -127,6 +129,9 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 	private MetadataCatalog search;
 	
 	private JDialog wizardWindow;
+	
+	private JScrollPane scrollPaneObjects;
+	
 	private ResourceManager rm = ResourceManager.getInstance();
 	
 	private Map<String, List<GUIElementMetadata>> elementsofproperty;
@@ -232,7 +237,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		wizardWindow.setModalityType(ModalityType.APPLICATION_MODAL);
 		mainPanelWizard=this.createWizardPanel();
 		wizardWindow.add(mainPanelWizard);
-		objectsPanel.setVisible(false);
+		scrollPaneObjects.setVisible(false);
 		wizardWindow.pack();
 		wizardWindow.setTitle(rm.get("replaydh.wizard.metadataAutoWizard.title"));
 		wizardWindow.setLocationRelativeTo(null);
@@ -294,7 +299,10 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		builderWizard.add(resetButton.getPanel()).xy(1, 5);
 		builderWizard.add(searchButton.getPanel()).xy(1, 7);
 		elementsofproperty.put("defaultdd", dd);
-		builderWizard.add(objectsPanel).xy(1, 9);
+		scrollPaneObjects = new JScrollPane(objectsPanel,ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,  
+				   ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scrollPaneObjects.setPreferredSize(new Dimension(700,400));
+		builderWizard.add(scrollPaneObjects).xy(1, 9);
 		return builderWizard.build();
 		
 	}
@@ -364,7 +372,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 			sortedOutputs.clear();
 			updateIdentifiableEditorElements();
 			updateEditorView();
-			objectsPanel.setVisible(false);
+			scrollPaneObjects.setVisible(false);
 		}
 		if (source == searchButton.getExtraButton()) {
 			MetadataKeys keys;
@@ -1391,7 +1399,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     		element.setHeaderString(header+" "+String.valueOf(i+1));
     		contentPanel.add(element.getViewPanel());
     	}
-    	objectsPanel.setVisible(true);
+    	scrollPaneObjects.setVisible(true);
     	objectsPanel.repaint();
     	objectsPanel.revalidate();
     	Window parentComponent = (Window) SwingUtilities.getAncestorOfClass(Window.class, mainPanelWizard);
