@@ -416,7 +416,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	MenuForAll.removeAll();
 		QuerySettings settings = new QuerySettings();
 		settings.setSchema(schema);
-		this.suggestSearch(settings, null, "title", titleTextField.getText());
+		//this.suggestSearch(settings, null, "title", titleTextField.getText());
     }
 
 

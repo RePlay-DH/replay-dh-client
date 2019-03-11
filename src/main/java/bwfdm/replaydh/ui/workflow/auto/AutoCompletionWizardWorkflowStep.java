@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import javax.swing.BorderFactory;
@@ -54,12 +53,10 @@ import bwfdm.replaydh.workflow.Resource;
 import bwfdm.replaydh.workflow.Tool;
 import bwfdm.replaydh.workflow.Identifiable.Role;
 import bwfdm.replaydh.workflow.Identifiable.Type;
-import bwfdm.replaydh.workflow.catalog.MetadataCatalogTestImpl;
 import bwfdm.replaydh.workflow.catalog.InMemoryMetadataCatalog;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Constraint;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result;
-import bwfdm.replaydh.workflow.export.dataverse.CollectionEntry;
 import bwfdm.replaydh.workflow.schema.IdentifierSchema;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 import bwfdm.replaydh.ui.GuiUtils;
@@ -478,11 +475,9 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener {
 			
 			for (MetadataKeys value : MetadataKeys.values()) {
 				String item = value.getDisplayLabel(value.getLocaString());
-				ddKeys.addItem(item);
+				oneguielement.getKeysDropdown().addItem(item);
 			}
-			ddKeys.addActionListener(this);
 			
-			oneguielement.getKeysDropdown().setModel(ddKeys.getModel());
 			oneguielement.getKeysDropdown().addActionListener(this);
 
 			propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
