@@ -260,6 +260,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		simpleSearch.getTextfield().getDocument().addDocumentListener(this);
 		
 		GUIElementMetadata chooseProperties = createGUIElement("keys");
+		chooseProperties.getTextfield().getDocument().addDocumentListener(this);
 		ddKeys = new JComboBox();
 		for (MetadataKeys value : MetadataKeys.values()) {
 			String item = value.getDisplayLabel(value.getLocaString());
@@ -559,6 +560,14 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 	
 	private void removeElementFromPanel(String metadatapropertyname, int buttonNumber) {
 		elementsofproperty.get(metadatapropertyname).remove(buttonNumber);
+		simpleSearch.getTextfield().setEnabled(true);
+		int size = elementsofproperty.get("defaultdd").size();
+		for (int i=0; i < size; i++) {
+			if(!(elementsofproperty.get("defaultdd").get(i).getTextfield().getText().isEmpty())) {
+				simpleSearch.getTextfield().setEnabled(false);
+				break;
+			}
+		}
 		refreshPanel(metadatapropertyname);
 	}
 	
@@ -1537,14 +1546,53 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 
 	@Override
 	public void insertUpdate(DocumentEvent e) {
-		// TODO Auto-generated method stub
-		
+		Object source = e.getDocument();
+		int size = elementsofproperty.get("defaultdd").size();
+		if(simpleSearch.getTextfield().getDocument() == source) {
+			if(!(simpleSearch.getTextfield().getText().isEmpty())) {
+				for (int i=0; i < size; i++) {
+					elementsofproperty.get("defaultdd").get(i).getTextfield().setEnabled(false);
+				}
+			} else {
+				for (int i=0; i < size; i++) {
+					elementsofproperty.get("defaultdd").get(i).getTextfield().setEnabled(true);
+				}
+			}
+		} else {
+			simpleSearch.getTextfield().setEnabled(true);
+			for (int i=0; i < size; i++) {
+				if(!(elementsofproperty.get("defaultdd").get(i).getTextfield().getText().isEmpty())) {
+					simpleSearch.getTextfield().setEnabled(false);
+					break;
+				}
+			}
+		}
 	}
 
 	@Override
 	public void removeUpdate(DocumentEvent e) {
 		// TODO Auto-generated method stub
-		
+		Object source = e.getDocument();
+		int size = elementsofproperty.get("defaultdd").size();
+		if(simpleSearch.getTextfield().getDocument() == source) {
+			if(!(simpleSearch.getTextfield().getText().isEmpty())) {
+				for (int i=0; i < size; i++) {
+					elementsofproperty.get("defaultdd").get(i).getTextfield().setEnabled(false);
+				}
+			} else {
+				for (int i=0; i < size; i++) {
+					elementsofproperty.get("defaultdd").get(i).getTextfield().setEnabled(true);
+				}
+			}
+		} else {
+			simpleSearch.getTextfield().setEnabled(true);
+			for (int i=0; i < size; i++) {
+				if(!(elementsofproperty.get("defaultdd").get(i).getTextfield().getText().isEmpty())) {
+					simpleSearch.getTextfield().setEnabled(false);
+					break;
+				}
+			}
+		}
 	}
 
 	@Override
