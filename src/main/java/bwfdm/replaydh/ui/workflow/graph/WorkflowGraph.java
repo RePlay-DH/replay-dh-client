@@ -427,7 +427,7 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 
 		boolean isSingleUncompressedStep = isSingleSelectedStep && !canExpandStep;
 
-		boolean isWorkflowEmpty = workflow!=null && WorkflowUtils.isEmpty(getWorkflow());
+		boolean isWorkflowEmpty = isValidWorkflow && WorkflowUtils.isEmpty(getWorkflow());
 
 		boolean activeStepIsLeaf = activeStep!=null && WorkflowUtils.isLeaf(activeStep);
 
