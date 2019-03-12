@@ -25,6 +25,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
@@ -57,6 +58,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -185,6 +187,20 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	
 	private RDHEnvironment environment;
 	private MetadataCatalog search = null;
+	
+	private Timer waitingTimer;
+	
+	public void setReadOnly(boolean enabled) {
+		enabled = !enabled;
+		taDescription.setEnabled(enabled);
+		tfParameters.setEnabled(enabled);
+		taEnvironment.setEnabled(enabled);
+		tfTitle.setEnabled(enabled);
+		bAddIdentifier.setEnabled(enabled);
+		cbRoleType.setEnabled(enabled);
+		bDone.setEnabled(enabled); 
+		bIgnore.setEnabled(enabled);
+	}
 
 	public void setEnvironment(RDHEnvironment environment) {
 		this.environment = environment;
@@ -226,6 +242,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		schema = builder.getSchema();
 		type = builder.getType();
 		titleSelector = builder.getTitleSelector();
+		
+		Window currentWindow=GuiUtils.getActiveWindow();
 		
 		ResourceManager rm = ResourceManager.getInstance();
 		IconRegistry ir = IconRegistry.getGlobalRegistry();
@@ -350,7 +368,39 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		splitPane.setOneTouchExpandable(false);
 		splitPane.setBorder(null);
 		panel.add(splitPane, BorderLayout.CENTER);
+		
+		waitingTimer = new Timer(500, taskPerformer);
+    	waitingTimer.setRepeats(false);
 	}
+	
+	private ActionListener taskPerformer = new ActionListener() {
+        public void actionPerformed(ActionEvent evt) {
+        	QuerySettings settings = new QuerySettings();
+			settings.setSchema(schema);
+        	if(taEnvironment.hasFocus()) {
+        		int numberOfItems = MenuForEnvironment.getItemCount();
+        		if (numberOfItems == 0) {
+        			suggestSearch(settings, null, "environment", taEnvironment.getText());
+        		} else {
+        			popupEnvironment.show(taEnvironment, 1, taEnvironment.getHeight());
+        		}
+        	} else if (taDescription.hasFocus()) {
+        		int numberOfItems = MenuForDescription.getItemCount();
+        		if (numberOfItems == 0) {
+        			suggestSearch(settings, null, "description", taDescription.getText());
+        		} else {
+        			popupDescription.show(taDescription, 1, taDescription.getHeight());
+        		}
+        	} else if (tfParameters.hasFocus()) {
+        		int numberOfItems = MenuForParameters.getItemCount();
+        		if (numberOfItems == 0) {
+        			suggestSearch(settings, null, "parameters", tfParameters.getText());
+        		} else {
+        			popupParameters.show(tfParameters, 1, tfParameters.getHeight());
+        		}
+        	}
+        }
+    };
 
 	public boolean isPersonEditor() {
 		return type==Type.PERSON;
@@ -415,7 +465,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		}
 
 		// Special handling of single item edits
-		if(!hasMultipleResources()) {
+		if(!hasMultipleResources() && !identifiers.isEmpty()) {
 			identifiers.iterator().next().state = EditState.IGNORED;
 		}
 
@@ -1224,35 +1274,78 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	public void insertUpdate(DocumentEvent e) {
 		// TODO Auto-generated method stub
 		Object source = e.getDocument();
-		QuerySettings settings = new QuerySettings();
-		settings.setSchema(schema);
-		int numberOfItems = MenuForDescription.getItemCount();
-		if ((numberOfItems == 0) && (source == taDescription.getDocument())) {
-			this.suggestSearch(settings, null, "description", taDescription.getText());
-			popupDescription.show(taDescription, 1, 1);
-		} else if (source == taDescription.getDocument()) {
-			popupDescription.show(taDescription, 1, 1);
+		if (source == taDescription.getDocument()) {
+			if(taDescription.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
 		}
-		numberOfItems = MenuForParameters.getItemCount();
-		if ((numberOfItems == 0) && (source == tfParameters.getDocument())) {
-			this.suggestSearch(settings, null, "parameters", tfParameters.getText());
-			popupParameters.show(tfParameters, 1, 1);
-		} else if (source == tfParameters.getDocument()) {
-			popupParameters.show(tfParameters, 1, 1);
+		if (source == taEnvironment.getDocument()) {
+			if(taEnvironment.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
 		}
-		numberOfItems = MenuForEnvironment.getItemCount();
-		if ((numberOfItems == 0) && (source == taEnvironment.getDocument())) {
-			this.suggestSearch(settings, null, "parameters", taEnvironment.getText());
-			popupEnvironment.show(taEnvironment, 1, 1);
-		} else if (source == taEnvironment.getDocument()) {
-			popupEnvironment.show(taEnvironment, 1, 1);
+		if (source == tfParameters.getDocument()) {
+			if(tfParameters.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
 		}
 	}
 
 	@Override
 	public void removeUpdate(DocumentEvent e) {
 		// TODO Auto-generated method stub
-		
+		Object source = e.getDocument();
+		if (source == taDescription.getDocument()) {
+			if(taDescription.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
+		}
+		if (source == taEnvironment.getDocument()) {
+			if(taEnvironment.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
+		}
+		if (source == tfParameters.getDocument()) {
+			if(tfParameters.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
+		}
 	}
 
 	@Override
@@ -1284,7 +1377,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			protected void done() {
 				if (success) {
 					switch(key) {
-					case "parameters":
+					case MetadataCatalog.PARAMETERS_KEY:
+						popupParameters.removeAll();
 						for(String value: results) {
 							JMenuItem item = new JMenuItem(value);
 							item.addActionListener(new ActionListener() {
@@ -1292,11 +1386,12 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 							    	tfParameters.setText(item.getText());
 							    }
 							});
-							MenuForParameters.add(item);
+							popupParameters.add(item);
 						}
-						popupParameters.add(MenuForParameters);
+						popupParameters.show(tfParameters, 1, tfParameters.getHeight());
 						break;
-					case "description":
+					case MetadataCatalog.DESCRIPTION_KEY:
+						popupDescription.removeAll();
 						for(String value: results) {
 							JMenuItem item = new JMenuItem(value);
 							item.addActionListener(new ActionListener() {
@@ -1304,11 +1399,12 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 							    	taDescription.setText(item.getText());
 							    }
 							});
-							MenuForDescription.add(item);
+							popupDescription.add(item);
 						}
-						popupDescription.add(MenuForDescription);
+						popupDescription.show(taDescription, 1, taDescription.getHeight());
 						break;
-					case "environment":
+					case MetadataCatalog.ENVIRONMENT_KEY:
+						popupEnvironment.removeAll();
 						for(String value: results) {
 							JMenuItem item = new JMenuItem(value);
 							item.addActionListener(new ActionListener() {
@@ -1316,9 +1412,9 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 							    	taEnvironment.setText(item.getText());
 							    }
 							});
-							MenuForEnvironment.add(item);
+							popupEnvironment.add(item);
 						}
-						popupEnvironment.add(MenuForEnvironment);
+						popupEnvironment.show(taEnvironment, 1, taEnvironment.getHeight());
 						break;
 					}
 				}

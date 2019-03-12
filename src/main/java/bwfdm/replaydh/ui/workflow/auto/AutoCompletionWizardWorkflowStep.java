@@ -39,6 +39,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.factories.Forms;
 import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.FormLayout;
 
@@ -153,8 +154,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 	private Identifiable.Type type = null;
 	private Identifiable.Role role = null;
 	
-	private GUIElementMetadata resetButton = null;
-	private GUIElementMetadata searchButton = null;
+	private JButton resetButton = null;
+	private JButton searchButton = null;
 	
 	private FormBuilder builderWizard;
 	private FormBuilder panelWizard;
@@ -233,14 +234,15 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 	public void createWizard(WorkflowSchema schema, Identifiable.Role role, Identifiable.Type type) {
 		this.type=type;
 		this.role=role;
-		wizardWindow = new JDialog();
+		Window currentWindow=GuiUtils.getActiveWindow();
+		wizardWindow = new JDialog(currentWindow);
 		wizardWindow.setModalityType(ModalityType.APPLICATION_MODAL);
 		mainPanelWizard=this.createWizardPanel();
 		wizardWindow.add(mainPanelWizard);
 		scrollPaneObjects.setVisible(false);
 		wizardWindow.pack();
 		wizardWindow.setTitle(rm.get("replaydh.wizard.metadataAutoWizard.windowTitle"));
-		wizardWindow.setLocationRelativeTo(null);
+		wizardWindow.setLocationRelativeTo(currentWindow);
 		wizardWindow.setVisible(true);
 		
 	}
@@ -273,12 +275,10 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		dd.add(chooseProperties);
 		propertypanels.put("defaultdd", chooseProperties.getPanel());
 		
-		searchButton = new GUIElementMetadata();
-		searchButton.createExtraButton(rm.get("replaydh.wizard.metadataAutoWizard.search"));
-		searchButton.getExtraButton().addActionListener(this);
-		resetButton = new GUIElementMetadata();
-		resetButton.createExtraButton(rm.get("replaydh.wizard.metadataAutoWizard.reset"));
-		resetButton.getExtraButton().addActionListener(this);
+		searchButton = new JButton(rm.get("replaydh.wizard.metadataAutoWizard.search"));
+		searchButton.addActionListener(this);
+		resetButton = new JButton(rm.get("replaydh.wizard.metadataAutoWizard.reset"));
+		resetButton.addActionListener(this);
 		
 		panelWizard = FormBuilder.create();
     	panelWizard.columns("pref:grow");
@@ -291,19 +291,18 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     	objectsPanel=panelWizard.build();
 		
 		builderWizard.columns("pref:grow");
-		builderWizard.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref, $nlg, pref");
+		builderWizard.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref");
 		builderWizard.padding(Paddings.DLU4);
 		builderWizard.add(simpleSearch.getPanel()).xy(1, 1);
 		listofkeys.add("gsearch");
 		builderWizard.add(chooseProperties.getPanel()).xy(1, 3);
 		listofkeys.add("defaultdd");
-		builderWizard.add(resetButton.getPanel()).xy(1, 5);
-		builderWizard.add(searchButton.getPanel()).xy(1, 7);
+		builderWizard.add(Forms.buttonBar(searchButton,resetButton)).xy(1, 5, "center, bottom");
 		elementsofproperty.put("defaultdd", dd);
 		scrollPaneObjects = new JScrollPane(objectsPanel,ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,  
 				   ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPaneObjects.setPreferredSize(new Dimension(700,400));
-		builderWizard.add(scrollPaneObjects).xy(1, 9);
+		builderWizard.add(scrollPaneObjects).xy(1, 7);
 		return builderWizard.build();
 		
 	}
@@ -359,7 +358,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 				}
 			}
 		}
-		if (source == resetButton.getExtraButton()) {
+		if (source == resetButton) {
 			int size = elementsofproperty.get("defaultdd").size();
 			for (int i=size-1; i > 0; i--) {
 				elementsofproperty.get("defaultdd").remove(i);
@@ -367,15 +366,10 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 			}
 			elementsofproperty.get("defaultdd").get(0).getTextfield().setText("");
 			simpleSearch.getTextfield().setText("");
-			sortedPersons.clear();
-			sortedTools.clear();
-			sortedInputs.clear();
-			sortedOutputs.clear();
-			updateIdentifiableEditorElements();
-			updateEditorView();
-			scrollPaneObjects.setVisible(false);
+			clearResultGUI();
 		}
-		if (source == searchButton.getExtraButton()) {
+		if (source == searchButton) {
+			clearResultGUI();
 			MetadataKeys keys;
 			boolean empty=true;
 			List<Constraint> constraints = new ArrayList<>();
@@ -438,6 +432,16 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
         		break;
         	}
         }
+	}
+	
+	private void clearResultGUI() {
+		sortedPersons.clear();
+		sortedTools.clear();
+		sortedInputs.clear();
+		sortedOutputs.clear();
+		updateIdentifiableEditorElements();
+		updateEditorView();
+		scrollPaneObjects.setVisible(false);
 	}
 	
 	/**
@@ -967,6 +971,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     		// Set identifiable editor
     		editor = createIdentifiableEditor(workflowSchema, this.identifiable.getType());
     		editor.setEnvironment(environment);
+    		editor.setReadOnly(true);
         	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(this.identifiable)));
 
         	/*
@@ -1424,6 +1429,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     private void showResourceDialog(Role role, List<LocalFileObject> files) {
 		IdentifiableEditor editor = createIdentifiableEditor(schema, role.asIdentifiableType());
 		editor.setEnvironment(environment);
+		editor.setReadOnly(true);
 		Map<Resource,Path> resources = WorkflowUIUtils.extractResources(files, role.asIdentifiableType());
 		WorkflowUIUtils.showFileResourceDialog(editor, role, resources);
 

@@ -56,6 +56,7 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.border.Border;
 import javax.swing.event.DocumentEvent;
 import javax.swing.text.JTextComponent;
@@ -215,7 +216,32 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     private boolean inputCorrect;
     
     private AutoCompletionWizardWorkflowStep autoWizard;
-
+    
+    
+    private Timer waitingTimer;
+    
+    private ActionListener taskPerformer = new ActionListener() {
+        public void actionPerformed(ActionEvent evt) {
+        	QuerySettings settings = new QuerySettings();
+			settings.setSchema(schema);
+        	if(titleTextField.hasFocus()) {
+        		int numberOfItems = MenuForTitle.getItemCount();
+        		if (numberOfItems == 0) {
+        			suggestSearch(settings, null, "title", titleTextField.getText());
+        		} else {
+        			popupTitle.show(titleTextField, 1, titleTextField.getHeight());
+        		}
+        	} else if (descriptionTextArea.hasFocus()) {
+        		int numberOfItems = MenuForDescription.getItemCount();
+        		if (numberOfItems == 0) {
+        			suggestSearch(settings, null, "description", descriptionTextArea.getText());
+        		} else {
+        			popupDescription.show(descriptionTextArea, 1, descriptionTextArea.getHeight());
+        		}
+        	}
+        }
+    };
+    
 
     private FocusListener focusListener = new FocusListener() {
 
@@ -389,6 +415,9 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	editorComponent.revalidate();
     	editorComponent.setMinimumSize(new Dimension(600, 600));
     	
+    	waitingTimer = new Timer(500, taskPerformer);
+    	waitingTimer.setRepeats(false);
+    	
     }
 
 
@@ -406,12 +435,14 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     		inputCorrect = false;
     	} else {
     		titleTextField.setBorder(defaultBorder);
-    		int numberOfItems = MenuForTitle.getItemCount();
-    		if (numberOfItems == 0) {
-    			this.suggestSearch(settings, null, "title", titleTextField.getText());
-    			popupTitle.show(titleTextField, 1, 1);
-    		} else if (source == titleTextField.getDocument()){
-    			popupTitle.show(titleTextField, 1, 1);
+    		if(titleTextField.hasFocus()) {
+    			if(waitingTimer.isRunning()) {
+    				waitingTimer.restart();
+    			} else {
+    				waitingTimer.start();
+    			}
+    		} else {
+    			waitingTimer.stop();
     		}
     	}
 
@@ -421,12 +452,14 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     		inputCorrect = false;
     	} else {
     		descriptionScrollPane.setBorder(defaultBorder);
-    		int numberOfItems = MenuForDescription.getItemCount();
-    		if (numberOfItems == 0) {
-    			this.suggestSearch(settings, null, "description", descriptionTextArea.getText());
-    			popupDescription.show(descriptionTextArea, 1, 1);
-    		} else if (source == descriptionTextArea.getDocument()){
-    			popupDescription.show(descriptionTextArea, 1, 1);
+    		if(descriptionTextArea.hasFocus()) {
+    			if(waitingTimer.isRunning()) {
+    				waitingTimer.restart();
+    			} else {
+    				waitingTimer.start();
+    			}
+    		} else {
+    			waitingTimer.stop();
     		}
     	}
 
@@ -1004,12 +1037,12 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	IdentifiableEditor editor = createIdentifiableEditor(schema, type);
     	editor.setEnvironment(environment);
     	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(identifiableObject)));
-    	Frame frame = null;//GuiUtils.getFrame(this.editorPanel);
+    	Frame window = GuiUtils.getFrame(getEditorComponent());//GuiUtils.getFrame(this.editorPanel);
     	try {
-			result = GuiUtils.showEditorDialogWithControl(frame, editor, title, true);
+			result = GuiUtils.showEditorDialogWithControl(window, editor, title, true);
 		} catch(Exception e) {
 			GuiUtils.beep();
-			GuiUtils.showErrorDialog(frame,
+			GuiUtils.showErrorDialog(window,
 					"replaydh.ui.editor.workflowStep.dialogs.errorIdentifiableEditor.title",
 					"replaydh.ui.editor.workflowStep.dialogs.errorIdentifiableEditor.message", e);
 		}
@@ -1971,7 +2004,8 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 			protected void done() {
 				if (success) {
 					switch(key) {
-					case "title":
+					case MetadataCatalog.TITLE_KEY:
+						popupTitle.removeAll();
 						for(String value: results) {
 							JMenuItem item = new JMenuItem(value);
 							item.addActionListener(new ActionListener() {
@@ -1979,11 +2013,12 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 							    	titleTextField.setText(item.getText());
 							    }
 							});
-							MenuForTitle.add(item);
+							popupTitle.add(item);
 						}
-						popupTitle.add(MenuForTitle);
+						popupTitle.show(titleTextField, 1, titleTextField.getHeight());
 						break;
-					case "description":
+					case MetadataCatalog.DESCRIPTION_KEY:
+						popupDescription.removeAll();
 						for(String value: results) {
 							JMenuItem item = new JMenuItem(value);
 							item.addActionListener(new ActionListener() {
@@ -1991,9 +2026,9 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 							    	descriptionTextArea.setText(item.getText());
 							    }
 							});
-							MenuForDescription.add(item);
+							popupDescription.add(item);
 						}
-						popupDescription.add(MenuForDescription);
+						popupDescription.show(descriptionTextArea, 1, descriptionTextArea.getHeight());
 						break;
 					}
 				}
