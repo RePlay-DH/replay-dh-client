@@ -193,8 +193,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	
 	private Timer waitingTimer;
 	
-	public void setReadOnly(boolean enabled) {
-		enabled = !enabled;
+	public void setReadOnly(boolean readOnly) {
+		boolean enabled = !readOnly;
 		taDescription.setEnabled(enabled);
 		tfParameters.setEnabled(enabled);
 		taEnvironment.setEnabled(enabled);
@@ -203,6 +203,13 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		cbRoleType.setEnabled(enabled);
 		bDone.setEnabled(enabled); 
 		bIgnore.setEnabled(enabled);
+		for(int i=0; i < identifierPanel.getComponentCount(); i++) {
+			Component tmpPanel = identifierPanel.getComponent(i);
+			if(tmpPanel instanceof IdentifierPanel) {
+				IdentifierPanel idPanel = (IdentifierPanel) tmpPanel;
+				idPanel.setReadOnly(readOnly);
+			}
+		}
 	}
 
 	public void setEnvironment(RDHEnvironment environment) {
@@ -1056,6 +1063,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		private static final long serialVersionUID = -3977881752966957467L;
 
 		private final Identifier identifier;
+		
+		private final JButton deleteButton;
 
 		IdentifierPanel(Identifier identifier) {
 			super(new BorderLayout());
@@ -1075,15 +1084,19 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			label.setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 			add(label, BorderLayout.CENTER);
 
-			JButton button = new JButton(IconRegistry.getGlobalRegistry().getIcon(
+			deleteButton = new JButton(IconRegistry.getGlobalRegistry().getIcon(
 					"delete_obj.gif", Resolution.forSize(16)));
-			button.addActionListener(this);
-			button.setPreferredSize(new Dimension(20, 20));
-			add(button, BorderLayout.EAST);
+			deleteButton.addActionListener(this);
+			deleteButton.setPreferredSize(new Dimension(20, 20));
+			add(deleteButton, BorderLayout.EAST);
 		}
 
 		public Identifier getIdentifier() {
 			return identifier;
+		}
+		
+		private void setReadOnly(boolean readOnly) {
+			deleteButton.setEnabled(!readOnly);
 		}
 
 		/**

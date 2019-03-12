@@ -971,8 +971,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     		// Set identifiable editor
     		editor = createIdentifiableEditor(workflowSchema, this.identifiable.getType());
     		editor.setEnvironment(environment);
-    		editor.setReadOnly(true);
         	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(this.identifiable)));
+        	editor.setReadOnly(true);
 
         	/*
         	 * To work well with FlowLayout, we need a way to signal the upper
@@ -1429,7 +1429,6 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     private void showResourceDialog(Role role, List<LocalFileObject> files) {
 		IdentifiableEditor editor = createIdentifiableEditor(schema, role.asIdentifiableType());
 		editor.setEnvironment(environment);
-		editor.setReadOnly(true);
 		Map<Resource,Path> resources = WorkflowUIUtils.extractResources(files, role.asIdentifiableType());
 		WorkflowUIUtils.showFileResourceDialog(editor, role, resources);
 
