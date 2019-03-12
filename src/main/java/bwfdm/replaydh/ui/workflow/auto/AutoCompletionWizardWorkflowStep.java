@@ -239,7 +239,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		wizardWindow.add(mainPanelWizard);
 		scrollPaneObjects.setVisible(false);
 		wizardWindow.pack();
-		wizardWindow.setTitle(rm.get("replaydh.wizard.metadataAutoWizard.title"));
+		wizardWindow.setTitle(rm.get("replaydh.wizard.metadataAutoWizard.windowTitle"));
 		wizardWindow.setLocationRelativeTo(null);
 		wizardWindow.setVisible(true);
 		
@@ -961,6 +961,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 
     		// Set identifiable editor
     		editor = createIdentifiableEditor(workflowSchema, this.identifiable.getType());
+    		editor.setEnvironment(environment);
         	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(this.identifiable)));
 
         	/*
@@ -1417,6 +1418,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     
     private void showResourceDialog(Role role, List<LocalFileObject> files) {
 		IdentifiableEditor editor = createIdentifiableEditor(schema, role.asIdentifiableType());
+		editor.setEnvironment(environment);
 		Map<Resource,Path> resources = WorkflowUIUtils.extractResources(files, role.asIdentifiableType());
 		WorkflowUIUtils.showFileResourceDialog(editor, role, resources);
 

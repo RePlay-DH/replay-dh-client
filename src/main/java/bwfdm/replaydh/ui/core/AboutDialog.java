@@ -142,7 +142,7 @@ public class AboutDialog extends JDialog {
 		lIcon.setPreferredSize(new Dimension(image.getWidth(null)+2, image.getHeight(null)+2));
 
 		final JLabel lContact = new JLabel(client.getAppInfo(AppProperty.CONTACT));
-		final JLabel lUrl = new JLabel(client.getAppInfo(AppProperty.URL));
+		final JLabel lUrl = new JLabel("https://"+client.getAppInfo(AppProperty.URL));
 
 		if(isBrowsingSupported()) {
 			linkify(lUrl);

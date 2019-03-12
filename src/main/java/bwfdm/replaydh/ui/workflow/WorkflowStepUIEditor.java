@@ -45,6 +45,7 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -576,6 +577,8 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
         		break;
         	}
         }
+        
+        
     }//actionPerformed
 
     public void addIdentifiable(Identifiable identifiable, Role role) {
@@ -1534,6 +1537,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
 	private void showResourceDialog(Role role, List<LocalFileObject> files) {
 		IdentifiableEditor editor = createIdentifiableEditor(schema, role.asIdentifiableType());
+		editor.setEnvironment(environment);
 		Map<Resource,Path> resources = WorkflowUIUtils.extractResources(files, role.asIdentifiableType());
 		WorkflowUIUtils.showFileResourceDialog(editor, role, resources);
 
@@ -1727,6 +1731,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
     		// Set identifiable editor
     		editor = createIdentifiableEditor(workflowSchema, this.identifiable.getType());
+    		editor.setEnvironment(environment);
         	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(this.identifiable)));
 
         	/*
@@ -1962,13 +1967,25 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 					switch(key) {
 					case "title":
 						for(String value: results) {
-							MenuForTitle.add(value);
+							JMenuItem item = new JMenuItem(value);
+							item.addActionListener(new ActionListener() {
+							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    	titleTextField.setText(item.getText());
+							    }
+							});
+							MenuForTitle.add(item);
 						}
 						popupTitle.add(MenuForTitle);
 						break;
 					case "description":
 						for(String value: results) {
-							MenuForDescription.add(value);
+							JMenuItem item = new JMenuItem(value);
+							item.addActionListener(new ActionListener() {
+							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    	descriptionTextArea.setText(item.getText());
+							    }
+							});
+							MenuForDescription.add(item);
 						}
 						popupDescription.add(MenuForDescription);
 						break;

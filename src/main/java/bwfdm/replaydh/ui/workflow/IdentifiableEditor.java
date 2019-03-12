@@ -48,6 +48,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -1285,19 +1286,37 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 					switch(key) {
 					case "parameters":
 						for(String value: results) {
-							MenuForParameters.add(value);
+							JMenuItem item = new JMenuItem(value);
+							item.addActionListener(new ActionListener() {
+							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    	tfParameters.setText(item.getText());
+							    }
+							});
+							MenuForParameters.add(item);
 						}
 						popupParameters.add(MenuForParameters);
 						break;
 					case "description":
 						for(String value: results) {
-							MenuForDescription.add(value);
+							JMenuItem item = new JMenuItem(value);
+							item.addActionListener(new ActionListener() {
+							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    	taDescription.setText(item.getText());
+							    }
+							});
+							MenuForDescription.add(item);
 						}
 						popupDescription.add(MenuForDescription);
 						break;
 					case "environment":
 						for(String value: results) {
-							MenuForEnvironment.add(value);
+							JMenuItem item = new JMenuItem(value);
+							item.addActionListener(new ActionListener() {
+							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    	taEnvironment.setText(item.getText());
+							    }
+							});
+							MenuForEnvironment.add(item);
 						}
 						popupEnvironment.add(MenuForEnvironment);
 						break;
