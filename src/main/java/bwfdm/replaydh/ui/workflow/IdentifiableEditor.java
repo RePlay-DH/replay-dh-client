@@ -25,6 +25,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
@@ -47,22 +48,32 @@ import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.DefaultComponentFactory;
 import com.jgoodies.forms.factories.Forms;
 import com.jgoodies.forms.factories.Paddings;
 
+import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
@@ -75,6 +86,9 @@ import bwfdm.replaydh.ui.workflow.IdentifiableEditor.EditProxy;
 import bwfdm.replaydh.utils.Mutable.MutableObject;
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifiable.Type;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
+import bwfdm.replaydh.workflow.export.dataverse.DataverseRepository_v4;
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
@@ -97,12 +111,14 @@ import bwfdm.replaydh.workflow.schema.WorkflowSchema;
  * @author Markus Gärtner
  *
  */
-public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelectionListener {
+public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelectionListener, DocumentListener {
 
 	public static Builder newBuilder() {
 		return new Builder();
 	}
 
+	private static final Logger log = LoggerFactory.getLogger(IdentifiableEditor.class);
+	
 	/**
 	 * <pre>
 	 * +--------+-------------------------+
@@ -134,8 +150,17 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	private final JButton bDone, bIgnore, bAddIdentifier;
 	private final JTextField tfTitle; //supposed to not be editable
 	private final JTextArea taDescription;
+	
+    private JPopupMenu popupDescription;
+    
 	private final JTextField tfParameters;
+	
+	private JPopupMenu popupParameters;
+    
 	private final JTextArea taEnvironment;
+	
+	private JPopupMenu popupEnvironment;
+    
 	private final JComboBox<CompoundLabel> cbRoleType;
 	private final JSplitPane splitPane;
 	private final JPanel itemPanel;
@@ -162,6 +187,34 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 	//FIXME make use of the editor control to provide feedback
 	private EditorControl editorControl;
+	
+	private RDHEnvironment environment;
+	private MetadataCatalog search = null;
+	
+	private Timer waitingTimer;
+	
+	public void setReadOnly(boolean readOnly) {
+		boolean enabled = !readOnly;
+		taDescription.setEnabled(enabled);
+		tfParameters.setEnabled(enabled);
+		taEnvironment.setEnabled(enabled);
+		tfTitle.setEnabled(enabled);
+		bAddIdentifier.setEnabled(enabled);
+		cbRoleType.setEnabled(enabled);
+		bDone.setEnabled(enabled); 
+		bIgnore.setEnabled(enabled);
+		for(int i=0; i < identifierPanel.getComponentCount(); i++) {
+			Component tmpPanel = identifierPanel.getComponent(i);
+			if(tmpPanel instanceof IdentifierPanel) {
+				IdentifierPanel idPanel = (IdentifierPanel) tmpPanel;
+				idPanel.setReadOnly(readOnly);
+			}
+		}
+	}
+
+	public void setEnvironment(RDHEnvironment environment) {
+		this.environment = environment;
+	}
 
 	public static void main(String[] args) throws Exception {
 		WorkflowSchema schema = WorkflowSchema.getDefaultSchema();
@@ -192,13 +245,16 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		GuiUtils.showEditorDialogWithControl(frame, editor, true);
 
 		frame.setVisible(false);
+		
 	}
 
 	protected IdentifiableEditor(Builder builder) {
 		schema = builder.getSchema();
 		type = builder.getType();
 		titleSelector = builder.getTitleSelector();
-
+		
+		Window currentWindow=GuiUtils.getActiveWindow();
+		
 		ResourceManager rm = ResourceManager.getInstance();
 		IconRegistry ir = IconRegistry.getGlobalRegistry();
 
@@ -234,7 +290,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			GuiUtils.autoSelectFullContent(tfTitle);
 			GuiUtils.prepareChangeableBorder(tfTitle);
 		}
-
+		
 		tfParameters = GuiUtils.autoSelectFullContent(new JTextField());
 
 		taEnvironment = GuiUtils.autoSelectFullContent(new JTextArea());
@@ -242,6 +298,24 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 		taDescription = GuiUtils.autoSelectFullContent(new JTextArea());
 		taDescription.setRows(3);
+		
+		popupParameters = new JPopupMenu();
+		tfParameters.add(popupParameters);
+		tfParameters.setComponentPopupMenu(popupParameters);
+		
+		tfParameters.getDocument().addDocumentListener(this);
+		
+		popupEnvironment = new JPopupMenu();
+		taEnvironment.add(popupEnvironment);
+		taEnvironment.setComponentPopupMenu(popupEnvironment);
+		
+		taEnvironment.getDocument().addDocumentListener(this);
+		
+		popupDescription = new JPopupMenu();
+		taDescription.add(popupDescription);
+		taDescription.setComponentPopupMenu(popupDescription);
+		
+		taDescription.getDocument().addDocumentListener(this);
 
 		bDone = new JButton(rm.get("replaydh.ui.editor.resourceCache.confirm.label"));
 		bDone.setToolTipText(rm.get("replaydh.ui.editor.resourceCache.confirm.description"));
@@ -298,7 +372,24 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		splitPane.setOneTouchExpandable(false);
 		splitPane.setBorder(null);
 		panel.add(splitPane, BorderLayout.CENTER);
+		
+		waitingTimer = new Timer(1000, taskPerformer);
+    	waitingTimer.setRepeats(false);
 	}
+	
+	private ActionListener taskPerformer = new ActionListener() {
+        public void actionPerformed(ActionEvent evt) {
+        	QuerySettings settings = new QuerySettings();
+			settings.setSchema(schema);
+			if (taEnvironment.hasFocus()) {
+				suggestSearch(settings, null, "environment", taEnvironment.getText());
+			} else if (taDescription.hasFocus()) {
+				suggestSearch(settings, null, "description", taDescription.getText());
+			} else if (tfParameters.hasFocus()) {
+				suggestSearch(settings, null, "parameters", tfParameters.getText());
+			}
+        }
+    };
 
 	public boolean isPersonEditor() {
 		return type==Type.PERSON;
@@ -363,7 +454,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		}
 
 		// Special handling of single item edits
-		if(!hasMultipleResources()) {
+		if(!hasMultipleResources() && !identifiers.isEmpty()) {
 			identifiers.iterator().next().state = EditState.IGNORED;
 		}
 
@@ -721,8 +812,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 					try {
 						LocalFileObject.ensureOrValidateChecksum(fileObject);
 					} catch (IOException | InterruptedException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
+						log.error("Failed to ensure/validate a checksum of a file", e1);
 					}
 					if(!(fileObject.getChecksum().toString().equals(identifier.getId().toString()))) {
 						addNewAllowed=false;
@@ -734,8 +824,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 					try {
 						LocalFileObject.ensureOrValidateChecksum(fileObject);
 					} catch (IOException | InterruptedException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
+						log.error("Failed to ensure/validate a checksum of a file", e1);
 					}
 					if(!(fileObject.getChecksum().toString().equals(checksum))) {
 						addNewAllowed=false;
@@ -980,6 +1069,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		private static final long serialVersionUID = -3977881752966957467L;
 
 		private final Identifier identifier;
+		
+		private final JButton deleteButton;
 
 		IdentifierPanel(Identifier identifier) {
 			super(new BorderLayout());
@@ -999,15 +1090,19 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			label.setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 			add(label, BorderLayout.CENTER);
 
-			JButton button = new JButton(IconRegistry.getGlobalRegistry().getIcon(
+			deleteButton = new JButton(IconRegistry.getGlobalRegistry().getIcon(
 					"delete_obj.gif", Resolution.forSize(16)));
-			button.addActionListener(this);
-			button.setPreferredSize(new Dimension(20, 20));
-			add(button, BorderLayout.EAST);
+			deleteButton.addActionListener(this);
+			deleteButton.setPreferredSize(new Dimension(20, 20));
+			add(deleteButton, BorderLayout.EAST);
 		}
 
 		public Identifier getIdentifier() {
 			return identifier;
+		}
+		
+		private void setReadOnly(boolean readOnly) {
+			deleteButton.setEnabled(!readOnly);
 		}
 
 		/**
@@ -1172,5 +1267,158 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 			return new IdentifiableEditor(this);
 		}
+	}
+
+	@Override
+	public void insertUpdate(DocumentEvent e) {
+		// TODO Auto-generated method stub
+		Object source = e.getDocument();
+		if (source == taDescription.getDocument()) {
+			if(taDescription.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
+		}
+		if (source == taEnvironment.getDocument()) {
+			if(taEnvironment.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
+		}
+		if (source == tfParameters.getDocument()) {
+			if(tfParameters.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
+		}
+	}
+
+	@Override
+	public void removeUpdate(DocumentEvent e) {
+		// TODO Auto-generated method stub
+		Object source = e.getDocument();
+		if (source == taDescription.getDocument()) {
+			if(taDescription.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
+		}
+		if (source == taEnvironment.getDocument()) {
+			if(taEnvironment.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
+		}
+		if (source == tfParameters.getDocument()) {
+			if(tfParameters.hasFocus()) {
+				if(waitingTimer.isRunning()) {
+					waitingTimer.restart();
+				} else {
+					waitingTimer.start();
+				}
+			} else {
+				waitingTimer.stop();
+			}
+		}
+	}
+
+	@Override
+	public void changedUpdate(DocumentEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	private void suggestSearch(QuerySettings settings, Identifiable context, String key, String valuePrefix) {
+
+		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>() {
+
+			boolean success = true;
+			List<String> results = null;
+
+			@Override
+			protected Boolean doInBackground() throws Exception {
+				if(search == null) {
+					search=environment.getClient().getMetadataCatalog();
+				}
+				results = search.suggest(settings, null, key, valuePrefix);
+				if (results.isEmpty()) {
+					success = false;
+				}
+				return success;
+			}
+
+			@Override
+			protected void done() {
+				if (success) {
+					switch(key) {
+					case MetadataCatalog.PARAMETERS_KEY:
+						popupParameters.removeAll();
+						for(String value: results) {
+							JMenuItem item = new JMenuItem(value);
+							item.addActionListener(new ActionListener() {
+							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    	tfParameters.setText(item.getText());
+							    }
+							});
+							popupParameters.add(item);
+						}
+						popupParameters.show(tfParameters, 1, tfParameters.getHeight());
+						break;
+					case MetadataCatalog.DESCRIPTION_KEY:
+						popupDescription.removeAll();
+						for(String value: results) {
+							JMenuItem item = new JMenuItem(value);
+							item.addActionListener(new ActionListener() {
+							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    	taDescription.setText(item.getText());
+							    }
+							});
+							popupDescription.add(item);
+						}
+						popupDescription.show(taDescription, 1, taDescription.getHeight());
+						break;
+					case MetadataCatalog.ENVIRONMENT_KEY:
+						popupEnvironment.removeAll();
+						for(String value: results) {
+							JMenuItem item = new JMenuItem(value);
+							item.addActionListener(new ActionListener() {
+							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    	taEnvironment.setText(item.getText());
+							    }
+							});
+							popupEnvironment.add(item);
+						}
+						popupEnvironment.show(taEnvironment, 1, taEnvironment.getHeight());
+						break;
+					}
+				}
+			}
+		};
+		worker.execute();
 	}
 }

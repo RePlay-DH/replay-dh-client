@@ -45,6 +45,8 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import bwfdm.replaydh.ui.GuiUtils;
+
 /**
  * 
  * @author Volodymyr Kushnarenko
@@ -118,12 +120,9 @@ public class WebUtils {
 		CloseableHttpResponse response = null;
 		try {
 			response = (CloseableHttpResponse) client.execute(request);
-		} catch (ClientProtocolException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Failed to process a http request and getting therefore no response {}", url, e);
+			GuiUtils.showErrorDialog(null, e);
 		}
 		return response;
 	}
