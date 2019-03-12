@@ -70,7 +70,7 @@ public class GitRemotePublisherWizard extends GitRemoteWizard {
 				parent, "gitRemotePublisherWizard",
 				ResourceManager.getInstance().get("replaydh.wizard.gitRemotePublisher.title"),
 				environment,
-				CHOOSE_REMOTE, EXPORT, FINISH);
+				CHOOSE_REMOTE, SELECT_SCOPE, EXPORT, FINISH);
 		return wizard;
 	}
 

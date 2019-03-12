@@ -22,6 +22,12 @@ import static java.util.Objects.requireNonNull;
 
 import java.awt.Window;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,6 +55,7 @@ import org.eclipse.jgit.diff.Sequence;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
@@ -62,6 +69,10 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.TrackingRefUpdate;
 import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.OrTreeFilter;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -132,6 +143,10 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 				}
 			}
 			return worstResult;
+		}
+
+		MergeDryRunResult getActiveBranchDryRunResult() {
+			return mergeDryRunResults.get(branch);
 		}
 	}
 
@@ -1034,12 +1049,80 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 		}
 
 		private void createDuplicates(RDHEnvironment environment, GitRemoteUpdaterContext context) {
-			worker = new SwingWorker<String, Runnable>() {
+			worker = new SwingWorker<List<String>, Runnable>() {
 
 				@Override
-				protected String doInBackground() throws Exception {
-					// TODO Auto-generated method stub
-					return null;
+				protected List<String> doInBackground() throws Exception {
+					publish(() -> {
+						lIcon.setVisible(true);
+						taHeader.setText("replaydh.wizard.gitRemoteUpdater.finish.duplicationActive");
+					});
+
+					MergeDryRunResult dryRunResult = context.getActiveBranchDryRunResult();
+					if(dryRunResult==null || dryRunResult.conflict==null)
+						throw new IllegalStateException("Expected valid dry run result and conflict information for active branch");
+
+					List<String> duplicates = new ArrayList<>();
+
+					final Repository repo = context.git.getRepository();
+					final Path root = repo.getWorkTree().toPath();
+
+					List<TreeFilter> pathFilters = dryRunResult.conflict.unmergedPaths
+							.stream()
+							.map(PathFilter::create)
+							.collect(Collectors.toList());
+
+					if(pathFilters.isEmpty())
+						throw new IllegalStateException("Expected conflicting file definitions");
+
+					TreeFilter filter = pathFilters.size()==1 ?
+							pathFilters.get(0) : OrTreeFilter.create(pathFilters);
+
+					try(TreeWalk tw = new TreeWalk(repo)) {
+						RevCommit commit = repo.parseCommit(dryRunResult.remoteId);
+						tw.reset(commit.getTree());
+						tw.setRecursive(true);
+						tw.setFilter(filter);
+
+						while(tw.next()) {
+							String path = tw.getPathString();
+
+							Path origPath = Paths.get(path);
+							Path parent = origPath.getParent();
+							String name = origPath.getFileName().toString();
+
+							int dot = name.indexOf('.');
+							if(dot==-1) {
+								name = name+GitUtils.DUPLICATE_MARKER;
+							} else {
+								String properName = name.substring(0, dot);
+								String ending = name.substring(dot);
+								name = properName+GitUtils.DUPLICATE_MARKER+ending;
+							}
+
+							Path newPath = root;
+							if(parent!=null) {
+								newPath = newPath.resolve(parent);
+							}
+							newPath = newPath.resolve(name);
+
+							if(Files.exists(newPath, LinkOption.NOFOLLOW_LINKS))
+								throw new FileAlreadyExistsException(newPath.toString());
+
+							ObjectId id = tw.getObjectId(0);
+							if(id==ObjectId.zeroId())
+								throw new IllegalStateException("Expected file for "+origPath);
+
+							ObjectLoader loader = repo.open(id);
+							try(OutputStream out = Files.newOutputStream(newPath)) {
+								loader.copyTo(out);
+							}
+
+							duplicates.add(name);
+						}
+					}
+
+					return duplicates;
 				}
 
 				@Override
@@ -1049,9 +1132,44 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 
 				@Override
 				protected void done() {
-					// TODO Auto-generated method stub
+					lIcon.setVisible(false);
+
+					List<String> duplicates = null;
+
+					try {
+						duplicates = get();
+					} catch (InterruptedException | CancellationException e) {
+						// Operation cancelled (no idea how)
+						log.info("Duplication run cancelled");
+					} catch (ExecutionException e) {
+						log.error("Error during duplication", e.getCause());
+
+						context.error = e.getCause();
+					}
+
+					ResourceManager rm = ResourceManager.getInstance();
+
+					if(context.error!=null) {
+						// Major fail
+						taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.duplicationFailed"));
+						epInfo.setThrowable(context.error);
+					} else if(duplicates!=null && !duplicates.isEmpty()) {
+						// Success
+						taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.duplicationDone"));
+
+						StringBuilder sb = new StringBuilder();
+						duplicates.stream()
+							.sorted()
+							.forEach(path -> sb.append(path).append('\n'));
+						epInfo.setText(sb.toString());
+					} else {
+						// Duplication finished with internal problems
+						taHeader.setText(rm.get("replaydh.wizard.gitRemoteUpdater.finish.duplicationFailed"));
+					}
+					epInfo.setVisible(true);
 				};
 			};
+
 			worker.execute();
 		}
 
