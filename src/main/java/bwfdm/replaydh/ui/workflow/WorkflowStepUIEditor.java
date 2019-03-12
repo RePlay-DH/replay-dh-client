@@ -213,6 +213,8 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
     private EditorControl editorControl;
     private boolean inputCorrect;
+    
+    private AutoCompletionWizardWorkflowStep autoWizard;
 
 
     private FocusListener focusListener = new FocusListener() {
@@ -525,21 +527,25 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 			return;
 		}
         
-        AutoCompletionWizardWorkflowStep autoWizard = new AutoCompletionWizardWorkflowStep(this.schema, environment, this);
+        
         
         if(source == btnAddAutoPerson){
+        	autoWizard = new AutoCompletionWizardWorkflowStep(this.schema, environment, this);
         	autoWizard.createWizard(this.schema, Role.PERSON, Type.PERSON);
         	return;
 
 		} else if (source == btnAddAutoTool){
+			autoWizard = new AutoCompletionWizardWorkflowStep(this.schema, environment, this);
 			autoWizard.createWizard(this.schema, Role.TOOL, Type.TOOL);
 			return;
 
 		} else if (source == btnAddAutoInputResource){
+			autoWizard = new AutoCompletionWizardWorkflowStep(this.schema, environment, this);
 			autoWizard.createWizard(this.schema, Role.INPUT, Type.RESOURCE);
 			return;
 
 		} else if (source == btnAddAutoOutputResource){
+			autoWizard = new AutoCompletionWizardWorkflowStep(this.schema, environment, this);
 			autoWizard.createWizard(this.schema, Role.OUTPUT, Type.RESOURCE);
 			return;
 		}
