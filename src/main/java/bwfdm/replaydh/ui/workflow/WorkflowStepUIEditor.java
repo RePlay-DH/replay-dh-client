@@ -128,9 +128,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     private MetadataCatalog search;
     
     private JPopupMenu popupTitle;
-    private JMenu MenuForTitle;
     private JPopupMenu popupDescription;
-    private JMenu MenuForDescription;
     
     // Icons
     private Icon iconRemove = IconRegistry.getGlobalRegistry().getIcon("list-remove-5.png");
@@ -220,27 +218,17 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     
     private Timer waitingTimer;
     
-    private ActionListener taskPerformer = new ActionListener() {
-        public void actionPerformed(ActionEvent evt) {
-        	QuerySettings settings = new QuerySettings();
+	private ActionListener taskPerformer = new ActionListener() {
+		public void actionPerformed(ActionEvent evt) {
+			QuerySettings settings = new QuerySettings();
 			settings.setSchema(schema);
-        	if(titleTextField.hasFocus()) {
-        		int numberOfItems = MenuForTitle.getItemCount();
-        		if (numberOfItems == 0) {
-        			suggestSearch(settings, null, "title", titleTextField.getText());
-        		} else {
-        			popupTitle.show(titleTextField, 1, titleTextField.getHeight());
-        		}
-        	} else if (descriptionTextArea.hasFocus()) {
-        		int numberOfItems = MenuForDescription.getItemCount();
-        		if (numberOfItems == 0) {
-        			suggestSearch(settings, null, "description", descriptionTextArea.getText());
-        		} else {
-        			popupDescription.show(descriptionTextArea, 1, descriptionTextArea.getHeight());
-        		}
-        	}
-        }
-    };
+			if (titleTextField.hasFocus()) {
+				suggestSearch(settings, null, "title", titleTextField.getText());
+			} else if (descriptionTextArea.hasFocus()) {
+				suggestSearch(settings, null, "description", descriptionTextArea.getText());
+			}
+		}
+	};
     
 
     private FocusListener focusListener = new FocusListener() {
@@ -311,8 +299,6 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	popupTitle = new JPopupMenu();
     	titleTextField.add(popupTitle);
     	titleTextField.setComponentPopupMenu(popupTitle);
-    	MenuForTitle = new JMenu();
-    	popupTitle.add(MenuForTitle);
 
     	descriptionTextArea = new JTextArea();
     	descriptionTextArea.getDocument().addDocumentListener(documentAdapter);
@@ -323,8 +309,6 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	popupDescription = new JPopupMenu();
     	titleTextField.add(popupDescription);
     	titleTextField.setComponentPopupMenu(popupDescription);
-    	MenuForDescription = new JMenu();
-    	popupDescription.add(MenuForDescription);
 
     	defaultBorder = titleTextField.getBorder(); //used to have the same border for some similar components such as JTextField, JTextArea etc.777
 

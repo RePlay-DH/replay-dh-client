@@ -146,17 +146,14 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	private final JTextArea taDescription;
 	
     private JPopupMenu popupDescription;
-    private JMenu MenuForDescription;
     
 	private final JTextField tfParameters;
 	
 	private JPopupMenu popupParameters;
-    private JMenu MenuForParameters;
     
 	private final JTextArea taEnvironment;
 	
 	private JPopupMenu popupEnvironment;
-    private JMenu MenuForEnvironment;
     
 	private final JComboBox<CompoundLabel> cbRoleType;
 	private final JSplitPane splitPane;
@@ -292,24 +289,18 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		popupParameters = new JPopupMenu();
 		tfParameters.add(popupParameters);
 		tfParameters.setComponentPopupMenu(popupParameters);
-		MenuForParameters = new JMenu();
-		popupParameters.add(MenuForParameters);
 		
 		tfParameters.getDocument().addDocumentListener(this);
 		
 		popupEnvironment = new JPopupMenu();
 		taEnvironment.add(popupEnvironment);
 		taEnvironment.setComponentPopupMenu(popupEnvironment);
-		MenuForEnvironment = new JMenu();
-		popupEnvironment.add(MenuForEnvironment);
 		
 		taEnvironment.getDocument().addDocumentListener(this);
 		
 		popupDescription = new JPopupMenu();
 		taDescription.add(popupDescription);
 		taDescription.setComponentPopupMenu(popupDescription);
-		MenuForDescription = new JMenu();
-		popupDescription.add(MenuForDescription);
 		
 		taDescription.getDocument().addDocumentListener(this);
 
@@ -377,28 +368,13 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
         public void actionPerformed(ActionEvent evt) {
         	QuerySettings settings = new QuerySettings();
 			settings.setSchema(schema);
-        	if(taEnvironment.hasFocus()) {
-        		int numberOfItems = MenuForEnvironment.getItemCount();
-        		if (numberOfItems == 0) {
-        			suggestSearch(settings, null, "environment", taEnvironment.getText());
-        		} else {
-        			popupEnvironment.show(taEnvironment, 1, taEnvironment.getHeight());
-        		}
-        	} else if (taDescription.hasFocus()) {
-        		int numberOfItems = MenuForDescription.getItemCount();
-        		if (numberOfItems == 0) {
-        			suggestSearch(settings, null, "description", taDescription.getText());
-        		} else {
-        			popupDescription.show(taDescription, 1, taDescription.getHeight());
-        		}
-        	} else if (tfParameters.hasFocus()) {
-        		int numberOfItems = MenuForParameters.getItemCount();
-        		if (numberOfItems == 0) {
-        			suggestSearch(settings, null, "parameters", tfParameters.getText());
-        		} else {
-        			popupParameters.show(tfParameters, 1, tfParameters.getHeight());
-        		}
-        	}
+			if (taEnvironment.hasFocus()) {
+				suggestSearch(settings, null, "environment", taEnvironment.getText());
+			} else if (taDescription.hasFocus()) {
+				suggestSearch(settings, null, "description", taDescription.getText());
+			} else if (tfParameters.hasFocus()) {
+				suggestSearch(settings, null, "parameters", tfParameters.getText());
+			}
         }
     };
 
