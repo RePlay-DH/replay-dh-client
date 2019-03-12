@@ -640,7 +640,13 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	}
 
 	private void onDoneButtonClicked(ActionEvent ae) {
-		currentIdentifiable.getTarget().setDescription(taDescription.getText());
+		Identifiable identifiable = currentIdentifiable.getTarget();
+		identifiable.setDescription(taDescription.getText());
+		if(isToolEditor()) {
+			Tool tool = (Tool) identifiable;
+			tool.setEnvironment(taEnvironment.getText());
+			tool.setParameters(tfParameters.getText());
+		}
 		currentIdentifiable.state = EditState.DONE;
 
 		selectNextIdentifier();
