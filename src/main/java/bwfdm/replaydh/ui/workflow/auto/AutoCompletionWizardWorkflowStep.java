@@ -268,7 +268,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 			ddKeys.addItem(item);
 		}
 
-		ddKeys.addActionListener(this);
+		//ddKeys.addActionListener(this);
 		chooseProperties.getKeysDropdown().setModel(ddKeys.getModel());
 		dd.add(chooseProperties);
 		propertypanels.put("defaultdd", chooseProperties.getPanel());
@@ -449,6 +449,10 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		String columns="pref:grow";
 		String rows="pref";
 
+		for(GUIElementMetadata oneguielement : elementsofproperty.get(metadatapropertyname)) {
+			oneguielement.getTextfield().getDocument().removeDocumentListener(this);
+		}
+		
 		FormLayout layout = new FormLayout(columns,rows);
 
 
@@ -492,16 +496,17 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 				if(oneguielement.getKeysDropdown().getActionListeners().length == 0) {
 					oneguielement.getKeysDropdown().addActionListener(this);
 				}
-			}
-			
-			for (MetadataKeys value : MetadataKeys.values()) {
-				String item = value.getDisplayLabel(value.getLocaString());
-				oneguielement.getKeysDropdown().addItem(item);
-			}
-			
-			oneguielement.getKeysDropdown().addActionListener(this);
-			
+			} 
+				//oneguielement.getKeysDropdown().addActionListener(this);
+				
 			oneguielement.getTextfield().getDocument().addDocumentListener(this);
+			
+			if(oneguielement.getKeysDropdown().getModel().getSize() == 0) {
+				for (MetadataKeys value : MetadataKeys.values()) {
+					String item = value.getDisplayLabel(value.getLocaString());
+					oneguielement.getKeysDropdown().addItem(item);
+				}
+			}
 
 			propertybuilder.add(oneguielement.getPanel()).xy(1, (z*2)+1);
 
