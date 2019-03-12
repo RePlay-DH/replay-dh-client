@@ -399,7 +399,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	editorComponent.revalidate();
     	editorComponent.setMinimumSize(new Dimension(600, 600));
     	
-    	waitingTimer = new Timer(500, taskPerformer);
+    	waitingTimer = new Timer(1000, taskPerformer);
     	waitingTimer.setRepeats(false);
     	
     }
@@ -1021,7 +1021,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	IdentifiableEditor editor = createIdentifiableEditor(schema, type);
     	editor.setEnvironment(environment);
     	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(identifiableObject)));
-    	Frame window = GuiUtils.getFrame(getEditorComponent());//GuiUtils.getFrame(this.editorPanel);
+    	Frame window = null;//GuiUtils.getFrame(this.editorPanel);
     	try {
 			result = GuiUtils.showEditorDialogWithControl(window, editor, title, true);
 		} catch(Exception e) {

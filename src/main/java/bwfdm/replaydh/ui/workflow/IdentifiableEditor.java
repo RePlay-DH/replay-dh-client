@@ -373,7 +373,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		splitPane.setBorder(null);
 		panel.add(splitPane, BorderLayout.CENTER);
 		
-		waitingTimer = new Timer(500, taskPerformer);
+		waitingTimer = new Timer(1000, taskPerformer);
     	waitingTimer.setRepeats(false);
 	}
 	
