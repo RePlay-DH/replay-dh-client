@@ -253,8 +253,6 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		type = builder.getType();
 		titleSelector = builder.getTitleSelector();
 		
-		Window currentWindow=GuiUtils.getActiveWindow();
-		
 		ResourceManager rm = ResourceManager.getInstance();
 		IconRegistry ir = IconRegistry.getGlobalRegistry();
 
