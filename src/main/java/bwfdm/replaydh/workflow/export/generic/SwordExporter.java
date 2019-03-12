@@ -45,6 +45,7 @@ import org.swordapp.client.SwordResponse;
 import org.swordapp.client.UriRegistry;
 
 import bwfdm.replaydh.io.IOUtils;
+import bwfdm.replaydh.ui.GuiUtils;
 
 /**
  * General exporting methods for SWORD-based repositories (e.g. DSpace, Dataverse).
@@ -478,15 +479,9 @@ public abstract class SwordExporter {
 		
 		try {
 			exportElement(entryUrl, SwordRequestType.REPLACE, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SWORDError e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ProtocolViolationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (FileNotFoundException | SWORDError | ProtocolViolationException e) {
+			log.error("Failed to replace metadata: {}",entryUrl, e);
+			GuiUtils.showErrorDialog(null, e);
 		}	
 		
 	}

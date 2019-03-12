@@ -65,6 +65,9 @@ import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.DefaultComponentFactory;
 import com.jgoodies.forms.factories.Forms;
@@ -85,6 +88,7 @@ import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifiable.Type;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
+import bwfdm.replaydh.workflow.export.dataverse.DataverseRepository_v4;
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
@@ -113,6 +117,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		return new Builder();
 	}
 
+	private static final Logger log = LoggerFactory.getLogger(IdentifiableEditor.class);
+	
 	/**
 	 * <pre>
 	 * +--------+-------------------------+
@@ -793,8 +799,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 					try {
 						LocalFileObject.ensureOrValidateChecksum(fileObject);
 					} catch (IOException | InterruptedException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
+						log.error("Failed to ensure/validate a checksum of a file", e1);
 					}
 					if(!(fileObject.getChecksum().toString().equals(identifier.getId().toString()))) {
 						addNewAllowed=false;
@@ -806,8 +811,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 					try {
 						LocalFileObject.ensureOrValidateChecksum(fileObject);
 					} catch (IOException | InterruptedException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
+						log.error("Failed to ensure/validate a checksum of a file", e1);
 					}
 					if(!(fileObject.getChecksum().toString().equals(checksum))) {
 						addNewAllowed=false;

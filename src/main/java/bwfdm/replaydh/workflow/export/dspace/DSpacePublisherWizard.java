@@ -614,7 +614,7 @@ public class DSpacePublisherWizard {
 			checkLoginButton.setEnabled(false);
 			checkLoginButton.addActionListener(new ActionListener() {
 				@Override
-				public void actionPerformed(ActionEvent e) {
+				public void actionPerformed(ActionEvent ae) {
 
 					// Exit if some fields are empty
 					if((tfUrl.getText().equals("")) || (tfUserLogin.getText().equals(""))
@@ -631,15 +631,9 @@ public class DSpacePublisherWizard {
 								tfUserLogin.getText(),
 								pfUserPassword.getPassword()
 								);
-					} catch (ClientProtocolException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					} catch (URISyntaxException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
+					} catch (IOException | URISyntaxException e) {
+						log.error("Failed to create a export repository instance {}", restURL, e);
+						GuiUtils.showErrorDialog(getPageComponent(), e);
 					}
 					// Prepare GUI for the repository requests
 					checkLoginButton.setEnabled(false);

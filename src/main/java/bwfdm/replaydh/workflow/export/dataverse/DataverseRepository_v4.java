@@ -37,6 +37,7 @@ import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 
+import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.workflow.export.generic.SwordExporter;
 
 /**
@@ -138,12 +139,9 @@ public class DataverseRepository_v4 extends SwordExporter {
 				String alias = JsonPath.using(conf).parse(jsonMetadata).read("$.data.alias");
 				String newValue=collections.get(key).replace(collections.get(key), collections.get(key)+" -- "+alias);
 				collections.put(key, newValue);
-			} catch (SWORDClientException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			} catch (SWORDClientException | IOException e) {
+				log.error("Failed to retrieve dataverses available by the user: {}",repoUrl, e);
+				GuiUtils.showErrorDialog(null, e);
 			}
 		}
 		return collections;
@@ -185,12 +183,9 @@ public class DataverseRepository_v4 extends SwordExporter {
 		Map<String, String> entries = new HashMap<>();
 		try {
 			entries=getMetadataSetsWithId(getAtomFeed(collectionUrl));
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SWORDClientException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (MalformedURLException| SWORDClientException e) {
+			log.error("Failed to retrieve entries from a dataverse {}", collectionUrl, e);
+			GuiUtils.showErrorDialog(null, e);
 		}
 		return entries;
 	}
@@ -277,13 +272,15 @@ public class DataverseRepository_v4 extends SwordExporter {
 			}
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error("Failed to convert file content to string", e);
+			GuiUtils.showErrorDialog(null, e);
 		} finally {
 			if (br != null) {
 				try {
 					br.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					log.error("Failed to close a buffered reader", e);
+					GuiUtils.showErrorDialog(null, e);
 				}
 			}
 		}
@@ -303,18 +300,9 @@ public class DataverseRepository_v4 extends SwordExporter {
 		DepositReceipt receipt = null;
 		try {
 			receipt = (DepositReceipt) exportElement(collectionURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ATOM_XML, null, null, metadataMap);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SWORDClientException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SWORDError e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ProtocolViolationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (FileNotFoundException | SWORDClientException | SWORDError | ProtocolViolationException e) {
+			log.error("Failed to create entry with metadata: {}",collectionURL, e);
+			GuiUtils.showErrorDialog(null, e);
 		}
 		return receipt.getEntry().getEditMediaLinkResolvedHref().toString();
 	}
@@ -346,46 +334,35 @@ public class DataverseRepository_v4 extends SwordExporter {
 		String packageFormat = getPackageFormat(zipFile.getName()); //zip-archive or separate file
 		try {
 			exportElement(metadataSetHrefURL, SwordRequestType.DEPOSIT, MIME_FORMAT_ZIP, packageFormat, zipFile, null);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SWORDClientException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SWORDError e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ProtocolViolationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (FileNotFoundException | SWORDClientException | SWORDError | ProtocolViolationException e) {
+			log.error("Failed to export file to repository: {}",metadataSetHrefURL, e);
+			GuiUtils.showErrorDialog(null, e);
 		}
 		
 		try {
 			FileUtils.delete(zipFile);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Failed to delete zip file:", e);
+			GuiUtils.showErrorDialog(null, e);
 		}
 	}
 	
 	public void replaceMetadataAndAddFile(String collectionURL, String doiUrl, File zipFile, Map<String, List<String>> metadataMap) {
 		try {
 			replaceMetadataEntry(doiUrl, metadataMap);
-		} catch (SWORDClientException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (SWORDClientException e1) {
+			log.error("Failed to replace metadata entry in {}",doiUrl, e1);
+			GuiUtils.showErrorDialog(null, e1);
 		}
+		
 		Entry entry = null;
 		int beginDOI=doiUrl.indexOf("doi:");
 		int end=doiUrl.length();
 		try {
 			entry=getUserAvailableMetadataset(getAtomFeed(collectionURL),doiUrl.substring(beginDOI, end));
-		} catch (MalformedURLException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (SWORDClientException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+		} catch (MalformedURLException | SWORDClientException e) {
+			log.error("Failed to get user available metadata sets from dataverse: {}",collectionURL, e);
+			GuiUtils.showErrorDialog(null, e);
 		}
 		exportFile(entry.getEditMediaLinkResolvedHref().toString(), zipFile);
 	}

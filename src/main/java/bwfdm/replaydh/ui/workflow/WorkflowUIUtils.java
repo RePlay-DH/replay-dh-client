@@ -49,6 +49,9 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
 
@@ -79,6 +82,8 @@ import bwfdm.replaydh.workflow.schema.impl.IdentifierTypeImpl;
  *
  */
 public final class WorkflowUIUtils {
+	
+	private static final Logger log = LoggerFactory.getLogger(WorkflowUIUtils.class);
 
 	public static class LabelCellRenderer extends DefaultListCellRenderer {
 
@@ -306,8 +311,7 @@ public final class WorkflowUIUtils {
 					try {
 						LocalFileObject.ensureOrValidateChecksum(fileObject);
 					} catch (IOException | InterruptedException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
+						log.error("Failed to ensure/validate a checksum of a file", e1);
 					}
 					tfId.setText(fileObject.getChecksum().toString());
 				}
