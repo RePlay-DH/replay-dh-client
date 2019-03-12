@@ -23,7 +23,10 @@ import static java.util.Objects.requireNonNull;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -37,23 +40,36 @@ import java.util.WeakHashMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.jgoodies.forms.FormsSetup;
 import com.jgoodies.forms.factories.ComponentFactory;
 import com.jgoodies.forms.factories.Paddings;
 
+import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.io.TrackingStatus;
+import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
+import bwfdm.replaydh.ui.actions.ActionManager;
+import bwfdm.replaydh.ui.actions.ActionManager.ActionMapper;
+import bwfdm.replaydh.ui.helper.AbstractDialogWorker;
+import bwfdm.replaydh.ui.helper.AbstractDialogWorker.CancellationPolicy;
 import bwfdm.replaydh.ui.helper.CloseableUI;
 import bwfdm.replaydh.ui.helper.WrapLayout;
+import bwfdm.replaydh.utils.Options;
 import bwfdm.replaydh.utils.RDHUtils;
 import bwfdm.replaydh.workflow.Resource;
 
@@ -63,7 +79,11 @@ import bwfdm.replaydh.workflow.Resource;
  */
 public class FileOutlinePanel extends JPanel implements CloseableUI {
 
+	private static final Logger log = LoggerFactory.getLogger(FileOutlinePanel.class);
+
 	private static final long serialVersionUID = -8510120755340580508L;
+
+	private final RDHEnvironment environment;
 
 	/**
 	 * Files reported by the tracker for associated
@@ -76,7 +96,7 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 	 */
 	private int filesVisible = 5;
 
-	private int displayablePathLength = 60;
+	private int displayablePathLength = 40;
 
 	/**
 	 * Status files in this outline are associated with.
@@ -91,12 +111,24 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 
 	private final JPanel contentPanel;
 
+	private final JPopupMenu popupMenu;
+
+	private final ActionManager actionManager;
+	private final ActionMapper actionMapper;
+
+	private final Handler handler;
+
 	private static final ComponentFactory COMPONENT_FACTORY = FormsSetup.getComponentFactoryDefault();
 
-	public FileOutlinePanel(TrackingStatus trackingStatus) {
+	public FileOutlinePanel(RDHEnvironment environment, ActionManager actionManager, TrackingStatus trackingStatus) {
 		super(new BorderLayout(0, 10));
 
+		this.environment = requireNonNull(environment);
 		this.trackingStatus = requireNonNull(trackingStatus);
+		this.actionManager = requireNonNull(actionManager).derive();
+		actionMapper = this.actionManager.mapper(this);
+
+		handler = new Handler();
 
 		setBorder(Paddings.DLU4);
 
@@ -104,10 +136,53 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 		layout.setAlignOnBaseline(true);
 		contentPanel = new JPanel(layout);
 
-		add(COMPONENT_FACTORY.createSeparator(RDHUtils.getTitle(trackingStatus), SwingConstants.LEFT), BorderLayout.NORTH);
+		add(COMPONENT_FACTORY.createSeparator(RDHUtils.getTitle(trackingStatus),
+				SwingConstants.LEFT), BorderLayout.NORTH);
 		add(contentPanel, BorderLayout.CENTER);
+
+		switch (trackingStatus) {
+		case CORRUPTED:
+			popupMenu = this.actionManager.createPopupMenu(
+					"replaydh.ui.core.workspaceTrackerPanel.conflictedFilesList",
+					Options.emptyOptions);
+			break;
+
+		default:
+			popupMenu = null;
+			break;
+		}
+
+		registerActions();
 	}
 
+	private void registerActions() {
+		actionMapper.mapTask("replaydh.ui.core.workspaceTrackerPanel.markFileResolved", handler::markFileResolved);
+	}
+
+	private void unregisterActions() {
+		actionMapper.dispose();
+	}
+
+	private void showPopupMenu(FilePanel filePanel, MouseEvent e) {
+		if(popupMenu==null) {
+			return;
+		}
+
+		refreshActions(filePanel);
+		popupMenu.pack();
+		popupMenu.show(filePanel, e.getX(), e.getY());
+	}
+
+	private void refreshActions(FilePanel filePanel) {
+		boolean isConflictOutline = trackingStatus==TrackingStatus.CORRUPTED;
+		actionManager.setEnabled(isConflictOutline,
+				"replaydh.ui.core.workspaceTrackerPanel.markFileResolved");
+	}
+
+	private FilePanel getPopupOwner() {
+		Component invoker = popupMenu.getInvoker();
+		return invoker instanceof FilePanel ? (FilePanel) invoker : null;
+	}
 
 	public Set<LocalFileObject> getFiles() {
 		return files==null ? Collections.emptySet() : files;
@@ -137,13 +212,20 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 	}
 
 	private FilePanel getCachedOrCreateFilePanel(LocalFileObject file) {
+		FilePanel panel;
 		if(cachedPanels.isEmpty()) {
-			return new FilePanel(file);
+			panel = new FilePanel(file);
 		} else {
-			FilePanel panel = cachedPanels.pop();
+			panel = cachedPanels.pop();
 			panel.setFileObject(file);
-			return panel;
 		}
+		panel.addMouseListener(handler);
+		return panel;
+	}
+
+	private void cachePanel(FilePanel panel) {
+		panel.removeMouseListener(handler);
+		cachedPanels.add(panel);
 	}
 
 	private void refreshUI() {
@@ -155,8 +237,10 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 //		}
 
 		// Clear current state
-		activePanels.forEach(FilePanel::close);
-		cachedPanels.addAll(activePanels);
+		activePanels.forEach(panel -> {
+			panel.close();
+			cachePanel(panel);
+		});
 		activePanels.clear();
 		fileToPanelMapping.clear();
 		contentPanel.removeAll();
@@ -196,6 +280,7 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 
 		fileToPanelMapping.clear();
 
+		unregisterActions();
 		//TODO
 	}
 
@@ -204,8 +289,90 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 		return file.toString().substring(0, limit);
 	}
 
+	private class Handler extends MouseAdapter {
+
+
+		@Override
+		public void mousePressed(MouseEvent e) {
+			maybeShowPopupMenu(e);
+		}
+
+		@Override
+		public void mouseReleased(MouseEvent e) {
+			maybeShowPopupMenu(e);
+		}
+
+		private void maybeShowPopupMenu(MouseEvent e) {
+			if(!e.isPopupTrigger()) {
+				return;
+			}
+
+			if(e.getComponent() instanceof FilePanel) {
+				FilePanel panel = (FilePanel) e.getComponent();
+				showPopupMenu(panel, e);
+			}
+		}
+
+		private void markFileResolved() {
+			FilePanel filePanel = getPopupOwner();
+			if(filePanel==null) {
+				return;
+			}
+
+			LocalFileObject fileObject = filePanel.fileObject;
+			if(fileObject==null) {
+				return;
+			}
+
+			Path file = fileObject.getFile();
+
+			ResourceManager rm = ResourceManager.getInstance();
+
+			String message = rm.get("replaydh.panels.fileOutline.markFileResolved.message",file);
+			String title = rm.get("replaydh.panels.fileOutline.resolvingFile.title");
+			if(JOptionPane.showConfirmDialog(getRootPane(), message, title,
+					JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION) {
+
+				new AbstractDialogWorker<Boolean, Object>(
+						SwingUtilities.getWindowAncestor(getRootPane()),
+						ResourceManager.getInstance().get("replaydh.dialogs.checkWorkspaceForImport.title"),
+						CancellationPolicy.NO_CANCEL) {
+
+							@Override
+							protected String getMessage(MessageType messageType, Throwable t) {
+								ResourceManager rm = ResourceManager.getInstance();
+								switch (messageType) {
+								case RUNNING:
+									log.info("Marking as resolved: {}", file);
+									return rm.get("replaydh.panels.fileOutline.resolvingFile.active", file);
+								case FAILED:
+									log.error("Failed to mark file resolved: {}", file, t);
+									return rm.get("replaydh.panels.fileOutline.resolvingFile.failed", t.getMessage());
+								case FINISHED:
+									log.info("File marked as resolved: {}", file);
+									return rm.get("replaydh.panels.fileOutline.resolvingFile.done", file);
+
+								default:
+									throw new IllegalArgumentException("Unknown or unsupported message type: "+messageType);
+								}
+							}
+
+							@Override
+							protected Boolean doInBackground() throws Exception {
+								return environment.getClient().getFileTracker()
+										.markConflictResolved(Collections.singleton(file));
+							}
+
+				}.start();
+			}
+		}
+	}
+
 	private static final Border defaultBorder = BorderFactory.createCompoundBorder(
 			new LineBorder(Color.BLACK), new EmptyBorder(1, 1, 1, 1));
+
+	private static final Border excludedBorder = BorderFactory.createCompoundBorder(
+			new LineBorder(Color.BLUE), new EmptyBorder(1, 1, 1, 1));
 
 	private class FilePanel extends JPanel implements CloseableUI {
 
@@ -267,12 +434,16 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 			label.setText(title);
 			label.setToolTipText(GuiUtils.toSwingTooltip(tooltip));
 
+			setBorder(RDHUtils.getBasicIgnoreFilter(environment).test(file) ?
+					excludedBorder : defaultBorder);
+
 			// More detailed outline
 
 			StringBuilder buffer = new StringBuilder();
 
 			if(Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
-				buffer.append("Size: ").append(IOUtils.readableSize(file)).append('\n');
+				buffer.append(ResourceManager.getInstance().get(
+						"replaydh.panels.fileOutline.size")+": ").append(IOUtils.readableSize(file)).append('\n');
 			}
 
 			Resource resource = fileObject.getResource();
@@ -280,7 +451,8 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 				buffer.append("System-Id: ").append(resource.getSystemId()).append('\n');
 			}
 
-			buffer.append("TODO: metadata");
+			//TODO add some more information
+//			buffer.append("TODO: metadata");
 
 			textArea.setText(buffer.toString());
 		}

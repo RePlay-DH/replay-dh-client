@@ -35,12 +35,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.IntConsumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHException;
 import bwfdm.replaydh.core.RDHProperty;
+import bwfdm.replaydh.git.GitUtils;
+import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.io.TrackingStatus;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.workflow.Identifiable;
@@ -369,6 +372,26 @@ public class RDHUtils {
 	public static <T> List<T> toList(Iterable<T> source) {
 		return StreamSupport.stream(source.spliterator(), false)
 				.collect(Collectors.toList());
+	}
+
+	public static final Predicate<Path> NO_FILTER = p -> false;
+
+	public static Predicate<Path> getBasicIgnoreFilter(RDHEnvironment environment) {
+		Predicate<Path> filter = NO_FILTER;
+
+		if(environment.getBoolean(RDHProperty.GIT_IGNORE_EMPTY)) {
+			filter = filter.or(IOUtils::isEmpty);
+		}
+
+		if(environment.getBoolean(RDHProperty.GIT_IGNORE_HIDDEN)) {
+			filter = filter.or(IOUtils::isHidden);
+		}
+
+		if(environment.getBoolean(RDHProperty.GIT_IGNORE_SPECIAL)) {
+			filter = filter.or(GitUtils::isSpecialFile);
+		}
+
+		return filter;
 	}
 }
 

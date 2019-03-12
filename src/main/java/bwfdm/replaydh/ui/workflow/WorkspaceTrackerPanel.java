@@ -130,7 +130,7 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 		contentHeader = (JLabel) GuiUtils.createInfoComponent("", false, null);
 
 		for(TrackingStatus status : TrackingStatus.values()) {
-			panels.put(status, new FileOutlinePanel(status));
+			panels.put(status, new FileOutlinePanel(environment, actionManager, status));
 		}
 
 		contentPanel = new ScrollablePanel();
@@ -170,9 +170,9 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 	}
 
 	private void registerActions() {
-		actionMapper.mapTask("replaydh.ui.core.workspaceTrackerPanel.createDummyFile", this::createDummyFile);
-		actionMapper.mapTask("replaydh.ui.core.workspaceTrackerPanel.editDummyFile", this::editDummyFile);
-		actionMapper.mapTask("replaydh.ui.core.workspaceTrackerPanel.deleteDummyFile", this::deleteDummyFile);
+		actionMapper.mapTask("replaydh.ui.core.workspaceTrackerPanel.createDummyFile", handler::createDummyFile);
+		actionMapper.mapTask("replaydh.ui.core.workspaceTrackerPanel.editDummyFile", handler::editDummyFile);
+		actionMapper.mapTask("replaydh.ui.core.workspaceTrackerPanel.deleteDummyFile", handler::deleteDummyFile);
 	}
 
 	private void refreshActions() {
@@ -194,87 +194,6 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 	private void checkDevMode() {
 		if(!environment.getClient().isDevMode())
 			throw new IllegalStateException("Cannot execute method outside of dev mode!!!");
-	}
-
-	@Experimental
-	private Path getNewFile() {
-		Path workspace = fileTracker.getTrackedFolder();
-		Path file;
-		do {
-			String fileName = "test"+String.valueOf(1+random.nextInt(200))+".txt";
-			file = workspace.resolve(fileName);
-		} while(Files.exists(file, LinkOption.NOFOLLOW_LINKS));
-
-		return file;
-	}
-
-	@Experimental
-	private void createDummyFile() {
-		checkDevMode();
-
-		Path file = getNewFile();
-		try {
-			Files.createFile(file);
-			appendToDummyFile(file);
-		} catch (IOException e) {
-			log.error("Failed to create dummy file: "+file, e);
-			GuiUtils.beep();
-		}
-	}
-
-	@Experimental
-	private static final Random random = new Random(System.currentTimeMillis());
-
-	@Experimental
-	private Path getRandomFile() {
-		try {
-			Path[] files = Files.list(fileTracker.getTrackedFolder())
-					.filter(path ->
-					path.getFileName().toString().startsWith("test"))
-					.sorted()
-					.toArray(size -> new Path[size]);
-
-			int num = files.length;
-
-			return num>0 ? files[random.nextInt(num)] : null;
-		} catch (IOException e) {
-			log.error("Failed to pick random file in folder", e);
-			GuiUtils.beep();
-			return null;
-		}
-	}
-
-	@Experimental
-	private void editDummyFile() {
-		checkDevMode();
-
-		Path file = getRandomFile();
-		if(file!=null) {
-			appendToDummyFile(file);
-		}
-	}
-
-	private void appendToDummyFile(Path file) {
-		try(Writer w = Files.newBufferedWriter(file, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
-			w.append(LocalDateTime.now().toString());
-			w.append(System.lineSeparator());
-		} catch (IOException e) {
-			log.error("Failed to edit random file {}", file, e);
-		}
-	}
-
-	@Experimental
-	private void deleteDummyFile() {
-		checkDevMode();
-
-		Path file = getRandomFile();
-		if(file!=null) {
-			try {
-				Files.delete(file);
-			} catch (IOException e) {
-				log.error("Failed to delete random file {}", file, e);
-			}
-		}
 	}
 
 	public void update() {
@@ -344,6 +263,7 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 		Set<LocalFileObject> filesToUpdate = new HashSet<>();
 
 		boolean showCorruptedPanel = false;
+
 		boolean showNewPanel = false;
 		boolean showMissingPanel = false;
 		boolean showModifiedPanel = false;
@@ -356,9 +276,10 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 			boolean hasMissing = hasFiles(TrackingStatus.MISSING);
 			boolean hasModified = hasFiles(TrackingStatus.MODIFIED);
 			boolean hasCorrupted = hasFiles(TrackingStatus.CORRUPTED);
+
 			boolean hasTracked = hasFiles(TrackingStatus.TRACKED);
 
-			if(!hasNew && !hasMissing && !hasModified) {
+			if(!hasNew && !hasMissing && !hasModified  && !hasCorrupted) {
 				textKey = "replaydh.panels.workspaceTracker.unchangedState";
 			} else {
 				textKey = "replaydh.panels.workspaceTracker.validState";
@@ -463,6 +384,9 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 
 	private class Handler implements PropertyChangeListener, TrackerListener {
 
+		@Experimental
+		private final Random random = new Random(System.currentTimeMillis());
+
 		/**
 		 * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
 		 */
@@ -516,8 +440,85 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 		 */
 		@Override
 		public void trackingStatusChanged(FileTracker tracker, Set<Path> files, TrackingAction action) {
-			// TODO Auto-generated method stub
+			update();
+		}
 
+		@Experimental
+		private Path getNewFile() {
+			Path workspace = fileTracker.getTrackedFolder();
+			Path file;
+			do {
+				String fileName = "test"+String.valueOf(1+random.nextInt(200))+".txt";
+				file = workspace.resolve(fileName);
+			} while(Files.exists(file, LinkOption.NOFOLLOW_LINKS));
+
+			return file;
+		}
+
+		@Experimental
+		private void createDummyFile() {
+			checkDevMode();
+
+			Path file = getNewFile();
+			try {
+				Files.createFile(file);
+				appendToDummyFile(file);
+			} catch (IOException e) {
+				log.error("Failed to create dummy file: "+file, e);
+				GuiUtils.beep();
+			}
+		}
+
+		@Experimental
+		private Path getRandomFile() {
+			try {
+				Path[] files = Files.list(fileTracker.getTrackedFolder())
+						.filter(path ->
+						path.getFileName().toString().startsWith("test"))
+						.sorted()
+						.toArray(size -> new Path[size]);
+
+				int num = files.length;
+
+				return num>0 ? files[random.nextInt(num)] : null;
+			} catch (IOException e) {
+				log.error("Failed to pick random file in folder", e);
+				GuiUtils.beep();
+				return null;
+			}
+		}
+
+		@Experimental
+		private void editDummyFile() {
+			checkDevMode();
+
+			Path file = getRandomFile();
+			if(file!=null) {
+				appendToDummyFile(file);
+			}
+		}
+
+		private void appendToDummyFile(Path file) {
+			try(Writer w = Files.newBufferedWriter(file, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+				w.append(LocalDateTime.now().toString());
+				w.append(System.lineSeparator());
+			} catch (IOException e) {
+				log.error("Failed to edit random file {}", file, e);
+			}
+		}
+
+		@Experimental
+		private void deleteDummyFile() {
+			checkDevMode();
+
+			Path file = getRandomFile();
+			if(file!=null) {
+				try {
+					Files.delete(file);
+				} catch (IOException e) {
+					log.error("Failed to delete random file {}", file, e);
+				}
+			}
 		}
 	}
 }

@@ -97,6 +97,15 @@ public interface FileTracker extends PropertyChangeSource {
 	boolean canApplyTrackingUpdate();
 
 	/**
+	 * Marks a collection of files as resolved that have previously
+	 * been reported as conflicting.
+	 *
+	 * @param files
+	 * @return
+	 */
+	boolean markConflictResolved(Set<Path> files) throws TrackerException;
+
+	/**
 	 * Returns all files matching the given {@code status}.
 	 *
 	 * @param status

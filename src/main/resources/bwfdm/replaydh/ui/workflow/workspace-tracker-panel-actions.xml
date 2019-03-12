@@ -17,6 +17,15 @@
 	<!-- Delete Dummy File -->
 	<action id="replaydh.ui.core.workspaceTrackerPanel.deleteDummyFile"
 		name="${id}.name" desc="${id}.description" icon="delete_obj.gif" />
+	
+	<!-- Ignore File -->
+	<action id="replaydh.ui.core.workspaceTrackerPanel.ignoreFile"
+		name="${id}.name" desc="${id}.description" />
+	
+	<!-- Mark File Resolved -->
+	<action id="replaydh.ui.core.workspaceTrackerPanel.markFileResolved"
+		name="${id}.name" desc="${id}.description" />
+		
 	<!-- ToolBar List for header area -->
 	<action-list id="replaydh.ui.core.workspaceTrackerPanel.toolBarList">
 		<item type="label" value="replaydh.panels.workspaceTracker.title" />
@@ -24,6 +33,11 @@
 		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.createDummyFile" condition="global:debug" />
 		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.deleteDummyFile" condition="global:debug" />
 		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.editDummyFile" condition="global:debug" />
+	</action-list>
+		
+	<!-- ToolBar List for conflicted files -->
+	<action-list id="replaydh.ui.core.workspaceTrackerPanel.conflictedFilesList">
+		<item type="action" value="replaydh.ui.core.workspaceTrackerPanel.markFileResolved" />
 	</action-list>
 	
 </actions>

@@ -88,7 +88,6 @@ import bwfdm.replaydh.core.RDHProperty;
 import bwfdm.replaydh.core.Workspace;
 import bwfdm.replaydh.git.GitRemoteImporterWizard;
 import bwfdm.replaydh.git.GitRemoteImporterWizard.GitRemoteImporterContext;
-import bwfdm.replaydh.git.GitUtils;
 import bwfdm.replaydh.io.FileTracker;
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.io.LocalFileObject;
@@ -735,26 +734,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		return GuiUtils.showEditorDialogWithControl(frame, editor, title, true);
 	}
 
-	private static final Predicate<Path> NO_FILTER = p -> false;
-
-	private Predicate<Path> getBasicIgnoreFilter() {
-		Predicate<Path> filter = NO_FILTER;
-
-		if(environment.getBoolean(RDHProperty.GIT_IGNORE_EMPTY)) {
-			filter = filter.or(IOUtils::isEmpty);
-		}
-
-		if(environment.getBoolean(RDHProperty.GIT_IGNORE_HIDDEN)) {
-			filter = filter.or(IOUtils::isHidden);
-		}
-
-		if(environment.getBoolean(RDHProperty.GIT_IGNORE_SPECIAL)) {
-			filter = filter.or(GitUtils::isSpecialFile);
-		}
-
-		return filter;
-	}
-
 	/**
 	 * Compact outline for file tracker status in the right control area.
 	 *
@@ -908,8 +887,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				int fileCount = files.size();
 				int filtered = 0;
 
-				Predicate<Path> filter = getBasicIgnoreFilter();
-				if(filter!=NO_FILTER) {
+				Predicate<Path> filter = RDHUtils.getBasicIgnoreFilter(environment);
+				if(filter!=RDHUtils.NO_FILTER) {
 					filtered = (int) files.stream()
 							.filter(filter)
 							.count();
@@ -1944,9 +1923,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				return;
 			}
 
-			Predicate<Path> filter = getBasicIgnoreFilter();
+			Predicate<Path> filter = RDHUtils.getBasicIgnoreFilter(environment);
 
-			if(filter!=NO_FILTER) {
+			if(filter!=RDHUtils.NO_FILTER) {
 				for(Iterator<LocalFileObject> it=filesToAdd.iterator(); it.hasNext();) {
 					if(filter.test(it.next().getFile())) {
 						it.remove();

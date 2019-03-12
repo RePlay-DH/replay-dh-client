@@ -56,6 +56,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
@@ -1054,6 +1055,10 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			gitStatus.getChanged().forEach(action);
 			break;
 
+		case CORRUPTED:
+			gitStatus.getConflicting().forEach(action);
+			break;
+
 		case TRACKED: {
 			try(TreeWalk treeWalk = prepareTreeWalk(Constants.HEAD)) {
 				while(treeWalk.next()) {
@@ -1604,6 +1609,35 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		}
 	}
 
+	/**
+	 * @see bwfdm.replaydh.io.FileTracker#markConflictResolved(java.util.Set)
+	 */
+	@Override
+	public boolean markConflictResolved(Set<Path> files) throws TrackerException {
+
+		try {
+			final Path root = getRootFolder(git);
+			resolveConflicts(files.stream()
+					.map(file -> toRelativeGitPath(file, root))
+					.collect(Collectors.toSet()));
+
+			getEnvironment().execute(this::refreshStatusInfo);
+		} catch(GitAPIException e) {
+			log.error("Failed to mark conflicting files as resolved: {}", files, e);
+			throw new TrackerException("Failed to mark files as resolved", e);
+		}
+
+		return true;
+	}
+
+	private DirCache resolveConflicts(Set<String> files) throws GitAPIException {
+		AddCommand cmd = git.add()
+				.setUpdate(true);
+		files.forEach(cmd::addFilepattern);
+
+		return cmd.call();
+	}
+
 	private boolean checkConflictingFilesBeforeCommit() {
 
 		final Repository repo = git.getRepository();
@@ -1631,13 +1665,10 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			return false;
 		}
 
-		AddCommand cmd = git.add()
-				.setUpdate(true);
-		conflictingPaths.forEach(cmd::addFilepattern);
-
-		ExecutionResult<DirCache> result = executeCommand(cmd);
-		if(result.hasFailed()) {
-			log.error("Failed to mark conflicting files as resolved: {}", conflictingPaths, result.exception);
+		try {
+			resolveConflicts(conflictingPaths);
+		} catch (GitAPIException e) {
+			log.error("Failed to resolve all conflicts", e);
 		}
 
 		return repo.getRepositoryState().canCommit();
