@@ -44,7 +44,6 @@ import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -414,38 +413,43 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	QuerySettings settings = new QuerySettings();
 		settings.setSchema(schema);
     	// Title
-    	if(wrongInputList.contains(titleTextField.getText())) {
-    		titleTextField.setBorder(redBorder);
-    		inputCorrect = false;
-    	} else {
-    		titleTextField.setBorder(defaultBorder);
-    		if(titleTextField.hasFocus()) {
-    			if(waitingTimer.isRunning()) {
-    				waitingTimer.restart();
-    			} else {
-    				waitingTimer.start();
-    			}
-    		} else {
-    			waitingTimer.stop();
-    		}
-    	}
+		if (source == titleTextField.getDocument()) {
+			if (wrongInputList.contains(titleTextField.getText())) {
+				titleTextField.setBorder(redBorder);
+				inputCorrect = false;
+			} else {
+				titleTextField.setBorder(defaultBorder);
+				if (titleTextField.hasFocus()) {
+					if (waitingTimer.isRunning()) {
+						waitingTimer.restart();
+					} else {
+						waitingTimer.start();
+					}
+				} else {
+					waitingTimer.stop();
+				}
+			}
+		}
 
     	// Description
-    	if(wrongInputList.contains(descriptionTextArea.getText())) {
-    		descriptionScrollPane.setBorder(redBorder);
-    		inputCorrect = false;
-    	} else {
-    		descriptionScrollPane.setBorder(defaultBorder);
-    		if(descriptionTextArea.hasFocus()) {
-    			if(waitingTimer.isRunning()) {
-    				waitingTimer.restart();
-    			} else {
-    				waitingTimer.start();
-    			}
-    		} else {
-    			waitingTimer.stop();
-    		}
-    	}
+		if (source == descriptionTextArea.getDocument()) {
+			if (wrongInputList.contains(descriptionTextArea.getText())) {
+				descriptionScrollPane.setBorder(redBorder);
+				inputCorrect = false;
+			} else {
+
+				descriptionScrollPane.setBorder(defaultBorder);
+				if (descriptionTextArea.hasFocus()) {
+					if (waitingTimer.isRunning()) {
+						waitingTimer.restart();
+					} else {
+						waitingTimer.start();
+					}
+				} else {
+					waitingTimer.stop();
+				}
+			}
+		}
 
 
     	//TODO: add verification of the identifiables (Persons/Tool/Resources)
