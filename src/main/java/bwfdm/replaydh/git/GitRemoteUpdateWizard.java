@@ -323,7 +323,7 @@ public class GitRemoteUpdateWizard extends GitRemoteWizard {
 			"replaydh.wizard.gitRemoteUpdater.chooseRemote.title",
 			"replaydh.wizard.gitRemoteUpdater.chooseRemote.description",
 			null,
-			"replaydh.wizard.gitRemoteUpdater.chooseRemote.description",
+			"replaydh.wizard.gitRemoteUpdater.chooseRemote.middle",
 			null) {
 
 		@Override

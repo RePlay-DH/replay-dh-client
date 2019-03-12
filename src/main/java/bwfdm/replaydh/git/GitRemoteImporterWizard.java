@@ -104,10 +104,10 @@ public class GitRemoteImporterWizard {
 	private static final ChooseRemoteStep<Git, GitRemoteImporterContext> CHOOSE_REMOTE
 		= new ChooseRemoteStep<Git, GitRemoteImporterContext>(
 			"chooseRemote",
-			"replaydh.wizard.gitRemoteUpdater.chooseRemote.title",
-			"replaydh.wizard.gitRemoteUpdater.chooseRemote.description",
+			"replaydh.wizard.gitRemoteImporter.chooseRemote.title",
+			"replaydh.wizard.gitRemoteImporter.chooseRemote.description",
 			null,
-			"replaydh.wizard.gitRemoteUpdater.chooseRemote.description",
+			"replaydh.wizard.gitRemoteImporter.chooseRemote.middle",
 			null) {
 
 		@Override
@@ -160,8 +160,8 @@ public class GitRemoteImporterWizard {
 	private static final GitRemoteStep<Git, GitRemoteImporterContext> SELECT_DIRECTORY
 		= new GitRemoteStep<Git, GitRemoteImporterContext>(
 			"selectDirectory",
-			"replaydh.wizard.gitRemoteUpdater.selectDirectory.title",
-			"replaydh.wizard.gitRemoteUpdater.selectDirectory.description") {
+			"replaydh.wizard.gitRemoteImporter.selectDirectory.title",
+			"replaydh.wizard.gitRemoteImporter.selectDirectory.description") {
 
 		private FilePanel filePanel;
 
@@ -192,7 +192,7 @@ public class GitRemoteImporterWizard {
 					.columns("pref:grow:fill")
 					.rows("pref, 6dlu, pref, 6dlu, pref")
 					.add(GuiUtils.createTextArea(rm.get(
-							"replaydh.wizard.gitRemoteUpdater.selectDirectory.message"))).xy(1, 1)	//TODO
+							"replaydh.wizard.gitRemoteImporter.selectDirectory.message"))).xy(1, 1)	//TODO
 					.add(filePanel).xy(1, 3)
 					.add(GuiUtils.createTextArea(rm.get(""))).xy(1, 5)	//TODO add further info text
 					.build();
@@ -237,7 +237,8 @@ public class GitRemoteImporterWizard {
 
 			if(notEmpty) {
 				displayText(ResourceManager.getInstance().get(
-						"replaydh.wizard.gitRemoteImporter.clone.dirNotEmpty"));
+						"replaydh.wizard.gitRemoteImporter.clone.dirNotEmpty",
+						directory));
 			} else {
 				super.refresh(environment, context);
 			}
@@ -344,17 +345,19 @@ public class GitRemoteImporterWizard {
 
 					ResourceManager rm = ResourceManager.getInstance();
 
+					epInfo.setVisible(true);
 					if(context.error!=null) {
 						// Major problem
 						taHeader.setText(rm.get("replaydh.wizard.gitRemoteImporter.finish.verificationFailed"));
 						epInfo.setThrowable(context.error);
-						epInfo.setVisible(true);
 					} else if(workspace!=null) {
 						// Everything went well
 						taHeader.setText(rm.get("replaydh.wizard.gitRemoteImporter.finish.compatibleRepo"));
+						epInfo.setText(context.directory.toString());
 					} else {
 						// Cloned repo is not a valid RDH managed repo!
 						taHeader.setText(rm.get("replaydh.wizard.gitRemoteImporter.finish.incompatibleRepo"));
+						epInfo.setText(context.directory.toString());
 					}
 				};
 
