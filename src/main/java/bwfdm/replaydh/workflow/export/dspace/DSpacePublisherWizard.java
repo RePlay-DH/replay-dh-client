@@ -321,7 +321,7 @@ public class DSpacePublisherWizard {
 	 * @param worker
 	 * @param exceptionMessage
 	 */
-	public static void executeWorkerWithTimeout(SwingWorker<Boolean, Object> worker, long timeOut, String exceptionMessage) {
+	public static void executeWorkerWithTimeout(SwingWorker<? extends Object, ? extends Object> worker, long timeOut, String exceptionMessage) {
 		try {
 			worker.execute();
 			worker.get(timeOut, TimeUnit.SECONDS);
@@ -414,7 +414,7 @@ public class DSpacePublisherWizard {
 		 */
 		private void checkAndCorrectRestURL() {
 
-			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+			SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>(){
 
 				@Override
 				protected Boolean doInBackground() throws Exception {
@@ -443,6 +443,12 @@ public class DSpacePublisherWizard {
 
 				@Override
 				protected void done() {
+					boolean restOK=false;
+					try {
+						restOK = get();
+					} catch (InterruptedException | ExecutionException e) {
+						log.error("Error getting content from doInBackground", e);
+					}
 					if(!isCancelled()) {
 						if(restOK) {
 							//no-op
@@ -816,21 +822,26 @@ public class DSpacePublisherWizard {
 
 		private void checkFilesAvailable(DSpaceExporterContext context) {
 
-			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+			SwingWorker<Map<String, String>, Void> worker = new SwingWorker<Map<String, String>, Void>(){
 				boolean filesAvailable;
 				@Override
-				protected Boolean doInBackground() throws Exception {
+				protected Map<String, String> doInBackground() throws Exception {
 					filesAvailable = false;
 					if (!(context.exportRepository.getCollectionEntries(context.collectionURL).isEmpty())) {
-						context.availableDatasetsInCollection=context.exportRepository.getCollectionEntries(context.collectionURL);
 						filesAvailable=true;
+						return context.exportRepository.getCollectionEntries(context.collectionURL);
 					}
-					return filesAvailable;
+					return null;
 				}
 				
 				@Override
 				protected void done() {
-					if (filesAvailable) {
+					try {
+						context.availableDatasetsInCollection=get();
+					} catch (InterruptedException | ExecutionException e) {
+						log.error("Error getting content from doInBackground", e);
+					}
+					if (filesAvailable && context.availableDatasetsInCollection != null) {
 						collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
 						for (String value : collectionEntries.getValues()) {
 							collectionsComboBox.addItem(value);
@@ -1196,23 +1207,28 @@ public class DSpacePublisherWizard {
 
 		private void getJSONObject(RDHEnvironment environment, DSpaceExporterContext context) {
 
-			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+			SwingWorker<String, Void> worker = new SwingWorker<String, Void>(){
 
 				@Override
-				protected Boolean doInBackground() throws Exception {
+				protected String doInBackground() throws Exception {
 					boolean metadataAvailable = false;
 					if (context.chosenDataset != null) {
 						String metadataUrl = context.chosenDataset;
 						if (context.exportRepository.getItemMetadata(metadataUrl) != null) {
-							context.jsonObjectWithMetadata=context.exportRepository.getItemMetadata(metadataUrl);
 							metadataAvailable=true;
+							return context.exportRepository.getItemMetadata(metadataUrl);
 						}
 					}
-					return metadataAvailable;
+					return null;
 				}
 				@Override
 				protected void done() {
-					if (context.chosenDataset != null) {
+					try {
+						context.jsonObjectWithMetadata=get();
+					} catch (InterruptedException | ExecutionException e) {
+						log.error("Error getting content from doInBackground", e);
+					}
+					if (context.chosenDataset != null && context.jsonObjectWithMetadata != null) {
 						jsonObjects = JsonPath.read(context.jsonObjectWithMetadata,"$");
 						LinkedHashMap<String, String> property;
 						int authorCounter=0;

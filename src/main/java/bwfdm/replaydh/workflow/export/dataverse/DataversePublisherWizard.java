@@ -288,7 +288,7 @@ public class DataversePublisherWizard {
 	 * @param worker
 	 * @param exceptionMessage
 	 */
-	public static void executeWorkerWithTimeout(SwingWorker<Boolean, Object> worker, long timeOut, String exceptionMessage) {
+	public static void executeWorkerWithTimeout(SwingWorker<? extends Object, ? extends Object> worker, long timeOut, String exceptionMessage) {
 		try {
 			worker.execute();
 			worker.get(timeOut, TimeUnit.SECONDS);
@@ -342,33 +342,33 @@ public class DataversePublisherWizard {
 		 */
 		private void checkSWORDURL() {
 
-			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+			SwingWorker<Map<String, String>, Void> worker = new SwingWorker<Map<String, String>, Void>(){
 
 				@Override
-				protected Boolean doInBackground() throws Exception {
+				protected Map<String, String> doInBackground() throws Exception {
 
-					if(serviceDocumentURL == null) {
-						return false;
-					}
 
 					//Exchange "http://" and "https://" if REST is not accessible
 					if(!publicationRepository.isSwordAccessible(serviceDocumentURL)) {
 						// If the exchange did not help, move to the previous condition
 						swordOK = false;
-						return swordOK;
 					} else if (publicationRepository.getUserAvailableCollectionsWithTitle(createApiUrl(tfUrl.getText())) != null) {
-						availableCollections=publicationRepository.getUserAvailableCollectionsWithTitle(createApiUrl(tfUrl.getText()));
 						collectionsAvailable = true;
-					}
-
-					swordOK = true;
-					return swordOK;
+						swordOK = true;
+						return publicationRepository.getUserAvailableCollectionsWithTitle(createApiUrl(tfUrl.getText()));
+					} 
+					return null;
 				}
 
 				@Override
 				protected void done() {
+					try {
+						availableCollections=get();
+					} catch (InterruptedException | ExecutionException e) {
+						log.error("Error getting content from doInBackground", e);
+					}
 					if(!isCancelled()) {
-						if(swordOK) {
+						if(swordOK && availableCollections != null) {
 							//no-op
 						} else {
 							if(tfUrl.isEnabled() && tfUrl.isEditable()) {
@@ -673,21 +673,27 @@ public class DataversePublisherWizard {
 
 		private void checkFilesAvailable(DataversePublisherContext context) {
 
-			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+			SwingWorker<Map<String, String>, Void> worker = new SwingWorker<Map<String, String>, Void>(){
 				boolean filesAvailable;
 				@Override
-				protected Boolean doInBackground() throws Exception {
+				protected Map<String, String> doInBackground() throws Exception {
 					filesAvailable = false;
 					if (!(context.getPublicationRepository().getCollectionEntries(context.collectionURL).isEmpty())) {
-						context.availableDatasetsInCollection=context.getPublicationRepository().getCollectionEntries(context.collectionURL);
 						filesAvailable=true;
+						return context.getPublicationRepository().getCollectionEntries(context.collectionURL);
+					} else {
+						return null;
 					}
-					return filesAvailable;
 				}
 
 				@Override
 				protected void done() {
-					if (filesAvailable) {
+					try {
+						context.availableDatasetsInCollection=get();
+					} catch (InterruptedException | ExecutionException e) {
+						log.error("Error getting content from doInBackground", e);
+					}
+					if (filesAvailable && context.availableDatasetsInCollection != null) {
 						collectionEntries = new CollectionEntry(context.availableDatasetsInCollection.entrySet());
 						for (String value : collectionEntries.getValuesForDatasets()) {
 							collectionsComboBox.addItem(value);
@@ -1044,24 +1050,29 @@ public class DataversePublisherWizard {
 
 		private void getJSONObject(RDHEnvironment environment, DataversePublisherContext context) {
 
-			SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+			SwingWorker<String, Void> worker = new SwingWorker<String, Void>(){
 
 				@Override
-				protected Boolean doInBackground() throws Exception {
+				protected String doInBackground() throws Exception {
 					boolean metadataAvailable = false;
 					if (context.chosenDataset != null) {
 						String doi=context.chosenDataset.substring(context.chosenDataset.indexOf("doi:"), context.chosenDataset.length());
 						String metadataUrl = createMetadataUrl(environment.getProperty(RDHProperty.DATAVERSE_REPOSITORY_URL),doi);
 						if (context.getPublicationRepository().getJSONMetadata(metadataUrl) != null) {
-							context.jsonObjectWithMetadata=context.getPublicationRepository().getJSONMetadata(metadataUrl);
 							metadataAvailable=true;
+							return context.getPublicationRepository().getJSONMetadata(metadataUrl);
 						}
 					}
-					return metadataAvailable;
+					return null;
 				}
 				@Override
 				protected void done() {
-					if (context.chosenDataset != null) {
+					try {
+						context.jsonObjectWithMetadata=get();
+					} catch (InterruptedException | ExecutionException e) {
+						log.error("Error getting content from doInBackground", e);
+					}
+					if (context.chosenDataset != null && context.jsonObjectWithMetadata != null) {
 						Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
 						Map test = JsonPath.using(conf).parse(context.jsonObjectWithMetadata).read("$.data.latestVersion");
 						if(test != null) {

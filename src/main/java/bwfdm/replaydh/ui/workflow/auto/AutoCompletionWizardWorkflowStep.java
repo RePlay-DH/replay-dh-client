@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -37,6 +38,9 @@ import javax.swing.SwingWorker;
 import javax.swing.border.Border;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Forms;
@@ -126,6 +130,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     	collectionEntries = new HashMap<>();
     	//search.createObjects();
 	}
+	
+	private static final Logger log = LoggerFactory.getLogger(AutoCompletionWizardWorkflowStep.class);
 
 	private MetadataCatalog search;
 	
@@ -618,21 +624,28 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 	
 	private void searchWithConstraints(QuerySettings settings, List<Constraint> constraints, AutoCompletionWizardWorkflowStep wizard) {
 		
-		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>(){
+		SwingWorker<Result, Void> worker = new SwingWorker<Result, Void>(){
 
 			boolean success=true;
-			Result results = null;
 			@Override
-			protected Boolean doInBackground() throws Exception {
-				results=search.query(settings, constraints);
+			protected Result doInBackground() throws Exception {
+				Result results=search.query(settings, constraints);
 				if(results.isEmpty()) {
 					success=false;
+				} else {
+					success=true;
 				}
-				return success;
+				return results;
 			}
 			@Override
 			protected void done() {
-				if(success) {
+				Result results = null;
+				try {
+					results = get();
+				} catch (InterruptedException | ExecutionException e) {
+					log.error("Error getting content from doInBackground", e);
+				}
+				if(success && results != null) {
 					for(Identifiable result : results) {
 						switch (role) {
 						case PERSON:
@@ -680,23 +693,30 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 	
 	private void globalSearch(QuerySettings settings, String fragment, AutoCompletionWizardWorkflowStep wizard) {
 
-		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>() {
+		SwingWorker<Result, Void> worker = new SwingWorker<Result, Void>() {
 
 			boolean success = true;
-			Result results = null;
 
 			@Override
-			protected Boolean doInBackground() throws Exception {
-				results = search.query(settings, fragment);
+			protected Result doInBackground() throws Exception {
+				Result results = search.query(settings, fragment);
 				if (results.isEmpty()) {
 					success = false;
+				} else {
+					success = true;;
 				}
-				return success;
+				return results;
 			}
 
 			@Override
 			protected void done() {
-				if(success) {
+				Result results = null;
+				try {
+					results = get();
+				} catch (InterruptedException | ExecutionException e) {
+					log.error("Error getting content from doInBackground", e);
+				}
+				if(success && results != null) {
 					for(Identifiable result : results) {
 						switch (role) {
 						case PERSON:
