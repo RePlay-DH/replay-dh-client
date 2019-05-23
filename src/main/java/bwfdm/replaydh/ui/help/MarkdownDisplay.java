@@ -8,6 +8,9 @@ import java.io.InputStream;
 
 import javax.swing.JComponent;
 
+import org.commonmark.Extension;
+import org.commonmark.ext.heading.anchor.HeadingAnchorExtension;
+import org.commonmark.ext.heading.anchor.HeadingAnchorExtension.Builder;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
@@ -38,6 +41,8 @@ public class MarkdownDisplay {
 			log.error("Error parsing markdown file",e);
 		}
 		HtmlRenderer renderer = HtmlRenderer.builder().build();
+		Builder extension = HeadingAnchorExtension.builder();
+		Extension ext = extension.build();
 		System.out.println(renderer.render(document).toString()); 
 	}
 	
