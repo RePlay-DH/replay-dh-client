@@ -5,9 +5,10 @@ import bwfdm.replaydh.ui.help.HTMLHelpDisplay;
 public class HTMLHelpDisplayTester {
 
 	public static void main(String[] args) {
-		HTMLHelpDisplay display = new HTMLHelpDisplay();
+		HTMLHelpDisplay display = new HTMLHelpDisplay("/Users/ffritzew/Documents/GitLab/replay-dh/Dokumentation/Client-Doku/docu.html");
 		
-		display.readHelpFile("/Users/ffritzew/Documents/GitLab/replay-dh/Dokumentation/Client-Doku/docu.html");
+		display.readHelpFile();
+		display.findPosition("the-workflow-step-editor");
 	}
 
 }
