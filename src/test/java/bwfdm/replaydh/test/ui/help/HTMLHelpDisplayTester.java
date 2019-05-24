@@ -8,7 +8,8 @@ public class HTMLHelpDisplayTester {
 		HTMLHelpDisplay display = new HTMLHelpDisplay("/Users/ffritzew/Documents/GitLab/replay-dh/Dokumentation/Client-Doku/docu.html");
 		
 		display.readHelpFile();
-		display.findPosition("the-workflow-step-editor");
+		display.showHelpSection("the-workflow-step-editor",null);
+		
 	}
 
 }

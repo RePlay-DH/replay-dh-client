@@ -42,23 +42,23 @@ public class HTMLHelpDisplay {
 		System.out.println(document); 
 	}
 	
-	public void findPosition(String id) {
+	public String findAndPrintPosition(String id) {
 		Elements sections =	doc.select("h3[id$="+id+"]");
-		int i=0;
+		String section="";
 		for (Element element : sections) {
 			List<Element> list = element.nextElementSiblings();
 			for (Element next : list) {
-				if(next.nodeName().equals(element.normalName())) {
+				if((next.normalName()).equals(element.normalName())) {
 					break;
 				}
-				i++;
-				System.out.println(next);
+				section=section+next;
 			}
 		}
-		System.out.println(i);
+		return section;
 	}
 	
 	public void showHelpSection(String anchor, JComponent comp) {
-		
+		String section=findAndPrintPosition(anchor);
+		System.out.println(section);
 	}
 }
