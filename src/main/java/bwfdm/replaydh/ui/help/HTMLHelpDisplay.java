@@ -25,22 +25,21 @@ import bwfdm.replaydh.resources.ResourceManager;
 
 public class HTMLHelpDisplay {
 	
-	public HTMLHelpDisplay(String HTMLFilePath) {
-		this.HTMLFilePath=HTMLFilePath;
+	public HTMLHelpDisplay() {
 	}
 	
 	private static final Logger log = LoggerFactory.getLogger(HTMLHelpDisplay.class);
 	
 	private String document = null;
 	private Document doc;
-	private String HTMLFilePath;
 	private ResourceManager rm = ResourceManager.getInstance();
 	
 	/**
 	 * Reads the HTML Help file
 	 */
 	public void readHelpFile() {
-		File markdownFile = new File(HTMLFilePath);
+		ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+		File markdownFile = new File(classloader.getResource("bwfdm/replaydh/help/client.html").getFile());
 		InputStream input = null;
 		try {
 			input = new FileInputStream(markdownFile);
@@ -81,8 +80,9 @@ public class HTMLHelpDisplay {
 		JFrame frame = new JFrame();
 		frame.setTitle(rm.get("replaydh.documentation.helpWindow.title"));
 	    JEditorPane editorPane=new JEditorPane();
-	    File htmlPart = new File("/Users/ffritzew/Documents/GitHub/replay-dh-client/src/main/resources/bwfdm/replaydh/help/html.html");
-		try {
+	    ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+	    File htmlPart = new File(classloader.getResource("bwfdm/replaydh/help/htmlPart.html").getFile());
+	    try {
 			FileWriter writer = new FileWriter(htmlPart);
 			writer.write(section);
 			writer.close();
@@ -94,7 +94,6 @@ public class HTMLHelpDisplay {
 			frame.setVisible(true);
 			frame.setSize(800, 600);
 			frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-			htmlPart.delete();
 		} catch (IOException e) {
 			log.error("Error during file operations",e);
 		}
