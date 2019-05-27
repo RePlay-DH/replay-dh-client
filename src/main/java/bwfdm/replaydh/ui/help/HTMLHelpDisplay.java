@@ -2,11 +2,16 @@ package bwfdm.replaydh.ui.help;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
 import javax.swing.JComponent;
+import javax.swing.JEditorPane;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.WindowConstants;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -71,6 +76,25 @@ public class HTMLHelpDisplay {
 	 */
 	public void showHelpSection(String anchor, JComponent comp) {
 		String section=findAndPrintPosition(anchor);
-		System.out.println(section);
+		JFrame frame = new JFrame();
+		frame.setTitle("RePlay-DH Client Help");
+	    JEditorPane editorPane=new JEditorPane();
+	    File htmlPart = new File("/Users/ffritzew/Documents/GitHub/replay-dh-client/src/main/resources/bwfdm/replaydh/help/html.html");
+		try {
+			FileWriter writer = new FileWriter(htmlPart);
+			writer.write(section);
+			writer.close();
+			JScrollPane scrollPane = null;
+			scrollPane = new JScrollPane(editorPane);
+			editorPane.setPage(htmlPart.toURI().toURL());
+
+			frame.add(scrollPane);
+			frame.setVisible(true);
+			frame.setSize(800, 600);
+			frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+			htmlPart.delete();
+		} catch (IOException e) {
+			log.error("Error during file operations",e);
+		}
 	}
 }

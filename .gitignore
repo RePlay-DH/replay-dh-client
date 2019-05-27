@@ -83,3 +83,6 @@ hs_err_pid*
 /clrArchBit.bat
 /temp
 /src/test/java/bwfdm/replaydh/experiments/bpmn
+
+#Mac Ignore
+*.DS_Store
