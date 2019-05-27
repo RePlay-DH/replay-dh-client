@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import bwfdm.replaydh.io.IOUtils;
+import bwfdm.replaydh.resources.ResourceManager;
 
 public class HTMLHelpDisplay {
 	
@@ -33,6 +34,7 @@ public class HTMLHelpDisplay {
 	private String document = null;
 	private Document doc;
 	private String HTMLFilePath;
+	private ResourceManager rm = ResourceManager.getInstance();
 	
 	/**
 	 * Reads the HTML Help file
@@ -77,7 +79,7 @@ public class HTMLHelpDisplay {
 	public void showHelpSection(String anchor, JComponent comp) {
 		String section=findAndPrintPosition(anchor);
 		JFrame frame = new JFrame();
-		frame.setTitle("RePlay-DH Client Help");
+		frame.setTitle(rm.get("replaydh.documentation.helpWindow.title"));
 	    JEditorPane editorPane=new JEditorPane();
 	    File htmlPart = new File("/Users/ffritzew/Documents/GitHub/replay-dh-client/src/main/resources/bwfdm/replaydh/help/html.html");
 		try {
