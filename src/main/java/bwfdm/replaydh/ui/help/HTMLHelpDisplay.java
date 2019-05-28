@@ -62,7 +62,7 @@ public class HTMLHelpDisplay {
 		for (Element element : sections) {
 			List<Element> list = element.nextElementSiblings();
 			for (Element next : list) {
-				if((next.normalName()).equals(element.normalName())) {
+				if((next.normalName()).equals(element.normalName()) || (next.normalName()).equals("h2")) {
 					break;
 				}
 				section=section+next;
@@ -86,7 +86,7 @@ public class HTMLHelpDisplay {
 		try {
 			baseURL = new URL(jarLocation, "bwfdm/replaydh/help/images/");
 			String htmlHeader = "<head><base href=\"" + baseURL + "\"/></head>";
-			String htmlPart = "<!DOCTYPE html><html>" + htmlHeader + "<body>" + section + "</body></html>";
+			String htmlPart = "<!DOCTYPE html><html>" + htmlHeader + "<body><div style='font-family:monospace'>" + section + "</div></body></html>";
 			JScrollPane scrollPane = null;
 			scrollPane = new JScrollPane(editorPane);
 			editorPane.setContentType("text/html");

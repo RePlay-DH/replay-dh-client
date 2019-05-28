@@ -34,7 +34,7 @@ title: 'End user documentation of the RePlay-DH client'
 <!-- /TOC -->
 # End user documentation of the RePlay-DH client
 
-## Configuration dialogue of the RePlay-DH client 
+## Configuration dialogue of the RePlay-DH client {#replaydh.wizard.welcome.title}
 
 When the RePlay-DH client (client) is started for the first time the configuration dialogue appears. This dialogue is intended as guidance to the basic setup of the client.
 
@@ -50,7 +50,7 @@ It is recommended to enter the given and family name and the research facility. 
 
 Git is tracking the changes on files and directories in this folder and stores its metadata in it. By clicking the “Start Validation” button Git creates and initializes a repository in this workspace or imports an already existing Git repository so that the client can work in this environment.
 
-### Workspace validation
+### Workspace validation {#replaydh.wizard.changeWorkspace.validateWorkspace.validate}
 
 ![Validate the workspace](Validation.png) 
 
@@ -70,7 +70,7 @@ If there are no problems with the previously initialized Git repository the conf
 
 ![Set a workspace description](Workspace_Description.png)
 
-### Choose a workflow schema
+### Choose a workflow schema {#replaydh.wizard.changeWorkspace.selectSchema}
 
 After that one can set the own workflow schema or choose the client's default schema. The workflow schema can define controlled vocabulary and custom workflow metadata properties but must successfully validate against the process metadata schema which is shipped with the client and which cannot be replaced. The JSON schema is designed to allow custom metadata properties for the process metadata. For instance it is allowed to integrate a metadata property which is not mandatory by the client's default state but can be necessary in the workflow context. This could be the parameter of a research device which is modified while doing iterative workflow steps. It is also possible to specify controlled vocabulary for certain process metadata properties. For instance the allowed roles that persons can have while doing research.
 
@@ -83,7 +83,7 @@ This is the default view of the client which provides basic features of the clie
 
 ## Basic functions of the RePlay-DH client 
 
-### Drag and Drop feature
+### Drag and Drop feature {#replaydh.wizard.addRecord.selectTarget}
 
 <div id="drag_and_drop" image="Client-ausgeklappt_1.png">It is possible to drag and drop files for a workflow step in the red marked area.</div>
 
@@ -111,7 +111,7 @@ There the parameters of this tool and the execution environment can be specified
 
 ![One object registered](Registered_files.png)
 
-### Create a new workflow step
+### Create a new workflow step {#replaydh.ui.editor.workflowStep}
 
 <div id="record_step" title="Create a new workflow step">In order to create a new workflow step because the research has reached a certain point click on the "Record Step" button.</div> 
 
@@ -157,7 +157,7 @@ When the recording operation is finished the RePlay-DH client will provide a sho
 
 ![Create workflow step: status message](Record_Step_finish_message.png)
 
-## The extended view of the client
+## The extended view of the client {#replaydh.ui.extended.view}
 
 By clicking in the main window on the left arrows, the client will open and show more functionalities. There are three different tabs which hold the extended functions of the client. The "Workflow" tab holds the visualization of the workflow graph and its manipulation and extraction functionalities. The "File Tracker" shows information of the current state of the workspace directory and the "Metadata Manager" tab gives the possibility to add object metadata to the items or research objects in the workspace directory. The "Workflow" tab and the "File Tracker" tab are showing an abstract view on the underlying Git repository which is managed by the client. The "Metadata Manager" is an additional feature of the client which allows to assign the research objects with object metadata, for instance the [DataCite Metadata Schema](https://schema.datacite.org/) which holds different properties to describe research data objects. By default the client is shipped with the DataCite Metadata Schema for object metadata. In RePlay-DH terms objects can be resources (input or output files) or tools (programs or scripts). With the DataCite Metadata Schema one can connect the metadata with the research objects used or created in the workflow. In the feature it will be possible to use also other metadata schemas for the research objects. The user will be able to select an own object metadata schema to work with the object metadata editor.
 
@@ -165,7 +165,7 @@ By clicking in the main window on the left arrows, the client will open and show
 
 ## Additional workflow graph functions of the client
 
-### The workflow step editor
+### The workflow step editor {#replaydh.ui.editor.workflow}
 
 ![The workflow step editor](Workflow_Editor.png)
 
@@ -175,7 +175,7 @@ The current selected workflow step which refers to an underlying commit is colou
 
 ![The selected step](WFE_Selected_Branch.png)
 
-### Export of workflow metadata
+### Export of workflow metadata {#replaydh.export.workflow.metadata}
 
 ![Export of workflow metadata](Workflow_Editor_1.png)
 
@@ -194,7 +194,7 @@ A status message will popup to give feedback whether the export was successfully
 
 ![Export successfully](Export_Successfully.png)
 
-### Archive Exporter
+### Archive Exporter {#replaydh.plugins.gitArchiveExporter}
 
 <div id="archive_exporter" title="Archive Exporter" image="Workflow_Editor_2.png">By clicking on the exporter icon, there will be the possibility to export the whole workspace as a compressed archive.</div> This is useful if one wants to make a backup with all resources and tools that belong to a client managed Git repository.
 
@@ -202,7 +202,7 @@ A status message will popup to give feedback whether the export was successfully
 
 ![Select an archive exporter](Select_Archive_Exporter.png)
 
-### DSpace Exporter
+### DSpace Exporter {#replaydh.wizard.dspacePublisher}
 
 <div id="dspace_exporter" title="DSpace Exporter" image="Workflow_Editor3.png">By clicking the publication symbol it is possible to export resources and tools of a certain workflow step within the workspace directory to some publication repository.</div>
 
@@ -240,32 +240,32 @@ At the end of the process the RePlay-DH client will provide a status message. In
 
 The RePlay-DH client only starts the publication process and redirects to the publication repository for the final publication procedure. Provided approach makes the client flexible for different publication repositories, which usually have different terms of publication.   
 
-### Set Active Workflow Step 
+### Set Active Workflow Step {#replaydh.ui.editor.workflowStep.active}
 
 <div id="active_workflowstep" title="Set Active Workflow Step" image="Workflow_Editor_4.png">The blue "down arrow" selects the active workflow step in the workflow graph.</div> This is useful if one wants to step back to previous commit. By recording a new step to a previously recorded step which has already a proceeding workflow step a new branch will be created. This feature is useful for following different research process aims or strategies.
 
 ![Set active workflow step](Workflow_Editor_4.png)
 
-### Focus the active step in the graph
+### Focus the active step in the graph {#replaydh.ui.editor.workflowStep.active.focus}
 
 <div id="focus_active_step" title="Focus the active step in the graph" image="Workflow_Editor_5.png">When a certain step is selected and the graph is really big one can focus the selected step with this button.</div>
 
 ![Focus the active step](Workflow_Editor_5.png)
 
-### Compress the active branch
+### Compress the active branch {#replaydh.ui.core.workflowGraph.compress}
 
 <div id="compress_graph" title="Compress the active branch" image="Workflow_Editor_6.png">If a branch becomes longer the marked button can compress the branch from one branching point to another. This gives a much better overview of the whole workflow graph.</div>
 
 ![Compress the active branch](Workflow_Editor_6.png)
 
-### Rebuild the graph visualization
+### Rebuild the graph visualization {#replaydh.ui.core.workflowGraph.refreshGraph}
 
 <div id="rebuild_graph" title="Rebuild the graph visualization" image="Workflow_Editor_7.png">By clicking this button the visualization of the graph will be completely rebuilt.</div>
 
 ![Rebuild visual graph](Workflow_Editor_7.png)
 
 
-## The file tracker
+## The file tracker {#replaydh.systemTray.fileTracker}
 
 ![The file tracker](File_Tracker.png)
 
@@ -273,13 +273,13 @@ The RePlay-DH client only starts the publication process and redirects to the pu
 
 ![The file tracker with an added object](File_Tracker_added.png) 
 
-### The metadata editor for the object metadata 
+### The metadata editor for the object metadata {#replaydh.ui.core.mainPanel.showMetadataManager}
 
 ![Select metadata builder](MetadataManager_1.png)
 
 On the left one can choose a research object (input, output file or tool) for assigning object metadata to it. In this example the file is named "Hello". According to the chosen metadata repository which can hold different object metadata schemas one can decide to build, change or delete an object metadata entry for a research data object (here: file "Hello"). On the right side of the manager one can see all the used keys of the metadata schema and its set values. These values can later be changed via the object metadata editor.
 
-#### Creating an object metadata entry
+#### Creating an object metadata entry {#replaydh.ui.core.metadataManagerPanel.addRecord}
 
 The red marked icon will open the metadata builder<div id="metadata_builder" title="Creating an object metadata entry" image="MetadataManager_1.png"></div> 
 
@@ -304,7 +304,7 @@ In the RePlay-DH terminology objects are an abstract term for resources and tool
 
 ![Metadata editor](MetadataManager.png)
 
-### Editing object metadata 
+### Editing object metadata {#replaydh.ui.core.metadataManagerPanel.editRecord}
 
 <div id="metadata_editor" title="Editing object metadata" image="MetadataManager.png">When selecting an arbitrary resource the corresponding metadata will be shown in the window. One can then click on the middle button to open the object metadata editor to alter or add some metadata to the corresponding resource or object.</div>
 
@@ -312,7 +312,7 @@ In the RePlay-DH terminology objects are an abstract term for resources and tool
 
 In the editor view more textfields can be added to the corresponding metadata property by clicking on the plus button. The plus button only appears when the metadata schema allows more than one entry for this property. For example it is possible to add more than one creator to a resouce but only one identifier. By clicking on the minus button the textfields are deleted until there is only one for the property. By clicking on the red cross button the content of the last text field is deleted. The metadata editor checks the input for every property and is preventing from entering no schema compliant metadata. On the bottom of the object metadata editor window there are two buttons: The "OK"-Button saves all the changes of the metadata of a specific resource or tool. The "Cancel"-Button closes the metadata editor without saving the changes.
 
-### Adding an additional metadata property 
+### Adding an additional metadata property {#replaydh.ui.editor.metadata.addCustomProperty}
 
 On the bottom of the editor view there is the possibility to add an additional metadata property which does not exist in the undelying schema. <div id="custom_object_metadata_property" title="Adding an additional metadata property" image="Add_additional_metadata_property.png">By clicking on the “add additional metadata property” button a pop up window appears which allows to enter the name of the metadata property which should be created.</div> Also in this case there is a validation in the background to prevent the input of unallowed metadata property names.
 
