@@ -2,9 +2,10 @@ package bwfdm.replaydh.ui.help;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 
 import javax.swing.JComponent;
@@ -39,7 +40,7 @@ public class HTMLHelpDisplay {
 	 */
 	public void readHelpFile() {
 		ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-		File markdownFile = new File(classloader.getResource("bwfdm/replaydh/help/client.html").getFile());
+		File markdownFile = new File(classloader.getResource("bwfdm/replaydh/help/client-docu.html").getFile());
 		InputStream input = null;
 		try {
 			input = new FileInputStream(markdownFile);
@@ -76,26 +77,26 @@ public class HTMLHelpDisplay {
 	 * @param comp
 	 */
 	public void showHelpSection(String anchor, JComponent comp) {
-		String section=findAndPrintPosition(anchor);
+		String section = findAndPrintPosition(anchor);
 		JFrame frame = new JFrame();
 		frame.setTitle(rm.get("replaydh.documentation.helpWindow.title"));
-	    JEditorPane editorPane=new JEditorPane();
-	    ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-	    File htmlPart = new File(classloader.getResource("bwfdm/replaydh/help/htmlPart.html").getFile());
-	    try {
-			FileWriter writer = new FileWriter(htmlPart);
-			writer.write(section);
-			writer.close();
+		JEditorPane editorPane = new JEditorPane();
+		URL jarLocation = HTMLHelpDisplay.class.getProtectionDomain().getCodeSource().getLocation();
+		URL baseURL;
+		try {
+			baseURL = new URL(jarLocation, "bwfdm/replaydh/help/images/");
+			String htmlHeader = "<head><base href=\"" + baseURL + "\"/></head>";
+			String htmlPart = "<!DOCTYPE html><html>" + htmlHeader + "<body>" + section + "</body></html>";
 			JScrollPane scrollPane = null;
 			scrollPane = new JScrollPane(editorPane);
-			editorPane.setPage(htmlPart.toURI().toURL());
-
+			editorPane.setContentType("text/html");
+			editorPane.setText(htmlPart);
 			frame.add(scrollPane);
 			frame.setVisible(true);
 			frame.setSize(800, 600);
 			frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		} catch (IOException e) {
-			log.error("Error during file operations",e);
+		} catch (MalformedURLException e) {
+			log.error("Error creating an URL",e);
 		}
 	}
 }

@@ -42,89 +42,89 @@
 <h2 id="configuration-dialogue-of-the-replay-dh-client">Configuration dialogue of the RePlay-DH client</h2>
 <p>When the RePlay-DH client (client) is started for the first time the configuration dialogue appears. This dialogue is intended as guidance to the basic setup of the client.</p>
 <div class="figure">
-<img src="Client-Images/Introduction.png" alt="Introduction of the configuration dialogue" />
+<img src="Introduction.png" alt="Introduction of the configuration dialogue" />
 <p class="caption">Introduction of the configuration dialogue</p>
 </div>
 <p>In this dialogue it is asked for the user name and the user’s home organisation. This information can later be reused by the client, for example when referring to the persons involved in a workflow. If more than one person is involved into a workflow and the involved persons belong to more than one organization the identifier of the organization can help to clarify the dependencies between persons and their organizations. For example person A one belongs to organization B.</p>
 <div class="figure">
-<img src="Client-Images/Identity.png" alt="Credentials of the user" />
+<img src="Identity.png" alt="Credentials of the user" />
 <p class="caption">Credentials of the user</p>
 </div>
 <p>It is recommended to enter the given and family name and the research facility. In the next step it is asked for the workspace.</p>
 <div class="figure">
-<img src="Client-Images/Workspace.png" alt="Create and choose a workspace" />
+<img src="Workspace.png" alt="Create and choose a workspace" />
 <p class="caption">Create and choose a workspace</p>
 </div>
 <p>Git is tracking the changes on files and directories in this folder and stores its metadata in it. By clicking the “Start Validation” button Git creates and initializes a repository in this workspace or imports an already existing Git repository so that the client can work in this environment.</p>
 <h3 id="workspace-validation">Workspace validation</h3>
 <div class="figure">
-<img src="Client-Images/Validation.png" alt="Validate the workspace" />
+<img src="Validation.png" alt="Validate the workspace" />
 <p class="caption">Validate the workspace</p>
 </div>
 <p>The client detects whether the workspace folder is empty and whether it is already managed by Git.</p>
 <div class="figure">
-<img src="Client-Images/Folder_not_empty.png" alt="No empty workspace folder" />
+<img src="Folder_not_empty.png" alt="No empty workspace folder" />
 <p class="caption">No empty workspace folder</p>
 </div>
 <p>If the folder is not empty but the repository is already managed by the client it can successfully be proceeded with the setup. If the Git repository is not managed by the client it is not possible to continue with the workspace setup.</p>
 <div class="figure">
-<img src="Client-Images/No_Replay_Git_repo.png" alt="Workspace setup failed" />
+<img src="No_Replay_Git_repo.png" alt="Workspace setup failed" />
 <p class="caption">Workspace setup failed</p>
 </div>
 <p>In this case manually deleting the hidden “.git” folder in this directory can solve the issue. But be aware that this action will lead to complete loss of all git repository information. If one decides to do this after that it can be continued with a clean new RePlay-DH git repository which can now be created in this folder. In addition to that it is also possible to keep all the files and directories in this workspace except the “.git” folder.</p>
 <div class="figure">
-<img src="Client-Images/ValidationOK.png" alt="Validation is OK" />
+<img src="ValidationOK.png" alt="Validation is OK" />
 <p class="caption">Validation is OK</p>
 </div>
 <p>If there are no problems with the previously initialized Git repository the configuration setup asks for the workflow schema used for the workflow metadata, the title of the workspace and its description. The title is the name of the workspace also the name of the research process. The description is a free textfield for a detailed explanation and information about the research process, for instance <em>“train a linguistic tool”</em>, etc.</p>
 <div class="figure">
-<img src="Client-Images/Workspace_Description.png" alt="Set a workspace description" />
+<img src="Workspace_Description.png" alt="Set a workspace description" />
 <p class="caption">Set a workspace description</p>
 </div>
 <h3 id="choose-a-workflow-schema">Choose a workflow schema</h3>
 <p>After that one can set the own workflow schema or choose the client’s default schema. The workflow schema can define controlled vocabulary and custom workflow metadata properties but must successfully validate against the process metadata schema which is shipped with the client and which cannot be replaced. The JSON schema is designed to allow custom metadata properties for the process metadata. For instance it is allowed to integrate a metadata property which is not mandatory by the client’s default state but can be necessary in the workflow context. This could be the parameter of a research device which is modified while doing iterative workflow steps. It is also possible to specify controlled vocabulary for certain process metadata properties. For instance the allowed roles that persons can have while doing research.</p>
 <div class="figure">
-<img src="Client-Images/Select_Schema.png" alt="Choose a worfklow schema" />
+<img src="Select_Schema.png" alt="Choose a worfklow schema" />
 <p class="caption">Choose a worfklow schema</p>
 </div>
 <div class="figure">
-<img src="Client-Images/Standard-Start.png" alt="Startup window of the client" />
+<img src="Standard-Start.png" alt="Startup window of the client" />
 <p class="caption">Startup window of the client</p>
 </div>
 <p>This is the default view of the client which provides basic features of the client to support a researcher’s workflow. There it can be decided to switch on automatic worfklow tracking (which is a main benefit of Git) or to track the specified workspace on demand (which means manually by clicking the refresh button with the arrows forming a circle). It is also possible to open the specified worflow directory.</p>
 <h2 id="basic-functions-of-the-replay-dh-client">Basic functions of the RePlay-DH client</h2>
 <h3 id="drag-and-drop-feature">Drag and Drop feature</h3>
-<div id="drag_and_drop" image="Client-Images/Client-ausgeklappt_1.png">
+<div id="drag_and_drop" image="Client-ausgeklappt_1.png">
 It is possible to drag and drop files for a workflow step in the red marked area.
 </div>
 <div class="figure">
-<img src="Client-Images/Client-ausgeklappt_1.png" alt="Drag and Drop area of the client" />
+<img src="Client-ausgeklappt_1.png" alt="Drag and Drop area of the client" />
 <p class="caption">Drag and Drop area of the client</p>
 </div>
 <p>For instance one wants to specify a file in the workspace as input file one can open the workspace by clicking on the folder symbol on the right and simply drag and drop in the red marked area.</p>
 <div class="figure">
-<img src="Client-Images/Drag_and_Drop.png" alt="Example for Drag and Drop" />
+<img src="Drag_and_Drop.png" alt="Example for Drag and Drop" />
 <p class="caption">Example for Drag and Drop</p>
 </div>
 <p>There are three possible file types: <em>Input files</em> are used as input for a specific tool. <em>Tools</em> are software which is used to process the input files and generate the <em>Output files</em>. Output files are the results of a specific method. One can choose between these three file types. After that the client shows that one file is registered for the next workflow step.</p>
 <p>After that one can already add basic metadata to this new registered object: The path of the object is already inferred by the drag and drop functionality. But one can also give a textual description of this file or can choose what type of file it is. The controlled vocabulary shown in this dropdown menu is retrieved from the workflow schema.</p>
 <div class="figure">
-<img src="Client-Images/Add_file_metadata.png" alt="Add basic object metadata" />
+<img src="Add_file_metadata.png" alt="Add basic object metadata" />
 <p class="caption">Add basic object metadata</p>
 </div>
 <p>By clicking on the “+” sign one can choose an identifier for the added object. For instance if the object has a Digital Object Identifier (DOI) one can now set this here. Identifiers are important for making the research objects accessible and identifiable in various domains, for instance in a research data repository. Identifiers are also important for making research objects distinguishable from each other. A DOI for example is a unique identifier and can provide persistent access to a research object.</p>
 <div class="figure">
-<img src="Client-Images/Choose_id.png" alt="Adding identifier" />
+<img src="Choose_id.png" alt="Adding identifier" />
 <p class="caption">Adding identifier</p>
 </div>
 <p>If one has registered a file as a tool. There is a slightly different metadata dialogue:</p>
 <div class="figure">
-<img src="Client-Images/Add_tool_metadata.png" alt="Adding tool metadata" />
+<img src="Add_tool_metadata.png" alt="Adding tool metadata" />
 <p class="caption">Adding tool metadata</p>
 </div>
 <p>There the parameters of this tool and the execution environment can be specified. For instance parameters can vary in different workflow steps because of adjusting the behaviour of the tool to generate different output.</p>
 <div class="figure">
-<img src="Client-Images/Registered_files.png" alt="One object registered" />
+<img src="Registered_files.png" alt="One object registered" />
 <p class="caption">One object registered</p>
 </div>
 <h3 id="create-a-new-workflow-step">Create a new workflow step</h3>
@@ -133,252 +133,252 @@ In order to create a new workflow step because the research has reached a certai
 </div>
 <p>A new window appears. In Git terminology a step is a certain commit in the Git history. The client stores then the current research state in the Git repository and writes a commit message in the JSON format. The information for the commit message will be retrieved from the workflow step editor metadata properties.</p>
 <div class="figure">
-<img src="Client-Images/Record_Step.png" alt="Create workflow step" />
+<img src="Record_Step.png" alt="Create workflow step" />
 <p class="caption">Create workflow step</p>
 </div>
 <p>There are 6 different main properties with corresponding sub-properties to describe the workflow step. The step name and description are mandatory. Moreover the involved persons, the tools and input and output files can be described. These 6 main properties are specified in the standard worflow metadata schema of the RePlay-DH client. But it is also possible to add custom metadata properties to the workflow metadata. The workflow metadata schema shipped with the client is flexible enough to allow this in the future. In addition to that the workflow schema has to be set at the beginning of the client setup (see configuration dialogue above).</p>
 <p>By clicking on the “+” button a corresponding dialogue will appear. For the “PERSONS” column the dialogue example is provided below. One can describe there the name and the role of the involved person (e.g. creator, editor, operator and other).</p>
 <div class="figure">
-<img src="Client-Images/Record_Step_add_person.png" alt="Create workflow step: add new person" />
+<img src="Record_Step_add_person.png" alt="Create workflow step: add new person" />
 <p class="caption">Create workflow step: add new person</p>
 </div>
 <p>Other identifiers for a new person are selectable by clicking on the “+” button:</p>
 <div class="figure">
-<img src="Client-Images/Record_Step_add_person_identifiers.png" alt="Create workflow step: add identifiers to the new person" />
+<img src="Record_Step_add_person_identifiers.png" alt="Create workflow step: add identifiers to the new person" />
 <p class="caption">Create workflow step: add identifiers to the new person</p>
 </div>
 <p>When editing process is ready, the new metadata appears in the corresponding column:</p>
 <div class="figure">
-<img src="Client-Images/Record_Step_add_person_result.png" alt="Create workflow step: new person in the “PERSONS” column" />
+<img src="Record_Step_add_person_result.png" alt="Create workflow step: new person in the “PERSONS” column" />
 <p class="caption">Create workflow step: new person in the “PERSONS” column</p>
 </div>
 <p>It is always possible to edit the parameters or remove some entries from the list. Please click “arrow” or “-” buttons on the upper right corner of each person correspondent:</p>
 <div class="figure">
-<img src="Client-Images/Record_Step_add_person_edit.png" alt="Create workflow step: editing of the new person" />
+<img src="Record_Step_add_person_edit.png" alt="Create workflow step: editing of the new person" />
 <p class="caption">Create workflow step: editing of the new person</p>
 </div>
 <p>The same procedure could be applied for the “TOOL”, “INPUT resources” and “OUTPUT resources” columns.</p>
 <div class="figure">
-<img src="Client-Images/Record_Step_add_tool.png" alt="Create workflow step: add a tool" />
+<img src="Record_Step_add_tool.png" alt="Create workflow step: add a tool" />
 <p class="caption">Create workflow step: add a tool</p>
 </div>
 <p>The required identifiers for the tool are colored in red. They can be chosen by clicking on the “+” button:</p>
 <div class="figure">
-<img src="Client-Images/Record_Step_add_tool_identifier.png" alt="Create workflow step: add identifiers to the tool" />
+<img src="Record_Step_add_tool_identifier.png" alt="Create workflow step: add identifiers to the tool" />
 <p class="caption">Create workflow step: add identifiers to the tool</p>
 </div>
 <div class="figure">
-<img src="Client-Images/Record_Step_add_resource.png" alt="Create workflow step: add new resource" />
+<img src="Record_Step_add_resource.png" alt="Create workflow step: add new resource" />
 <p class="caption">Create workflow step: add new resource</p>
 </div>
 <p>To make the working process with the client easy and intuitive, new resources can be added by dragging and dropping new files (tool, input or output resources) to the specific area of the editor. A corresponding dialogue will appear automatically.</p>
 <p>When description of the current workflow step is finished, the “Ok” button stores the results:</p>
 <div class="figure">
-<img src="Client-Images/Record_Step_finish.png" alt="Create workflow step: description is finished, the workflow step is ready to be stored" />
+<img src="Record_Step_finish.png" alt="Create workflow step: description is finished, the workflow step is ready to be stored" />
 <p class="caption">Create workflow step: description is finished, the workflow step is ready to be stored</p>
 </div>
 <p>When the recording operation is finished the RePlay-DH client will provide a short status message:</p>
 <div class="figure">
-<img src="Client-Images/Record_Step_finish_message.png" alt="Create workflow step: status message" />
+<img src="Record_Step_finish_message.png" alt="Create workflow step: status message" />
 <p class="caption">Create workflow step: status message</p>
 </div>
 <h2 id="the-extended-view-of-the-client">The extended view of the client</h2>
 <p>By clicking in the main window on the left arrows, the client will open and show more functionalities. There are three different tabs which hold the extended functions of the client. The “Workflow” tab holds the visualization of the workflow graph and its manipulation and extraction functionalities. The “File Tracker” shows information of the current state of the workspace directory and the “Metadata Manager” tab gives the possibility to add object metadata to the items or research objects in the workspace directory. The “Workflow” tab and the “File Tracker” tab are showing an abstract view on the underlying Git repository which is managed by the client. The “Metadata Manager” is an additional feature of the client which allows to assign the research objects with object metadata, for instance the <a href="https://schema.datacite.org/">DataCite Metadata Schema</a> which holds different properties to describe research data objects. By default the client is shipped with the DataCite Metadata Schema for object metadata. In RePlay-DH terms objects can be resources (input or output files) or tools (programs or scripts). With the DataCite Metadata Schema one can connect the metadata with the research objects used or created in the workflow. In the feature it will be possible to use also other metadata schemas for the research objects. The user will be able to select an own object metadata schema to work with the object metadata editor.</p>
 <div class="figure">
-<img src="Client-Images/Client_extended.png" alt="RePlay-DH client main window" />
+<img src="Client_extended.png" alt="RePlay-DH client main window" />
 <p class="caption">RePlay-DH client main window</p>
 </div>
 <h2 id="additional-workflow-graph-functions-of-the-client">Additional workflow graph functions of the client</h2>
 <h3 id="the-workflow-step-editor">The workflow step editor</h3>
 <div class="figure">
-<img src="Client-Images/Workflow_Editor.png" alt="The workflow step editor" />
+<img src="Workflow_Editor.png" alt="The workflow step editor" />
 <p class="caption">The workflow step editor</p>
 </div>
 <p>The workflow step editor provides mighty functions. First the current workflow graph is displayed. It all begins with the start or init commit represented by the “Start” circle. After that the workflow graph can follow certain user created branches. It is possible to switch between these branches. Every end of a certain branch is coloured blue.</p>
 <p>The current selected workflow step which refers to an underlying commit is coloured red. By selecting a step the selected workflow step gets a green mark as shown in the picture below. There one can see the selected step with blue and green color which means that one has pointed the current step and has selected it with its cursor.</p>
 <div class="figure">
-<img src="Client-Images/WFE_Selected_Branch.png" alt="The selected step" />
+<img src="WFE_Selected_Branch.png" alt="The selected step" />
 <p class="caption">The selected step</p>
 </div>
 <h3 id="export-of-workflow-metadata">Export of workflow metadata</h3>
 <div class="figure">
-<img src="Client-Images/Workflow_Editor_1.png" alt="Export of workflow metadata" />
+<img src="Workflow_Editor_1.png" alt="Export of workflow metadata" />
 <p class="caption">Export of workflow metadata</p>
 </div>
-<div id="export_workflow_metadata" title="Export of workflow metadata" image="Client-Images/Workflow_Editor_1.png">
+<div id="export_workflow_metadata" title="Export of workflow metadata" image="Workflow_Editor_1.png">
 If one clicks on the red marked icon the RePlay-DH client gives you the possibility to export a set or the whole metadata of the workflow graph.
 </div>
 <p>Yet one can choose between the <a href="http://www.opmw.org/model/p-plan/">P-Plan</a> ontology and the <a href="https://www.w3.org/TR/prov-o/">Prov-O</a> ontology. The former is intended to describe the plan which was followed during the research process with the client while the latter exports the already executed and saved workflow graph history. Both ontologies are supported and can be chosen.</p>
 <div class="figure">
-<img src="Client-Images/Workflow_Metadata_Export.png" alt="The metadata exporter" />
+<img src="Workflow_Metadata_Export.png" alt="The metadata exporter" />
 <p class="caption">The metadata exporter</p>
 </div>
 <p>If one has chosen an ontology one can furthermore choose the file format. The ontology file formats <a href="https://www.w3.org/TR/turtle/">TURTLE</a> and <a href="https://www.w3.org/TR/rdf-syntax-grammar/">RDF/XML</a> are supported. In the following dialogue one can choose a file to which the metadata is exported.</p>
 <div class="figure">
-<img src="Client-Images/WFSE_Select_Output.png" alt="Select output file" />
+<img src="WFSE_Select_Output.png" alt="Select output file" />
 <p class="caption">Select output file</p>
 </div>
 <p>A status message will popup to give feedback whether the export was successfully</p>
 <div class="figure">
-<img src="Client-Images/Export_Successfully.png" alt="Export successfully" />
+<img src="Export_Successfully.png" alt="Export successfully" />
 <p class="caption">Export successfully</p>
 </div>
 <h3 id="archive-exporter">Archive Exporter</h3>
-<div id="archive_exporter" title="Archive Exporter" image="Client-Images/Workflow_Editor_2.png">
+<div id="archive_exporter" title="Archive Exporter" image="Workflow_Editor_2.png">
 By clicking on the exporter icon, there will be the possibility to export the whole workspace as a compressed archive.
 </div>
 <p>This is useful if one wants to make a backup with all resources and tools that belong to a client managed Git repository.</p>
 <div class="figure">
-<img src="Client-Images/Workflow_Editor_2.png" alt="The archive exporter" />
+<img src="Workflow_Editor_2.png" alt="The archive exporter" />
 <p class="caption">The archive exporter</p>
 </div>
 <div class="figure">
-<img src="Client-Images/Select_Archive_Exporter.png" alt="Select an archive exporter" />
+<img src="Select_Archive_Exporter.png" alt="Select an archive exporter" />
 <p class="caption">Select an archive exporter</p>
 </div>
 <h3 id="dspace-exporter">DSpace Exporter</h3>
-<div id="dspace_exporter" title="DSpace Exporter" image="Client-Images/Workflow_Editor3.png">
+<div id="dspace_exporter" title="DSpace Exporter" image="Workflow_Editor3.png">
 By clicking the publication symbol it is possible to export resources and tools of a certain workflow step within the workspace directory to some publication repository.
 </div>
 <p>This option is currently in experimental phase. Currently one has to add the link to the repository manually. The manual provides somes examples with the test DSpace-based publication repository, which is accessible for every user via the link: http://demo.dspace.org</p>
 <div class="figure">
-<img src="Client-Images/Workflow_Editor_3.png" alt="Export to the publication repository" />
+<img src="Workflow_Editor_3.png" alt="Export to the publication repository" />
 <p class="caption">Export to the publication repository</p>
 </div>
 <p>It is planed to choose between different instances of publication repositories. Currently only DSpace-based repositories are supported but there will be a Dataverse support in the near future.</p>
 <div class="figure">
-<img src="Client-Images/DSpace_type.png" alt="Selection of the type of the publication repository" />
+<img src="DSpace_type.png" alt="Selection of the type of the publication repository" />
 <p class="caption">Selection of the type of the publication repository</p>
 </div>
 <p>After choosing a publication repository and entering login and password one has to push the “Check login” button. If login and password are correct, the “Next” button will be activated. <strong>IMPORTANT:</strong> the login and password will be sent direct to the publication repository and will not be stored inside the RePlay-DH client.</p>
 <div class="figure">
-<img src="Client-Images/DSpace_login.png" alt="Enter login and password" />
+<img src="DSpace_login.png" alt="Enter login and password" />
 <p class="caption">Enter login and password</p>
 </div>
 <p>A collection for the publication can be selected.</p>
 <div class="figure">
-<img src="Client-Images/DSpace_collection.png" alt="Selection of the collection" />
+<img src="DSpace_collection.png" alt="Selection of the collection" />
 <p class="caption">Selection of the collection</p>
 </div>
 <p>The next step is to choose the files for publication. One can skip this step and make a metadata-only publication. Adding and discharge of the files are also possible.</p>
 <div class="figure">
-<img src="Client-Images/DSpace_files.png" alt="Selection of files for publication" />
+<img src="DSpace_files.png" alt="Selection of files for publication" />
 <p class="caption">Selection of files for publication</p>
 </div>
 <p>Extension of the publication with metadata is an important feature of the RePlay-DH client. To make the input procedure easier, the client tries to fill in some default data automatically based on the already provided information.</p>
 <div class="figure">
-<img src="Client-Images/DSpace_metadata.png" alt="Input of metadata" />
+<img src="DSpace_metadata.png" alt="Input of metadata" />
 <p class="caption">Input of metadata</p>
 </div>
 <p>After that a short summary will be displayed to show what will be exactly published. Clicking on the “Finish” button will start the publicaton process in background.</p>
 <div class="figure">
-<img src="Client-Images/DSpace_summary.png" alt="Publication summary" />
+<img src="DSpace_summary.png" alt="Publication summary" />
 <p class="caption">Publication summary</p>
 </div>
 <p>At the end of the process the RePlay-DH client will provide a status message. In case of success there will be an automatic redirection to the publication repository web-page via browser to check all the sent data and finish the publication procedure there.</p>
 <div class="figure">
-<img src="Client-Images/DSpace_redirection.png" alt="Redirection to the publication repository" />
+<img src="DSpace_redirection.png" alt="Redirection to the publication repository" />
 <p class="caption">Redirection to the publication repository</p>
 </div>
 <p>The RePlay-DH client only starts the publication process and redirects to the publication repository for the final publication procedure. Provided approach makes the client flexible for different publication repositories, which usually have different terms of publication.</p>
 <h3 id="set-active-workflow-step">Set Active Workflow Step</h3>
-<div id="active_workflowstep" title="Set Active Workflow Step" image="Client-Images/Workflow_Editor_4.png">
+<div id="active_workflowstep" title="Set Active Workflow Step" image="Workflow_Editor_4.png">
 The blue “down arrow” selects the active workflow step in the workflow graph.
 </div>
 <p>This is useful if one wants to step back to previous commit. By recording a new step to a previously recorded step which has already a proceeding workflow step a new branch will be created. This feature is useful for following different research process aims or strategies.</p>
 <div class="figure">
-<img src="Client-Images/Workflow_Editor_4.png" alt="Set active workflow step" />
+<img src="Workflow_Editor_4.png" alt="Set active workflow step" />
 <p class="caption">Set active workflow step</p>
 </div>
 <h3 id="focus-the-active-step-in-the-graph">Focus the active step in the graph</h3>
-<div id="focus_active_step" title="Focus the active step in the graph" image="Client-Images/Workflow_Editor_5.png">
+<div id="focus_active_step" title="Focus the active step in the graph" image="Workflow_Editor_5.png">
 When a certain step is selected and the graph is really big one can focus the selected step with this button.
 </div>
 <div class="figure">
-<img src="Client-Images/Workflow_Editor_5.png" alt="Focus the active step" />
+<img src="Workflow_Editor_5.png" alt="Focus the active step" />
 <p class="caption">Focus the active step</p>
 </div>
 <h3 id="compress-the-active-branch">Compress the active branch</h3>
-<div id="compress_graph" title="Compress the active branch" image="Client-Images/Workflow_Editor_6.png">
+<div id="compress_graph" title="Compress the active branch" image="Workflow_Editor_6.png">
 If a branch becomes longer the marked button can compress the branch from one branching point to another. This gives a much better overview of the whole workflow graph.
 </div>
 <div class="figure">
-<img src="Client-Images/Workflow_Editor_6.png" alt="Compress the active branch" />
+<img src="Workflow_Editor_6.png" alt="Compress the active branch" />
 <p class="caption">Compress the active branch</p>
 </div>
 <h3 id="rebuild-the-graph-visualization">Rebuild the graph visualization</h3>
-<div id="rebuild_graph" title="Rebuild the graph visualization" image="Client-Images/Workflow_Editor_7.png">
+<div id="rebuild_graph" title="Rebuild the graph visualization" image="Workflow_Editor_7.png">
 By clicking this button the visualization of the graph will be completely rebuilt.
 </div>
 <div class="figure">
-<img src="Client-Images/Workflow_Editor_7.png" alt="Rebuild visual graph" />
+<img src="Workflow_Editor_7.png" alt="Rebuild visual graph" />
 <p class="caption">Rebuild visual graph</p>
 </div>
 <h2 id="the-file-tracker">The file tracker</h2>
 <div class="figure">
-<img src="Client-Images/File_Tracker.png" alt="The file tracker" />
+<img src="File_Tracker.png" alt="The file tracker" />
 <p class="caption">The file tracker</p>
 </div>
-<div id="file_tracker" title="The file tracker" image="Client-Images/File_Tracker.png">
+<div id="file_tracker" title="The file tracker" image="File_Tracker.png">
 The file tracker tab window demonstrates one of the built-in benefits of the underlying git repository infrastructure. Like all git repositories, git notices immediately if the tracked files of the workspace have changed or new files are added. If so these altered or new files are presented in the file tracker tab window.
 </div>
 <div class="figure">
-<img src="Client-Images/File_Tracker_added.png" alt="The file tracker with an added object" />
+<img src="File_Tracker_added.png" alt="The file tracker with an added object" />
 <p class="caption">The file tracker with an added object</p>
 </div>
 <h3 id="the-metadata-editor-for-the-object-metadata">The metadata editor for the object metadata</h3>
 <div class="figure">
-<img src="Client-Images/MetadataManager_1.png" alt="Select metadata builder" />
+<img src="MetadataManager_1.png" alt="Select metadata builder" />
 <p class="caption">Select metadata builder</p>
 </div>
 <p>On the left one can choose a research object (input, output file or tool) for assigning object metadata to it. In this example the file is named “Hello”. According to the chosen metadata repository which can hold different object metadata schemas one can decide to build, change or delete an object metadata entry for a research data object (here: file “Hello”). On the right side of the manager one can see all the used keys of the metadata schema and its set values. These values can later be changed via the object metadata editor.</p>
 <h4 id="creating-an-object-metadata-entry">Creating an object metadata entry</h4>
 The red marked icon will open the metadata builder
-<div id="metadata_builder" title="Creating an object metadata entry" image="Client-Images/MetadataManager_1.png">
+<div id="metadata_builder" title="Creating an object metadata entry" image="MetadataManager_1.png">
 
 </div>
 <div class="figure">
-<img src="Client-Images/Metadata_Builder_Intro.png" alt="Metadata builder intro window" />
+<img src="Metadata_Builder_Intro.png" alt="Metadata builder intro window" />
 <p class="caption">Metadata builder intro window</p>
 </div>
 <p>The metadata can be linked to a local file or a remote resource.</p>
 <p>If one chooses a local file the next dialogue asks for the target.</p>
 <div class="figure">
-<img src="Client-Images/Select_Target.png" alt="Choose target for a metadata object" />
+<img src="Select_Target.png" alt="Choose target for a metadata object" />
 <p class="caption">Choose target for a metadata object</p>
 </div>
 <div class="figure">
-<img src="Client-Images/Builder_Verification.png" alt="Verification of the target" />
+<img src="Builder_Verification.png" alt="Verification of the target" />
 <p class="caption">Verification of the target</p>
 </div>
 <p>After choosing “Next” the client checks if the selected resource is already known to the client. If not a new object metadata record will be created.</p>
 <div class="figure">
-<img src="Client-Images/Create_Object_Metadata_Record.png" alt="Create object metadata record" />
+<img src="Create_Object_Metadata_Record.png" alt="Create object metadata record" />
 <p class="caption">Create object metadata record</p>
 </div>
 <p>The red marked textfields are mandatory metadata fields while the rest is optional.</p>
 <p>In the RePlay-DH terminology objects are an abstract term for resources and tools. Generally resources are text files or the research data which are changed or created during the research life cycle. Tools are programs or scripts which are used to process these resources. For example a program reads a text file and creates automatically annotations within this text file. New research data is then created. These objects can be selected in the object metadata editor and enriched with metadata which makes these objects more understandable and reusable.</p>
 <div class="figure">
-<img src="Client-Images/MetadataManager.png" alt="Metadata editor" />
+<img src="MetadataManager.png" alt="Metadata editor" />
 <p class="caption">Metadata editor</p>
 </div>
 <h3 id="editing-object-metadata">Editing object metadata</h3>
-<div id="metadata_editor" title="Editing object metadata" image="Client-Images/MetadataManager.png">
+<div id="metadata_editor" title="Editing object metadata" image="MetadataManager.png">
 When selecting an arbitrary resource the corresponding metadata will be shown in the window. One can then click on the middle button to open the object metadata editor to alter or add some metadata to the corresponding resource or object.
 </div>
 <div class="figure">
-<img src="Client-Images/EditExistingRecord.png" alt="Editing existing object metadata record" />
+<img src="EditExistingRecord.png" alt="Editing existing object metadata record" />
 <p class="caption">Editing existing object metadata record</p>
 </div>
 <p>In the editor view more textfields can be added to the corresponding metadata property by clicking on the plus button. The plus button only appears when the metadata schema allows more than one entry for this property. For example it is possible to add more than one creator to a resouce but only one identifier. By clicking on the minus button the textfields are deleted until there is only one for the property. By clicking on the red cross button the content of the last text field is deleted. The metadata editor checks the input for every property and is preventing from entering no schema compliant metadata. On the bottom of the object metadata editor window there are two buttons: The “OK”-Button saves all the changes of the metadata of a specific resource or tool. The “Cancel”-Button closes the metadata editor without saving the changes.</p>
 <h3 id="adding-an-additional-metadata-property">Adding an additional metadata property</h3>
 On the bottom of the editor view there is the possibility to add an additional metadata property which does not exist in the undelying schema.
-<div id="custom_object_metadata_property" title="Adding an additional metadata property" image="Client-Images/Add_additional_metadata_property.png">
+<div id="custom_object_metadata_property" title="Adding an additional metadata property" image="Add_additional_metadata_property.png">
 By clicking on the “add additional metadata property” button a pop up window appears which allows to enter the name of the metadata property which should be created.
 </div>
 <p>Also in this case there is a validation in the background to prevent the input of unallowed metadata property names.</p>
 <div class="figure">
-<img src="Client-Images/Add_additional_metadata_property.png" alt="Adding an additional metadata property" />
+<img src="Add_additional_metadata_property.png" alt="Adding an additional metadata property" />
 <p class="caption">Adding an additional metadata property</p>
 </div>
 <h2 id="remarks">Remarks</h2>
