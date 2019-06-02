@@ -18,6 +18,8 @@
  */
 package bwfdm.replaydh.ui.core;
 
+import static bwfdm.replaydh.utils.RDHUtils.checkState;
+
 import java.awt.AWTException;
 import java.awt.Component;
 import java.awt.Container;
@@ -42,6 +44,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.RootPaneContainer;
 import javax.swing.SwingConstants;
@@ -68,6 +71,7 @@ import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.actions.ActionManager;
 import bwfdm.replaydh.ui.actions.ConditionResolver;
 import bwfdm.replaydh.ui.core.RDHWelcomeWizard.WelcomeContext;
+import bwfdm.replaydh.ui.help.HelpStore;
 import bwfdm.replaydh.ui.helper.CloseableUI;
 import bwfdm.replaydh.ui.helper.JMenuBarSource;
 import bwfdm.replaydh.ui.helper.Wizard;
@@ -99,6 +103,8 @@ public class RDHGui extends AbstractRDHTool {
 	private ActionManager actionManager;
 
 	private TrayIcon trayIcon;
+
+	private HelpStore helpStore;
 
 	/**
 	 * Compound flag calculated from {@link SystemTray#isSupported()}
@@ -135,7 +141,9 @@ public class RDHGui extends AbstractRDHTool {
 		FileTracker fileTracker = environment.getClient().getFileTracker();
 		fileTracker.addTrackerListener(handler);
 
-//TODO
+		helpStore = new HelpStore();
+
+//TODO if we ever get an entry in preferences to let user switch to system L&F, we need to honor it here
 //        try {
 //            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 //        } catch (Exception e) {
@@ -152,6 +160,8 @@ public class RDHGui extends AbstractRDHTool {
 	@Override
 	public void stop(RDHEnvironment environment) throws RDHLifecycleException {
 		//TODO shutdown tray icon and such?
+
+		helpStore.close();
 
 		FileTracker fileTracker = environment.getClient().getFileTracker();
 		fileTracker.removeTrackerListener(handler);
@@ -606,6 +616,27 @@ public class RDHGui extends AbstractRDHTool {
 		}
 
 		//TODO log stat
+	}
+
+	public void unregisterHelp(JComponent component) {
+		getHelpStore().unregister(component);
+	}
+
+	public void registerHelp(JComponent component, String anchor) {
+		getHelpStore().register(component, anchor);
+	}
+
+	private HelpStore getHelpStore() {
+		checkState("Help store not available", helpStore!=null);
+		return helpStore;
+	}
+
+	public void toggleGlobalHelpMode(boolean active) {
+		if(active) {
+			getHelpStore().showHelp();
+		} else {
+			getHelpStore().hideHelp();
+		}
 	}
 
 	private class Handler extends TrackerAdapter {

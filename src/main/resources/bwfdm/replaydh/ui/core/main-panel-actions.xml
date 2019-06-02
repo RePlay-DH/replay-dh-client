@@ -31,6 +31,11 @@
 	<action id="replaydh.ui.core.mainPanel.toggleAlwaysOnTop" type="toggle"
 		name="${id}.name" desc="${id}.description"
 		icon="icons8-pin-64.png" sicon="icons8-unpin-64.png" />
+	
+	<!-- Toggle Help Mode -->
+	<action id="replaydh.ui.core.mainPanel.toggleHelpMode" type="toggle"
+		name="${id}.name" desc="${id}.description"
+		icon="icons8-help-100.png" sicon="icons8-help-yellow-100.png" />
 		
 	<!-- Change Workspace -->
 	<action id="replaydh.ui.core.mainPanel.changeWorkspace"
@@ -102,6 +107,7 @@
 			<item type="action" value="replaydh.ui.core.mainPanel.about" />
 		</action-list>
 		<item type="glue" />
+		<item type="action" value="replaydh.ui.core.mainPanel.toggleHelpMode" />
 		<item type="action" value="replaydh.ui.core.mainPanel.toggleAlwaysOnTop" />
 	</action-list>
 	
