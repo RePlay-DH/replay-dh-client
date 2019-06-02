@@ -21,6 +21,7 @@ package bwfdm.replaydh.ui.workflow.graph;
 import static java.util.Objects.requireNonNull;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -356,6 +357,8 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 		graphComponent.setConnectable(false);
 		graphComponent.setDragEnabled(false);
 		graphComponent.setKeepSelectionVisibleOnZoom(true);
+
+		graphComponent.getViewport().setBackground(Color.white);
 
 		graphComponent.getGraphControl().addMouseListener(handler);
 		graphComponent.getGraphControl().addMouseWheelListener(handler);
