@@ -20,24 +20,39 @@ package bwfdm.replaydh.ui.help;
 
 import static bwfdm.replaydh.utils.RDHUtils.checkState;
 
+import java.awt.Dimension;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import javax.swing.Icon;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRootPane;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import bwfdm.replaydh.ui.icons.IconRegistry;
+
 /**
- * @author Markus Gärtner
+ * @author Markus Gärtner, Florian Fritze
  *
  */
 public class HelpStore {
 
 	private static final Logger log = LoggerFactory.getLogger(HelpStore.class);
-
+	
 	/** Stores the anchor ids for all registered components */
 	private final Map<JComponent, String> componentAnchors = new WeakHashMap<>();
+	
+	private JPanel panel = new JPanel();
+	
+	private IconRegistry ir = IconRegistry.getGlobalRegistry();
+	
+	private Icon helpHint = ir.getIcon("icons8-Help-48-small.png");
+	
+	private JLabel buttonLabel = new JLabel(helpHint);
 
 	public void register(JComponent component, String anchor) {
 		checkState("Component already registered", !componentAnchors.containsKey(component));
@@ -56,10 +71,23 @@ public class HelpStore {
 	public void showHelp() {
 		log.info("Showing global help markers");
 		//TODO for all registered components that are visible, make sure to show the overlay hints
+		for(JComponent comp : componentAnchors.keySet()) {
+			JRootPane root = comp.getRootPane();
+			Dimension dim = root.getSize();
+			panel.setSize(dim);
+			buttonLabel.setSize(8,8);
+			panel.add(buttonLabel);
+			root.setGlassPane(panel);
+			panel.setVisible(true);
+			panel.setOpaque(false);
+		}
 	}
 
 	public void hideHelp() {
 		log.info("Hiding global help markers");
 		//TODO hide all the previously displayed help overlays
+		panel.removeAll();
+		panel.setVisible(false);
 	}
+	
 }

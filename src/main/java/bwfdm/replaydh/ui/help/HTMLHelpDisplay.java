@@ -22,6 +22,11 @@ import org.slf4j.LoggerFactory;
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.resources.ResourceManager;
 
+/**
+ * 
+ * @author Florian Fritze
+ *
+ */
 public class HTMLHelpDisplay {
 
 	public HTMLHelpDisplay() {

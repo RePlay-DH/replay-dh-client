@@ -315,6 +315,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		expandIcon = ir.getIcon("left.png", Resolution.forSize(32));
 
 		AbstractButton updateStatusButton = actionManager.createButton("replaydh.ui.core.mainPanel.updateStatus");
+		environment.getClient().getGui().registerHelp(updateStatusButton, "Hello");
 		AbstractButton cancelUpdateButton = actionManager.createButton("replaydh.ui.core.mainPanel.cancelUpdate");
 		AbstractButton toggleTrackerButton = actionManager.createButton("replaydh.ui.core.mainPanel.toggleTrackerActive");
 		toggleDetailsButton = actionManager.createButton("replaydh.ui.core.mainPanel.toggleDetails");
@@ -323,6 +324,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		addStepButton.setHorizontalTextPosition(SwingConstants.LEFT);
 		addStepButton.setFont(GuiUtils.defaultLargeInfoFont.deriveFont(24f));
 		addStepButton.setText(rm.get("replaydh.ui.core.mainPanel.addStep.name"));
+		//environment.getClient().getGui().registerHelp(addStepButton, "Hello");
 
 		AbstractButton openWorkspaceButton = actionManager.createButton("replaydh.ui.core.mainPanel.openWorkspaceFolder");
 		AbstractButton clearResourceCacheButton = actionManager.createButton("replaydh.ui.core.mainPanel.clearResourceCache");
