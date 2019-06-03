@@ -21,12 +21,13 @@ package bwfdm.replaydh.ui.help;
 import static bwfdm.replaydh.utils.RDHUtils.checkState;
 
 import java.awt.Dimension;
+import java.awt.Point;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 import javax.swing.Icon;
+import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRootPane;
 
@@ -41,18 +42,22 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
  */
 public class HelpStore {
 
+	public HelpStore() {
+		panel = new JPanel();
+		panel.setLayout(null);
+	}
+
 	private static final Logger log = LoggerFactory.getLogger(HelpStore.class);
 	
 	/** Stores the anchor ids for all registered components */
 	private final Map<JComponent, String> componentAnchors = new WeakHashMap<>();
 	
-	private JPanel panel = new JPanel();
+	private JPanel panel;
 	
 	private IconRegistry ir = IconRegistry.getGlobalRegistry();
 	
 	private Icon helpHint = ir.getIcon("icons8-Help-48-small.png");
 	
-	private JLabel buttonLabel = new JLabel(helpHint);
 
 	public void register(JComponent component, String anchor) {
 		checkState("Component already registered", !componentAnchors.containsKey(component));
@@ -75,7 +80,11 @@ public class HelpStore {
 			JRootPane root = comp.getRootPane();
 			Dimension dim = root.getSize();
 			panel.setSize(dim);
-			buttonLabel.setSize(8,8);
+			JButton buttonLabel = new JButton(helpHint);
+			Point location = comp.getLocation();
+			System.out.println(location);
+			buttonLabel.setBounds((comp.getWidth()/2)+location.x, location.y+20, 40, 40);
+			buttonLabel.setToolTipText("Click me for help");
 			panel.add(buttonLabel);
 			root.setGlassPane(panel);
 			panel.setVisible(true);
