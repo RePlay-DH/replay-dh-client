@@ -20,8 +20,11 @@ package bwfdm.replaydh.ui.help;
 
 import static bwfdm.replaydh.utils.RDHUtils.checkState;
 
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Point;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -34,13 +37,14 @@ import javax.swing.JRootPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.icons.IconRegistry;
 
 /**
  * @author Markus Gärtner, Florian Fritze
  *
  */
-public class HelpStore {
+public class HelpStore implements ComponentListener {
 
 	public HelpStore() {
 		panel = new JPanel();
@@ -58,6 +62,16 @@ public class HelpStore {
 	
 	private Icon helpHint = ir.getIcon("icons8-Help-48-small.png");
 	
+	private int counter=0;
+	
+	private int standardWidth;
+	
+	private Container contentPane;
+	
+	private int newWidth = 0;
+	
+	private boolean showHelp;
+	
 
 	public void register(JComponent component, String anchor) {
 		checkState("Component already registered", !componentAnchors.containsKey(component));
@@ -74,29 +88,63 @@ public class HelpStore {
 	}
 
 	public void showHelp() {
+		showHelp=true;
 		log.info("Showing global help markers");
-		//TODO for all registered components that are visible, make sure to show the overlay hints
 		for(JComponent comp : componentAnchors.keySet()) {
 			JRootPane root = comp.getRootPane();
 			Dimension dim = root.getSize();
+			contentPane = root.getContentPane();
+			if(counter == 0) {
+				contentPane.addComponentListener(this);
+				standardWidth=contentPane.getWidth();
+			}
 			panel.setSize(dim);
 			JButton buttonLabel = new JButton(helpHint);
 			Point location = comp.getLocation();
-			System.out.println(location);
-			buttonLabel.setBounds((comp.getWidth()/2)+location.x, location.y+20, 40, 40);
-			buttonLabel.setToolTipText("Click me for help");
+			buttonLabel.setBounds(newWidth+(comp.getWidth()/2)+location.x, location.y+20, 40, 40);
+			buttonLabel.setToolTipText(ResourceManager.getInstance().get("replaydh.display.help.toolTip"));
 			panel.add(buttonLabel);
 			root.setGlassPane(panel);
 			panel.setVisible(true);
 			panel.setOpaque(false);
+			counter++;
 		}
 	}
 
 	public void hideHelp() {
 		log.info("Hiding global help markers");
-		//TODO hide all the previously displayed help overlays
 		panel.removeAll();
 		panel.setVisible(false);
+		showHelp=false;
+	}
+
+	@Override
+	public void componentResized(ComponentEvent e) {
+		newWidth=contentPane.getWidth();
+		newWidth=newWidth-standardWidth;
+		if(showHelp) {
+			hideHelp();
+			showHelp();
+			showHelp=true;
+		}
+	}
+
+	@Override
+	public void componentMoved(ComponentEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void componentShown(ComponentEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void componentHidden(ComponentEvent e) {
+		// TODO Auto-generated method stub
+		
 	}
 	
 }
