@@ -125,7 +125,6 @@ public class HelpStore implements ComponentListener {
 		if(showHelp) {
 			hideHelp();
 			showHelp();
-			showHelp=true;
 		}
 	}
 
