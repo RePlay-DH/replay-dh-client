@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import javax.swing.Icon;
@@ -114,14 +114,10 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 		helpShowed=true;
 		log.info("Showing global help markers");
 		for (JComponent comp : componentAnchors.keySet()) {
-			Function<Component, Component> getPanel = component -> component instanceof JPanel ? component : null;
-			Function<Component, Integer> receiveStandardWidth = component -> component.getParent().getWidth() > 0
-					? component.getParent().getWidth()
-					: 0;
-			Predicate<Component> isPanel = component -> component instanceof JPanel;
+			Consumer<Component> receiveStandardWidth = component -> standardWidth=component.getParent().getWidth();
+			Predicate<Component> isPanel = component -> component instanceof JPanel && component != null;
 			Set<Component> components = new HashSet<>(Arrays.asList(comp.getParent().getComponents()));
-			standardWidth = receiveStandardWidth
-					.apply(getPanel.apply(components.stream().filter(isPanel).findFirst().get()));
+			components.stream().filter(isPanel).forEach(receiveStandardWidth);
 			if (standardWidth > 0) {
 				break;
 			}
