@@ -84,7 +84,7 @@ public class RDHGui extends AbstractRDHTool {
 
 	private static final Logger log = LoggerFactory.getLogger(RDHGui.class);
 
-	private static final Dimension MIN_WINDOW_SIZE = new Dimension(450, 300);
+	private static final Dimension MIN_WINDOW_SIZE = new Dimension(490, 300);
 
 	private static final String UPTIME_PROPERTY = "uptime";
 
@@ -141,7 +141,7 @@ public class RDHGui extends AbstractRDHTool {
 		FileTracker fileTracker = environment.getClient().getFileTracker();
 		fileTracker.addTrackerListener(handler);
 
-		helpStore = new HelpStore();
+		helpStore = new HelpStore(RDHGui.MIN_WINDOW_SIZE);
 
 //TODO if we ever get an entry in preferences to let user switch to system L&F, we need to honor it here
 //        try {

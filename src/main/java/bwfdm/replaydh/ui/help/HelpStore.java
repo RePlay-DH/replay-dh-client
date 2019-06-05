@@ -22,7 +22,6 @@ import static bwfdm.replaydh.utils.RDHUtils.checkState;
 
 import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.Point;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.util.Map;
@@ -46,8 +45,9 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
  */
 public class HelpStore implements ComponentListener {
 
-	public HelpStore() {
+	public HelpStore(Dimension minWindowSize) {
 		glass = new GlassPaneWindow();
+		this.standardWidth=minWindowSize.width;
 	}
 
 	private static final Logger log = LoggerFactory.getLogger(HelpStore.class);
@@ -63,11 +63,13 @@ public class HelpStore implements ComponentListener {
 	
 	private int standardHeight;
 	
+	private final int addY = 2;
+	
 	private Container contentPane;
 	
 	private int xLocation = 0;
 	
-	private boolean showHelp;
+	private boolean helpShowed;
 	
 	private boolean registered=false;
 	
@@ -89,7 +91,7 @@ public class HelpStore implements ComponentListener {
 	}
 
 	public void showHelp() {
-		showHelp=true;
+		helpShowed=true;
 		log.info("Showing global help markers");
 		for(JComponent comp : componentAnchors.keySet()) {
 			JRootPane root = comp.getRootPane();
@@ -97,24 +99,28 @@ public class HelpStore implements ComponentListener {
 			contentPane = root.getContentPane();
 			glass.setSize(dim);
 			if(registered == false) {
-				standardWidth=root.getWidth();
-				standardHeight=root.getHeight();
 				contentPane.addComponentListener(this);
 				registered=true;
 			}
-			System.out.println(contentPane);
+			//System.out.println(contentPane);
 			JButton buttonLabel = new JButton(helpHint);
-			int yLocation = comp.getY()+25;
-			System.out.println(standardWidth+"-"+comp.getX()+"="+(standardWidth-comp.getX()));
+			int yLocation;
+			System.out.println(root.getWidth()+" "+standardWidth);
+			if(root.getWidth() > standardWidth) {
+				yLocation = comp.getY()+25+addY;
+			} else {
+				yLocation = comp.getY()+25;
+			}
+			//System.out.println(standardWidth+"-"+comp.getX()+"="+(standardWidth-comp.getX()));
 			xLocation=root.getWidth()+(comp.getWidth()/2)+(comp.getX())-standardWidth;
 			//System.out.println(comp.getWidth());
 			buttonLabel.setBounds(xLocation, yLocation, 40, 40);
 			buttonLabel.setToolTipText(ResourceManager.getInstance().get("replaydh.display.help.toolTip"));
-			Point location = buttonLabel.getLocation();
-			System.out.println("Location: "+location);
+			//Point location = buttonLabel.getLocation();
+			//System.out.println("Location: "+location);
 			glass.add(buttonLabel);
-			System.out.println(xLocation);
-			System.out.println(yLocation);
+			//System.out.println(xLocation);
+			//System.out.println(yLocation);
 			//root.setGlassPane();
 			root.setGlassPane(glass);
 			glass.setVisible(true);
@@ -127,12 +133,12 @@ public class HelpStore implements ComponentListener {
 		log.info("Hiding global help markers");
 		glass.setVisible(false);
 		glass.removeAll();
-		showHelp=false;
+		helpShowed=false;
 	}
 
 	@Override
 	public void componentResized(ComponentEvent e) {
-		if(showHelp) {
+		if(helpShowed) {
 			hideHelp();
 			showHelp();
 		}
@@ -157,6 +163,11 @@ public class HelpStore implements ComponentListener {
 	}
 	
 	private class GlassPaneWindow extends JPanel {
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 6793726559660910536L;
 
 		public GlassPaneWindow() {
 			this.setLayout(null);
