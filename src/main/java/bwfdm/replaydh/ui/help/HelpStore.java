@@ -30,9 +30,14 @@ import java.awt.event.ComponentListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import javax.swing.Icon;
 import javax.swing.JButton;
@@ -68,7 +73,7 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 	
 	private Icon helpHint = ir.getIcon("icons8-Help-48-small.png");
 	
-	private int standardWidth;
+	private int standardWidth = 0;
 	
 	//private int standardHeight;
 	
@@ -108,12 +113,16 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 	public void showHelp() {
 		helpShowed=true;
 		log.info("Showing global help markers");
-		for(JComponent comp : componentAnchors.keySet()) {
-			for(Component c : comp.getParent().getComponents()) {
-				if(c instanceof JPanel) {
-					standardWidth=c.getParent().getWidth();
-					break;
-				}
+		for (JComponent comp : componentAnchors.keySet()) {
+			Function<Component, Component> getPanel = component -> component instanceof JPanel ? component : null;
+			Function<Component, Integer> receiveStandardWidth = component -> component.getParent().getWidth() > 0
+					? component.getParent().getWidth()
+					: 0;
+			Predicate<Component> isPanel = component -> component instanceof JPanel;
+			Set<Component> components = new HashSet<>(Arrays.asList(comp.getParent().getComponents()));
+			standardWidth = receiveStandardWidth
+					.apply(getPanel.apply(components.stream().filter(isPanel).findFirst().get()));
+			if (standardWidth > 0) {
 				break;
 			}
 		}
