@@ -70,7 +70,7 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 	
 	private int standardWidth;
 	
-	private int standardHeight;
+	//private int standardHeight;
 	
 	private final int addY = 2;
 	
