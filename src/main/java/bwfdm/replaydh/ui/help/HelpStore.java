@@ -20,6 +20,7 @@ package bwfdm.replaydh.ui.help;
 
 import static bwfdm.replaydh.utils.RDHUtils.checkState;
 
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -52,9 +53,8 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
  */
 public class HelpStore implements ComponentListener, ActionListener, WindowListener {
 
-	public HelpStore(Dimension minWindowSize) {
+	public HelpStore() {
 		glass = new GlassPaneWindow();
-		this.standardWidth=minWindowSize.width;
 		helpDisplay = new HTMLHelpDisplay();
 		helpDisplay.readHelpFile();
 	}
@@ -108,6 +108,15 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 	public void showHelp() {
 		helpShowed=true;
 		log.info("Showing global help markers");
+		for(JComponent comp : componentAnchors.keySet()) {
+			for(Component c : comp.getParent().getComponents()) {
+				if(c instanceof JPanel) {
+					standardWidth=c.getParent().getWidth();
+					break;
+				}
+				break;
+			}
+		}
 		for(JComponent comp : componentAnchors.keySet()) {
 			JRootPane root = comp.getRootPane();
 			Dimension dim = root.getSize();
