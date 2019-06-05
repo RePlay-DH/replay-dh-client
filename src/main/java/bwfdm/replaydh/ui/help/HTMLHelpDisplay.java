@@ -41,10 +41,10 @@ public class HTMLHelpDisplay {
 	 * Reads the HTML Help file
 	 */
 	public void readHelpFile() {
-		try(InputStream input = HTMLHelpDisplay.class.getResourceAsStream("bwfdm/replaydh/help/client-docu.html")) {
+		try(InputStream input = HTMLHelpDisplay.class.getResourceAsStream("/bwfdm/replaydh/help/client-docu.html")) {
 			document = IOUtils.readStream(input);
 		} catch (IOException e) {
-			log.error("Error reading markdown file as stream",e);
+			log.error("Error reading html file as stream",e);
 		}
 		doc = Jsoup.parse(document);
 	}
@@ -74,7 +74,7 @@ public class HTMLHelpDisplay {
 	 * @param anchor
 	 * @param comp
 	 */
-	public void showHelpSection(String anchor, JComponent comp) {
+	public JFrame showHelpSection(String anchor) {
 		String section = findAndPrintPosition(anchor);
 		JFrame frame = new JFrame();
 		frame.setTitle(ResourceManager.getInstance().get("replaydh.documentation.helpWindow.title"));
@@ -92,9 +92,11 @@ public class HTMLHelpDisplay {
 			frame.add(scrollPane);
 			frame.setVisible(true);
 			frame.setSize(800, 600);
-			frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+			frame.setLocationRelativeTo(null);
+			frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		} catch (MalformedURLException e) {
 			log.error("Error creating an URL",e);
 		}
+		return frame;
 	}
 }

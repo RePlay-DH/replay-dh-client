@@ -22,14 +22,21 @@ import static bwfdm.replaydh.utils.RDHUtils.checkState;
 
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JRootPane;
 
@@ -43,11 +50,13 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
  * @author Markus Gärtner, Florian Fritze
  *
  */
-public class HelpStore implements ComponentListener {
+public class HelpStore implements ComponentListener, ActionListener, WindowListener {
 
 	public HelpStore(Dimension minWindowSize) {
 		glass = new GlassPaneWindow();
 		this.standardWidth=minWindowSize.width;
+		helpDisplay = new HTMLHelpDisplay();
+		helpDisplay.readHelpFile();
 	}
 
 	private static final Logger log = LoggerFactory.getLogger(HelpStore.class);
@@ -74,6 +83,12 @@ public class HelpStore implements ComponentListener {
 	private boolean registered=false;
 	
 	private GlassPaneWindow glass;
+	
+	private HTMLHelpDisplay helpDisplay;
+	
+	private List<JButton> registeredButtons = new ArrayList<>();
+	
+	private boolean shownHelp;
 	
 
 	public void register(JComponent component, String anchor) {
@@ -105,7 +120,7 @@ public class HelpStore implements ComponentListener {
 			//System.out.println(contentPane);
 			JButton buttonLabel = new JButton(helpHint);
 			int yLocation;
-			System.out.println(root.getWidth()+" "+standardWidth);
+			//System.out.println(root.getWidth()+" "+standardWidth);
 			if(root.getWidth() > standardWidth) {
 				yLocation = comp.getY()+25+addY;
 			} else {
@@ -118,6 +133,9 @@ public class HelpStore implements ComponentListener {
 			buttonLabel.setToolTipText(ResourceManager.getInstance().get("replaydh.display.help.toolTip"));
 			//Point location = buttonLabel.getLocation();
 			//System.out.println("Location: "+location);
+			buttonLabel.addActionListener(this);
+			buttonLabel.setName(componentAnchors.get(comp));
+			registeredButtons.add(buttonLabel);
 			glass.add(buttonLabel);
 			//System.out.println(xLocation);
 			//System.out.println(yLocation);
@@ -172,6 +190,62 @@ public class HelpStore implements ComponentListener {
 		public GlassPaneWindow() {
 			this.setLayout(null);
 		}
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		Object source = e.getSource();
+		for(JButton button : registeredButtons) {
+			if(source == button) {
+				if(shownHelp == false) {
+					JFrame helpFrame = helpDisplay.showHelpSection(button.getName());
+					helpFrame.addWindowListener(this);
+					helpFrame.setName(button.getName());
+					shownHelp=true;
+				}
+			}
+		}
+	}
+
+	@Override
+	public void windowOpened(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowClosing(WindowEvent e) {
+		shownHelp=false;
+	}
+
+	@Override
+	public void windowClosed(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowIconified(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowDeiconified(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowActivated(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowDeactivated(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
 	}
 	
 	

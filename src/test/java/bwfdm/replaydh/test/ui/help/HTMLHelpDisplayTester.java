@@ -9,7 +9,7 @@ public class HTMLHelpDisplayTester {
 		HTMLHelpDisplay display = new HTMLHelpDisplay();
 		
 		display.readHelpFile();
-		display.showHelpSection("replaydh.ui.editor.workflowStep",null);
+		display.showHelpSection("replaydh.ui.editor.workflowStep");
 		
 	}
 

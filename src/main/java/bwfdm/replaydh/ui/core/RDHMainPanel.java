@@ -326,7 +326,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		addStepButton.setHorizontalTextPosition(SwingConstants.LEFT);
 		addStepButton.setFont(GuiUtils.defaultLargeInfoFont.deriveFont(24f));
 		addStepButton.setText(rm.get("replaydh.ui.core.mainPanel.addStep.name"));
-		environment.getClient().getGui().registerHelp(addStepButton, "addStep");
+		environment.getClient().getGui().registerHelp(addStepButton, "replaydh.ui.editor.workflowStep");
 
 		AbstractButton openWorkspaceButton = actionManager.createButton("replaydh.ui.core.mainPanel.openWorkspaceFolder");
 		AbstractButton clearResourceCacheButton = actionManager.createButton("replaydh.ui.core.mainPanel.clearResourceCache");
