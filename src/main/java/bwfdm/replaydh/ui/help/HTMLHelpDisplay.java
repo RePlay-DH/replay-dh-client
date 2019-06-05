@@ -88,6 +88,8 @@ public class HTMLHelpDisplay {
 			scrollPane = new JScrollPane(editorPane);
 			editorPane.setContentType("text/html");
 			editorPane.setText(htmlPart);
+			editorPane.setEditable(false);
+			editorPane.setCaretPosition(0);
 			frame.add(scrollPane);
 			frame.setVisible(true);
 			frame.setSize(800, 600);
