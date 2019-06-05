@@ -135,33 +135,23 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 				contentPane.addComponentListener(this);
 				registered=true;
 			}
-			//System.out.println(contentPane);
 			JButton buttonLabel = new JButton(helpHint);
 			int yLocation;
-			//System.out.println(root.getWidth()+" "+standardWidth);
 			if(root.getWidth() > standardWidth) {
 				yLocation = comp.getY()+25+addY;
 			} else {
 				yLocation = comp.getY()+25;
 			}
-			//System.out.println(standardWidth+"-"+comp.getX()+"="+(standardWidth-comp.getX()));
 			xLocation=root.getWidth()+(comp.getWidth()/2)+(comp.getX())-standardWidth;
-			//System.out.println(comp.getWidth());
 			buttonLabel.setBounds(xLocation, yLocation, 40, 40);
 			buttonLabel.setToolTipText(ResourceManager.getInstance().get("replaydh.display.help.toolTip"));
-			//Point location = buttonLabel.getLocation();
-			//System.out.println("Location: "+location);
 			buttonLabel.addActionListener(this);
 			buttonLabel.setName(componentAnchors.get(comp));
 			registeredButtons.add(buttonLabel);
 			glass.add(buttonLabel);
-			//System.out.println(xLocation);
-			//System.out.println(yLocation);
-			//root.setGlassPane();
 			root.setGlassPane(glass);
 			glass.setVisible(true);
 			glass.setOpaque(false);
-			//window.setVisible(true);
 		}
 	}
 

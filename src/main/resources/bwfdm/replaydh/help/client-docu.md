@@ -7,32 +7,32 @@ title: 'End user documentation of the RePlay-DH client'
 <!-- TOC -->
 
 - [End user documentation of the RePlay-DH client](#end-user-documentation-of-the-replay-dh-client)
-    - [Configuration dialogue of the RePlay-DH client](#configuration-dialogue-of-the-replay-dh-client)
-        - [Workspace validation](#workspace-validation)
-        - [Choose a workflow schema](#choose-a-workflow-schema)
+    - [Configuration dialogue of the RePlay-DH client](#replaydh.wizard.welcome.title)
+        - [Workspace validation](#replaydh.wizard.changeWorkspace.validateWorkspace.validate)
+        - [Choose a workflow schema](#replaydh.wizard.changeWorkspace.selectSchema)
     - [Basic functions of the RePlay-DH client](#basic-functions-of-the-replay-dh-client)
-        - [Drag and Drop feature](#drag-and-drop-feature)
-        - [Create a new workflow step](#create-a-new-workflow-step)
-    - [The extended view of the client](#the-extended-view-of-the-client)
+        - [Drag and Drop feature](#replaydh.wizard.addRecord.selectTarget)
+        - [Create a new workflow step](#replaydh.ui.editor.workflowStep)
+    - [The extended view of the client](#replaydh.ui.extended.view)
     - [Additional workflow graph functions of the client](#additional-workflow-graph-functions-of-the-client)
-        - [The workflow step editor](#the-workflow-step-editor)
-        - [Export of workflow metadata](#export-of-workflow-metadata)
-        - [Archive Exporter](#archive-exporter)
-        - [DSpace Exporter](#dspace-exporter)
-        - [Set Active Workflow Step](#set-active-workflow-step)
-        - [Focus the active step in the graph](#focus-the-active-step-in-the-graph)
-        - [Compress the active branch](#compress-the-active-branch)
-        - [Rebuild the graph visualization](#rebuild-the-graph-visualization)
-    - [The file tracker](#the-file-tracker)
-        - [The metadata editor for the object metadata](#the-metadata-editor-for-the-object-metadata)
-            - [Creating an object metadata entry](#creating-an-object-metadata-entry)
-        - [Editing object metadata](#editing-object-metadata)
-        - [Adding an additional metadata property](#adding-an-additional-metadata-property)
+        - [The workflow step editor](#replaydh.ui.editor.workflow)
+        - [Export of workflow metadata](#replaydh.export.workflow.metadata)
+        - [Archive Exporter](#replaydh.plugins.gitArchiveExporter)
+        - [DSpace Exporter](#replaydh.wizard.dspacePublisher)
+        - [Set Active Workflow Step](#replaydh.ui.editor.workflowStep.active)
+        - [Focus the active step in the graph](#replaydh.ui.editor.workflowStep.active.focus)
+        - [Compress the active branch](#replaydh.ui.core.workflowGraph.compress)
+        - [Rebuild the graph visualization](#replaydh.ui.core.workflowGraph.refreshGraph)
+    - [The file tracker](#replaydh.systemTray.fileTracker)
+        - [The metadata editor for the object metadata](#replaydh.ui.core.mainPanel.showMetadataManager)
+            - [Creating an object metadata entry](#replaydh.ui.core.metadataManagerPanel.addRecord)
+        - [Editing object metadata](#replaydh.ui.core.metadataManagerPanel.editRecord)
+        - [Adding an additional metadata property](#replaydh.ui.editor.metadata.addCustomProperty)
     - [Remarks](#remarks)
     - [Glossary](#glossary)
 
 <!-- /TOC -->
-# End user documentation of the RePlay-DH client
+# End user documentation of the RePlay-DH client {#end-user-documentation-of-the-replay-dh-client}
 
 ## Configuration dialogue of the RePlay-DH client {#replaydh.wizard.welcome.title}
 
@@ -81,7 +81,7 @@ After that one can set the own workflow schema or choose the client's default sc
 
 This is the default view of the client which provides basic features of the client to support a researcher's workflow. There it can be decided to switch on automatic worfklow tracking (which is a main benefit of Git) or to track the specified workspace on demand (which means manually by clicking the refresh button with the arrows forming a circle). It is also possible to open the specified worflow directory.
 
-## Basic functions of the RePlay-DH client 
+## Basic functions of the RePlay-DH client {#basic-functions-of-the-replay-dh-client}
 
 ### Drag and Drop feature {#replaydh.wizard.addRecord.selectTarget}
 
@@ -163,7 +163,7 @@ By clicking in the main window on the left arrows, the client will open and show
 
 ![RePlay-DH client main window](Client_extended.png)
 
-## Additional workflow graph functions of the client
+## Additional workflow graph functions of the client {#additional-workflow-graph-functions-of-the-client}
 
 ### The workflow step editor {#replaydh.ui.editor.workflow}
 
@@ -318,12 +318,12 @@ On the bottom of the editor view there is the possibility to add an additional m
 
 ![Adding an additional metadata property](Add_additional_metadata_property.png)
 
-## Remarks
+## Remarks {#remarks}
 
 We hope that this manual can help using our client. Feel free to contact us if something seems to be unclear or not explained yet. 
 The RePlay-DH team.
 
-## Glossary
+## Glossary {#glossary}
 resources: Resources are research data which are produced or used during the research lifecycle.
 
 tool: A tool is a piece of software that is used to produce resources. A tool can also have resources as input.
