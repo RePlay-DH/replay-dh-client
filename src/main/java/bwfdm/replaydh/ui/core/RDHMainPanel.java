@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -303,6 +304,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				workspaceTrackerPanel,
 				rm.get("replaydh.ui.core.mainPanel.tabs.fileTracker.description"),
 				1);
+
+		environment.getClient().getGui().registerHelp((JComponent) tabbedPane.getComponentAt(1),
+				"replaydh.ui.core.mainPanel.tabs.fileTracker.name");
 
 		// Not the cleanest way, but ensure we don't overgrow
 		tabbedPane.setPreferredSize(new Dimension(700, 500));

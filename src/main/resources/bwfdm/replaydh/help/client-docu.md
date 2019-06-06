@@ -23,7 +23,7 @@ title: 'End user documentation of the RePlay-DH client'
         - [Focus the active step in the graph](#replaydh.ui.core.workflowGraph.focusActiveStep)
         - [Compress the active branch](#replaydh.ui.core.workflowGraph.compress)
         - [Rebuild the graph visualization](#replaydh.ui.core.workflowGraph.refreshGraph)
-    - [The file tracker](#replaydh.systemTray.fileTracker)
+    - [The file tracker](#replaydh.ui.core.mainPanel.tabs.fileTracker.name)
         - [The metadata editor for the object metadata](#replaydh.ui.core.mainPanel.showMetadataManager)
             - [Creating an object metadata entry](#replaydh.ui.core.metadataManagerPanel.addRecord)
         - [Editing object metadata](#replaydh.ui.core.metadataManagerPanel.editRecord)
@@ -265,7 +265,7 @@ The RePlay-DH client only starts the publication process and redirects to the pu
 ![Rebuild visual graph](Workflow_Editor_7.png)
 
 
-## The file tracker {#replaydh.systemTray.fileTracker}
+### The file tracker {#replaydh.ui.core.mainPanel.tabs.fileTracker.name}
 
 ![The file tracker](File_Tracker.png)
 

@@ -132,12 +132,15 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 					registered=true;
 				}
 				JButton buttonLabel = new JButton(helpHint);
-				if(areaCategory.indexOf("workflowGraph") == -1) {
-					xLocation=root.getWidth()+(comp.getWidth()/2)+(comp.getX())-standardWidth+10;
-					yLocation = comp.getY()+35;
-				} else if (areaCategory.indexOf("workflowGraph") != -1 && root.getWidth() > standardWidth) {
+				if (areaCategory.indexOf("workflowGraph") != -1 && root.getWidth() > standardWidth) {
 					xLocation=(comp.getWidth()/2)+(comp.getX())+2;
 					yLocation = comp.getY()+43+addY;
+				} else if(areaCategory.indexOf("fileTracker") != -1 && root.getWidth() > standardWidth) {
+					xLocation=(comp.getWidth()/2)+(comp.getX())+98;
+					yLocation = comp.getY()-10;
+				} else {
+					xLocation=root.getWidth()+(comp.getWidth()/2)+(comp.getX())-standardWidth+10;
+					yLocation = comp.getY()+35;
 				}
 				buttonLabel.setBounds(xLocation, yLocation, 20, 20);
 				buttonLabel.setBorder(null);
