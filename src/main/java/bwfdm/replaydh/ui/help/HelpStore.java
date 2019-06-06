@@ -110,7 +110,7 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 		int xLocation = 0;
 		log.info("Showing global help markers");
 		Predicate<Component> isButtonReference = component -> componentAnchors.get(component)
-				.equals("replaydh.ui.editor.workflowStep");
+				.equals("replaydh.ui.core.mainPanel.addStep.name");
 		Component c = componentAnchors.keySet().stream().filter(isButtonReference).findFirst().get();
 		Consumer<Component> receiveStandardWidth = component -> standardWidth = component.getParent().getWidth();
 		Predicate<Component> isPanel = component -> component instanceof JPanel && component != null;

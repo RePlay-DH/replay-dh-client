@@ -319,21 +319,24 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		expandIcon = ir.getIcon("left.png", Resolution.forSize(32));
 
 		AbstractButton updateStatusButton = actionManager.createButton("replaydh.ui.core.mainPanel.updateStatus");
-		environment.getClient().getGui().registerHelp(updateStatusButton, "updateStatus");
+		environment.getClient().getGui().registerHelp(updateStatusButton, "replaydh.ui.core.mainPanel.updateStatus");
 		AbstractButton cancelUpdateButton = actionManager.createButton("replaydh.ui.core.mainPanel.cancelUpdate");
-		environment.getClient().getGui().registerHelp(cancelUpdateButton, "Hello1");
+		environment.getClient().getGui().registerHelp(cancelUpdateButton, "replaydh.ui.core.mainPanel.cancelUpdate");
 		AbstractButton toggleTrackerButton = actionManager.createButton("replaydh.ui.core.mainPanel.toggleTrackerActive");
-		environment.getClient().getGui().registerHelp(toggleTrackerButton, "Hello1");
+		environment.getClient().getGui().registerHelp(toggleTrackerButton, "replaydh.ui.core.mainPanel.toggleTrackerActive");
 		toggleDetailsButton = actionManager.createButton("replaydh.ui.core.mainPanel.toggleDetails");
+		environment.getClient().getGui().registerHelp(toggleDetailsButton, "replaydh.ui.core.mainPanel.toggleDetails");
 
 		AbstractButton addStepButton = actionManager.createButton("replaydh.ui.core.mainPanel.addStep");
 		addStepButton.setHorizontalTextPosition(SwingConstants.LEFT);
 		addStepButton.setFont(GuiUtils.defaultLargeInfoFont.deriveFont(24f));
 		addStepButton.setText(rm.get("replaydh.ui.core.mainPanel.addStep.name"));
-		environment.getClient().getGui().registerHelp(addStepButton, "replaydh.ui.editor.workflowStep");
+		environment.getClient().getGui().registerHelp(addStepButton, "replaydh.ui.core.mainPanel.addStep.name");
 
 		AbstractButton openWorkspaceButton = actionManager.createButton("replaydh.ui.core.mainPanel.openWorkspaceFolder");
+		environment.getClient().getGui().registerHelp(openWorkspaceButton, "replaydh.ui.core.mainPanel.openWorkspaceFolder");
 		AbstractButton clearResourceCacheButton = actionManager.createButton("replaydh.ui.core.mainPanel.clearResourceCache");
+		environment.getClient().getGui().registerHelp(clearResourceCacheButton, "replaydh.ui.core.mainPanel.clearResourceCache");
 
 		controlPanel = FormBuilder.create()
 				.columns("pref:grow:fill, 3dlu, pref")

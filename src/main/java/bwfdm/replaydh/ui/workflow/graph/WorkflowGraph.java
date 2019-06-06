@@ -234,6 +234,10 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 					anchor="replaydh.ui.core.workflowGraph.updateRepository";
 					environment.getClient().getGui().registerHelp((AbstractButton) c, anchor);
 					break;
+				case "collapseall.gif":
+					anchor="replaydh.ui.core.workflowGraph.compressStep";
+					environment.getClient().getGui().registerHelp((AbstractButton) c, anchor);
+					break;
 				}
 				
 			}
