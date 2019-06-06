@@ -71,7 +71,7 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 	
 	private final static IconRegistry ir = IconRegistry.getGlobalRegistry();
 	
-	private Icon helpHint = ir.getIcon("icons8-Help-48-small.png");
+	private Icon helpHint = ir.getIcon("icons8-Help-48-very-small.png");
 	
 	private int standardWidth = 0;
 	
@@ -119,31 +119,37 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 			}
 		}
 		for(JComponent comp : componentAnchors.keySet()) {
+			String areaCategory=componentAnchors.get(comp);
+			int yLocation = 0;
 			JRootPane root = comp.getRootPane();
-			Dimension dim = root.getSize();
-			contentPane = root.getContentPane();
-			glass.setSize(dim);
-			if(registered == false) {
-				contentPane.addComponentListener(this);
-				registered=true;
+			Dimension dim;
+			if(root != null) {
+				dim = root.getSize();
+				contentPane = root.getContentPane();
+				glass.setSize(dim);
+				if(registered == false) {
+					contentPane.addComponentListener(this);
+					registered=true;
+				}
+				JButton buttonLabel = new JButton(helpHint);
+				if(areaCategory.indexOf("workflowGraph") == -1) {
+					xLocation=root.getWidth()+(comp.getWidth()/2)+(comp.getX())-standardWidth+10;
+					yLocation = comp.getY()+35;
+				} else if (areaCategory.indexOf("workflowGraph") != -1 && root.getWidth() > standardWidth) {
+					xLocation=(comp.getWidth()/2)+(comp.getX())+2;
+					yLocation = comp.getY()+43+addY;
+				}
+				buttonLabel.setBounds(xLocation, yLocation, 20, 20);
+				buttonLabel.setBorder(null);
+				buttonLabel.setToolTipText(ResourceManager.getInstance().get("replaydh.display.help.toolTip"));
+				buttonLabel.addActionListener(this);
+				buttonLabel.setName(componentAnchors.get(comp));
+				registeredButtons.add(buttonLabel);
+				glass.add(buttonLabel);
+				root.setGlassPane(glass);
+				glass.setVisible(true);
+				glass.setOpaque(false);
 			}
-			JButton buttonLabel = new JButton(helpHint);
-			int yLocation;
-			if(root.getWidth() > standardWidth) {
-				yLocation = comp.getY()+25+addY;
-			} else {
-				yLocation = comp.getY()+25;
-			}
-			xLocation=root.getWidth()+(comp.getWidth()/2)+(comp.getX())-standardWidth;
-			buttonLabel.setBounds(xLocation, yLocation, 40, 40);
-			buttonLabel.setToolTipText(ResourceManager.getInstance().get("replaydh.display.help.toolTip"));
-			buttonLabel.addActionListener(this);
-			buttonLabel.setName(componentAnchors.get(comp));
-			registeredButtons.add(buttonLabel);
-			glass.add(buttonLabel);
-			root.setGlassPane(glass);
-			glass.setVisible(true);
-			glass.setOpaque(false);
 		}
 	}
 

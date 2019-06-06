@@ -40,6 +40,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import javax.swing.AbstractButton;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -197,6 +199,22 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 
 		panel.add(graphComponent, BorderLayout.CENTER);
 		panel.add(toolBar, BorderLayout.NORTH);
+		
+		for(Component c : toolBar.getComponents()) {
+			if(c instanceof JButton) {
+				String iconName=((JButton) c).getIcon().toString();
+				iconName=iconName.substring(iconName.lastIndexOf("/")+1);
+				System.out.println(iconName);
+				String anchor = "";
+				switch(iconName) {
+				case "icons8-epub-40.png":
+					anchor="replaydh.ui.core.workflowGraph.exportMetadata";
+					environment.getClient().getGui().registerHelp((AbstractButton) c, anchor);
+					break;
+				}
+				
+			}
+		}
 
 		registerActions();
 
