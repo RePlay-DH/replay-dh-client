@@ -16,11 +16,11 @@ title: 'End user documentation of the RePlay-DH client'
     - [The extended view of the client](#replaydh.ui.extended.view)
     - [Additional workflow graph functions of the client](#additional-workflow-graph-functions-of-the-client)
         - [The workflow step editor](#replaydh.ui.editor.workflow)
-        - [Export of workflow metadata](#replaydh.export.workflow.metadata)
-        - [Archive Exporter](#replaydh.plugins.gitArchiveExporter)
-        - [DSpace Exporter](#replaydh.wizard.dspacePublisher)
-        - [Set Active Workflow Step](#replaydh.ui.editor.workflowStep.active)
-        - [Focus the active step in the graph](#replaydh.ui.editor.workflowStep.active.focus)
+        - [Export of workflow metadata](#replaydh.ui.core.workflowGraph.exportMetadata)
+        - [Archive Exporter](#replaydh.ui.core.workflowGraph.exportResources)
+        - [DSpace Exporter](#replaydh.ui.core.workflowGraph.publishResources)
+        - [Set Active Workflow Step](#replaydh.ui.core.workflowGraph.changeActiveStep)
+        - [Focus the active step in the graph](#replaydh.ui.core.workflowGraph.focusActiveStep)
         - [Compress the active branch](#replaydh.ui.core.workflowGraph.compress)
         - [Rebuild the graph visualization](#replaydh.ui.core.workflowGraph.refreshGraph)
     - [The file tracker](#replaydh.systemTray.fileTracker)
@@ -175,7 +175,7 @@ The current selected workflow step which refers to an underlying commit is colou
 
 ![The selected step](WFE_Selected_Branch.png)
 
-### Export of workflow metadata {#replaydh.export.workflow.metadata}
+### Export of workflow metadata {#replaydh.ui.core.workflowGraph.exportMetadata}
 
 ![Export of workflow metadata](Workflow_Editor_1.png)
 
@@ -194,7 +194,7 @@ A status message will popup to give feedback whether the export was successfully
 
 ![Export successfully](Export_Successfully.png)
 
-### Archive Exporter {#replaydh.plugins.gitArchiveExporter}
+### Archive Exporter {#replaydh.ui.core.workflowGraph.exportResources}
 
 <div id="archive_exporter" title="Archive Exporter" image="Workflow_Editor_2.png">By clicking on the exporter icon, there will be the possibility to export the whole workspace as a compressed archive.</div> This is useful if one wants to make a backup with all resources and tools that belong to a client managed Git repository.
 
@@ -202,7 +202,7 @@ A status message will popup to give feedback whether the export was successfully
 
 ![Select an archive exporter](Select_Archive_Exporter.png)
 
-### DSpace Exporter {#replaydh.wizard.dspacePublisher}
+### DSpace Exporter {#replaydh.ui.core.workflowGraph.publishResources}
 
 <div id="dspace_exporter" title="DSpace Exporter" image="Workflow_Editor3.png">By clicking the publication symbol it is possible to export resources and tools of a certain workflow step within the workspace directory to some publication repository.</div>
 
@@ -240,13 +240,13 @@ At the end of the process the RePlay-DH client will provide a status message. In
 
 The RePlay-DH client only starts the publication process and redirects to the publication repository for the final publication procedure. Provided approach makes the client flexible for different publication repositories, which usually have different terms of publication.   
 
-### Set Active Workflow Step {#replaydh.ui.editor.workflowStep.active}
+### Set Active Workflow Step {#replaydh.ui.core.workflowGraph.changeActiveStep}
 
 <div id="active_workflowstep" title="Set Active Workflow Step" image="Workflow_Editor_4.png">The blue "down arrow" selects the active workflow step in the workflow graph.</div> This is useful if one wants to step back to previous commit. By recording a new step to a previously recorded step which has already a proceeding workflow step a new branch will be created. This feature is useful for following different research process aims or strategies.
 
 ![Set active workflow step](Workflow_Editor_4.png)
 
-### Focus the active step in the graph {#replaydh.ui.editor.workflowStep.active.focus}
+### Focus the active step in the graph {#replaydh.ui.core.workflowGraph.focusActiveStep}
 
 <div id="focus_active_step" title="Focus the active step in the graph" image="Workflow_Editor_5.png">When a certain step is selected and the graph is really big one can focus the selected step with this button.</div>
 

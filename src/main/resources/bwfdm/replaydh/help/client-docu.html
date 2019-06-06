@@ -16,11 +16,11 @@
 <li><a href="#additional-workflow-graph-functions-of-the-client">Additional workflow graph functions of the client</a>
 <ul>
 <li><a href="#replaydh.ui.editor.workflow">The workflow step editor</a></li>
-<li><a href="#replaydh.export.workflow.metadata">Export of workflow metadata</a></li>
-<li><a href="#replaydh.plugins.gitArchiveExporter">Archive Exporter</a></li>
-<li><a href="#replaydh.wizard.dspacePublisher">DSpace Exporter</a></li>
-<li><a href="#replaydh.ui.editor.workflowStep.active">Set Active Workflow Step</a></li>
-<li><a href="#replaydh.ui.editor.workflowStep.active.focus">Focus the active step in the graph</a></li>
+<li><a href="#replaydh.ui.core.workflowGraph.exportMetadata">Export of workflow metadata</a></li>
+<li><a href="#replaydh.ui.core.workflowGraph.exportResources">Archive Exporter</a></li>
+<li><a href="#replaydh.ui.core.workflowGraph.publishResources">DSpace Exporter</a></li>
+<li><a href="#replaydh.ui.core.workflowGraph.changeActiveStep">Set Active Workflow Step</a></li>
+<li><a href="#replaydh.ui.core.workflowGraph.focusActiveStep">Focus the active step in the graph</a></li>
 <li><a href="#replaydh.ui.core.workflowGraph.compress">Compress the active branch</a></li>
 <li><a href="#replaydh.ui.core.workflowGraph.refreshGraph">Rebuild the graph visualization</a></li>
 </ul></li>
@@ -200,7 +200,7 @@ In order to create a new workflow step because the research has reached a certai
 <img src="WFE_Selected_Branch.png" alt="The selected step" />
 <p class="caption">The selected step</p>
 </div>
-<h3 id="replaydh.export.workflow.metadata">Export of workflow metadata</h3>
+<h3 id="replaydh.ui.core.workflowGraph.exportMetadata">Export of workflow metadata</h3>
 <div class="figure">
 <img src="Workflow_Editor_1.png" alt="Export of workflow metadata" />
 <p class="caption">Export of workflow metadata</p>
@@ -223,7 +223,7 @@ If one clicks on the red marked icon the RePlay-DH client gives you the possibil
 <img src="Export_Successfully.png" alt="Export successfully" />
 <p class="caption">Export successfully</p>
 </div>
-<h3 id="replaydh.plugins.gitArchiveExporter">Archive Exporter</h3>
+<h3 id="replaydh.ui.core.workflowGraph.exportResources">Archive Exporter</h3>
 <div id="archive_exporter" title="Archive Exporter" image="Workflow_Editor_2.png">
 By clicking on the exporter icon, there will be the possibility to export the whole workspace as a compressed archive.
 </div>
@@ -236,7 +236,7 @@ By clicking on the exporter icon, there will be the possibility to export the wh
 <img src="Select_Archive_Exporter.png" alt="Select an archive exporter" />
 <p class="caption">Select an archive exporter</p>
 </div>
-<h3 id="replaydh.wizard.dspacePublisher">DSpace Exporter</h3>
+<h3 id="replaydh.ui.core.workflowGraph.publishResources">DSpace Exporter</h3>
 <div id="dspace_exporter" title="DSpace Exporter" image="Workflow_Editor3.png">
 By clicking the publication symbol it is possible to export resources and tools of a certain workflow step within the workspace directory to some publication repository.
 </div>
@@ -281,7 +281,7 @@ By clicking the publication symbol it is possible to export resources and tools 
 <p class="caption">Redirection to the publication repository</p>
 </div>
 <p>The RePlay-DH client only starts the publication process and redirects to the publication repository for the final publication procedure. Provided approach makes the client flexible for different publication repositories, which usually have different terms of publication.</p>
-<h3 id="replaydh.ui.editor.workflowStep.active">Set Active Workflow Step</h3>
+<h3 id="replaydh.ui.core.workflowGraph.changeActiveStep">Set Active Workflow Step</h3>
 <div id="active_workflowstep" title="Set Active Workflow Step" image="Workflow_Editor_4.png">
 The blue “down arrow” selects the active workflow step in the workflow graph.
 </div>
@@ -290,7 +290,7 @@ The blue “down arrow” selects the active workflow step in the workflow graph
 <img src="Workflow_Editor_4.png" alt="Set active workflow step" />
 <p class="caption">Set active workflow step</p>
 </div>
-<h3 id="replaydh.ui.editor.workflowStep.active.focus">Focus the active step in the graph</h3>
+<h3 id="replaydh.ui.core.workflowGraph.focusActiveStep">Focus the active step in the graph</h3>
 <div id="focus_active_step" title="Focus the active step in the graph" image="Workflow_Editor_5.png">
 When a certain step is selected and the graph is really big one can focus the selected step with this button.
 </div>

@@ -204,11 +204,34 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 			if(c instanceof JButton) {
 				String iconName=((JButton) c).getIcon().toString();
 				iconName=iconName.substring(iconName.lastIndexOf("/")+1);
-				System.out.println(iconName);
 				String anchor = "";
 				switch(iconName) {
 				case "icons8-epub-40.png":
+					anchor="replaydh.ui.core.workflowGraph.publishResources";
+					environment.getClient().getGui().registerHelp((AbstractButton) c, anchor);
+					break;
+				case "externalize.gif":
 					anchor="replaydh.ui.core.workflowGraph.exportMetadata";
+					environment.getClient().getGui().registerHelp((AbstractButton) c, anchor);
+					break;
+				case "compress.gif":
+					anchor="replaydh.ui.core.workflowGraph.focusActiveStep";
+					environment.getClient().getGui().registerHelp((AbstractButton) c, anchor);
+					break;
+				case "refresh.gif":
+					anchor="replaydh.ui.core.workflowGraph.refreshGraph";
+					environment.getClient().getGui().registerHelp((AbstractButton) c, anchor);
+					break;
+				case "navi_down.png":
+					anchor="replaydh.ui.core.workflowGraph.changeActiveStep";
+					environment.getClient().getGui().registerHelp((AbstractButton) c, anchor);
+					break;
+				case "export_wiz.gif":
+					anchor="replaydh.ui.core.workflowGraph.exportResources";
+					environment.getClient().getGui().registerHelp((AbstractButton) c, anchor);
+					break;
+				case "import_wiz.gif":
+					anchor="replaydh.ui.core.workflowGraph.updateRepository";
 					environment.getClient().getGui().registerHelp((AbstractButton) c, anchor);
 					break;
 				}
