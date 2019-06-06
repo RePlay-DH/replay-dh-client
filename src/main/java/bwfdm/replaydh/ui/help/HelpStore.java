@@ -109,15 +109,13 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 		final int addY = 2;
 		int xLocation = 0;
 		log.info("Showing global help markers");
-		for (JComponent comp : componentAnchors.keySet()) {
-			Consumer<Component> receiveStandardWidth = component -> standardWidth=component.getParent().getWidth();
-			Predicate<Component> isPanel = component -> component instanceof JPanel && component != null;
-			Set<Component> components = new HashSet<>(Arrays.asList(comp.getParent().getComponents()));
-			components.stream().filter(isPanel).forEach(receiveStandardWidth);
-			if (standardWidth > 0) {
-				break;
-			}
-		}
+		Predicate<Component> isButtonReference = component -> componentAnchors.get(component)
+				.equals("replaydh.ui.editor.workflowStep");
+		Component c = componentAnchors.keySet().stream().filter(isButtonReference).findFirst().get();
+		Consumer<Component> receiveStandardWidth = component -> standardWidth = component.getParent().getWidth();
+		Predicate<Component> isPanel = component -> component instanceof JPanel && component != null;
+		Set<Component> components = new HashSet<>(Arrays.asList(c.getParent().getComponents()));
+		components.stream().filter(isPanel).forEach(receiveStandardWidth);
 		for(JComponent comp : componentAnchors.keySet()) {
 			String areaCategory=componentAnchors.get(comp);
 			int yLocation = 0;
