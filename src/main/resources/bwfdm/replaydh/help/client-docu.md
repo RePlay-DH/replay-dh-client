@@ -12,7 +12,7 @@ title: 'End user documentation of the RePlay-DH client'
         - [Choose a workflow schema](#replaydh.wizard.changeWorkspace.selectSchema)
     - [Basic functions of the RePlay-DH client](#basic-functions-of-the-replay-dh-client)
         - [Drag and Drop feature](#replaydh.wizard.addRecord.selectTarget)
-        - [Create a new workflow step](#replaydh.ui.editor.workflowStep)
+        - [Create a new workflow step](#replaydh.ui.core.mainPanel.addStep.name)
     - [The extended view of the client](#replaydh.ui.extended.view)
     - [Additional workflow graph functions of the client](#additional-workflow-graph-functions-of-the-client)
         - [The workflow step editor](#replaydh.ui.editor.workflow)
@@ -111,7 +111,7 @@ There the parameters of this tool and the execution environment can be specified
 
 ![One object registered](Registered_files.png)
 
-### Create a new workflow step {#replaydh.ui.editor.workflowStep}
+### Create a new workflow step {#replaydh.ui.core.mainPanel.addStep.name}
 
 <div id="record_step" title="Create a new workflow step">In order to create a new workflow step because the research has reached a certain point click on the "Record Step" button.</div> 
 

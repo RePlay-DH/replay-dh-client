@@ -136,6 +136,9 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 				} else if(areaCategory.indexOf("fileTracker") != -1 && root.getWidth() > standardWidth) {
 					xLocation=(comp.getWidth()/2)+(comp.getX())+98;
 					yLocation = comp.getY()-10;
+				} else if(areaCategory.indexOf("replaydh.ui.core.mainPanel.addStep.name") != -1) {
+					xLocation=root.getWidth()+(comp.getWidth()/2)+(comp.getX())-standardWidth-12;
+					yLocation = comp.getY()+25;
 				} else {
 					xLocation=root.getWidth()+(comp.getWidth()/2)+(comp.getX())-standardWidth+10;
 					yLocation = comp.getY()+35;
