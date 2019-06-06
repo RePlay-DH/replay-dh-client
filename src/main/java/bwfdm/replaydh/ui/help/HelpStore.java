@@ -69,19 +69,13 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 	/** Stores the anchor ids for all registered components */
 	private final Map<JComponent, String> componentAnchors = new WeakHashMap<>();
 	
-	private IconRegistry ir = IconRegistry.getGlobalRegistry();
+	private final static IconRegistry ir = IconRegistry.getGlobalRegistry();
 	
 	private Icon helpHint = ir.getIcon("icons8-Help-48-small.png");
 	
 	private int standardWidth = 0;
 	
-	//private int standardHeight;
-	
-	private final int addY = 2;
-	
 	private Container contentPane;
-	
-	private int xLocation = 0;
 	
 	private boolean helpShowed;
 	
@@ -112,6 +106,8 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 
 	public void showHelp() {
 		helpShowed=true;
+		final int addY = 2;
+		int xLocation = 0;
 		log.info("Showing global help markers");
 		for (JComponent comp : componentAnchors.keySet()) {
 			Consumer<Component> receiveStandardWidth = component -> standardWidth=component.getParent().getWidth();
@@ -155,6 +151,9 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 		log.info("Hiding global help markers");
 		glass.setVisible(false);
 		glass.removeAll();
+		for(JButton button : registeredButtons) {
+			button.removeActionListener(this);
+		}
 		helpShowed=false;
 	}
 
