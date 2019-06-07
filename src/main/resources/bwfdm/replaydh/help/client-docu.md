@@ -11,19 +11,25 @@ title: 'End user documentation of the RePlay-DH client'
         - [Workspace validation](#replaydh.wizard.changeWorkspace.validateWorkspace.validate)
         - [Choose a workflow schema](#replaydh.wizard.changeWorkspace.selectSchema)
     - [Basic functions of the RePlay-DH client](#basic-functions-of-the-replay-dh-client)
+        - [Toggle Auto-Tracking](#replaydh.ui.core.mainPanel.toggleTrackerActive)
+        - [Update Tracker Status](#replaydh.ui.core.mainPanel.updateStatus)
+        - [Cancel Update](#replaydh.ui.core.mainPanel.cancelUpdate)
         - [Drag and Drop feature](#replaydh.wizard.addRecord.selectTarget)
         - [Create a new workflow step](#replaydh.ui.core.mainPanel.addStep.name)
+        - [Open the workspace folder](#replaydh.ui.core.mainPanel.openWorkspaceFolder)
+        - [Clear the resource cache](#replaydh.ui.core.mainPanel.clearResourceCache)
     - [The extended view of the client](#replaydh.ui.extended.view)
     - [Additional workflow graph functions of the client](#additional-workflow-graph-functions-of-the-client)
         - [The workflow step editor](#replaydh.ui.editor.workflow)
         - [Export of workflow metadata](#replaydh.ui.core.workflowGraph.exportMetadata)
         - [Archive Exporter](#replaydh.ui.core.workflowGraph.exportResources)
-        - [DSpace Exporter](#replaydh.ui.core.workflowGraph.publishResources)
+        - [Update Workspace](#replaydh.ui.core.workflowGraph.updateRepository)
+        - [DSpace, Dataverse and Git Exporter](#replaydh.ui.core.workflowGraph.publishResources)
         - [Set Active Workflow Step](#replaydh.ui.core.workflowGraph.changeActiveStep)
         - [Focus the active step in the graph](#replaydh.ui.core.workflowGraph.focusActiveStep)
         - [Compress the active branch](#replaydh.ui.core.workflowGraph.compress)
         - [Rebuild the graph visualization](#replaydh.ui.core.workflowGraph.refreshGraph)
-    - [The file tracker](#replaydh.ui.core.mainPanel.tabs.fileTracker.name)
+    - [The file tracker](#replaydh.ui.core.mainPanel.tabs.fileTracker)
         - [The metadata editor for the object metadata](#replaydh.ui.core.mainPanel.showMetadataManager)
             - [Creating an object metadata entry](#replaydh.ui.core.metadataManagerPanel.addRecord)
         - [Editing object metadata](#replaydh.ui.core.metadataManagerPanel.editRecord)
@@ -82,6 +88,18 @@ After that one can set the own workflow schema or choose the client's default sc
 This is the default view of the client which provides basic features of the client to support a researcher's workflow. There it can be decided to switch on automatic worfklow tracking (which is a main benefit of Git) or to track the specified workspace on demand (which means manually by clicking the refresh button with the arrows forming a circle). It is also possible to open the specified worflow directory.
 
 ## Basic functions of the RePlay-DH client {#basic-functions-of-the-replay-dh-client}
+
+### Toggle Auto-Tracking {#replaydh.ui.core.mainPanel.toggleTrackerActive}
+
+replaydh.ui.core.mainPanel.toggleTrackerActive
+
+### Update Tracker Status {#replaydh.ui.core.mainPanel.updateStatus}
+
+replaydh.ui.core.mainPanel.updateStatus
+
+### Cancel Update {#replaydh.ui.core.mainPanel.cancelUpdate}
+
+replaydh.ui.core.mainPanel.cancelUpdate
 
 ### Drag and Drop feature {#replaydh.wizard.addRecord.selectTarget}
 
@@ -157,7 +175,17 @@ When the recording operation is finished the RePlay-DH client will provide a sho
 
 ![Create workflow step: status message](Record_Step_finish_message.png)
 
+### Open the workspace folder {#replaydh.ui.core.mainPanel.openWorkspaceFolder}
+
+replaydh.ui.core.mainPanel.openWorkspaceFolder
+
+### Clear the resource cache {#replaydh.ui.core.mainPanel.clearResourceCache}
+
+replaydh.ui.core.mainPanel.clearResourceCache
+
 ## The extended view of the client {#replaydh.ui.extended.view}
+
+### {#replaydh.ui.core.mainPanel.toggleDetails}
 
 By clicking in the main window on the left arrows, the client will open and show more functionalities. There are three different tabs which hold the extended functions of the client. The "Workflow" tab holds the visualization of the workflow graph and its manipulation and extraction functionalities. The "File Tracker" shows information of the current state of the workspace directory and the "Metadata Manager" tab gives the possibility to add object metadata to the items or research objects in the workspace directory. The "Workflow" tab and the "File Tracker" tab are showing an abstract view on the underlying Git repository which is managed by the client. The "Metadata Manager" is an additional feature of the client which allows to assign the research objects with object metadata, for instance the [DataCite Metadata Schema](https://schema.datacite.org/) which holds different properties to describe research data objects. By default the client is shipped with the DataCite Metadata Schema for object metadata. In RePlay-DH terms objects can be resources (input or output files) or tools (programs or scripts). With the DataCite Metadata Schema one can connect the metadata with the research objects used or created in the workflow. In the feature it will be possible to use also other metadata schemas for the research objects. The user will be able to select an own object metadata schema to work with the object metadata editor.
 
@@ -202,7 +230,11 @@ A status message will popup to give feedback whether the export was successfully
 
 ![Select an archive exporter](Select_Archive_Exporter.png)
 
-### DSpace Exporter {#replaydh.ui.core.workflowGraph.publishResources}
+### Update Workspace {#replaydh.ui.core.workflowGraph.updateRepository}
+
+replaydh.ui.core.workflowGraph.updateRepository
+
+### DSpace, Dataverse and Git Exporter {#replaydh.ui.core.workflowGraph.publishResources}
 
 <div id="dspace_exporter" title="DSpace Exporter" image="Workflow_Editor3.png">By clicking the publication symbol it is possible to export resources and tools of a certain workflow step within the workspace directory to some publication repository.</div>
 
@@ -265,7 +297,9 @@ The RePlay-DH client only starts the publication process and redirects to the pu
 ![Rebuild visual graph](Workflow_Editor_7.png)
 
 
-### The file tracker {#replaydh.ui.core.mainPanel.tabs.fileTracker.name}
+## The file tracker {#replaydh.ui.core.mainPanel.tabs.fileTracker}
+
+### {#replaydh.ui.core.mainPanel.tabs.fileTracker.name}
 
 ![The file tracker](File_Tracker.png)
 
