@@ -20,75 +20,68 @@ package bwfdm.replaydh.ui.help;
 
 import static bwfdm.replaydh.utils.RDHUtils.checkState;
 
-import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JRootPane;
+import javax.swing.RootPaneContainer;
+import javax.swing.SwingUtilities;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.icons.IconRegistry;
+import bwfdm.replaydh.ui.icons.Resolution;
+import bwfdm.replaydh.utils.WeakHashSet;
 
 /**
  * @author Markus Gärtner, Florian Fritze
  *
  */
-public class HelpStore implements ComponentListener, ActionListener, WindowListener {
+public class HelpStore extends WindowAdapter implements ComponentListener, ActionListener {
+
+	private static final Logger log = LoggerFactory.getLogger(HelpStore.class);
+
+	/** Stores the anchor ids for all registered components */
+	private final Map<JComponent, String> componentAnchors = new WeakHashMap<>();
+
+	private final HTMLHelpDisplay helpDisplay;
+
+	private final Set<Container> observedContainers = new WeakHashSet<>();
+
+	private final Set<Window> observedWindows = new WeakHashSet<>();
+
+	private final Set<RootPaneContainer> roots = new WeakHashSet<>();
+
+	private final Map<JComponent, JButton> hints = new WeakHashMap<>();
+
+	/** Global help mode is on/off */
+	private boolean helpShowing = false;
+
+	/** Keeps track of the actual help window */
+	private boolean helpWindowActive = false;
 
 	public HelpStore() {
-		glass = new GlassPaneWindow();
 		helpDisplay = new HTMLHelpDisplay();
 		helpDisplay.readHelpFile();
 	}
-
-	private static final Logger log = LoggerFactory.getLogger(HelpStore.class);
-	
-	/** Stores the anchor ids for all registered components */
-	private final Map<JComponent, String> componentAnchors = new WeakHashMap<>();
-	
-	private final static IconRegistry ir = IconRegistry.getGlobalRegistry();
-	
-	private Icon helpHint = ir.getIcon("icons8-Help-48-very-small.png");
-	
-	private int standardWidth = 0;
-	
-	private Container contentPane;
-	
-	private boolean helpShowed;
-	
-	private boolean registered=false;
-	
-	private GlassPaneWindow glass;
-	
-	private HTMLHelpDisplay helpDisplay;
-	
-	private List<JButton> registeredButtons = new ArrayList<>();
-	
-	private boolean shownHelp;
-	
 
 	public void register(JComponent component, String anchor) {
 		checkState("Component already registered", !componentAnchors.containsKey(component));
@@ -104,162 +97,186 @@ public class HelpStore implements ComponentListener, ActionListener, WindowListe
 		componentAnchors.clear();
 	}
 
-	public void showHelp() {
-		helpShowed=true;
-		final int addY = 2;
-		int xLocation = 0;
-		log.info("Showing global help markers");
-		Predicate<Component> isButtonReference = component -> componentAnchors.get(component)
-				.equals("replaydh.ui.core.mainPanel.addStep.name");
-		Component c = componentAnchors.keySet().stream().filter(isButtonReference).findFirst().get();
-		Consumer<Component> receiveStandardWidth = component -> standardWidth = component.getParent().getWidth();
-		Predicate<Component> isPanel = component -> component instanceof JPanel && component != null;
-		Set<Component> components = new HashSet<>(Arrays.asList(c.getParent().getComponents()));
-		components.stream().filter(isPanel).forEach(receiveStandardWidth);
-		for(JComponent comp : componentAnchors.keySet()) {
-			String areaCategory=componentAnchors.get(comp);
-			int yLocation = 0;
-			JRootPane root = comp.getRootPane();
-			Dimension dim;
-			if(root != null) {
-				dim = root.getSize();
-				contentPane = root.getContentPane();
-				glass.setSize(dim);
-				if(registered == false) {
-					contentPane.addComponentListener(this);
-					registered=true;
-				}
-				JButton buttonLabel = new JButton(helpHint);
-				if (areaCategory.indexOf("workflowGraph") != -1 && root.getWidth() > standardWidth) {
-					xLocation=(comp.getWidth()/2)+(comp.getX())+2;
-					yLocation = comp.getY()+43+addY;
-				} else if(areaCategory.indexOf("fileTracker") != -1 && root.getWidth() > standardWidth) {
-					xLocation=(comp.getWidth()/2)+(comp.getX())+98;
-					yLocation = comp.getY()-10;
-				} else if(areaCategory.indexOf("replaydh.ui.core.mainPanel.addStep.name") != -1) {
-					xLocation=root.getWidth()+(comp.getWidth()/2)+(comp.getX())-standardWidth-12;
-					yLocation = comp.getY()+25;
-				} else {
-					xLocation=root.getWidth()+(comp.getWidth()/2)+(comp.getX())-standardWidth+10;
-					yLocation = comp.getY()+35;
-				}
-				buttonLabel.setBounds(xLocation, yLocation, 20, 20);
-				buttonLabel.setBorder(null);
-				buttonLabel.setToolTipText(ResourceManager.getInstance().get("replaydh.display.help.toolTip"));
-				buttonLabel.addActionListener(this);
-				buttonLabel.setName(componentAnchors.get(comp));
-				registeredButtons.add(buttonLabel);
-				glass.add(buttonLabel);
-				root.setGlassPane(glass);
-				glass.setVisible(true);
-				glass.setOpaque(false);
+	private void observe(Container container) {
+		if(observedContainers.add(container)) {
+			container.addComponentListener(this);
+
+			Container parent = container.getParent();
+			if(parent != null) {
+				observe(parent);
 			}
+		}
+	}
+
+	private void observe(Window window) {
+		if(observedWindows.add(window)) {
+			window.addWindowListener(this);
+		}
+	}
+
+	private void unobserveAll() {
+		for(Container container : observedContainers) {
+			container.removeComponentListener(this);
+		}
+		observedContainers.clear();
+
+		for(Window window : observedWindows) {
+			window.removeWindowListener(this);
+		}
+		observedWindows.clear();
+	}
+
+	public void showHelp() {
+		if(helpShowing) {
+			return;
+		}
+
+		log.info("Showing global help markers");
+
+		for(Entry<JComponent, String> entry : componentAnchors.entrySet()) {
+			JComponent target = entry.getKey();
+
+			// Fetch container responsible for glass pane
+			RootPaneContainer root = (RootPaneContainer) SwingUtilities.getAncestorOfClass(
+					RootPaneContainer.class, target);
+
+			// Ignore components outside of valid UI hierarchy
+			if(root == null) {
+				continue;
+			}
+
+			if(roots.add(root)) {
+				// Make sure we're in control of any glass pane ever set!
+				JPanel glassPane = new JPanel(null);
+				glassPane.setOpaque(false);
+				root.setGlassPane(glassPane);
+				/*
+				 *  Typical RootPaneContainer implementations try to maintain the old
+				 *  visibility state when changing glass panes, so we need to manually
+				 *  override it!
+				 */
+				glassPane.setVisible(true);
+			}
+
+			hints.put(target, createHint(entry.getValue()));
+
+			// Register listeners to keep hints up2date
+			if(root instanceof Window) {
+				observe((Window) root);
+			}
+			observe(target);
+		}
+
+		positionHints();
+
+		helpShowing = true;
+	}
+
+	private JButton createHint(String anchor) {
+		Icon icon = IconRegistry.getGlobalRegistry().getIcon("icons8-Help-48.png", Resolution.forSize(16));
+		JButton hint = new JButton(icon);
+		hint.setFocusable(false);
+		hint.setName(anchor);
+		hint.setToolTipText(ResourceManager.getInstance().get("replaydh.display.help.toolTip"));
+		hint.setBorder(null);
+		hint.addActionListener(this);
+		return hint;
+	}
+
+	private void positionHints() {
+		for(Entry<JComponent, JButton> entry : hints.entrySet()) {
+			JComponent target = entry.getKey();
+			JButton hint = entry.getValue();
+
+			hint.setVisible(target.isShowing());
+			if(!hint.isVisible()) {
+				continue;
+			}
+
+			RootPaneContainer root = (RootPaneContainer) SwingUtilities.getAncestorOfClass(
+					RootPaneContainer.class, target);
+			Container glassPane = (Container) root.getGlassPane();
+
+			Point loc = SwingUtilities.convertPoint(target, 0, 0, glassPane);
+			Dimension dim = hint.getPreferredSize();
+
+			int newX = loc.x + (target.getWidth() - dim.width)/2;
+			int newY = loc.y - dim.height/2;
+
+			if(newY < 0) {
+				newY = 0;
+			}
+
+			// If we haven't done so previously, finally add the hint to glass pane
+			if(hint.getParent()!=glassPane) {
+				glassPane.add(hint);
+			}
+			hint.setBounds(newX, newY, dim.width, dim.height);
+
+//			System.out.printf("anchor=%s bounds=%s%n", hint.getName(), hint.getBounds());
 		}
 	}
 
 	public void hideHelp() {
-		log.info("Hiding global help markers");
-		glass.setVisible(false);
-		glass.removeAll();
-		for(JButton button : registeredButtons) {
-			button.removeActionListener(this);
+		if(!helpShowing) {
+			return;
 		}
-		helpShowed=false;
+
+		log.info("Hiding global help markers");
+
+		hints.values().forEach(hint -> hint.removeActionListener(this));
+
+		roots.stream()
+			.map(RootPaneContainer::getGlassPane)
+			.forEach(glassPane -> {
+				((Container)glassPane).removeAll();
+				glassPane.setVisible(false);
+			});
+
+		hints.clear();
+		roots.clear();
+
+		unobserveAll();
+
+		helpShowing = false;
 	}
 
 	@Override
 	public void componentResized(ComponentEvent e) {
-		if(helpShowed) {
-			hideHelp();
-			showHelp();
-		}
+		positionHints();
 	}
 
 	@Override
 	public void componentMoved(ComponentEvent e) {
-		// TODO Auto-generated method stub
-		
+		positionHints();
 	}
 
 	@Override
 	public void componentShown(ComponentEvent e) {
-		// TODO Auto-generated method stub
-		
+		positionHints();
 	}
 
 	@Override
 	public void componentHidden(ComponentEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	private class GlassPaneWindow extends JPanel {
-
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 6793726559660910536L;
-
-		public GlassPaneWindow() {
-			this.setLayout(null);
-		}
+		positionHints();
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		Object source = e.getSource();
-		for(JButton button : registeredButtons) {
-			if(source == button) {
-				if(shownHelp == false) {
-					JFrame helpFrame = helpDisplay.showHelpSection(button.getName());
-					helpFrame.addWindowListener(this);
-					helpFrame.setName(button.getName());
-					shownHelp=true;
-				}
-			}
+		if(helpWindowActive) {
+			log.info("Ignoring request to show help window - window already active");
+			return;
 		}
-	}
 
-	@Override
-	public void windowOpened(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
+		JButton button = (JButton) e.getSource();
+		JFrame helpFrame = helpDisplay.showHelpSection(button.getName());
+		helpWindowActive = true;
+		helpFrame.addWindowListener(this);
+		helpFrame.setName(button.getName()); //TODO change to something sensible!
 	}
 
 	@Override
 	public void windowClosing(WindowEvent e) {
-		shownHelp=false;
+		helpWindowActive = false;
 	}
-
-	@Override
-	public void windowClosed(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void windowIconified(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void windowDeiconified(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void windowActivated(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void windowDeactivated(WindowEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	
 }

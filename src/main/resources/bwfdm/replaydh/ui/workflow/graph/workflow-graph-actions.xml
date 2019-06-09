@@ -12,43 +12,43 @@
 	
 	<!-- Refresh Graph -->
 	<action id="replaydh.ui.core.workflowGraph.refreshGraph"
-		name="${id}.name" desc="${id}.description" icon="refresh.gif" />
+		name="${id}.name" desc="${id}.description" icon="refresh.gif" help="true" />
 	
 	<!-- Change Active Step -->
 	<action id="replaydh.ui.core.workflowGraph.changeActiveStep"
-		name="${id}.name" desc="${id}.description" icon="navi_down.png" />
+		name="${id}.name" desc="${id}.description" icon="navi_down.png" help="true" />
 	
 	<!-- Focus Active Step -->
 	<action id="replaydh.ui.core.workflowGraph.focusActiveStep"
-		name="${id}.name" desc="${id}.description" icon="compress.gif" />
+		name="${id}.name" desc="${id}.description" icon="compress.gif" help="true" />
 		
 	<!-- Compress Step -->
 	<action id="replaydh.ui.core.workflowGraph.compressStep"
-		name="${id}.name" desc="${id}.description" icon="collapseall.gif"/>
+		name="${id}.name" desc="${id}.description" icon="collapseall.gif" help="true" />
 		
 	<!-- Expand Step -->
 	<action id="replaydh.ui.core.workflowGraph.expandStep"
-		name="${id}.name" desc="${id}.description" icon="expandall.gif"/>
+		name="${id}.name" desc="${id}.description" icon="expandall.gif" help="true" />
 		
 	<!-- Export Step Metadata -->
 	<action id="replaydh.ui.core.workflowGraph.exportStepMetadata"
-		name="${id}.name" desc="${id}.description" icon="externalize.gif"/>
+		name="${id}.name" desc="${id}.description" icon="externalize.gif" help="true" />
 		
 	<!-- Export Step Resources -->
 	<action id="replaydh.ui.core.workflowGraph.exportStepResources"
-		name="${id}.name" desc="${id}.description" icon="export_wiz.gif"/>
+		name="${id}.name" desc="${id}.description" icon="export_wiz.gif" help="true" />
 		
 	<!-- Export Metadata -->
 	<action id="replaydh.ui.core.workflowGraph.exportMetadata"
-		name="${id}.name" desc="${id}.description" icon="externalize.gif"/>
+		name="${id}.name" desc="${id}.description" icon="externalize.gif" help="true" />
 		
 	<!-- Export Resources -->
 	<action id="replaydh.ui.core.workflowGraph.exportResources"
-		name="${id}.name" desc="${id}.description" icon="export_wiz.gif"/>
+		name="${id}.name" desc="${id}.description" icon="export_wiz.gif" help="true" />
 		
 	<!-- Import Repository -->
 	<action id="replaydh.ui.core.workflowGraph.updateRepository"
-		name="${id}.name" desc="${id}.description" icon="import_wiz.gif"/>
+		name="${id}.name" desc="${id}.description" icon="import_wiz.gif" help="true" />
 		
 	<!-- Publish Resources -->
 	<!-- 
@@ -58,7 +58,8 @@
 	
 	<!-- Toggle Compress Pipes -->
 	<action id="replaydh.ui.core.workflowGraph.toggleCompressPipes"
-		name="${id}.name" desc="${id}.description" icon="collapseall.gif" sicon="expandall.gif" type="toggle" />
+		name="${id}.name" desc="${id}.description" icon="collapseall.gif" 
+		sicon="expandall.gif" type="toggle" help="true" />
 		
 	<!-- ToolBar List for header area -->
 	<action-list id="replaydh.ui.core.workflowGraph.toolBarList">
@@ -69,7 +70,7 @@
 		<item type="action" value="replaydh.ui.core.workflowGraph.exportResources" />
 		<item type="action" value="replaydh.ui.core.workflowGraph.updateRepository" />
 		<separator />
-		<action-list id="replaydh.ui.core.workflowGraph.publishResources" 
+		<action-list id="replaydh.ui.core.workflowGraph.publishResources" help="true"
 			name="${id}.name" desc="${id}.description" icon="icons8-epub-40.png">
 			<item type="custom" value="publisherExtensions" />
 		</action-list>

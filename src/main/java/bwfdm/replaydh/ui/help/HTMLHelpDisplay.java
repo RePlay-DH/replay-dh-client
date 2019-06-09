@@ -22,7 +22,7 @@ import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.resources.ResourceManager;
 
 /**
- * 
+ *
  * @author Florian Fritze
  *
  */
@@ -75,7 +75,7 @@ public class HTMLHelpDisplay {
 	 */
 	public JFrame showHelpSection(String anchor) {
 		String section = findAndPrintPosition(anchor);
-		JFrame frame = new JFrame();
+		JFrame frame = new JFrame(); //TODO why are we still using a heavyweight JFrame?
 		frame.setTitle(ResourceManager.getInstance().get("replaydh.documentation.helpWindow.title"));
 		JEditorPane editorPane = new JEditorPane();
 		URL jarLocation = HTMLHelpDisplay.class.getProtectionDomain().getCodeSource().getLocation();
@@ -84,8 +84,7 @@ public class HTMLHelpDisplay {
 			baseURL = new URL(jarLocation, "bwfdm/replaydh/help/images/");
 			String htmlHeader = "<head><base href=\"" + baseURL + "\"/></head>";
 			String htmlPart = "<!DOCTYPE html><html>" + htmlHeader + "<body><div style='font-family:monospace'>" + section + "</div></body></html>";
-			JScrollPane scrollPane = null;
-			scrollPane = new JScrollPane(editorPane);
+			JScrollPane scrollPane = new JScrollPane(editorPane);
 			editorPane.setContentType("text/html");
 			editorPane.setText(htmlPart);
 			editorPane.setEditable(false);
