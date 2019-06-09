@@ -42,6 +42,10 @@
    command - a string passed as action command to events created by the action. Can
    			be used to distinguish between multiple actions handled by the same
    			callback method.
+   			
+   help - boolean flag to signal whether or not the action should be registered for
+   			displaying extended help information. If set to 'true' the action will
+   			be registered using its 'id' attribute.
     
    accel - a string that represents the keyboard accelerator to invoke
            the action. The string should be formatted according to the syntax
@@ -64,6 +68,7 @@
           desc      CDATA #IMPLIED
           virtual	(true | false) #IMPLIED
           command    CDATA #IMPLIED
+          help    (true | false) #IMPLIED
           accel     CDATA #IMPLIED"
 >
 

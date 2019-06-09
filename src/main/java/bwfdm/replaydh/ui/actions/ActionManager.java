@@ -54,6 +54,7 @@ import javax.swing.ButtonGroup;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -76,6 +77,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import bwfdm.replaydh.core.RDHClient;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.actions.ActionList.EntryType;
@@ -101,8 +103,10 @@ public class ActionManager {
 	public static final String SEPARATOR_MEDIUM = "medium"; //$NON-NLS-1$
 	public static final String SEPARATOR_WIDE = "wide"; //$NON-NLS-1$
 
-	public static final String SMALL_SELECTED_ICON_KEY = "IcarusSmallSelectedIcon"; //$NON-NLS-1$
-	public static final String LARGE_SELECTED_ICON_KEY = "IcarusLargeSelectedIcon"; //$NON-NLS-1$
+	public static final String SMALL_SELECTED_ICON_KEY = "RDH_SmallSelectedIcon"; //$NON-NLS-1$
+	public static final String LARGE_SELECTED_ICON_KEY = "RDH_LargeSelectedIcon"; //$NON-NLS-1$
+
+	public static final String HELP_ANCHOR_KEY = "RDH_HelpAnchor"; //$NON-NLS-1$
 
 	private volatile ResourceManager resourceManager;
 	private volatile IconRegistry iconRegistry;
@@ -425,6 +429,11 @@ public class ActionManager {
 		if (accel != null && !accel.equals("")) { //$NON-NLS-1$
 			action.putValue(Action.ACCELERATOR_KEY,
 					KeyStroke.getKeyStroke(accel));
+		}
+
+		String help = attr.getValue(SHOW_HELP_INDEX);
+		if (help != null && Boolean.parseBoolean(help)) {
+			action.putValue(HELP_ANCHOR_KEY, id);
 		}
 
 		// Finally apply localization (allows for inheritance of loca keys from templates)
@@ -1305,8 +1314,17 @@ public class ActionManager {
 
 	// configuration callbacks
 
+	protected void registerHelp(JComponent component, Action action) {
+		Object helpAnchor = action.getValue(HELP_ANCHOR_KEY);
+		if(helpAnchor != null && helpAnchor instanceof String) {
+			RDHClient.client().getGui().registerHelp(component, (String) helpAnchor);
+
+//			System.out.println("register: "+helpAnchor);
+		}
+	}
+
 	protected void configureMenu(JMenu menu, Action action, Map<String, Object> properties) {
-		// no-op
+		registerHelp(menu, action);
 	}
 
 	protected void configurePopupMenu(JPopupMenu popupMenu, Map<String, Object> properties) {
@@ -1340,6 +1358,8 @@ public class ActionManager {
 	protected void configureButton(AbstractButton button, Action action) {
 		button.setHideActionText(true);
 		button.setFocusable(false);
+
+		registerHelp(button, action);
 
 		// TODO check for requirements of a default preferred size for buttons!
 		/*Icon icon = button.getIcon();
@@ -1420,7 +1440,7 @@ public class ActionManager {
 		private String[] array;
 
 		public ActionAttributes(Attributes attrs) {
-			array = new String[13];
+			array = new String[14];
 			setValue(ID_INDEX, attrs.getValue(ID_ATTRIBUTE));
 			setAttributes(attrs);
 		}
@@ -1464,6 +1484,7 @@ public class ActionManager {
 			setValue(TYPE_INDEX, attrs.getValue(TYPE_ATTRIBUTE));
 			setValue(VIRTUAL_INDEX, attrs.getValue(VIRTUAL_ATTRIBUTE));
 			setValue(COMMAND_INDEX, attrs.getValue(COMMAND_ATTRIBUTE));
+			setValue(SHOW_HELP_INDEX, attrs.getValue(SHOW_HELP_ATTRIBUTE));
 		}
 	}
 
@@ -1482,6 +1503,7 @@ public class ActionManager {
     private final static String VIRTUAL_ATTRIBUTE = "virtual"; //$NON-NLS-1$
     private final static String COMMAND_ATTRIBUTE = "command"; //$NON-NLS-1$
     private final static String TEMPLATE_ATTRIBUTE = "template"; //$NON-NLS-1$
+    private final static String SHOW_HELP_ATTRIBUTE = "help"; //$NON-NLS-1$
 
     private final static String CONDITION_ATTRIBUTE = "condition"; //$NON-NLS-1$
 
@@ -1498,6 +1520,7 @@ public class ActionManager {
     private final static int VIRTUAL_INDEX = 10;
     private final static int COMMAND_INDEX = 11;
     private final static int TEMPLATE_INDEX = 12;
+    private final static int SHOW_HELP_INDEX = 13;
 
     private static volatile SAXParserFactory parserFactory;
     private volatile XmlActionHandler xmlHandler;
@@ -2088,11 +2111,6 @@ public class ActionManager {
 
 			toolBar.addSeparator(new Dimension(width, 24));
 			return getLastChild(toolBar);
-			// TODO
-			/*if(width>-1)
-				toolBar.addSeparator(new Dimension(width, 24));
-			else
-				toolBar.addSeparator();*/
 		}
 
 		/**
