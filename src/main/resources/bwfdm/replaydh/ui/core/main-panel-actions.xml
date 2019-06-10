@@ -8,29 +8,35 @@
 	
 	<!-- Add Step -->
 	<action id="replaydh.ui.core.mainPanel.addStep"
-		name="${id}.name" desc="${id}.description" licon="record-step.png" />
+		name="${id}.name" desc="${id}.description" licon="record-step.png" help="true" />
 	
 	<!-- Update Status -->
 	<action id="replaydh.ui.core.mainPanel.updateStatus"
-		name="${id}.name" desc="${id}.description" icon="refresh.gif" licon="update-icon.png" />
+		name="${id}.name" desc="${id}.description" icon="refresh.gif" licon="update-icon.png" help="true" />
 	
 	<!-- Cancel Update -->
 	<action id="replaydh.ui.core.mainPanel.cancelUpdate"
-		name="${id}.name" desc="${id}.description" icon="stop.gif" licon="stop-icon.png" />
+		name="${id}.name" desc="${id}.description" icon="stop.gif" licon="stop-icon.png" help="true" />
 	
 	<!-- Toggle Tracker Active -->
 	<action id="replaydh.ui.core.mainPanel.toggleTrackerActive" type="toggle"
 		name="${id}.name" desc="${id}.description" icon="media_playback_start.png" 
-		licon="stopwatch-start-icon.png" sicon="media_playback_stop.png" slicon="stopwatch-finish-icon.png" />
+		licon="stopwatch-start-icon.png" sicon="media_playback_stop.png" 
+		slicon="stopwatch-finish-icon.png" help="true" />
 	
 	<!-- Toggle Details -->
 	<action id="replaydh.ui.core.mainPanel.toggleDetails"
-		name="${id}.name" desc="${id}.description" />
+		name="${id}.name" desc="${id}.description" help="true" />
 	
 	<!-- Toggle Always on Top -->
 	<action id="replaydh.ui.core.mainPanel.toggleAlwaysOnTop" type="toggle"
 		name="${id}.name" desc="${id}.description"
-		icon="icons8-pin-64.png" sicon="icons8-unpin-64.png" />
+		icon="icons8-pin-64.png" sicon="icons8-unpin-64.png" help="true" />
+	
+	<!-- Toggle Help Mode -->
+	<action id="replaydh.ui.core.mainPanel.toggleHelpMode" type="toggle"
+		name="${id}.name" desc="${id}.description"
+		icon="icons8-help-100.png" sicon="icons8-help-yellow-100.png" />
 		
 	<!-- Change Workspace -->
 	<action id="replaydh.ui.core.mainPanel.changeWorkspace"
@@ -46,11 +52,11 @@
 	
 	<!-- Open Workspace Folder -->
 	<action id="replaydh.ui.core.mainPanel.openWorkspaceFolder"
-		name="${id}.name" desc="${id}.description" icon="fldr_obj.gif" />
+		name="${id}.name" desc="${id}.description" icon="fldr_obj.gif" help="true" />
 	
 	<!-- Clear Resource Cache -->
 	<action id="replaydh.ui.core.mainPanel.clearResourceCache"
-		name="${id}.name" desc="${id}.description" icon="clear_co.gif" />
+		name="${id}.name" desc="${id}.description" icon="clear_co.gif" help="true" />
 	
 	<!-- Show About Dialog -->
 	<action id="replaydh.ui.core.mainPanel.about"
@@ -102,6 +108,7 @@
 			<item type="action" value="replaydh.ui.core.mainPanel.about" />
 		</action-list>
 		<item type="glue" />
+		<item type="action" value="replaydh.ui.core.mainPanel.toggleHelpMode" />
 		<item type="action" value="replaydh.ui.core.mainPanel.toggleAlwaysOnTop" />
 	</action-list>
 	

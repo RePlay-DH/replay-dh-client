@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -304,6 +305,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				rm.get("replaydh.ui.core.mainPanel.tabs.fileTracker.description"),
 				1);
 
+		//TODO needs rework, as getComponentAt() doesn't return the tab header component!!!
+		environment.getClient().getGui().registerHelp((JComponent) tabbedPane.getComponentAt(1),
+				"replaydh.ui.core.mainPanel.tabs.fileTracker.name");
+
 		// Not the cleanest way, but ensure we don't overgrow
 		tabbedPane.setPreferredSize(new Dimension(700, 500));
 
@@ -534,6 +539,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.cancelUpdate", handler::cancelFileTrackerUpdate);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.toggleDetails", handler::toggleDetails);
 		actionMapper.mapToggle("replaydh.ui.core.mainPanel.toggleAlwaysOnTop", handler::toggleAlwaysOnTop);
+		actionMapper.mapToggle("replaydh.ui.core.mainPanel.toggleHelpMode", handler::toggleHelpMode);
 		actionMapper.mapToggle("replaydh.ui.core.mainPanel.toggleTrackerActive", handler::toggleTrackerStatus);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.changeWorkspace", handler::changeWorkspace);
 		actionMapper.mapTask("replaydh.ui.core.mainPanel.importWorkspace", handler::importWorkspace);
@@ -1480,6 +1486,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		private void toggleAlwaysOnTop(boolean alwaysOnTop) {
 			environment.setProperty(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, Boolean.toString(alwaysOnTop));
+		}
+
+		private void toggleHelpMode(boolean showHelp) {
+			environment.getClient().getGui().toggleGlobalHelpMode(showHelp);
 		}
 
 		private void changeWorkspace() {

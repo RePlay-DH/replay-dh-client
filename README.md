@@ -40,6 +40,12 @@ The following table lists currently supported parameters:
 
 Nothing major for now...
 
+### Contribution
+
+If you want to convert the md file to html4 (needed for the client docu feature), please use pandoc command:
+
+	pandoc -f markdown -t html4 client-docu.md -o client-docu.html
+
 ### License
 
 The client code is licensed under MIT
