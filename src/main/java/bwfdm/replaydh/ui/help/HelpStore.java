@@ -158,6 +158,10 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 				glassPane.setVisible(true);
 			}
 
+			/* At this point we're blindly creating hints for all components.
+			 * The positionHints() method will take care of only displaying the
+			 * ones that belong to components what ate 'showing'.
+			 */
 			hints.put(target, createHint(entry.getValue()));
 
 			// Register listeners to keep hints up2date
@@ -167,9 +171,9 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 			observe(target);
 		}
 
-		positionHints();
-
 		helpShowing = true;
+
+		positionHints();
 	}
 
 	private JButton createHint(String anchor) {
@@ -184,10 +188,15 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 	}
 
 	private void positionHints() {
+		if(!helpShowing) {
+			return;
+		}
+
 		for(Entry<JComponent, JButton> entry : hints.entrySet()) {
 			JComponent target = entry.getKey();
 			JButton hint = entry.getValue();
 
+			// Make sure that only hints for currently visible components are considered
 			hint.setVisible(target.isShowing());
 			if(!hint.isVisible()) {
 				continue;
@@ -197,12 +206,15 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 					RootPaneContainer.class, target);
 			Container glassPane = (Container) root.getGlassPane();
 
+			// Desired position is centered at the top, with a slight northwards offset
 			Point loc = SwingUtilities.convertPoint(target, 0, 0, glassPane);
+			// Need to use preferred size as hint might not have been placed previously
 			Dimension dim = hint.getPreferredSize();
 
 			int newX = loc.x + (target.getWidth() - dim.width)/2;
 			int newY = loc.y - dim.height/2;
 
+			// Sanity check against overlapping the window/frame borders
 			if(newY < 0) {
 				newY = 0;
 			}
@@ -211,6 +223,8 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 			if(hint.getParent()!=glassPane) {
 				glassPane.add(hint);
 			}
+
+			// Now position the hint
 			hint.setBounds(newX, newY, dim.width, dim.height);
 
 //			System.out.printf("anchor=%s bounds=%s%n", hint.getName(), hint.getBounds());
@@ -224,19 +238,21 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 
 		log.info("Hiding global help markers");
 
-		hints.values().forEach(hint -> hint.removeActionListener(this));
+		// Stop listening to changes early, otherwise we might get into nasty loops
+		unobserveAll();
 
+		// Unregister action listeners
+		hints.values().forEach(hint -> hint.removeActionListener(this));
+		hints.clear();
+
+		// Clear glass panes
 		roots.stream()
 			.map(RootPaneContainer::getGlassPane)
 			.forEach(glassPane -> {
 				((Container)glassPane).removeAll();
 				glassPane.setVisible(false);
 			});
-
-		hints.clear();
 		roots.clear();
-
-		unobserveAll();
 
 		helpShowing = false;
 	}
