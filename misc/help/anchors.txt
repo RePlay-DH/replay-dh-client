@@ -1,0 +1,25 @@
+client-compact
+	1	replaydh.ui.core.mainPanel.toggleDetails
+	2	replaydh.ui.core.mainPanel.toggleTrackerActive
+	3	replaydh.ui.core.mainPanel.updateStatus
+	4	replaydh.ui.core.mainPanel.cancelUpdate
+	5	replaydh.ui.core.mainPanel.addStep
+	6	replaydh.ui.core.mainPanel.openWorkspaceFolder
+	7	replaydh.panels.workspaceTracker
+	8	replaydh.ui.core.mainPanel.clearResourceCache
+	9	replaydh.panels.fileCache
+	10	replaydh.ui.core.mainPanel.toggleAlwaysOnTop
+
+client-unfolded-filetracker
+	1	replaydh.ui.core.workspaceTrackerPanel
+
+client-unfolded-workflow
+	1	replaydh.ui.core.workflowGrap
+	2	replaydh.ui.core.workflowGraph.exportMetadata
+	3	replaydh.ui.core.workflowGraph.exportResources
+	4	replaydh.ui.core.workflowGraph.updateRepository
+	5	replaydh.ui.core.workflowGraph.publishResources
+	6	replaydh.ui.core.workflowGraph.changeActiveStep
+	7	replaydh.ui.core.workflowGraph.focusActiveStep
+	8	replaydh.ui.core.workflowGraph.toggleCompressPipes
+	9	replaydh.ui.core.workflowGraph.refreshGraph
