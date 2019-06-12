@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/RePlay-DH/replay-dh-client.png)](https://travis-ci.org/RePlay-DH/replay-dh-client)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![GitHub All Releases](https://img.shields.io/github/downloads/replay-dh/replay-dh-client/total.svg)
 
 Integrated Tool for tracking, versioning and publishing workflows.
 
