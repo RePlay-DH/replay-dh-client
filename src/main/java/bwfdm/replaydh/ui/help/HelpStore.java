@@ -30,10 +30,12 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.Icon;
 import javax.swing.JButton;
@@ -62,14 +64,19 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 	/** Stores the anchor ids for all registered components */
 	private final Map<JComponent, String> componentAnchors = new WeakHashMap<>();
 
+	/** Holds pending target components outside of UI hierarchy */
+	private final Set<JComponent> headlessComponents = new WeakHashSet<>();
+
+	/** Link to the actual help window manager */
 	private final HTMLHelpDisplay helpDisplay;
 
+	/** All the containers we need to keep track of for hint placement */
 	private final Set<Container> observedContainers = new WeakHashSet<>();
 
-	private final Set<Window> observedWindows = new WeakHashSet<>();
-
+	/** All the roots above registered and actually displayed components */
 	private final Set<RootPaneContainer> roots = new WeakHashSet<>();
 
+	/** Lookup to find the hints responsible for individual components */
 	private final Map<JComponent, JButton> hints = new WeakHashMap<>();
 
 	/** Global help mode is on/off */
@@ -86,10 +93,26 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 	public void register(JComponent component, String anchor) {
 		checkState("Component already registered", !componentAnchors.containsKey(component));
 		componentAnchors.put(component, anchor);
+
+//		System.out.printf("reg: anchor=%s help=%b%n", anchor, helpShowing);
+		// If global help mode is already on, make sure the new component gets a proper hint
+		if(helpShowing) {
+			SwingUtilities.invokeLater(() -> {
+				setupHint(component, anchor);
+				scheduleUpdate();
+			});
+		}
 	}
 
 	public void unregister(JComponent component) {
 		componentAnchors.remove(component);
+
+		/*
+		 *  Theoretically we should unregister listeners here, but we don't keep track of
+		 *  the parent chains for observed containers. As such we cannot know if a container
+		 *  is still needed for another target component and therefore we simply wait till
+		 *  the next unobserveAll() call unregisters all listeners.
+		 */
 	}
 
 	public void close() {
@@ -108,22 +131,11 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 		}
 	}
 
-	private void observe(Window window) {
-		if(observedWindows.add(window)) {
-			window.addWindowListener(this);
-		}
-	}
-
 	private void unobserveAll() {
 		for(Container container : observedContainers) {
 			container.removeComponentListener(this);
 		}
 		observedContainers.clear();
-
-		for(Window window : observedWindows) {
-			window.removeWindowListener(this);
-		}
-		observedWindows.clear();
 	}
 
 	public void showHelp() {
@@ -134,46 +146,54 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 		log.info("Showing global help markers");
 
 		for(Entry<JComponent, String> entry : componentAnchors.entrySet()) {
-			JComponent target = entry.getKey();
-
-			// Fetch container responsible for glass pane
-			RootPaneContainer root = (RootPaneContainer) SwingUtilities.getAncestorOfClass(
-					RootPaneContainer.class, target);
-
-			// Ignore components outside of valid UI hierarchy
-			if(root == null) {
-				continue;
+			// Try to create hint and mark target as headless if it fails
+			if(!setupHint(entry.getKey(), entry.getValue())) {
+				headlessComponents.add(entry.getKey());
 			}
-
-			if(roots.add(root)) {
-				// Make sure we're in control of any glass pane ever set!
-				JPanel glassPane = new JPanel(null);
-				glassPane.setOpaque(false);
-				root.setGlassPane(glassPane);
-				/*
-				 *  Typical RootPaneContainer implementations try to maintain the old
-				 *  visibility state when changing glass panes, so we need to manually
-				 *  override it!
-				 */
-				glassPane.setVisible(true);
-			}
-
-			/* At this point we're blindly creating hints for all components.
-			 * The positionHints() method will take care of only displaying the
-			 * ones that belong to components what ate 'showing'.
-			 */
-			hints.put(target, createHint(entry.getValue()));
-
-			// Register listeners to keep hints up2date
-			if(root instanceof Window) {
-				observe((Window) root);
-			}
-			observe(target);
 		}
 
 		helpShowing = true;
 
-		positionHints();
+		scheduleUpdate();
+	}
+
+	private boolean setupHint(JComponent target, String anchor) {
+
+		// Fetch container responsible for glass pane
+		RootPaneContainer root = (RootPaneContainer) SwingUtilities.getAncestorOfClass(
+				RootPaneContainer.class, target);
+
+		// Ignore components outside of valid UI hierarchy
+		if(root == null) {
+			return false;
+		}
+
+		if(roots.add(root)) {
+			// Make sure we're in control of any glass pane ever set!
+			JPanel glassPane = new JPanel(null);
+			glassPane.setOpaque(false);
+			root.setGlassPane(glassPane);
+			/*
+			 *  Typical RootPaneContainer implementations try to maintain the old
+			 *  visibility state when changing glass panes, so we need to manually
+			 *  override it!
+			 */
+			glassPane.setVisible(true);
+		}
+
+		/* At this point we're blindly creating hints for all components.
+		 * The positionHints() method will take care of only displaying the
+		 * ones that belong to components what ate 'showing'.
+		 */
+		hints.put(target, createHint(anchor));
+
+		// Register listeners to keep hints up2date
+		if(root instanceof Window) {
+			observe((Window) root);
+		}
+		observe(target);
+
+		return true;
 	}
 
 	private JButton createHint(String anchor) {
@@ -185,6 +205,33 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 		hint.setBorder(null);
 		hint.addActionListener(this);
 		return hint;
+	}
+
+	private final AtomicBoolean updateScheduled = new AtomicBoolean(false);
+
+	private void scheduleUpdate() {
+		if(updateScheduled.compareAndSet(false, true)) {
+			SwingUtilities.invokeLater(() -> {
+				updateScheduled.set(false);
+				processHeadlessTargets();
+				positionHints();
+			});
+		}
+	}
+
+	private void processHeadlessTargets() {
+		if(headlessComponents.isEmpty()) {
+			return;
+		}
+
+		for(Iterator<JComponent> it = headlessComponents.iterator(); it.hasNext();) {
+			JComponent target = it.next();
+			String anchor = componentAnchors.get(target);
+			if(anchor==null || setupHint(target, anchor)) {
+				// Remove pending components if we now have a hint or they are no longer needed
+				it.remove();
+			}
+		}
 	}
 
 	private void positionHints() {
@@ -226,8 +273,6 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 
 			// Now position the hint
 			hint.setBounds(newX, newY, dim.width, dim.height);
-
-//			System.out.printf("anchor=%s bounds=%s%n", hint.getName(), hint.getBounds());
 		}
 	}
 
@@ -254,27 +299,29 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 			});
 		roots.clear();
 
+		headlessComponents.clear();
+
 		helpShowing = false;
 	}
 
 	@Override
 	public void componentResized(ComponentEvent e) {
-		positionHints();
+		scheduleUpdate();
 	}
 
 	@Override
 	public void componentMoved(ComponentEvent e) {
-		positionHints();
+		scheduleUpdate();
 	}
 
 	@Override
 	public void componentShown(ComponentEvent e) {
-		positionHints();
+		scheduleUpdate();
 	}
 
 	@Override
 	public void componentHidden(ComponentEvent e) {
-		positionHints();
+		scheduleUpdate();
 	}
 
 	@Override
@@ -293,6 +340,9 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 
 	@Override
 	public void windowClosing(WindowEvent e) {
+		// We're only ever monitoring the help window itself
+
 		helpWindowActive = false;
+		e.getWindow().removeWindowListener(this);
 	}
 }
