@@ -199,6 +199,8 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 		panel.add(graphComponent, BorderLayout.CENTER);
 		panel.add(toolBar, BorderLayout.NORTH);
 
+		environment.getClient().getGui().registerHelp(graphComponent, "replaydh.ui.core.workflowGraph");
+
 		registerActions();
 
 		refreshWorkflowTitle();

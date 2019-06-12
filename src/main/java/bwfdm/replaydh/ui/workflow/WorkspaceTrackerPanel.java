@@ -155,6 +155,8 @@ public class WorkspaceTrackerPanel extends JPanel implements CloseableUI {
 		add(toolBar, BorderLayout.NORTH);
 		add(scrollPane, BorderLayout.CENTER);
 
+		environment.getClient().getGui().registerHelp(this, "replaydh.ui.core.workspaceTrackerPanel");
+
 		registerActions();
 
 		refreshActions();

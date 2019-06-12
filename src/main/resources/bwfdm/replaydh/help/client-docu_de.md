@@ -91,15 +91,9 @@ This is the default view of the client which provides basic features of the clie
 
 ### Toggle Auto-Tracking {#replaydh.ui.core.mainPanel.toggleTrackerActive}
 
-replaydh.ui.core.mainPanel.toggleTrackerActive
-
 ### Update Tracker Status {#replaydh.ui.core.mainPanel.updateStatus}
 
-replaydh.ui.core.mainPanel.updateStatus
-
 ### Cancel Update {#replaydh.ui.core.mainPanel.cancelUpdate}
-
-replaydh.ui.core.mainPanel.cancelUpdate
 
 ### Drag and Drop feature {#replaydh.wizard.addRecord.selectTarget}
 
@@ -181,8 +175,6 @@ replaydh.ui.core.mainPanel.openWorkspaceFolder
 
 ### Clear the resource cache {#replaydh.ui.core.mainPanel.clearResourceCache}
 
-replaydh.ui.core.mainPanel.clearResourceCache
-
 ## The extended view of the client {#replaydh.ui.extended.view}
 
 ### {#replaydh.ui.core.mainPanel.toggleDetails}
@@ -231,8 +223,6 @@ A status message will popup to give feedback whether the export was successfully
 ![Select an archive exporter](Select_Archive_Exporter.png)
 
 ### Update Workspace {#replaydh.ui.core.workflowGraph.updateRepository}
-
-replaydh.ui.core.workflowGraph.updateRepository
 
 ### DSpace, Dataverse and Git Exporter {#replaydh.ui.core.workflowGraph.publishResources}
 

@@ -91,15 +91,9 @@ This is the default view of the client which provides basic features of the clie
 
 ### Toggle Auto-Tracking {#replaydh.ui.core.mainPanel.toggleTrackerActive}
 
-replaydh.ui.core.mainPanel.toggleTrackerActive
-
 ### Update Tracker Status {#replaydh.ui.core.mainPanel.updateStatus}
 
-replaydh.ui.core.mainPanel.updateStatus
-
 ### Cancel Update {#replaydh.ui.core.mainPanel.cancelUpdate}
-
-replaydh.ui.core.mainPanel.cancelUpdate
 
 ### Drag and Drop feature {#replaydh.wizard.addRecord.selectTarget}
 
@@ -177,11 +171,7 @@ When the recording operation is finished the RePlay-DH client will provide a sho
 
 ### Open the workspace folder {#replaydh.ui.core.mainPanel.openWorkspaceFolder}
 
-replaydh.ui.core.mainPanel.openWorkspaceFolder
-
 ### Clear the resource cache {#replaydh.ui.core.mainPanel.clearResourceCache}
-
-replaydh.ui.core.mainPanel.clearResourceCache
 
 ## The extended view of the client {#replaydh.ui.extended.view}
 

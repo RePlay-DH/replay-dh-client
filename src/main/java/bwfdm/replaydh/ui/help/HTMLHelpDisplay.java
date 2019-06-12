@@ -53,7 +53,7 @@ public class HTMLHelpDisplay {
 	 * @param id of the h3 tag
 	 * @return html section
 	 */
-	public String findAndPrintPosition(String id) {
+	private String findAndPrintPosition(String id) {
 		Elements sections =	doc.select("h3[id$="+id+"]");
 		String section="";
 		for (Element element : sections) {
@@ -68,35 +68,46 @@ public class HTMLHelpDisplay {
 		return section;
 	}
 
+	private String processHelpString(String s) {
+		if(s==null || s.isEmpty()) {
+			return ResourceManager.getInstance().get("replaydh.documentation.helpWindow.missingContent");
+		}
+
+		URL jarLocation = HTMLHelpDisplay.class.getProtectionDomain().getCodeSource().getLocation();
+		URL baseURL;
+		try {
+			baseURL = new URL(jarLocation, "bwfdm/replaydh/help/images/");
+		} catch (MalformedURLException e) {
+			log.error("Error creating base URL for help display", e);
+			return ResourceManager.getInstance().get("replaydh.documentation.helpWindow.error");
+		}
+		String htmlHeader = "<head><base href=\"" + baseURL + "\"/></head>";
+		String htmlPart = "<!DOCTYPE html><html>" + htmlHeader + "<body><div style='font-family:monospace'>" + s + "</div></body></html>";
+
+		return htmlPart;
+	}
+
 	/**
 	 *
 	 * @param anchor
 	 * @param comp
 	 */
 	public JFrame showHelpSection(String anchor) {
-		String section = findAndPrintPosition(anchor);
+		String content = findAndPrintPosition(anchor);
+		content = processHelpString(content);
+
+		JEditorPane editorPane = new JEditorPane("text/html", content);
+		editorPane.setEditable(false);
+		editorPane.setCaretPosition(0);
+
 		JFrame frame = new JFrame(); //TODO why are we still using a heavyweight JFrame?
 		frame.setTitle(ResourceManager.getInstance().get("replaydh.documentation.helpWindow.title"));
-		JEditorPane editorPane = new JEditorPane();
-		URL jarLocation = HTMLHelpDisplay.class.getProtectionDomain().getCodeSource().getLocation();
-		URL baseURL;
-		try {
-			baseURL = new URL(jarLocation, "bwfdm/replaydh/help/images/");
-			String htmlHeader = "<head><base href=\"" + baseURL + "\"/></head>";
-			String htmlPart = "<!DOCTYPE html><html>" + htmlHeader + "<body><div style='font-family:monospace'>" + section + "</div></body></html>";
-			JScrollPane scrollPane = new JScrollPane(editorPane);
-			editorPane.setContentType("text/html");
-			editorPane.setText(htmlPart);
-			editorPane.setEditable(false);
-			editorPane.setCaretPosition(0);
-			frame.add(scrollPane);
-			frame.setVisible(true);
-			frame.setSize(800, 600);
-			frame.setLocationRelativeTo(null);
-			frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		} catch (MalformedURLException e) {
-			log.error("Error creating an URL",e);
-		}
+		frame.add(new JScrollPane(editorPane));
+		frame.setVisible(true);
+		frame.setSize(800, 600);
+		frame.setLocationRelativeTo(null);
+		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
 		return frame;
 	}
 }

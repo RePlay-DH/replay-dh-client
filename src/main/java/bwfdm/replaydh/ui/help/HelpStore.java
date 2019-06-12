@@ -20,6 +20,7 @@ package bwfdm.replaydh.ui.help;
 
 import static bwfdm.replaydh.utils.RDHUtils.checkState;
 
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Point;
@@ -41,7 +42,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.AbstractButton;
 import javax.swing.Icon;
-import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -65,10 +65,10 @@ public class HelpStore {
 	private static final Logger log = LoggerFactory.getLogger(HelpStore.class);
 
 	/** Stores the anchor ids for all registered components */
-	private final Map<JComponent, String> componentAnchors = new WeakHashMap<>();
+	private final Map<Component, String> componentAnchors = new WeakHashMap<>();
 
 	/** Holds pending target components outside of UI hierarchy */
-	private final Set<JComponent> headlessComponents = new WeakHashSet<>();
+	private final Set<Component> headlessComponents = new WeakHashSet<>();
 
 	/** Link to the actual help window manager */
 	private final HTMLHelpDisplay helpDisplay;
@@ -80,7 +80,7 @@ public class HelpStore {
 	private final Set<RootPaneContainer> roots = new WeakHashSet<>();
 
 	/** Lookup to find the hints responsible for individual components */
-	private final Map<JComponent, JLabel> hints = new WeakHashMap<>();
+	private final Map<Component, JLabel> hints = new WeakHashMap<>();
 
 	/** Global help mode is on/off */
 	private boolean helpShowing = false;
@@ -100,8 +100,8 @@ public class HelpStore {
 
 		IconRegistry ir = IconRegistry.getGlobalRegistry();
 		smallIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(16));
-		mediumIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(24));
-		largeIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(36));
+		mediumIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(36));
+		largeIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(48));
 
 		mouseListener = new MouseAdapter() {
 			@Override
@@ -151,7 +151,7 @@ public class HelpStore {
 		};
 	}
 
-	public void register(JComponent component, String anchor) {
+	public void register(Component component, String anchor) {
 		checkState("Component already registered", !componentAnchors.containsKey(component));
 		componentAnchors.put(component, anchor);
 
@@ -165,7 +165,7 @@ public class HelpStore {
 		}
 	}
 
-	public void unregister(JComponent component) {
+	public void unregister(Component component) {
 		componentAnchors.remove(component);
 
 		/*
@@ -206,7 +206,7 @@ public class HelpStore {
 
 		log.info("Showing global help markers");
 
-		for(Entry<JComponent, String> entry : componentAnchors.entrySet()) {
+		for(Entry<Component, String> entry : componentAnchors.entrySet()) {
 			// Try to create hint and mark target as headless if it fails
 			if(!setupHint(entry.getKey(), entry.getValue())) {
 				headlessComponents.add(entry.getKey());
@@ -218,7 +218,7 @@ public class HelpStore {
 		scheduleUpdate();
 	}
 
-	private boolean setupHint(JComponent target, String anchor) {
+	private boolean setupHint(Component target, String anchor) {
 
 		// Fetch container responsible for glass pane
 		RootPaneContainer root = (RootPaneContainer) SwingUtilities.getAncestorOfClass(
@@ -252,12 +252,13 @@ public class HelpStore {
 		if(root instanceof Window) {
 			observe((Window) root);
 		}
-		observe(target);
+		if(target instanceof Container) {
+			observe((Container) target);
+		}
 
 		return true;
 	}
 
-	//TODO make button size more flexible and position depending on type of target component
 	private JLabel createHint(String anchor) {
 		JLabel hint = new JLabel();
 		hint.setFocusable(false);
@@ -285,8 +286,8 @@ public class HelpStore {
 			return;
 		}
 
-		for(Iterator<JComponent> it = headlessComponents.iterator(); it.hasNext();) {
-			JComponent target = it.next();
+		for(Iterator<Component> it = headlessComponents.iterator(); it.hasNext();) {
+			Component target = it.next();
 			String anchor = componentAnchors.get(target);
 			if(anchor==null || setupHint(target, anchor)) {
 				// Remove pending components if we now have a hint or they are no longer needed
@@ -300,8 +301,8 @@ public class HelpStore {
 			return;
 		}
 
-		for(Entry<JComponent, JLabel> entry : hints.entrySet()) {
-			JComponent target = entry.getKey();
+		for(Entry<Component, JLabel> entry : hints.entrySet()) {
+			Component target = entry.getKey();
 			JLabel hint = entry.getValue();
 
 			/*
@@ -357,7 +358,7 @@ public class HelpStore {
 	/**
 	 * Calculates a good spot for displaying the hint overlay.
 	 */
-	private Point getHintLocation(JComponent target, Point targetLoc, int targetWidth, int targetHeight,
+	private Point getHintLocation(Component target, Point targetLoc, int targetWidth, int targetHeight,
 			int hintWidth, int hintHeight) {
 		Point loc = new Point(0, 0);
 

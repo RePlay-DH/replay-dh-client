@@ -44,7 +44,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.RootPaneContainer;
 import javax.swing.SwingConstants;
@@ -618,11 +617,11 @@ public class RDHGui extends AbstractRDHTool {
 		//TODO log stat
 	}
 
-	public void unregisterHelp(JComponent component) {
+	public void unregisterHelp(Component component) {
 		getHelpStore().unregister(component);
 	}
 
-	public void registerHelp(JComponent component, String anchor) {
+	public void registerHelp(Component component, String anchor) {
 		getHelpStore().register(component, anchor);
 	}
 

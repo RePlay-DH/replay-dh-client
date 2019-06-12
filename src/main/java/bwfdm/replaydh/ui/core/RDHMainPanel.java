@@ -57,7 +57,6 @@ import java.util.stream.Collectors;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
-import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -291,6 +290,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		tabbedPane = new JTabbedPane();
 
+		RDHGui gui = environment.getClient().getGui();
+
 		tabbedPane.insertTab(
 				rm.get("replaydh.ui.core.mainPanel.tabs.workflow.name"),
 				ir.getIcon("Data-Workflow-icon.png", Resolution.forSize(32)),
@@ -305,16 +306,14 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				rm.get("replaydh.ui.core.mainPanel.tabs.fileTracker.description"),
 				1);
 
-		//TODO needs rework, as getComponentAt() doesn't return the tab header component!!!
-		environment.getClient().getGui().registerHelp((JComponent) tabbedPane.getComponentAt(1),
-				"replaydh.ui.core.mainPanel.tabs.fileTracker.name");
-
 		// Not the cleanest way, but ensure we don't overgrow
 		tabbedPane.setPreferredSize(new Dimension(700, 500));
 
 		fileTrackerPanel = new FileTrackerPanel();
+		gui.registerHelp(fileTrackerPanel, "replaydh.panels.workspaceTracker");
 
 		fileCachePanel = new FileCachePanel();
+		gui.registerHelp(fileCachePanel, "replaydh.panels.fileCache");
 
 		collapseIcon = ir.getIcon("right.png", Resolution.forSize(32));
 		expandIcon = ir.getIcon("left.png", Resolution.forSize(32));
