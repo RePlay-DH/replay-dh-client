@@ -20,7 +20,6 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.resources.UTF8Control;
@@ -44,9 +43,9 @@ public class HTMLHelpDisplay {
 	private static final String DOCU_BASENAME = "bwfdm.replaydh.help.client-docu";
 	private static final String DOCU_SUFFIX = "html";
 
-	public HTMLHelpDisplay(RDHEnvironment environment) {
+	public HTMLHelpDisplay(Locale targetLocale) {
 		Control control = new UTF8Control();
-		List<Locale> candidateLocales = control.getCandidateLocales(DOCU_BASENAME, environment.getLocale());
+		List<Locale> candidateLocales = control.getCandidateLocales(DOCU_BASENAME, targetLocale);
 
 		URL docuUrl = null;
 

@@ -88,7 +88,7 @@ public class HelpStore {
 	private final Icon smallIcon, mediumIcon, largeIcon;
 
 	public HelpStore(RDHEnvironment environment) {
-		helpDisplay = new HTMLHelpDisplay(environment);
+		helpDisplay = new HTMLHelpDisplay(environment.getLocale());
 
 		IconRegistry ir = IconRegistry.getGlobalRegistry();
 		smallIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(16));
