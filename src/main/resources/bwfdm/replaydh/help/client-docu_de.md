@@ -7,7 +7,7 @@ title: 'Endnutzer-Dokumentation RePlay-DH-Client'
 <!-- TOC -->
 
 - [End user documentation of the RePlay-DH client](#end-user-documentation-of-the-replay-dh-client)
-    - [Configuration dialogue of the RePlay-DH client](#replaydh.wizard.welcome.title)
+    - [Configuration dialogue of the RePlay-DH client](#replaydh.wizard.welcome)
         - [Workspace validation](#replaydh.wizard.changeWorkspace.validateWorkspace.validate)
         - [Choose a workflow schema](#replaydh.wizard.changeWorkspace.selectSchema)
     - [Basic functions of the RePlay-DH client](#basic-functions-of-the-replay-dh-client)
@@ -15,7 +15,7 @@ title: 'Endnutzer-Dokumentation RePlay-DH-Client'
         - [Update Tracker Status](#replaydh.ui.core.mainPanel.updateStatus)
         - [Cancel Update](#replaydh.ui.core.mainPanel.cancelUpdate)
         - [Drag and Drop feature](#replaydh.wizard.addRecord.selectTarget)
-        - [Create a new workflow step](#replaydh.ui.core.mainPanel.addStep.name)
+        - [Create a new workflow step](#replaydh.ui.core.mainPanel.addStep)
         - [Open the workspace folder](#replaydh.ui.core.mainPanel.openWorkspaceFolder)
         - [Clear the resource cache](#replaydh.ui.core.mainPanel.clearResourceCache)
     - [The extended view of the client](#replaydh.ui.extended.view)
@@ -40,7 +40,7 @@ title: 'Endnutzer-Dokumentation RePlay-DH-Client'
 <!-- /TOC -->
 # End user documentation of the RePlay-DH client {#end-user-documentation-of-the-replay-dh-client}
 
-## Configuration dialogue of the RePlay-DH client {#replaydh.wizard.welcome.title}
+## Configuration dialogue of the RePlay-DH client {#replaydh.wizard.welcome}
 
 When the RePlay-DH client (client) is started for the first time the configuration dialogue appears. This dialogue is intended as guidance to the basic setup of the client.
 
@@ -129,7 +129,7 @@ There the parameters of this tool and the execution environment can be specified
 
 ![One object registered](Registered_files.png)
 
-### Create a new workflow step {#replaydh.ui.core.mainPanel.addStep.name}
+### Create a new workflow step {#replaydh.ui.core.mainPanel.addStep}
 
 <div id="record_step" title="Create a new workflow step">In order to create a new workflow step because the research has reached a certain point click on the "Record Step" button.</div> 
 
@@ -299,7 +299,7 @@ The RePlay-DH client only starts the publication process and redirects to the pu
 
 ## The file tracker {#replaydh.ui.core.mainPanel.tabs.fileTracker}
 
-### {#replaydh.ui.core.mainPanel.tabs.fileTracker.name}
+### {#replaydh.ui.core.mainPanel.tabs.fileTracker}
 
 ![The file tracker](File_Tracker.png)
 
