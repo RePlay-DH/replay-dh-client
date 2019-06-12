@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.swing.AbstractButton;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -85,9 +86,17 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 	/** Keeps track of the actual help window */
 	private boolean helpWindowActive = false;
 
+
+	private final Icon smallIcon, mediumIcon, largeIcon;
+
 	public HelpStore() {
 		helpDisplay = new HTMLHelpDisplay();
 		helpDisplay.readHelpFile();
+
+		IconRegistry ir = IconRegistry.getGlobalRegistry();
+		smallIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(16));
+		mediumIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(24));
+		largeIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(36));
 	}
 
 	public void register(JComponent component, String anchor) {
@@ -196,9 +205,9 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 		return true;
 	}
 
+	//TODO make button size more flexible and position depending on type of target component
 	private JButton createHint(String anchor) {
-		Icon icon = IconRegistry.getGlobalRegistry().getIcon("icons8-Help-48.png", Resolution.forSize(16));
-		JButton hint = new JButton(icon);
+		JButton hint = new JButton();
 		hint.setFocusable(false);
 		hint.setName(anchor);
 		hint.setToolTipText(ResourceManager.getInstance().get("replaydh.display.help.toolTip"));
@@ -243,7 +252,10 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 			JComponent target = entry.getKey();
 			JButton hint = entry.getValue();
 
-			// Make sure that only hints for currently visible components are considered
+			/*
+			 *  Make sure that only hints for currently visible components are considered.
+			 *  This also increases the chance of target having been assigned proper bounds.
+			 */
 			hint.setVisible(target.isShowing());
 			if(!hint.isVisible()) {
 				continue;
@@ -253,18 +265,18 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 					RootPaneContainer.class, target);
 			Container glassPane = (Container) root.getGlassPane();
 
+			int targetWidth = target.getWidth();
+			int targetHeight = target.getHeight();
+			hint.setIcon(getHintIcon(targetWidth, targetHeight));
+
 			// Desired position is centered at the top, with a slight northwards offset
-			Point loc = SwingUtilities.convertPoint(target, 0, 0, glassPane);
+			Point targetLoc = SwingUtilities.convertPoint(target, 0, 0, glassPane);
 			// Need to use preferred size as hint might not have been placed previously
-			Dimension dim = hint.getPreferredSize();
+			Dimension hintSize = hint.getPreferredSize();
 
-			int newX = loc.x + (target.getWidth() - dim.width)/2;
-			int newY = loc.y - dim.height/2;
-
-			// Sanity check against overlapping the window/frame borders
-			if(newY < 0) {
-				newY = 0;
-			}
+			// Fetch hint location based on type and size of target
+			Point hintLoc = getHintLocation(target, targetLoc, targetWidth, targetHeight,
+					hintSize.width, hintSize.height);
 
 			// If we haven't done so previously, finally add the hint to glass pane
 			if(hint.getParent()!=glassPane) {
@@ -272,8 +284,46 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 			}
 
 			// Now position the hint
-			hint.setBounds(newX, newY, dim.width, dim.height);
+			hint.setBounds(hintLoc.x, hintLoc.y, hintSize.width, hintSize.height);
 		}
+	}
+
+	/**
+	 * Fetches the correct icon for hints based on size of target.
+	 */
+	private Icon getHintIcon(int targetWidth, int targetHeight) {
+		int min = Math.min(targetWidth, targetHeight);
+		Icon icon = smallIcon;
+		if(min>150) {
+			icon = largeIcon;
+		} else if(min>70) {
+			icon = mediumIcon;
+		}
+		return icon;
+	}
+
+	/**
+	 * Calculates a good spot for displaying the hint overlay.
+	 */
+	private Point getHintLocation(JComponent target, Point targetLoc, int targetWidth, int targetHeight,
+			int hintWidth, int hintHeight) {
+		Point loc = new Point(0, 0);
+
+		// For buttons or similar control elements put hint centered on top
+		if(target instanceof AbstractButton) {
+			loc.x = targetLoc.x + (targetWidth - hintWidth)/2;
+			loc.y = targetLoc.y - hintHeight/2;
+		} else {
+			// For any other component (panel, graph, etc...) put in center of target
+			loc.x = targetLoc.x + (targetWidth - hintWidth)/2;
+			loc.y = targetLoc.y + (targetHeight - hintHeight)/2;
+		}
+
+		// Sanity check against overlapping the window/frame borders
+		if(loc.y < 0) {
+			loc.y = 0;
+		}
+		return loc;
 	}
 
 	public void hideHelp() {
