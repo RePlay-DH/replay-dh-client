@@ -140,7 +140,7 @@ public class RDHGui extends AbstractRDHTool {
 		FileTracker fileTracker = environment.getClient().getFileTracker();
 		fileTracker.addTrackerListener(handler);
 
-		helpStore = new HelpStore();
+		helpStore = new HelpStore(environment);
 
 //TODO if we ever get an entry in preferences to let user switch to system L&F, we need to honor it here
 //        try {

@@ -30,9 +30,6 @@ import java.awt.event.ComponentListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -42,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.AbstractButton;
 import javax.swing.Icon;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.RootPaneContainer;
@@ -51,6 +47,7 @@ import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.icons.IconRegistry;
 import bwfdm.replaydh.ui.icons.Resolution;
@@ -85,18 +82,13 @@ public class HelpStore {
 	/** Global help mode is on/off */
 	private boolean helpShowing = false;
 
-	/** Keeps track of the actual help window */
-	private boolean helpWindowActive = false;
-
 	private final MouseListener mouseListener;
 	private final ComponentListener componentListener;
-	private final WindowListener windowListener;
 
 	private final Icon smallIcon, mediumIcon, largeIcon;
 
-	public HelpStore() {
-		helpDisplay = new HTMLHelpDisplay();
-		helpDisplay.readHelpFile();
+	public HelpStore(RDHEnvironment environment) {
+		helpDisplay = new HTMLHelpDisplay(environment);
 
 		IconRegistry ir = IconRegistry.getGlobalRegistry();
 		smallIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(16));
@@ -137,16 +129,6 @@ public class HelpStore {
 			@Override
 			public void componentHidden(ComponentEvent e) {
 				onAnyComponentEvent(e);
-			}
-		};
-
-		windowListener = new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				// We're only ever monitoring the help window itself
-
-				helpWindowActive = false;
-				e.getWindow().removeWindowListener(this);
 			}
 		};
 	}
@@ -408,15 +390,7 @@ public class HelpStore {
 	}
 
 	private void showHelpForHint(JLabel hint) {
-		if(helpWindowActive) {
-			log.info("Ignoring request to show help window - window already active");
-			return;
-		}
-
-		JFrame helpFrame = helpDisplay.showHelpSection(hint.getName());
-		helpWindowActive = true;
-		helpFrame.addWindowListener(windowListener);
-		helpFrame.setName(hint.getName()); //TODO change to something sensible!
+		helpDisplay.showHelpSection(hint.getName());
 
 	}
 }

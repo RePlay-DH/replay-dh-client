@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.Locale;
+import java.util.ResourceBundle.Control;
 
 import javax.swing.JEditorPane;
 import javax.swing.JFrame;
@@ -18,8 +20,11 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.resources.UTF8Control;
+import bwfdm.replaydh.ui.GuiUtils;
 
 /**
  *
@@ -28,23 +33,43 @@ import bwfdm.replaydh.resources.ResourceManager;
  */
 public class HTMLHelpDisplay {
 
-	public HTMLHelpDisplay() {
-	}
-
 	private static final Logger log = LoggerFactory.getLogger(HTMLHelpDisplay.class);
 
 	private String document = null; //TODO do we even need the raw string content after initial parsing?
 	private Document doc;
 
-	/**
-	 * Reads the HTML Help file
-	 */
-	public void readHelpFile() {
-		try(InputStream input = HTMLHelpDisplay.class.getResourceAsStream("/bwfdm/replaydh/help/client-docu.html")) {
+	private JFrame helpFrame;
+	private JEditorPane editorPane;
+
+	private static final String DOCU_BASENAME = "bwfdm.replaydh.help.client-docu";
+	private static final String DOCU_SUFFIX = "html";
+
+	public HTMLHelpDisplay(RDHEnvironment environment) {
+		Control control = new UTF8Control();
+		List<Locale> candidateLocales = control.getCandidateLocales(DOCU_BASENAME, environment.getLocale());
+
+		URL docuUrl = null;
+
+		ClassLoader classLoader = getClass().getClassLoader();
+		for(Locale locale : candidateLocales) {
+			String path = control.toBundleName(DOCU_BASENAME, locale);
+			path = control.toResourceName(path, DOCU_SUFFIX);
+
+			docuUrl = classLoader.getResource(path);
+			if(docuUrl!=null) {
+				break;
+			}
+		}
+
+		if(docuUrl==null)
+			throw new InternalError("Failed to locate docu file");
+
+		try(InputStream input = docuUrl.openStream()) {
 			document = IOUtils.readStream(input);
 		} catch (IOException e) {
 			log.error("Error reading html file as stream",e);
 		}
+
 		doc = Jsoup.parse(document);
 	}
 
@@ -68,9 +93,9 @@ public class HTMLHelpDisplay {
 		return section;
 	}
 
-	private String processHelpString(String s) {
+	private String processHelpString(String anchor, String s) {
 		if(s==null || s.isEmpty()) {
-			return ResourceManager.getInstance().get("replaydh.documentation.helpWindow.missingContent");
+			return ResourceManager.getInstance().get("replaydh.documentation.helpWindow.missingContent", anchor);
 		}
 
 		URL jarLocation = HTMLHelpDisplay.class.getProtectionDomain().getCodeSource().getLocation();
@@ -94,19 +119,30 @@ public class HTMLHelpDisplay {
 	 */
 	public JFrame showHelpSection(String anchor) {
 		String content = findAndPrintPosition(anchor);
-		content = processHelpString(content);
+		content = processHelpString(anchor, content);
 
-		JEditorPane editorPane = new JEditorPane("text/html", content);
-		editorPane.setEditable(false);
+		JFrame frame = helpFrame;
+		if(frame==null) {
+			synchronized (this) {
+				if(frame==null) {
+					editorPane = new JEditorPane("text/html", "");
+					editorPane.setEditable(false);
+
+					frame = new JFrame();
+					frame.setTitle(ResourceManager.getInstance().get("replaydh.documentation.helpWindow.title"));
+					frame.add(new JScrollPane(editorPane));
+					frame.setSize(800, 600);
+					frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+					frame.setLocationRelativeTo(null);
+					GuiUtils.decorateFrame(frame);
+					helpFrame = frame;
+				}
+			}
+		}
+
+		editorPane.setText(content);
 		editorPane.setCaretPosition(0);
-
-		JFrame frame = new JFrame(); //TODO why are we still using a heavyweight JFrame?
-		frame.setTitle(ResourceManager.getInstance().get("replaydh.documentation.helpWindow.title"));
-		frame.add(new JScrollPane(editorPane));
 		frame.setVisible(true);
-		frame.setSize(800, 600);
-		frame.setLocationRelativeTo(null);
-		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
 		return frame;
 	}
