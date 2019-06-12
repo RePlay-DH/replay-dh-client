@@ -24,12 +24,14 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Window;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -39,9 +41,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.AbstractButton;
 import javax.swing.Icon;
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.RootPaneContainer;
 import javax.swing.SwingUtilities;
@@ -58,7 +60,7 @@ import bwfdm.replaydh.utils.WeakHashSet;
  * @author Markus Gärtner, Florian Fritze
  *
  */
-public class HelpStore extends WindowAdapter implements ComponentListener, ActionListener {
+public class HelpStore {
 
 	private static final Logger log = LoggerFactory.getLogger(HelpStore.class);
 
@@ -78,7 +80,7 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 	private final Set<RootPaneContainer> roots = new WeakHashSet<>();
 
 	/** Lookup to find the hints responsible for individual components */
-	private final Map<JComponent, JButton> hints = new WeakHashMap<>();
+	private final Map<JComponent, JLabel> hints = new WeakHashMap<>();
 
 	/** Global help mode is on/off */
 	private boolean helpShowing = false;
@@ -86,6 +88,9 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 	/** Keeps track of the actual help window */
 	private boolean helpWindowActive = false;
 
+	private final MouseListener mouseListener;
+	private final ComponentListener componentListener;
+	private final WindowListener windowListener;
 
 	private final Icon smallIcon, mediumIcon, largeIcon;
 
@@ -97,6 +102,53 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 		smallIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(16));
 		mediumIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(24));
 		largeIcon = ir.getIcon("icons8-Help-48.png", Resolution.forSize(36));
+
+		mouseListener = new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if(e.getClickCount()==1 && !e.isPopupTrigger()) {
+					JLabel hint = (JLabel)e.getComponent();
+					showHelpForHint(hint);
+				}
+			}
+		};
+
+		componentListener = new ComponentListener() {
+
+			private void onAnyComponentEvent(ComponentEvent e) {
+				scheduleUpdate();
+			}
+
+			@Override
+			public void componentShown(ComponentEvent e) {
+				onAnyComponentEvent(e);
+			}
+
+			@Override
+			public void componentResized(ComponentEvent e) {
+				onAnyComponentEvent(e);
+			}
+
+			@Override
+			public void componentMoved(ComponentEvent e) {
+				onAnyComponentEvent(e);
+			}
+
+			@Override
+			public void componentHidden(ComponentEvent e) {
+				onAnyComponentEvent(e);
+			}
+		};
+
+		windowListener = new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				// We're only ever monitoring the help window itself
+
+				helpWindowActive = false;
+				e.getWindow().removeWindowListener(this);
+			}
+		};
 	}
 
 	public void register(JComponent component, String anchor) {
@@ -131,7 +183,7 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 
 	private void observe(Container container) {
 		if(observedContainers.add(container)) {
-			container.addComponentListener(this);
+			container.addComponentListener(componentListener);
 
 			Container parent = container.getParent();
 			if(parent != null) {
@@ -142,7 +194,7 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 
 	private void unobserveAll() {
 		for(Container container : observedContainers) {
-			container.removeComponentListener(this);
+			container.removeComponentListener(componentListener);
 		}
 		observedContainers.clear();
 	}
@@ -206,13 +258,13 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 	}
 
 	//TODO make button size more flexible and position depending on type of target component
-	private JButton createHint(String anchor) {
-		JButton hint = new JButton();
+	private JLabel createHint(String anchor) {
+		JLabel hint = new JLabel();
 		hint.setFocusable(false);
 		hint.setName(anchor);
 		hint.setToolTipText(ResourceManager.getInstance().get("replaydh.display.help.toolTip"));
 		hint.setBorder(null);
-		hint.addActionListener(this);
+		hint.addMouseListener(mouseListener);
 		return hint;
 	}
 
@@ -248,9 +300,9 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 			return;
 		}
 
-		for(Entry<JComponent, JButton> entry : hints.entrySet()) {
+		for(Entry<JComponent, JLabel> entry : hints.entrySet()) {
 			JComponent target = entry.getKey();
-			JButton hint = entry.getValue();
+			JLabel hint = entry.getValue();
 
 			/*
 			 *  Make sure that only hints for currently visible components are considered.
@@ -337,7 +389,7 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 		unobserveAll();
 
 		// Unregister action listeners
-		hints.values().forEach(hint -> hint.removeActionListener(this));
+		hints.values().forEach(hint -> hint.removeMouseListener(mouseListener));
 		hints.clear();
 
 		// Clear glass panes
@@ -354,45 +406,16 @@ public class HelpStore extends WindowAdapter implements ComponentListener, Actio
 		helpShowing = false;
 	}
 
-	@Override
-	public void componentResized(ComponentEvent e) {
-		scheduleUpdate();
-	}
-
-	@Override
-	public void componentMoved(ComponentEvent e) {
-		scheduleUpdate();
-	}
-
-	@Override
-	public void componentShown(ComponentEvent e) {
-		scheduleUpdate();
-	}
-
-	@Override
-	public void componentHidden(ComponentEvent e) {
-		scheduleUpdate();
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent e) {
+	private void showHelpForHint(JLabel hint) {
 		if(helpWindowActive) {
 			log.info("Ignoring request to show help window - window already active");
 			return;
 		}
 
-		JButton button = (JButton) e.getSource();
-		JFrame helpFrame = helpDisplay.showHelpSection(button.getName());
+		JFrame helpFrame = helpDisplay.showHelpSection(hint.getName());
 		helpWindowActive = true;
-		helpFrame.addWindowListener(this);
-		helpFrame.setName(button.getName()); //TODO change to something sensible!
-	}
+		helpFrame.addWindowListener(windowListener);
+		helpFrame.setName(hint.getName()); //TODO change to something sensible!
 
-	@Override
-	public void windowClosing(WindowEvent e) {
-		// We're only ever monitoring the help window itself
-
-		helpWindowActive = false;
-		e.getWindow().removeWindowListener(this);
 	}
 }
