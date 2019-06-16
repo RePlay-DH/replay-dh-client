@@ -16,51 +16,45 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.metadata;
+package bwfdm.replaydh.utils;
 
-import java.awt.Component;
-
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JList;
-
-import bwfdm.replaydh.metadata.MetadataRecord;
-import bwfdm.replaydh.metadata.MetadataRecord.Target;
-import bwfdm.replaydh.metadata.MetadataRepository;
-import bwfdm.replaydh.ui.GuiUtils;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Markus Gärtner
  *
  */
-public class MetadataRecordListCellRenderer extends DefaultListCellRenderer {
+public interface SchemaManager<S extends SchemaManager.Schema> {
 
-	private static final long serialVersionUID = 2583665207309089976L;
-
-	/**
-	 * @see javax.swing.DefaultListCellRenderer#getListCellRendererComponent(javax.swing.JList, java.lang.Object, int, boolean, boolean)
-	 */
-	@Override
-	public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
-			boolean cellHasFocus) {
-
-		Target target = (Target) value;
-		MetadataRecordListModel model = (MetadataRecordListModel) list.getModel();
-		MetadataRepository repository = model.getRepository();
-
-		super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-
-		String text = "???";
-		String tooltip = null;
-
-		if(repository!=null && repository.hasRecords(target)) {
-			MetadataRecord record = repository.getRecord(target, null); //TODO
-			//TODO get proper display name for record
-			text = repository.getDisplayName(record);
+	default Set<S> getAvailableSchemas() {
+		Set<String> schemaIds = getAvailableSchemaIds();
+		if(schemaIds==null) {
+			return Collections.emptySet();
 		}
 
-		setText(text);
-		setToolTipText(GuiUtils.toSwingTooltip(tooltip));
+		Set<S> schemas = new HashSet<>(schemaIds.size());
+		for(String schemaId : schemaIds) {
+			schemas.add(lookupSchema(schemaId));
+		}
 
-		return this;
+		return schemas;
+	}
+
+	Set<String> getAvailableSchemaIds();
+
+	S lookupSchema(String schemaId);
+
+	void addSchema(S schema);
+
+	void removeSchema(S schema);
+
+	void setDefaultSchema(S schema);
+
+	S getDefaultSchema();
+
+	public interface Schema {
+		String getId();
 	}
 }

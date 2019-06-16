@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.metadata.basic;
@@ -30,23 +30,25 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bwfdm.replaydh.core.AbstractRDHTool;
+import bwfdm.replaydh.core.RDHEnvironment;
+import bwfdm.replaydh.core.RDHLifecycleException;
 import bwfdm.replaydh.metadata.MetadataBuilder;
 import bwfdm.replaydh.metadata.MetadataEditor;
 import bwfdm.replaydh.metadata.MetadataException;
 import bwfdm.replaydh.metadata.MetadataListener;
 import bwfdm.replaydh.metadata.MetadataRecord;
-import bwfdm.replaydh.metadata.MetadataRecord.UID;
+import bwfdm.replaydh.metadata.MetadataRecord.Target;
 import bwfdm.replaydh.metadata.MetadataRepository;
 import bwfdm.replaydh.metadata.MetadataSchema;
+import bwfdm.replaydh.utils.AbstractSchemaManager;
 import bwfdm.replaydh.utils.Transaction;
-import bwfdm.replaydh.workflow.Identifiable;
 
 /**
  * @author Markus Gärtner
  *
  */
-public abstract class AbstractMetadataRespository extends AbstractRDHTool implements MetadataRepository {
+public abstract class AbstractMetadataRespository extends AbstractSchemaManager<MetadataSchema>
+		implements MetadataRepository {
 
 	/**
 	 * Listeners to be notified for any {@link MetadataRecord} related events.
@@ -69,6 +71,30 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 	private final Set<MetadataRecord> pendingEdits = Collections.synchronizedSet(new HashSet<>());
 
 	private static final Logger log = LoggerFactory.getLogger(AbstractMetadataRespository.class);
+
+	/**
+	 * @see bwfdm.replaydh.core.AbstractRDHTool#start(bwfdm.replaydh.core.RDHEnvironment)
+	 */
+	@Override
+	public boolean start(RDHEnvironment environment) throws RDHLifecycleException {
+		if(!super.start(environment)) {
+			return false;
+		}
+
+		// TODO register listener
+
+		return true;
+	}
+
+	/**
+	 * @see bwfdm.replaydh.core.AbstractRDHTool#stop(bwfdm.replaydh.core.RDHEnvironment)
+	 */
+	@Override
+	public void stop(RDHEnvironment environment) throws RDHLifecycleException {
+		// TODO unregister listeners
+
+		super.stop(environment);
+	}
 
 	protected void fireMetadataRecordAdded(MetadataRecord record) {
 		if(listeners.isEmpty()) {
@@ -119,7 +145,7 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 		if(!pendingBuilds.isEmpty()) {
 			StringBuilder sb = new StringBuilder("Unfinished builds pending for the following resources:");
 			for(MetadataRecord record : pendingBuilds) {
-				sb.append('\n').append(record.getUID());
+				sb.append('\n').append(record.getTarget());
 			}
 
 			pendingBuilds.clear();
@@ -129,7 +155,7 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 		if(!pendingEdits.isEmpty()) {
 			StringBuilder sb = new StringBuilder("Unfinished edits pending for the following resources:");
 			for(MetadataRecord record : pendingEdits) {
-				sb.append('\n').append(record.getUID());
+				sb.append('\n').append(record.getTarget());
 			}
 
 			pendingEdits.clear();
@@ -173,31 +199,28 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 		listeners.add(listener);
 	}
 
-	protected MutableMetadataRecord newRecord(UID uid) {
-		return new DefaultMetadataRecord(uid);
+	protected MutableMetadataRecord newRecord(Target target, String schemaId) {
+		return new DefaultMetadataRecord(target, schemaId);
 	}
 
-	protected abstract UID createUID(Identifiable resource);
-
 	/**
-	 * @see bwfdm.replaydh.metadata.MetadataRepository#createBuilder(bwfdm.replaydh.workflow.Identifiable)
+	 * @see bwfdm.replaydh.metadata.MetadataRepository#createBuilder(Target)
 	 */
 	@Override
-	public MetadataBuilder createBuilder(Identifiable resource) {
-		requireNonNull(resource);
+	public MetadataBuilder createBuilder(Target target, String schemaId) {
+		requireNonNull(target);
+		requireNonNull(schemaId);
 
 		//TODO wrap into transaction context
 
-		UID uid = getUID(resource);
-		if(uid==null) {
-			uid = createUID(resource);
+		MetadataSchema schema = lookupSchema(schemaId);
+		if(schema==null) {
+			schema = getFallbackSchema();
 		}
 
-		MetadataSchema verifier = createVerifierForBuild(resource);
+		MutableMetadataRecord record = newRecord(target, schemaId);
 
-		MutableMetadataRecord record = newRecord(uid);
-
-		return new DefaultMetadataBuilder(verifier, record) {
+		return new DefaultMetadataBuilder(schema, record) {
 			/**
 			 * @see bwfdm.replaydh.metadata.basic.DefaultMetadataBuilder#beforeStart()
 			 */
@@ -219,15 +242,15 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 	 * Creates a {@link MetadataSchema schema} that is suitable to assist in building
 	 * a new {@link MetadataRecord} for the given resource.
 	 * <p>
-	 * The default implementation returns the shared {@link MetadataSchema#EMPTY_VERIFIER}
+	 * The default implementation returns the shared {@link MetadataSchema#EMPTY_SCHEMA}
 	 * instance. Subclasses are highly encouraged to override this method to express their
 	 * actual limitations or requirements based on their respective metadata scheme.
 	 *
 	 * @param resource
 	 * @return
 	 */
-	protected MetadataSchema createVerifierForBuild(Identifiable resource) {
-		return MetadataSchema.EMPTY_VERIFIER;
+	protected MetadataSchema createVerifierForBuild(Target target) {
+		return MetadataSchema.EMPTY_SCHEMA;
 	}
 
 	/**
@@ -240,7 +263,7 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 	 */
 	protected void beginBuild(MetadataRecord record) {
 		if(!pendingBuilds.add(record))
-			throw new MetadataException("Build already in progress for resource: "+record.getUID());
+			throw new MetadataException("Build already in progress for resource: "+record.getTarget());
 	}
 
 	/**
@@ -254,7 +277,7 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 	 */
 	protected void endBuild(MetadataRecord record, boolean cancel) {
 		if(!pendingBuilds.remove(record))
-			throw new MetadataException("No build in progress for resource: "+record.getUID()
+			throw new MetadataException("No build in progress for resource: "+record.getTarget()
 				+" (make sue to finish building within a transaction context)");
 	}
 
@@ -269,10 +292,10 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 		requireNonNull(record);
 		checkArgument("Provided metadata record is not mutable", record instanceof MutableMetadataRecord);
 
-		MetadataSchema verifier = createVerifierForEdit(record);
+		MetadataSchema schema = createVerifierForEdit(record);
 
 		// Produce a new editor whose pre-final callbacks are linked to endEdit() calls
-		return new DefaultMetadataEditor(verifier, (MutableMetadataRecord) record) {
+		return new DefaultMetadataEditor(schema, (MutableMetadataRecord) record) {
 			/**
 			 * @see bwfdm.replaydh.metadata.basic.DefaultMetadataEditor#beforeStart()
 			 */
@@ -302,7 +325,7 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 	 * Creates a {@link MetadataSchema schema} that is suitable to assist in editing
 	 * the given {@link MetadataRecord}.
 	 * <p>
-	 * The default implementation returns the shared {@link MetadataSchema#EMPTY_VERIFIER}
+	 * The default implementation returns the shared {@link MetadataSchema#EMPTY_SCHEMA}
 	 * instance. Subclasses are highly encouraged to override this method to express their
 	 * actual limitations or requirements based on their respective metadata scheme.
 	 *
@@ -310,7 +333,7 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 	 * @return
 	 */
 	protected MetadataSchema createVerifierForEdit(MetadataRecord record) {
-		return MetadataSchema.EMPTY_VERIFIER;
+		return MetadataSchema.EMPTY_SCHEMA;
 	}
 
 	/**
@@ -323,7 +346,7 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 	 */
 	protected void beginEdit(MetadataRecord record) {
 		if(!pendingEdits.add(record))
-			throw new MetadataException("Edit already in progress for resource: "+record.getUID());
+			throw new MetadataException("Edit already in progress for resource: "+record.getTarget());
 	}
 
 	/**
@@ -337,7 +360,7 @@ public abstract class AbstractMetadataRespository extends AbstractRDHTool implem
 	 */
 	protected void beforeEndEdit(MetadataRecord record, boolean discard) {
 		if(!pendingEdits.remove(record))
-			throw new MetadataException("No edit in progress for resource: "+record.getUID()
+			throw new MetadataException("No edit in progress for resource: "+record.getTarget()
 				+" (make sue to finish editing within a transaction context)");
 	}
 

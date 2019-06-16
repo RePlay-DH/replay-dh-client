@@ -70,7 +70,7 @@ import bwfdm.replaydh.workflow.impl.DefaultResource;
 import bwfdm.replaydh.workflow.impl.DefaultTool;
 import bwfdm.replaydh.workflow.schema.IdentifierSchema;
 import bwfdm.replaydh.workflow.schema.IdentifierType;
-import bwfdm.replaydh.workflow.schema.SchemaManager;
+import bwfdm.replaydh.workflow.schema.WorkflowSchemaManager;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
 /**
@@ -621,7 +621,7 @@ public class LocalIdentifiableResolver extends AbstractRDHTool implements Identi
 		 * TODO think of a cheaper/compacter way
 		 */
 
-		SchemaManager schemaManager = getEnvironment().getClient().getSchemaManager();
+		WorkflowSchemaManager schemaManager = getEnvironment().getClient().getWorkflowSchemaManager();
 		WorkflowSchema schema = schemaManager.lookupSchema(proxy.schemaId);
 		checkArgument("Unknown schema id: "+proxy.schemaId, schema!=null);
 		IdentifierSchema identifierSchema = identifiableProxy.type==Type.PERSON ?

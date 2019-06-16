@@ -559,7 +559,7 @@ public class MetadataAddRecordWizard {
 				}
 
 				private MetadataRecord resolveRecord(Identifiable identifiable) {
-					return context.repository.getRecord(identifiable);
+					return context.repository.getRecord(null, null); //TODO
 				}
 
 				private void registerIdentifiable(Identifiable resource) {

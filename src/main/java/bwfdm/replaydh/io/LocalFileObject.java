@@ -35,7 +35,6 @@ import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.io.resources.FileResource;
 import bwfdm.replaydh.io.resources.IOResource;
 import bwfdm.replaydh.metadata.MetadataRecord;
-import bwfdm.replaydh.metadata.MetadataRepository;
 import bwfdm.replaydh.utils.LazyCollection;
 import bwfdm.replaydh.utils.LookupResult;
 import bwfdm.replaydh.workflow.Checksum;
@@ -56,7 +55,7 @@ import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 public class LocalFileObject implements Comparable<LocalFileObject> {
 
 	private static WorkflowSchema getSchema(RDHEnvironment environment) {
-		WorkflowSchema schema = environment.getClient().getSchemaManager().getDefaultSchema();
+		WorkflowSchema schema = environment.getClient().getWorkflowSchemaManager().getDefaultSchema();
 		if(schema==null) {
 			//FIXME should not be necessary
 			schema = WorkflowSchema.getDefaultSchema();
@@ -256,36 +255,39 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public static boolean ensureOrRefreshRecord(LocalFileObject fileObject, RDHEnvironment environment)
-			throws IOException, InterruptedException {
-
-		requireNonNull(fileObject);
-		requireNonNull(environment);
-
-		boolean needsNewRecord;
-
-		synchronized (fileObject.lock) {
-			fileObject.startUpdate();
-			try {
-				needsNewRecord = ensureOrRefreshResource(fileObject, environment)
-						|| fileObject.record==null;
-
-				if(needsNewRecord) {
-					fileObject.record = null;
-
-					if(fileObject.resource!=null) {
-						MetadataRepository repository = environment.getClient().getLocalMetadataRepository();
-
-						fileObject.record = repository.getRecord(fileObject.resource);
-					}
-				}
-			} finally {
-				fileObject.endUpdate();
-			}
-		}
-
-		return needsNewRecord;
-	}
+//	public static boolean ensureOrRefreshRecord(LocalFileObject fileObject, RDHEnvironment environment)
+//			throws IOException, InterruptedException {
+//
+//		requireNonNull(fileObject);
+//		requireNonNull(environment);
+//
+//		boolean needsNewRecord;
+//
+//		synchronized (fileObject.lock) {
+//			fileObject.startUpdate();
+//			try {
+//				needsNewRecord = ensureOrRefreshResource(fileObject, environment)
+//						|| fileObject.record==null;
+//
+//				if(needsNewRecord) {
+//					fileObject.record = null;
+//
+//					if(fileObject.resource!=null) {
+//						MetadataRepository repository = environment.getClient().getLocalMetadataRepository();
+//						String workspace = environment.getWorkspacePath().toString();
+//
+//						Target target = new Target(workspace, fileObject.file.toString());
+//
+//						fileObject.record = repository.getRecord(target);
+//					}
+//				}
+//			} finally {
+//				fileObject.endUpdate();
+//			}
+//		}
+//
+//		return needsNewRecord;
+//	}
 
 	/**
 	 * The local resource described by this wrapper object.

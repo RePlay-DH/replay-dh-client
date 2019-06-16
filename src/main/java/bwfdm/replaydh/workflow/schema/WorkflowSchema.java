@@ -19,6 +19,7 @@
 package bwfdm.replaydh.workflow.schema;
 
 import bwfdm.replaydh.metadata.MetadataSchema;
+import bwfdm.replaydh.utils.SchemaManager;
 import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
 import bwfdm.replaydh.workflow.Tool;
@@ -32,13 +33,14 @@ import bwfdm.replaydh.workflow.WorkflowStep;
  * @author Markus Gärtner
  *
  */
-public interface WorkflowSchema {
+public interface WorkflowSchema extends SchemaManager.Schema {
 
 	/**
 	 * Returns the globally unique identifier of this schema.
 	 *
 	 * @return
 	 */
+	@Override
 	String getId();
 
 	/**

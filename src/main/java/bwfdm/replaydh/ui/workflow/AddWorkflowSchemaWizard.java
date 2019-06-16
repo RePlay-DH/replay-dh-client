@@ -64,7 +64,7 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
 import bwfdm.replaydh.ui.icons.Resolution;
 import bwfdm.replaydh.utils.AccessMode;
 import bwfdm.replaydh.utils.RDHUtils;
-import bwfdm.replaydh.workflow.schema.SchemaManager;
+import bwfdm.replaydh.workflow.schema.WorkflowSchemaManager;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 import bwfdm.replaydh.workflow.schema.WorkflowSchemaXml;
 
@@ -379,7 +379,7 @@ public class AddWorkflowSchemaWizard {
 					}
 
 					// Step 2: Verify integrity by looking up the id
-					SchemaManager schemaManager = environment.getClient().getSchemaManager();
+					WorkflowSchemaManager schemaManager = environment.getClient().getWorkflowSchemaManager();
 					result.schemaId = result.schema.getId();
 					if(schemaManager.lookupSchema(result.schemaId)!=null) {
 						result.type = ValidationResultType.DUPLICATE_ID;

@@ -41,7 +41,6 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -76,10 +75,8 @@ import bwfdm.replaydh.io.FileTracker;
 import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.io.resources.FileResource;
 import bwfdm.replaydh.io.resources.FileResourceProvider;
-import bwfdm.replaydh.metadata.MetadataBuilder;
-import bwfdm.replaydh.metadata.MetadataRecord;
 import bwfdm.replaydh.metadata.MetadataRepository;
-import bwfdm.replaydh.metadata.basic.file.FileMetadataRepository;
+import bwfdm.replaydh.metadata.db.MetadataDB;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.stats.Interval;
 import bwfdm.replaydh.stats.StatEntry;
@@ -87,20 +84,16 @@ import bwfdm.replaydh.stats.StatLog;
 import bwfdm.replaydh.stats.StatType;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.core.RDHGui;
-import bwfdm.replaydh.utils.Label;
 import bwfdm.replaydh.utils.Lazy;
 import bwfdm.replaydh.utils.Options;
 import bwfdm.replaydh.utils.StringResource;
-import bwfdm.replaydh.utils.annotation.Experimental;
 import bwfdm.replaydh.workflow.Identifier;
-import bwfdm.replaydh.workflow.Resource;
 import bwfdm.replaydh.workflow.ResourceCache;
 import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.catalog.InMemoryMetadataCatalog;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
-import bwfdm.replaydh.workflow.impl.DefaultResource;
 import bwfdm.replaydh.workflow.resolver.IdentifiableResolver;
-import bwfdm.replaydh.workflow.schema.SchemaManager;
+import bwfdm.replaydh.workflow.schema.WorkflowSchemaManager;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 import bwfdm.replaydh.workflow.schema.impl.LocalSchemaManager;
 
@@ -204,7 +197,7 @@ public class RDHClient {
 
 	private final Lazy<RDHGui> gui = Lazy.create(this::createGui, true);
 
-	private final Lazy<SchemaManager> schemaManager = Lazy.create(this::createSchemaManager, true);
+	private final Lazy<WorkflowSchemaManager> schemaManager = Lazy.create(this::createSchemaManager, true);
 
 	private final Lazy<ResourceCache> resourceCache = Lazy.create(this::createResourceCache, true);
 
@@ -558,7 +551,7 @@ public class RDHClient {
 		return metadataCatalog.value();
 	}
 
-	public SchemaManager getSchemaManager() {
+	public WorkflowSchemaManager getWorkflowSchemaManager() {
 		return schemaManager.value();
 	}
 
@@ -858,60 +851,19 @@ public class RDHClient {
 			if(!Files.isDirectory(rootFolder, LinkOption.NOFOLLOW_LINKS))
 				throw new RDHException("Metadata root folder must point to a directory: "+rootFolder);
 
-			FileMetadataRepository.Builder builder = FileMetadataRepository.newBuilder();
+			//TODO create repo!!!
+			MetadataDB.Builder builder = MetadataDB.newBuilder();
 
 			builder.rootFolder(rootFolder);
 			builder.useDublinCore();
 			builder.useDublinCoreNameGenerator();
-			builder.useDefaultCacheAndSerialization();
-			builder.useVirtualUIDStorage();
+			builder.useDefaultCacheAndLocationProvider();
 
 			MetadataRepository repo = builder.build();
 
 			repo = addAndStartTool(repo);
 
-			// BEGIN DEBUG
-			if(isDevMode() && !repo.hasRecords()) {
-				repo.beginUpdate();
-				try {
-					for(int i=0; i<10; i++) {
-						addDummyRecord(repo, i);
-					}
-				} finally {
-					repo.endUpdate();
-				}
-			}
-			// END DEBUG
-
 			return repo;
-		}
-	}
-
-	@Experimental
-	private static void addDummyRecord(MetadataRepository repository, int index) {
-		repository.beginUpdate();
-		try {
-			Resource resource = DefaultResource.uniqueResource();
-			MetadataBuilder builder = repository.createBuilder(resource);
-			builder.start();
-
-			for(Label name : builder.getRequiredNames()) {
-				if("title".equals(name.getLabel()) || "date".equals(name.getLabel())) {
-					continue;
-				}
-
-				builder.addEntry(name.getLabel(), "xxxxxxxx");
-			}
-
-			builder.addEntry("title", "Resource "+String.valueOf(index+1));
-			builder.addEntry("date", LocalDate.now().withDayOfMonth((index*2+1)%30).toString());
-
-			MetadataRecord record = builder.build();
-
-			repository.addRecord(record);
-
-		} finally {
-			repository.endUpdate();
 		}
 	}
 
@@ -929,7 +881,7 @@ public class RDHClient {
 		}
 	}
 
-	private SchemaManager createSchemaManager() {
+	private WorkflowSchemaManager createSchemaManager() {
 		synchronized (lock) {
 
 			LocalSchemaManager.Builder builder = LocalSchemaManager.newBuilder();
@@ -945,7 +897,7 @@ public class RDHClient {
 			// Now add the static client centric folder
 			builder.addFolder(getClientFolder(ClientFolder.SCHEMAS));
 
-			SchemaManager schemaManager = builder.build();
+			WorkflowSchemaManager schemaManager = builder.build();
 
 			return addAndStartTool(schemaManager);
 		}

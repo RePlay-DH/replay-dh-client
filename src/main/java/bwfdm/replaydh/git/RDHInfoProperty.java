@@ -22,7 +22,7 @@ import bwfdm.replaydh.core.RDHClient;
 import bwfdm.replaydh.utils.annotation.Experimental;
 import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.WorkflowVersion;
-import bwfdm.replaydh.workflow.schema.SchemaManager;
+import bwfdm.replaydh.workflow.schema.WorkflowSchemaManager;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
 /**
@@ -38,9 +38,9 @@ public class RDHInfoProperty {
 	 * Id of the {@link WorkflowSchema} to be used for
 	 * a given {@link Workflow}.
 	 *
-	 * The clients current {@link SchemaManager} (obtained
-	 * via {@link RDHClient#getSchemaManager()}) will be
-	 * used to {@link SchemaManager#lookupSchema(String) find}
+	 * The clients current {@link WorkflowSchemaManager} (obtained
+	 * via {@link RDHClient#getWorkflowSchemaManager()}) will be
+	 * used to {@link WorkflowSchemaManager#lookupSchema(String) find}
 	 * the actual schema instance.
 	 * <p>
 	 * Associated property type is {@link String}

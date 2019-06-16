@@ -206,7 +206,7 @@ public interface Identifiable {
     	// If client is initialized, try to use the current schema
     	if(RDHClient.hasClient()) {
     		//FIXME introduces weird dependency on the currently active schema, do we want this?
-    		schema = RDHClient.client().getSchemaManager().getDefaultSchema();
+    		schema = RDHClient.client().getWorkflowSchemaManager().getDefaultSchema();
     	}
 
     	return getBestIdentifier(identifiable, schema);

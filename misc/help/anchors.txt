@@ -13,6 +13,9 @@ client-compact
 client-unfolded-filetracker
 	1	replaydh.ui.core.workspaceTrackerPanel
 
+client-unfolded-metadata-manager
+	1	replaydh.ui.core.metadataManagerPanel
+
 client-unfolded-workflow
 	1	replaydh.ui.core.workflowGrap
 	2	replaydh.ui.core.workflowGraph.exportMetadata

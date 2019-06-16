@@ -1,25 +1,26 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.metadata.basic;
 
 import static java.util.Objects.requireNonNull;
 
+import java.rmi.server.UID;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,32 +39,35 @@ import bwfdm.replaydh.metadata.MetadataRecord;
 public class DefaultMetadataRecord implements MutableMetadataRecord {
 
 	private final Map<String, Set<Entry>> entries = new HashMap<>();
-	private final UID uid;
+	private final Target target;
+	private final String schemaId;
+
+	private boolean changed = false;
 
 	private int totalEntryCount = 0;
 
 	/**
-	 * Creates a fresh empty record and associates it with the given {@link UID uid}.
+	 * Creates a fresh empty record and associates it with the given {@link UID target}.
 	 *
-	 * @param uid
+	 * @param target
 	 */
-	public DefaultMetadataRecord(UID uid) {
-		requireNonNull(uid);
-
-		this.uid = uid;
+	public DefaultMetadataRecord(Target target, String schemaId) {
+		this.target = requireNonNull(target);
+		this.schemaId = requireNonNull(schemaId);
 	}
 
 	/**
 	 * Copy constructor to effectively "clone" the given {@code source} record.
 	 * This constructor will copy over all {@link Entry entries} from the given
-	 * record and also uses its assigned {@link UID uid}.
+	 * record and also uses its assigned {@link UID target}.
 	 *
 	 * @param source
 	 */
 	public DefaultMetadataRecord(MetadataRecord source) {
 		requireNonNull(source);
 
-		uid = source.getUID();
+		target = source.getTarget();
+		schemaId = source.getSchemaId();
 
 		copyContent(source);
 	}
@@ -82,12 +86,24 @@ public class DefaultMetadataRecord implements MutableMetadataRecord {
 		return result;
 	}
 
+	private void change() {
+		changed = true;
+	}
+
 	/**
-	 * @see bwfdm.replaydh.metadata.MetadataRecord#getUID()
+	 * @see bwfdm.replaydh.metadata.MetadataRecord#getTarget()
 	 */
 	@Override
-	public UID getUID() {
-		return uid;
+	public Target getTarget() {
+		return target;
+	}
+
+	/**
+	 * @see bwfdm.replaydh.metadata.MetadataRecord#getSchemaId()
+	 */
+	@Override
+	public String getSchemaId() {
+		return schemaId;
 	}
 
 	/**
@@ -180,6 +196,7 @@ public class DefaultMetadataRecord implements MutableMetadataRecord {
 			throw new MetadataException("Duplicate entry: "+entry);
 
 		totalEntryCount++;
+		change();
 	}
 
 	@Override
@@ -202,12 +219,14 @@ public class DefaultMetadataRecord implements MutableMetadataRecord {
 		if(entries.isEmpty()) {
 			this.entries.remove(name);
 		}
+		change();
 	}
 
 	@Override
 	public void removeAllEntries() {
 		entries.clear();
 		totalEntryCount = 0;
+		change();
 	}
 
 	@Override
@@ -217,6 +236,7 @@ public class DefaultMetadataRecord implements MutableMetadataRecord {
 		Set<Entry> entries = entriesForName(name, false, true);
 		this.entries.remove(name);
 		totalEntryCount -= entries.size();
+		change();
 	}
 
 	/**
@@ -224,7 +244,7 @@ public class DefaultMetadataRecord implements MutableMetadataRecord {
 	 */
 	@Override
 	public int hashCode() {
-		return uid.hashCode();
+		return target.hashCode();
 	}
 
 	/**
@@ -232,7 +252,7 @@ public class DefaultMetadataRecord implements MutableMetadataRecord {
 	 */
 	@Override
 	public String toString() {
-		return "MetadataRecord@"+uid;
+		return "MetadataRecord@"+target;
 	}
 
 	/**
@@ -244,8 +264,18 @@ public class DefaultMetadataRecord implements MutableMetadataRecord {
 			return true;
 		} else if(obj instanceof MetadataRecord) {
 			MetadataRecord other = (MetadataRecord) obj;
-			return uid.equals(other.getUID());
+			return target.equals(other.getTarget());
 		}
 		return false;
+	}
+
+	@Override
+	public boolean hasChanged() {
+		return changed;
+	}
+
+	@Override
+	public void markUnchanged() {
+		changed = true;
 	}
 }

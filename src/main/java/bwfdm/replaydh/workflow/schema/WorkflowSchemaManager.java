@@ -16,53 +16,15 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.workflow;
+package bwfdm.replaydh.workflow.schema;
 
-import static java.util.Objects.requireNonNull;
+import bwfdm.replaydh.core.RDHTool;
+import bwfdm.replaydh.utils.SchemaManager;
 
-import java.util.Set;
-
-import javax.swing.SwingWorker;
-
-import bwfdm.replaydh.core.RDHEnvironment;
-import bwfdm.replaydh.io.LocalFileObject;
-import bwfdm.replaydh.workflow.resolver.IdentifiableResolver;
-
-public class FileResolutionWorker extends SwingWorker<Integer, LocalFileObject> {
-
-	protected final RDHEnvironment environment;
-	protected final Set<LocalFileObject> fileObjects;
-
-	public FileResolutionWorker(RDHEnvironment environment, Set<LocalFileObject> fileObjects) {
-		this.environment = requireNonNull(environment);
-		this.fileObjects = requireNonNull(fileObjects);
-	}
-
-	/**
-	 * @see javax.swing.SwingWorker#doInBackground()
-	 */
-	@Override
-	protected Integer doInBackground() throws Exception {
-
-		final IdentifiableResolver resolver = environment.getClient().getResourceResolver();
-
-		int refreshedFileCount = 0;
-
-		resolver.lock();
-		try {
-			if(Thread.interrupted())
-				throw new InterruptedException();
-
-			for(LocalFileObject fileObject : fileObjects) {
-				if(LocalFileObject.ensureOrRefreshResource(fileObject, environment)) {
-					refreshedFileCount++;
-					publish(fileObject);
-				}
-			}
-		} finally {
-			resolver.unlock();
-		}
-
-		return refreshedFileCount;
-	}
+/**
+ * @author Markus Gärtner
+ *
+ */
+public interface WorkflowSchemaManager extends RDHTool, SchemaManager<WorkflowSchema> {
+	// empty
 }

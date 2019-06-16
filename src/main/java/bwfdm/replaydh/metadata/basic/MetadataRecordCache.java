@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.metadata.basic;
@@ -24,18 +24,22 @@ import static java.util.Objects.requireNonNull;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import bwfdm.replaydh.metadata.MetadataException;
 import bwfdm.replaydh.metadata.MetadataRecord;
-import bwfdm.replaydh.metadata.MetadataRecord.UID;
+import bwfdm.replaydh.metadata.MetadataRecord.Target;
 import bwfdm.replaydh.utils.UsageAware;
 
 /**
- * Implements a cache for {@link UID} to {@link MetadataRecord} mappings.
+ * Implements a cache for {@link Target} to {@link MetadataRecord} mappings.
  *
  * @author Markus Gärtner
  *
@@ -44,19 +48,21 @@ public class MetadataRecordCache {
 
 	private static class Proxy extends WeakReference<MetadataRecord> {
 
-		private final UID uid;
+		final Target target;
+		final String schemaId;
 
 		public Proxy(MetadataRecord record, ReferenceQueue<? super MetadataRecord> q) {
 			super(record, q);
 
-			this.uid = record.getUID();
+			this.target = record.getTarget();
+			this.schemaId = record.getSchemaId();
 		}
 
 	}
 
 	private static final float DEFAULT_PURGE_THRESHOLD = 0.2f;
 
-	private final Map<UID, Proxy> cache;
+	private final Map<Target, List<Proxy>> cache;
 
 	private final ReferenceQueue<MetadataRecord> queue = new ReferenceQueue<>();
 	private final int limit;
@@ -78,7 +84,7 @@ public class MetadataRecordCache {
         for (Object x; (x = queue.poll()) != null; ) {
             synchronized (cache) {
             	Proxy proxy = (Proxy) x;
-            	cache.remove(proxy.uid);
+            	cache.remove(proxy.target);
             }
         }
 	}
@@ -87,70 +93,119 @@ public class MetadataRecordCache {
 		purgeStaleEntries();
 
 		synchronized (cache) {
-			for(Iterator<Entry<UID, Proxy>> it = cache.entrySet().iterator(); it.hasNext();) {
-				Entry<UID, Proxy> entry = it.next();
-				Reference<MetadataRecord> ref = entry.getValue();
-				MetadataRecord record = ref.get();
+			for(Iterator<Entry<Target, List<Proxy>>> itList = cache.entrySet().iterator(); itList.hasNext();) {
+				Entry<Target, List<Proxy>> entry = itList.next();
 
-				// Mark for purging all GC'd records
-				boolean purge = record==null || ref.isEnqueued();
+				for(Iterator<Proxy> it = entry.getValue().iterator(); it.hasNext();) {
+					Proxy proxy = it.next();
+					MetadataRecord record = proxy.get();
 
-				if(!purge && record instanceof UsageAware) {
+					// Mark for purging all GC'd records
+					boolean purge = record==null || proxy.isEnqueued();
 
-					// Additionally check if we can purge entries that are no longer in active use
-					UsageAware aware = (UsageAware) record;
-					// Make sure we give entries time to be used at least once!
-					if(aware.hasBeenUsed() && !aware.inUse()) {
-						ref.clear();
-						purge = true;
+					if(!purge && record instanceof UsageAware) {
+
+						// Additionally check if we can purge entries that are no longer in active use
+						UsageAware aware = (UsageAware) record;
+						// Make sure we give entries time to be used at least once!
+						if(aware.hasBeenUsed() && !aware.inUse()) {
+							proxy.clear();
+							purge = true;
+						}
+					}
+
+					if(purge) {
+						it.remove();
 					}
 				}
 
-				if(purge) {
-					it.remove();
+				if(entry.getValue().isEmpty()) {
+					itList.remove();
 				}
 			}
-		}
-	}
-
-	public MetadataRecord getRecord(UID uid) {
-		requireNonNull(uid);
-
-		purgeStaleEntries();
-
-		synchronized (cache) {
-			Reference<MetadataRecord> ref = cache.get(uid);
-			if(ref==null) {
-				return null;
-			}
-
-			MetadataRecord record = ref.get();
-			if(record==null) {
-				cache.remove(uid);
-			}
-
-			return record;
 		}
 	}
 
 	/**
-	 * Returns {@code true} if this cache contains a {@link Reference} for the
-	 * given {@link UID} that is not {@code null}, {@link Reference#isEnqueued() queued}
-	 * or already {@link Reference#clear() cleared} so that it would {@link Reference#get() yield}
-	 * a {@code null} target.
-	 *
-	 * @param uid
-	 * @return
+	 * Must be called under cache lock!
 	 */
-	public boolean hasRecord(UID uid) {
-		requireNonNull(uid);
+	private Proxy proxyFor(Target target, String schemaId) {
+		List<Proxy> proxies = cache.get(target);
+		if(proxies == null || proxies.isEmpty()) {
+			return null;
+		}
+		for(Proxy proxy : proxies) {
+			if(proxy.schemaId.equals(schemaId)) {
+				return proxy;
+			}
+		}
+		return null;
+	}
+
+	public MetadataRecord getRecord(Target target, String schemaId) {
+		requireNonNull(target);
 
 		purgeStaleEntries();
 
 		synchronized (cache) {
-			Reference<MetadataRecord> ref = cache.get(uid);
-			return ref!=null && !ref.isEnqueued() && ref.get()!=null;
+			Proxy proxy = proxyFor(target, schemaId);
+			return proxy==null ? null : proxy.get();
 		}
+	}
+
+	public List<MetadataRecord> getRecords(Target target) {
+		requireNonNull(target);
+
+		purgeStaleEntries();
+
+		synchronized (cache) {
+			List<Proxy> proxies = cache.get(target);
+			if(proxies == null || proxies.isEmpty()) {
+				return Collections.emptyList();
+			}
+
+			List<MetadataRecord> records = new ArrayList<>(proxies.size());
+			for(Proxy proxy : proxies) {
+				MetadataRecord record = proxy.get();
+				if(record!=null) {
+					records.add(record);
+				}
+			}
+			return records;
+		}
+
+
+	}
+
+	/**
+	 * Returns {@code true} if this cache contains a {@link Reference} for the
+	 * given {@link Target} that is not {@code null}, {@link Reference#isEnqueued() queued}
+	 * or already {@link Reference#clear() cleared} so that it would {@link Reference#get() yield}
+	 * a {@code null} target.
+	 *
+	 * @param target
+	 * @return
+	 */
+	public boolean hasRecords(Target target) {
+		requireNonNull(target);
+
+		purgeStaleEntries();
+
+		synchronized (cache) {
+			return cache.containsKey(target);
+		}
+	}
+
+	/**
+	 * Must be called under cache lock!
+	 */
+	private List<Proxy> proxyList(Target target, boolean createIfMissing) {
+		List<Proxy> proxies = cache.get(target);
+		if(proxies==null && createIfMissing) {
+			proxies = new ArrayList<>();
+			cache.put(target, proxies);
+		}
+		return proxies;
 	}
 
 	public void addRecord(MetadataRecord record) {
@@ -158,27 +213,43 @@ public class MetadataRecordCache {
 
 		purgeStaleEntries();
 
-		UID uid = requireNonNull(record.getUID());
+		synchronized (cache) {
+			addRecord0(record);
+		}
+	}
+
+	/**
+	 * Must be called under cache lock!
+	 */
+	private void addRecord0(MetadataRecord record) {
+		Target target = requireNonNull(record.getTarget());
+		Proxy proxy = proxyFor(target, record.getSchemaId());
+
+		if(proxy!=null) {
+			MetadataRecord existing = proxy.get();
+
+			// If the ref got cleared
+			if(existing!=null) {
+
+				// If the exact same record is already registered, do nothing
+				if(existing==record) {
+					return;
+				} else // Otherwise report inconsistency
+					throw new MetadataException("Cache corrupted - foreign record already registered for target: "+target);
+			}
+		}
+
+		// Here we either have a ref that got GC'd or a blank new entry
+		proxyList(target, true).add(new Proxy(record, queue));
+	}
+
+	public void addRecords(Collection<MetadataRecord> records) {
+		requireNonNull(records);
+
+		purgeStaleEntries();
 
 		synchronized (cache) {
-			Reference<MetadataRecord> ref = cache.get(uid);
-
-			if(ref!=null) {
-				MetadataRecord existing = ref.get();
-
-				// If the ref got cleared
-				if(existing!=null) {
-
-					// If the exact same record is already registered, do nothing
-					if(existing==record) {
-						return;
-					} else // Otherwise report inconsistency
-						throw new MetadataException("Cache corrupted - foreign record already registered for UID: "+uid);
-				}
-			}
-
-			// Here we either have a ref that got GC'd or a blank new entry
-			cache.put(uid, new Proxy(record, queue));
+			records.forEach(this::addRecord0);
 		}
 	}
 
@@ -187,18 +258,21 @@ public class MetadataRecordCache {
 
 		purgeStaleEntries();
 
-		UID uid = requireNonNull(record.getUID());
+		Target target = requireNonNull(record.getTarget());
 
 		synchronized (cache) {
-			Reference<MetadataRecord> ref = cache.remove(uid);
+			Proxy proxy = proxyFor(record.getTarget(), record.getSchemaId());
 
-			if(ref==null)
-				throw new MetadataException("No metadata record present in cache for UID: "+uid);
+			if(proxy==null)
+				throw new MetadataException("No metadata record present in cache for target: "+target);
 
-			ref.clear();
+			proxy.clear();
 		}
 	}
 
+	/**
+	 * Force removal of all entries from cache.
+	 */
 	public void clear() {
 		// Initial removal of queued refs (no need to purge since cache will get cleared)
 		while(queue.poll()!=null);

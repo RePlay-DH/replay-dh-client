@@ -66,7 +66,7 @@ public class DefaultMetadataBuilder extends DelegatingMetadataSchema implements 
 
 	protected void checkStarted() {
 		if(!started)
-			throw new MetadataException("Builing process not started for resource: "+getRecord().getUID());
+			throw new MetadataException("Builing process not started for resource: "+getRecord().getTarget());
 	}
 
 	/**

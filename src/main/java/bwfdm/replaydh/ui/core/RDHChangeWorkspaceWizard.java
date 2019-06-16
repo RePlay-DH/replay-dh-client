@@ -70,7 +70,7 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
 import bwfdm.replaydh.ui.icons.Resolution;
 import bwfdm.replaydh.ui.workflow.WorkflowSchemaListCellRenderer;
 import bwfdm.replaydh.utils.RDHUtils;
-import bwfdm.replaydh.workflow.schema.SchemaManager;
+import bwfdm.replaydh.workflow.schema.WorkflowSchemaManager;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
 /**
@@ -702,7 +702,7 @@ public abstract class RDHChangeWorkspaceWizard {
 		public void refresh(RDHEnvironment environment, ChangeWorkspaceContext context) {
 			DefaultComboBoxModel<WorkflowSchema> model = (DefaultComboBoxModel<WorkflowSchema>) cbSchema.getModel();
 			if(model.getSize()==0) {
-				SchemaManager schemaManager = environment.getClient().getSchemaManager();
+				WorkflowSchemaManager schemaManager = environment.getClient().getWorkflowSchemaManager();
 
 				List<WorkflowSchema> items = new ArrayList<>(schemaManager.getAvailableSchemas());
 				Collections.sort(items, (s1, s2) -> s1.getId().compareTo(s2.getId()));

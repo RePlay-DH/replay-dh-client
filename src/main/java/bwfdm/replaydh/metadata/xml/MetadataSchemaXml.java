@@ -16,7 +16,7 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.metadata.basic.xml;
+package bwfdm.replaydh.metadata.xml;
 
 import static java.util.Objects.requireNonNull;
 

@@ -71,7 +71,6 @@ import bwfdm.replaydh.ui.helper.CloseableUI;
 import bwfdm.replaydh.ui.helper.WrapLayout;
 import bwfdm.replaydh.utils.Options;
 import bwfdm.replaydh.utils.RDHUtils;
-import bwfdm.replaydh.workflow.Resource;
 
 /**
  * @author Markus Gärtner
@@ -444,11 +443,6 @@ public class FileOutlinePanel extends JPanel implements CloseableUI {
 			if(Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
 				buffer.append(ResourceManager.getInstance().get(
 						"replaydh.panels.fileOutline.size")+": ").append(IOUtils.readableSize(file)).append('\n');
-			}
-
-			Resource resource = fileObject.getResource();
-			if(resource!=null) {
-				buffer.append("System-Id: ").append(resource.getSystemId()).append('\n');
 			}
 
 			//TODO add some more information

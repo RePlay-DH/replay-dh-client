@@ -549,7 +549,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 		String schemaId = getAndRemoveProperty(workspacePath, config, RDHInfoProperty.SCHEMA_ID, null);
 
-		WorkflowSchema schema = client.getSchemaManager().lookupSchema(schemaId);
+		WorkflowSchema schema = client.getWorkflowSchemaManager().lookupSchema(schemaId);
 		if(schema==null)
 			throw new GitException("Unknown schema id: "+schemaId);
 

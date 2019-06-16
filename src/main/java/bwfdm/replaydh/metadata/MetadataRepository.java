@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.metadata;
@@ -21,21 +21,18 @@ package bwfdm.replaydh.metadata;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHLifecycleException;
 import bwfdm.replaydh.core.RDHTool;
-import bwfdm.replaydh.metadata.MetadataRecord.UID;
-import bwfdm.replaydh.utils.LookupResult;
-import bwfdm.replaydh.workflow.Identifiable;
-import bwfdm.replaydh.workflow.Resource;
+import bwfdm.replaydh.metadata.MetadataRecord.Target;
+import bwfdm.replaydh.utils.SchemaManager;
 
 /**
  * @author Markus Gärtner
  *
  */
-public interface MetadataRepository extends RDHTool{
+public interface MetadataRepository extends RDHTool, SchemaManager<MetadataSchema> {
 
 	String getDisplayName();
 
@@ -64,46 +61,7 @@ public interface MetadataRepository extends RDHTool{
 
 	// Read API
 
-	/**
-	 * Equivalent of a collection {@link Collection#isEmpty() isEmpty()} method
-	 * that just tells the client code whether or not there are <i>any</i>
-	 * records already contained in this repository.
-	 *
-	 * @return
-	 */
-	boolean hasRecords();
-
-	/**
-	 * Checks whether or not this repository contains a record for the given
-	 * {@link Identifiable}.
-	 * <p>
-	 * The default implementation just delegates to {@link #getUID(Identifiable)}
-	 * and checks the returned value to not be {@code null}.
-	 *
-	 * @param resource
-	 * @return
-	 */
-	default boolean hasRecord(Identifiable resource) {
-		return getUID(resource)!=null;
-	}
-
-	boolean hasRecord(UID uid);
-
-	/**
-	 * Optional method to create a (human readable) unique name associated
-	 * with the given {@link UID}. If the returned value is {@code non-null}
-	 * then it is guaranteed to uniquely identify the specified {@code uid}
-	 * and can for example be used as a file name when storing metadata records.
-	 * <p>
-	 * The default implementation returns {@code null}.
-	 *
-	 * @param uid
-	 * @return
-	 */
-	@Deprecated
-	default String getUniqueName(UID uid) {
-		return null;
-	}
+	boolean hasRecords(Target target);
 
 	/**
 	 * Returns a human-readable {@code String} that is suitable for displaying
@@ -119,43 +77,27 @@ public interface MetadataRepository extends RDHTool{
 	 */
 	String getDisplayName(MetadataRecord record);
 
-	/**
-	 * Returns the unique {@link UID} that is associated with the given {@code resource}
-	 * or {@code null} if the resource is unknown to this repository.
-	 *
-	 * @param resource
-	 * @return
-	 */
-	UID getUID(Identifiable resource);
-
-	default List<LookupResult<UID, Identifiable>> resolve(Identifiable resource, int candidateLimit) {
-		//TODO
-		throw new UnsupportedOperationException("Not implemented");
-	}
-
-	//TODO add some sort of query mechanism to filter the set of returned record UIDs
+	//TODO add some sort of query mechanism to filter the set of returned records
 	RecordIterator getAvailableRecords();
 
 	/**
-	 * Fetches the actual set of metadata associated with a given {@code uid}.
+	 * Fetches the actual set of metadata associated with a given {@code target}
+	 * based on a specific metadata schema.
 	 *
-	 * @param uid
+	 * @param target
 	 * @return
 	 */
-	MetadataRecord getRecord(UID uid);
+	MetadataRecord getRecord(Target target, String schemaId);
 
 	/**
-	 * Tries to fetch the {@link MetadataRecord record} for a given {@link Identifiable}
-	 * and returns it. If the given {@code identifiable} is currently unknown to the
-	 * repository, then {@code null} is returned.
+	 * Fetches all records for the given {@code target}. The returned collection will
+	 * either be empty or contain {@code 1} record for each metadata schema that was
+	 * used to create metadata for the {@code target}.
 	 *
-	 * @param resource
+	 * @param target
 	 * @return
 	 */
-	default MetadataRecord getRecord(Identifiable resource) {
-		UID uid = getUID(resource);
-		return uid==null ? null : getRecord(uid);
-	}
+	Collection<MetadataRecord> getRecords(Target target);
 
 	void addRecord(MetadataRecord record);
 
@@ -174,6 +116,9 @@ public interface MetadataRepository extends RDHTool{
 	 * Checks whether or not the given record is allowed to
 	 * be {@link #createEditor(MetadataRecord) edited} by client
 	 * code or the user.
+	 * <p>
+	 * Per default all records are editable.
+	 *
 	 * @param record
 	 * @return
 	 */
@@ -183,20 +128,18 @@ public interface MetadataRepository extends RDHTool{
 
 	/**
 	 * Creates a new {@link MetadataBuilder} instance suitable for creating
-	 * a {@link MetadataRecord} for the given {@code resource}.
-	 * <p>
-	 * Note that certain repository implementations
+	 * a {@link MetadataRecord} for the given {@code target}.
 	 *
-	 * @param resource
+	 * @param target
 	 * @return
 	 *
 	 * @throws MissingIdentifierException if the resource does not provide enough identifier
-	 * information for this repository to construct a valid {@link UID}
+	 * information for this repository to construct a valid {@link Target}
 	 * @throws MetadataException if the {@code resource} is already registered with this repository
 	 *
-	 * @see #createUID(Resource)
+	 * @see #createTarget(Resource)
 	 */
-	MetadataBuilder createBuilder(Identifiable resource);
+	MetadataBuilder createBuilder(Target target, String schemaId);
 
 	/**
 	 * Creates a new {@link MetadataEditor} instance that can be used
@@ -212,7 +155,7 @@ public interface MetadataRepository extends RDHTool{
 	 * @author Markus Gärtner
 	 *
 	 */
-	public interface RecordIterator extends Iterator<UID>, AutoCloseable {
+	public interface RecordIterator extends Iterator<Target>, AutoCloseable {
 		/**
 		 * @see java.lang.AutoCloseable#close()
 		 */

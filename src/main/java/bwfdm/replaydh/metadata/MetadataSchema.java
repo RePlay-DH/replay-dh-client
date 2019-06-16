@@ -28,6 +28,7 @@ import bwfdm.replaydh.metadata.MetadataRecord.Entry;
 import bwfdm.replaydh.utils.Label;
 import bwfdm.replaydh.utils.LazyCollection;
 import bwfdm.replaydh.utils.Multiplicity;
+import bwfdm.replaydh.utils.SchemaManager;
 
 /**
  * Base interface for builders and editors of metadata records
@@ -38,8 +39,10 @@ import bwfdm.replaydh.utils.Multiplicity;
  * @author Markus Gärtner
  *
  */
-public interface MetadataSchema {
+public interface MetadataSchema extends SchemaManager.Schema {
 
+	@Override
+	String getId();
 
 	/**
 	 * Checks whether {@code name} is a legal String value usable
@@ -260,15 +263,25 @@ public interface MetadataSchema {
 
 			if(!missingNames.isEmpty())
 				throw new MetadataException("Missing required entries in record '"
-							+record.getUID()+"': "+Arrays.toString(missingNames.getAsArray()));
+							+record.getTarget()+"': "+Arrays.toString(missingNames.getAsArray()));
 		}
 	}
+
+	public static final String EMPTY_SCHEMA_ID = "none";
 
 	/**
 	 * A shared state-less schema implementation that does not pose
 	 * any restrictions on the structure or composition of metadata records.
 	 */
-	public static final MetadataSchema EMPTY_VERIFIER = new MetadataSchema() {
+	public static final MetadataSchema EMPTY_SCHEMA = new MetadataSchema() {
+
+		/**
+		 * @see bwfdm.replaydh.metadata.MetadataSchema#getId()
+		 */
+		@Override
+		public String getId() {
+			return EMPTY_SCHEMA_ID;
+		}
 
 		@Override
 		public boolean isValuesLimited(String name) {

@@ -1,19 +1,19 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.ui.metadata;
@@ -58,7 +58,7 @@ import bwfdm.replaydh.core.ToolLifecycleState;
 import bwfdm.replaydh.metadata.MetadataBuilder;
 import bwfdm.replaydh.metadata.MetadataEditor;
 import bwfdm.replaydh.metadata.MetadataRecord;
-import bwfdm.replaydh.metadata.MetadataRecord.UID;
+import bwfdm.replaydh.metadata.MetadataRecord.Target;
 import bwfdm.replaydh.metadata.MetadataRepository;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
@@ -114,7 +114,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 	private final MetadataRecordListModel recordListModel;
 	private final MetadataRecordTableModel recordTableModel;
 
-	private final JList<UID> recordList;
+	private final JList<Target> recordList;
 	private final JTable entryTable;
 	private final TableColumnAdjuster columnAdjuster;
 
@@ -210,6 +210,8 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		splitPane.setDividerLocation(200);
 		add(splitPane, BorderLayout.CENTER);
 
+		environment.getClient().getGui().registerHelp(this, "replaydh.ui.core.metadataManagerPanel");
+
 		registerActions();
 
 		refreshActions();
@@ -260,12 +262,12 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		/*
 		 *  Only try to fetch actual record when we have both an active
 		 *  repository and the repository confirms that it still has a
-		 *  record for the selected UID.
+		 *  record for the selected target.
 		 */
 		if(activeRepository!=null) {
-			UID uid = recordList.getSelectedValue();
-			if(uid!=null && activeRepository.hasRecord(uid)) {
-				record = activeRepository.getRecord(uid);
+			Target target = recordList.getSelectedValue();
+			if(target!=null && activeRepository.hasRecords(target)) {
+				record = activeRepository.getRecord(target, null); //TODO
 			}
 		}
 
@@ -298,12 +300,12 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 			return null;
 		}
 
-		UID uid = recordList.getSelectedValue();
-		if(uid==null) {
+		Target target = recordList.getSelectedValue();
+		if(target==null) {
 			return null;
 		}
 
-		return activeRepository.getRecord(uid);
+		return activeRepository.getRecord(target, null); //TODO
 	}
 
 	private Editor<MetadataBuilder> createEditorForBuild() {
@@ -379,7 +381,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 
 		private void buildRecord(MetadataRepository repository, Identifiable resource) {
 			// Fetch raw editor
-			MetadataBuilder metadataBuilder = repository.createBuilder(resource);
+			MetadataBuilder metadataBuilder = repository.createBuilder(null, null); //TODO
 			metadataBuilder.start();
 
 			// Wrap into GUI-based editor

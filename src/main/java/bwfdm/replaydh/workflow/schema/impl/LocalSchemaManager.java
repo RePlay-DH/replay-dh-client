@@ -18,7 +18,6 @@
  */
 package bwfdm.replaydh.workflow.schema.impl;
 
-import static bwfdm.replaydh.utils.RDHUtils.checkArgument;
 import static bwfdm.replaydh.utils.RDHUtils.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -28,30 +27,28 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bwfdm.replaydh.core.AbstractRDHTool;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHLifecycleException;
 import bwfdm.replaydh.io.resources.FileResource;
 import bwfdm.replaydh.io.resources.IOResource;
+import bwfdm.replaydh.utils.AbstractSchemaManager;
 import bwfdm.replaydh.utils.AccessMode;
-import bwfdm.replaydh.workflow.schema.SchemaManager;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
+import bwfdm.replaydh.workflow.schema.WorkflowSchemaManager;
 import bwfdm.replaydh.workflow.schema.WorkflowSchemaXml;
 
 /**
  * @author Markus Gärtner
  *
  */
-public class LocalSchemaManager extends AbstractRDHTool implements SchemaManager {
+public class LocalSchemaManager extends AbstractSchemaManager<WorkflowSchema> implements WorkflowSchemaManager {
 
 	private static final Logger log = LoggerFactory.getLogger(LocalSchemaManager.class);
 
@@ -60,32 +57,9 @@ public class LocalSchemaManager extends AbstractRDHTool implements SchemaManager
 	}
 
 	/**
-	 * Id of shared default schema, stored late to not cause
-	 * early loading of the entire schema instance.
-	 */
-	private final String DEFAULT_SCHEMA_ID = WorkflowSchema.getDefaultSchema().getId();
-
-	/**
-	 * Currently assigned default schema.
-	 * <p>
-	 * Initialized with the shared {@link WorkflowSchema#getDefaultSchema() default schema}.
-	 */
-	private WorkflowSchema defaultSchema = WorkflowSchema.getDefaultSchema();
-
-	/**
-	 * Maps schema ids to the respective schema instance.
-	 */
-	private final Map<String, WorkflowSchema> schemas = new HashMap<>();
-
-	/**
 	 * Folders that will be scanned for schema files
 	 */
 	private final Set<Path> folders = new HashSet<>();
-
-	/**
-	 * Lock for any access to the schema map or the default schema field.
-	 */
-	private final Object lock = new Object();
 
 	/**
 	 * Flag to indicate this manager should also consider the
@@ -120,6 +94,8 @@ public class LocalSchemaManager extends AbstractRDHTool implements SchemaManager
 				}
 
 				scanFolder(folder);
+
+				setDefaultSchema(WorkflowSchema.getDefaultSchema());
 			}
 		}
 
@@ -151,96 +127,16 @@ public class LocalSchemaManager extends AbstractRDHTool implements SchemaManager
 		}
 	}
 
-	/**
-	 * @throws RDHLifecycleException
-	 * @see bwfdm.replaydh.core.AbstractRDHTool#stop(bwfdm.replaydh.core.RDHEnvironment)
-	 */
-	@Override
-	public void stop(RDHEnvironment environment) throws RDHLifecycleException {
-		synchronized (lock) {
-			schemas.clear();
-			defaultSchema = null;
-		}
-
-		super.stop(environment);
-	}
-
-	protected Set<String> getExternalSchemaIds() {
-		return Collections.unmodifiableSet(schemas.keySet());
-	}
-
 	protected boolean includeSharedDefaultSchema() {
 		return includeSharedDefaultSchema;
 	}
 
+	/**
+	 * @see bwfdm.replaydh.utils.AbstractSchemaManager#getFallbackSchema()
+	 */
 	@Override
-	public Set<String> getAvailableSchemaIds() {
-		Set<String> ids = new HashSet<>(getExternalSchemaIds());
-		if(includeSharedDefaultSchema()) {
-			ids.add(DEFAULT_SCHEMA_ID);
-		}
-		return ids;
-	}
-
-	@Override
-	public WorkflowSchema lookupSchema(String schemaId) {
-		requireNonNull(schemaId);
-
-		if(defaultSchema!=null && defaultSchema.getId().equals(schemaId)) {
-			return defaultSchema;
-		}
-
-		synchronized (lock) {
-			return schemas.get(schemaId);
-		}
-	}
-
-	private static String checkId(WorkflowSchema schema) {
-		String id = schema.getId();
-		checkArgument("Invalid schema id - must not be null or empty", id!=null && !id.isEmpty());
-		return id;
-	}
-
-	@Override
-	public void addSchema(WorkflowSchema schema) {
-		requireNonNull(schema);
-
-		synchronized (lock) {
-			String key = checkId(schema);
-			WorkflowSchema oldSchema = schemas.putIfAbsent(key, schema);
-			if(oldSchema!=null && oldSchema!=schema)
-				throw new IllegalArgumentException("Duplicate schemas for id: "+key);
-		}
-	}
-
-	@Override
-	public void removeSchema(WorkflowSchema schema) {
-		requireNonNull(schema);
-
-		synchronized (lock) {
-			String key = checkId(schema);
-			if(!schemas.remove(key, schema))
-				throw new IllegalArgumentException("Unknown schema: "+key);
-		}
-	}
-
-	@Override
-	public void setDefaultSchema(WorkflowSchema schema) {
-		synchronized (lock) {
-			defaultSchema = schema;
-		}
-	}
-
-	@Override
-	public WorkflowSchema getDefaultSchema() {
-		synchronized (lock) {
-			WorkflowSchema result = defaultSchema;
-			if(result==null && includeSharedDefaultSchema()) {
-				result = lookupSchema(DEFAULT_SCHEMA_ID);
-			}
-
-			return result;
-		}
+	protected WorkflowSchema getFallbackSchema() {
+		return includeSharedDefaultSchema() ? WorkflowSchema.getDefaultSchema() : null;
 	}
 
 	private static final boolean DEFAULT_INCLUDE_SHARED_DEFAULT_SCHEMA = true;
