@@ -208,8 +208,12 @@ public class GitUtils {
 		return FileKey.isGitRepository(dir.toFile(), FS.DETECTED);
 	}
 
-	public static boolean isGitIndex(Path dir) {
-		return dir.endsWith(GitUtils.DEFAULT_GIT_DIR_NAME);
+	public static boolean isGitRelatedFile(Path file) {
+		return isGitIndex(file) || file.endsWith(DEFAULT_IGNORE_FILE_NAME);
+	}
+
+	public static boolean isGitIndex(Path file) {
+		return file.endsWith(DEFAULT_GIT_DIR_NAME);
 	}
 
 	public static boolean isRDHRepository(Path gitDir) {

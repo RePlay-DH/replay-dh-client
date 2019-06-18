@@ -68,7 +68,7 @@ public class WorkspaceTreeModel extends AbstractTreeModel {
 
 	private boolean include(Path file) {
 		//ALWAYS ignore our git files!!!
-		if(GitUtils.isGitIndex(file)) {
+		if(GitUtils.isGitRelatedFile(file)) {
 			return false;
 		}
 

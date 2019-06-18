@@ -54,7 +54,7 @@ public class MetadataRecordCache {
 		public Proxy(MetadataRecord record, ReferenceQueue<? super MetadataRecord> q) {
 			super(record, q);
 
-			this.target = record.getTarget();
+			this.target = record.getTarget().clone();
 			this.schemaId = record.getSchemaId();
 		}
 
@@ -84,7 +84,11 @@ public class MetadataRecordCache {
         for (Object x; (x = queue.poll()) != null; ) {
             synchronized (cache) {
             	Proxy proxy = (Proxy) x;
-            	cache.remove(proxy.target);
+        		List<Proxy> proxies = cache.get(proxy.target);
+            	proxies.remove(proxy);
+            	if(proxies.isEmpty()) {
+            		cache.remove(proxy.target);
+            	}
             }
         }
 	}
@@ -192,7 +196,8 @@ public class MetadataRecordCache {
 		purgeStaleEntries();
 
 		synchronized (cache) {
-			return cache.containsKey(target);
+			List<Proxy> proxies = cache.get(target);
+			return proxies!=null && !proxies.isEmpty();
 		}
 	}
 
@@ -261,12 +266,17 @@ public class MetadataRecordCache {
 		Target target = requireNonNull(record.getTarget());
 
 		synchronized (cache) {
-			Proxy proxy = proxyFor(record.getTarget(), record.getSchemaId());
-
-			if(proxy==null)
+			List<Proxy> proxies = cache.get(target);
+			if(proxies == null || proxies.isEmpty())
 				throw new MetadataException("No metadata record present in cache for target: "+target);
 
-			proxy.clear();
+			for(Iterator<Proxy> it = proxies.iterator(); it.hasNext();) {
+				Proxy proxy = it.next();
+				if(proxy.schemaId.equals(record.getSchemaId())) {
+					proxy.clear();
+					it.remove();
+				}
+			}
 		}
 	}
 

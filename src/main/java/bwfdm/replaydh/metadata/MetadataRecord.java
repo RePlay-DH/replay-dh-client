@@ -148,7 +148,7 @@ public interface MetadataRecord {
 	 * @author Markus Gärtner
 	 *
 	 */
-	public static final class Target {
+	public static final class Target implements Cloneable {
 		private final String workspace, path;
 
 		public Target(Path workspace, Path path) {
@@ -218,6 +218,18 @@ public interface MetadataRecord {
 		@Override
 		public String toString() {
 			return (workspace.isEmpty() ? "<none>" : workspace) + File.separatorChar + path;
+		}
+
+		/**
+		 * @see java.lang.Object#clone()
+		 */
+		@Override
+		public Target clone() {
+			try {
+				return (Target) super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new InternalError("Not supposed to happen", e);
+			}
 		}
 	}
 }

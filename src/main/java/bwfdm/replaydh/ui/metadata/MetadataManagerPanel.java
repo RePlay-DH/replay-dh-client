@@ -38,7 +38,9 @@ import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.Icon;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -50,8 +52,6 @@ import javax.swing.JTable;
 import javax.swing.JToolBar;
 import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultTreeSelectionModel;
@@ -61,10 +61,16 @@ import javax.swing.tree.TreeSelectionModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.jgoodies.forms.builder.FormBuilder;
+
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHException;
+import bwfdm.replaydh.io.FileTracker;
+import bwfdm.replaydh.io.TrackerListener;
+import bwfdm.replaydh.io.TrackingAction;
 import bwfdm.replaydh.metadata.MetadataBuilder;
 import bwfdm.replaydh.metadata.MetadataEditor;
+import bwfdm.replaydh.metadata.MetadataListener;
 import bwfdm.replaydh.metadata.MetadataRecord;
 import bwfdm.replaydh.metadata.MetadataRecord.Target;
 import bwfdm.replaydh.metadata.MetadataRepository;
@@ -76,6 +82,9 @@ import bwfdm.replaydh.ui.actions.ActionManager.ActionMapper;
 import bwfdm.replaydh.ui.helper.CloseableUI;
 import bwfdm.replaydh.ui.helper.Editor;
 import bwfdm.replaydh.ui.helper.TableColumnAdjuster;
+import bwfdm.replaydh.ui.icons.IconRegistry;
+import bwfdm.replaydh.ui.icons.Resolution;
+import bwfdm.replaydh.ui.tree.AbstractTreeCellRendererPanel;
 import bwfdm.replaydh.utils.Options;
 
 /**
@@ -135,7 +144,9 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		actionMapper = actionManager.mapper(this);
 
 		repository = environment.getClient().getLocalMetadataRepository();
+		repository.addMetadataListener(handler);
 		environment.addPropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, handler);
+		environment.getClient().getFileTracker().addTrackerListener(handler);
 
 		/**
 		 * New layout
@@ -162,14 +173,24 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		// LEFT AREA
 
 		workspaceTreeModel = new WorkspaceTreeModel();
-		workspaceTree = new JTree(workspaceTreeModel);
+		workspaceTree = new JTree(workspaceTreeModel) {
+
+			private static final long serialVersionUID = 3315499753160202967L;
+
+			@Override
+			public boolean getScrollableTracksViewportWidth() {
+				return true;
+			}
+		};
+		workspaceTree.setLargeModel(true);
 		workspaceTree.setRootVisible(false);
+		workspaceTree.setRowHeight(0);
 		workspaceTree.expandRow(0);
 		TreeSelectionModel treeSelectionModel = new DefaultTreeSelectionModel();
 		treeSelectionModel.setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 		workspaceTree.setSelectionModel(treeSelectionModel);
 		workspaceTree.addTreeSelectionListener(handler);
-		//TODO set listeners and renderer for tree!!!
+		workspaceTree.setCellRenderer(new TargetRenderer());
 
 		JScrollPane leftScrollPane = new JScrollPane(workspaceTree);
 		leftScrollPane.setBorder(GuiUtils.emptyBorder);
@@ -202,7 +223,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 
 		registerActions();
 
-		reset(environment.getWorkspacePath());
+		reset();
 	}
 
 	private void registerActions() {
@@ -210,7 +231,11 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 	}
 
 	private void refreshActions() {
-		//TODO
+		actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.refreshWorkspaceInfo", handler::refreshWorkspaceInfo);
+	}
+
+	private void reset() {
+		reset(environment.getWorkspacePath());
 	}
 
 	private void reset(Path path) {
@@ -225,9 +250,11 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 	 */
 	@Override
 	public void close() {
+		repository.removeMetadataListener(handler);
+		environment.removePropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, handler);
+		environment.getClient().getFileTracker().removeTrackerListener(handler);
 		actionMapper.dispose();
 		workspaceTreeModel.setRootFolder(null);
-		environment.removePropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, handler);
 	}
 
 	private Target getTarget(TreePath treePath) {
@@ -353,12 +380,14 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 			records.clear();
 		}
 
+		public void update() {
+			reset(target);
+		}
+
 		public void reset(Target target) {
-//			System.out.println(target);
 
 			records.clear();
 			currentRecord = null;
-			this.target = target;
 
 			if(target!=null) {
 				records.addAll(repository.getRecords(target));
@@ -369,6 +398,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 				targetLabel.setText("-");
 				targetLabel.setToolTipText(null);
 			}
+			this.target = target;
 
 			DefaultComboBoxModel<Object> schemaList = (DefaultComboBoxModel<Object>) schemaSelect.getModel();
 			schemaList.removeAllElements();
@@ -381,6 +411,8 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 			if(schemaList.getSize()==0) {
 				schemaList.addElement(NO_RECORD_PRESENT);
 			}
+
+			recordTableModel.update(null);
 
 			schemaSelect.setSelectedIndex(0);
 
@@ -398,22 +430,16 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 			return schema instanceof MetadataSchema ? (MetadataSchema) schema : null;
 		}
 
-		private MetadataRecord currentRecord() {
-//			Target target = currentTarget();
-			if(target==null) {
-				return null;
-			}
+		private void onSchemaSelected(ActionEvent ae) {
+			refreshActions();
 
 			MetadataSchema schema = currentSchema();
 			if(schema==null) {
-				return null;
+				return;
 			}
 
-			return repository.getRecord(target, schema.getId());
-		}
-
-		private void onSchemaSelected(ActionEvent ae) {
-			refreshActions();
+			currentRecord = repository.getRecord(target, schema.getId());
+			recordTableModel.update(currentRecord);
 		}
 
 		private void addRecord(ActionEvent ae) {
@@ -478,13 +504,12 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		}
 
 		private void editRecord(ActionEvent ae) {
-			MetadataRecord record = currentRecord();
-			if(record==null) {
+			if(currentRecord==null) {
 				return;
 			}
 
 			// Fetch raw editor
-			MetadataEditor metadataEditor = repository.createEditor(record);
+			MetadataEditor metadataEditor = repository.createEditor(currentRecord);
 			metadataEditor.start();
 
 			// Wrap into GUI-based editor
@@ -504,7 +529,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 					repository.beginUpdate();
 					try {
 						metadataEditor.commit();
-						log.info("Finished editing metadata record: "+record.getTarget());
+						log.info("Finished editing metadata record: "+currentRecord.getTarget());
 					} catch(Exception e) {
 						// Go back to EDT for displaying a dialog
 						GuiUtils.invokeEDT(() -> GuiUtils.showErrorDialog(getRootPane(), e));
@@ -518,8 +543,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		}
 
 		private void removeRecord(ActionEvent ae) {
-			MetadataRecord record = currentRecord();
-			if(record==null) {
+			if(currentRecord==null) {
 				return;
 			}
 
@@ -534,7 +558,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 				environment.execute(() -> {
 					repository.beginUpdate();
 					try {
-						repository.removeRecord(record);
+						repository.removeRecord(currentRecord);
 					} catch(Exception e) {
 						// Go back to EDT for displaying a dialog
 						GuiUtils.invokeEDT(() -> GuiUtils.showErrorDialog(getRootPane(), e));
@@ -546,7 +570,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		}
 	}
 
-	private class Handler implements TreeSelectionListener, PropertyChangeListener, ChangeListener {
+	private class Handler implements TreeSelectionListener, PropertyChangeListener, MetadataListener, TrackerListener {
 
 		/**
 		 * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
@@ -567,13 +591,139 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 			}
 		}
 
-		/**
-		 * @see javax.swing.event.ChangeListener#stateChanged(javax.swing.event.ChangeEvent)
-		 */
-		@Override
-		public void stateChanged(ChangeEvent e) {
-//			int tabIndex = recordTabs.
+		private void refreshWorkspaceInfo(ActionEvent ae) {
+			reset();
 		}
 
+		/**
+		 * @see bwfdm.replaydh.io.TrackerListener#refreshStarted(bwfdm.replaydh.io.FileTracker)
+		 */
+		@Override
+		public void refreshStarted(FileTracker tracker) {
+			// TODO Auto-generated method stub
+
+		}
+
+		/**
+		 * @see bwfdm.replaydh.io.TrackerListener#refreshFailed(bwfdm.replaydh.io.FileTracker, java.lang.Exception)
+		 */
+		@Override
+		public void refreshFailed(FileTracker tracker, Exception e) {
+			// TODO Auto-generated method stub
+
+		}
+
+		/**
+		 * @see bwfdm.replaydh.io.TrackerListener#refreshDone(bwfdm.replaydh.io.FileTracker, boolean)
+		 */
+		@Override
+		public void refreshDone(FileTracker tracker, boolean canceled) {
+			// TODO Auto-generated method stub
+
+		}
+
+		/**
+		 * @see bwfdm.replaydh.io.TrackerListener#trackingStatusChanged(bwfdm.replaydh.io.FileTracker, java.util.Set, bwfdm.replaydh.io.TrackingAction)
+		 */
+		@Override
+		public void trackingStatusChanged(FileTracker tracker, Set<Path> files, TrackingAction action) {
+			// TODO Auto-generated method stub
+
+		}
+
+		/**
+		 * @see bwfdm.replaydh.io.TrackerListener#statusInfoChanged(bwfdm.replaydh.io.FileTracker)
+		 */
+		@Override
+		public void statusInfoChanged(FileTracker tracker) {
+			// TODO Auto-generated method stub
+
+		}
+
+		private void onRecordChange() {
+			recordPanel.update();
+			workspaceTree.revalidate();
+			workspaceTree.repaint();
+		}
+
+		/**
+		 * @see bwfdm.replaydh.metadata.MetadataListener#metadataRecordAdded(bwfdm.replaydh.metadata.MetadataRepository, bwfdm.replaydh.metadata.MetadataRecord)
+		 */
+		@Override
+		public void metadataRecordAdded(MetadataRepository repository, MetadataRecord record) {
+			onRecordChange();
+		}
+
+		/**
+		 * @see bwfdm.replaydh.metadata.MetadataListener#metadataRecordRemoved(bwfdm.replaydh.metadata.MetadataRepository, bwfdm.replaydh.metadata.MetadataRecord)
+		 */
+		@Override
+		public void metadataRecordRemoved(MetadataRepository repository, MetadataRecord record) {
+			onRecordChange();
+		}
+
+		/**
+		 * @see bwfdm.replaydh.metadata.MetadataListener#metadataRecordChanged(bwfdm.replaydh.metadata.MetadataRepository, bwfdm.replaydh.metadata.MetadataRecord)
+		 */
+		@Override
+		public void metadataRecordChanged(MetadataRepository repository, MetadataRecord record) {
+			onRecordChange();
+		}
+	}
+
+	private class TargetRenderer extends AbstractTreeCellRendererPanel {
+
+		private static final long serialVersionUID = -1328710338763028623L;
+
+		private final JFileChooser fc = new JFileChooser();
+
+		private final JLabel fileLabel;
+		private final JLabel metadataLabel;
+
+		TargetRenderer() {
+			fileLabel = new JLabel("XXXXXXXXXXX");
+			fileLabel.setIconTextGap(4);
+
+			metadataLabel = new JLabel(IconRegistry.getGlobalRegistry().getIcon(
+					"icons8-Ok-48.png", Resolution.forSize(16)));
+
+			FormBuilder.create()
+				.columns("max(100;pref):grow:fill, 2dlu, pref")
+				.rows("max(18;pref)")
+				.panel(this)
+				.add(fileLabel).xy(1, 1, "left, center")
+				.add(metadataLabel).xy(3, 1, "right, center")
+				.build();
+
+			setOpaque(true);
+		}
+
+		/**
+		 * @see bwfdm.replaydh.ui.tree.AbstractTreeCellRendererPanel#prepareRenderer(javax.swing.JTree, java.lang.Object, boolean, boolean, boolean, int, boolean)
+		 */
+		@Override
+		protected void prepareRenderer(JTree tree, Object value, boolean selected, boolean expanded, boolean leaf,
+				int row, boolean hasFocus) {
+
+			Icon icon = null;
+			String text = null;
+			String tooltip = null;
+
+			if(value instanceof Path) {
+				 Path file = (Path) value;
+				 text = file.getFileName().toString();
+				 tooltip = file.toString();
+				 icon = fc.getUI().getFileView(fc).getIcon(file.toFile());
+
+				 Target target = new Target(environment.getWorkspacePath(), file);
+				 metadataLabel.setVisible(repository.hasRecords(target));
+			}
+
+			fileLabel.setIcon(icon);
+			fileLabel.setText(text);
+			fileLabel.setToolTipText(tooltip);
+
+			setMinimumSize(getPreferredSize());
+		}
 	}
 }
