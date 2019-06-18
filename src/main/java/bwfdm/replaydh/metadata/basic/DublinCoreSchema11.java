@@ -207,5 +207,11 @@ public class DublinCoreSchema11 implements MetadataSchema {
 		return null;
 	}
 
-
+	/**
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return getId();
+	}
 }
