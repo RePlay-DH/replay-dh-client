@@ -152,12 +152,19 @@ public interface MetadataRecord {
 		private final String workspace, path;
 
 		public Target(Path workspace, Path path) {
-			this.workspace = requireNonNull(workspace).toString();
-			this.path = requireNonNull(path).toString();
+			requireNonNull(workspace);
+			requireNonNull(path);
+			this.workspace = workspace.toString();
+			this.path = workspace.relativize(path).toString();
 		}
 
 		public Target(String workspace, String path) {
-			this.workspace = requireNonNull(workspace);
+			requireNonNull(workspace);
+			requireNonNull(path);
+			this.workspace = workspace;
+			if(path.startsWith(workspace)) {
+				path = path.substring(workspace.length());
+			}
 			this.path = requireNonNull(path);
 		}
 
