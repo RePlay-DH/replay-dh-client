@@ -42,6 +42,8 @@ public interface SchemaManager<S extends SchemaManager.Schema> {
 		return schemas;
 	}
 
+	int getAvailableSchemaCount();
+
 	Set<String> getAvailableSchemaIds();
 
 	S lookupSchema(String schemaId);

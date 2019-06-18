@@ -22,6 +22,8 @@ import static bwfdm.replaydh.utils.RDHUtils.checkState;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -31,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -39,7 +42,9 @@ import org.slf4j.LoggerFactory;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHLifecycleException;
 import bwfdm.replaydh.db.DBUtils;
+import bwfdm.replaydh.io.resources.FileResource;
 import bwfdm.replaydh.io.resources.FileResourceProvider;
+import bwfdm.replaydh.io.resources.IOResource;
 import bwfdm.replaydh.io.resources.ResourceProvider;
 import bwfdm.replaydh.metadata.MetadataException;
 import bwfdm.replaydh.metadata.MetadataRecord;
@@ -54,7 +59,9 @@ import bwfdm.replaydh.metadata.basic.DublinCoreField;
 import bwfdm.replaydh.metadata.basic.DublinCoreSchema11;
 import bwfdm.replaydh.metadata.basic.MetadataRecordCache;
 import bwfdm.replaydh.metadata.basic.MutableMetadataRecord;
+import bwfdm.replaydh.metadata.xml.MetadataSchemaXml;
 import bwfdm.replaydh.resources.ResourceManager;
+import bwfdm.replaydh.utils.AccessMode;
 import bwfdm.replaydh.utils.MutablePrimitives.MutableInteger;
 
 /**
@@ -136,10 +143,6 @@ public class MetadataDB extends AbstractMetadataRespository {
 		addSchema(getFallbackSchema());
 	}
 
-	private <V> V fail() {
-		throw new UnsupportedOperationException("not implemented yet!!!");
-	}
-
 	/**
 	 * @see bwfdm.replaydh.metadata.MetadataRepository#getDisplayName()
 	 */
@@ -158,6 +161,10 @@ public class MetadataDB extends AbstractMetadataRespository {
 			return false;
 		}
 
+		synchronized (lock) {
+			scanFolder(rootFolder);
+		}
+
 		// Driver loaded, now connect database
 		if(memory) {
 			try {
@@ -167,6 +174,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 			}
 		} else {
 			Path path = rootFolder.resolve(DEFAULT_DB_FILE);
+
 			try {
 				resourceProvider.create(path);
 			} catch (IOException e) {
@@ -191,6 +199,35 @@ public class MetadataDB extends AbstractMetadataRespository {
 		return connection!=null;
 	}
 
+	private void scanFolder(Path folder) {
+		if(!resourceProvider.exists(folder)) {
+			return;
+		}
+
+		// We assume all XML files in the target folder to be schema definitions
+		try(DirectoryStream<Path> stream = Files.newDirectoryStream(folder, "*.oms.xml")) {
+			for(Path file : stream) {
+				scanFile(file);
+			}
+		} catch (IOException e) {
+			log.error("Failed to scan folder: {}", folder, e);
+		}
+	}
+
+	private void scanFile(Path file) {
+		IOResource resource = new FileResource(file, AccessMode.READ);
+		MetadataSchema schema = null;
+		try {
+			schema = MetadataSchemaXml.readSchema(resource);
+		} catch (ExecutionException e) {
+			log.error("Failed to read schema file: {}", file, e.getCause());
+		}
+
+		if(schema!=null) {
+			addSchema(schema);
+		}
+	}
+
 	/**
 	 * @throws RDHLifecycleException
 	 * @see bwfdm.replaydh.metadata.MetadataRepository#stop(bwfdm.replaydh.core.RDHEnvironment)
@@ -211,10 +248,6 @@ public class MetadataDB extends AbstractMetadataRespository {
 		}
 
 		super.stop(environment);
-	}
-
-	private String workspace() {
-		return getEnvironment().getWorkspacePath().toString();
 	}
 
 	private static final String PREFIX = "rdh_";
@@ -300,15 +333,17 @@ public class MetadataDB extends AbstractMetadataRespository {
 			return true;
 		}
 
-		// Check if we have any record for current workspace
 		try(Statement stmt = connection.createStatement(
 				ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
 			String workspace = target.getWorkspace();
+			String path = target.getPath();
 			ResultSet rs = stmt.executeQuery(
-					"SELECT count() FROM  ("
-					+ "SELECT * FROM "+TBL_RECORD+" WHERE "+COL_WORKSPACE+"=\""+workspace+"\" LIMIT 1)");
-			rs.next();
-			return rs.getInt(0) > 0;
+					"SELECT count() FROM  (" +
+					"    SELECT * FROM "+TBL_RECORD+" " +
+					"    WHERE "+COL_WORKSPACE+"=\""+workspace+"\"\n" +
+					"        AND "+COL_PATH+"=\""+path+"\" LIMIT 1)");
+
+			return asInt(rs) > 0;
 		} catch (SQLException e) {
 			log.error("Failed to query database", e);
 		}
@@ -614,6 +649,10 @@ public class MetadataDB extends AbstractMetadataRespository {
 		return MetadataSchema.EMPTY_SCHEMA;
 	}
 
+	private String adjustPath(String s) {
+		return s==null ? null : s.replace('\\', '/');
+	}
+
 //	private <V> V doSql(SQLJob<V> job) {
 //		try(Statement stmt = connection.createStatement()) {
 //
@@ -697,7 +736,8 @@ public class MetadataDB extends AbstractMetadataRespository {
 					return false;
 				}
 
-				nextTarget = new Target(rs.getString(1), rs.getString(2));
+				nextTarget = new Target(adjustPath(rs.getString(1)),
+						adjustPath(rs.getString(2)));
 			} catch (SQLException e) {
 				throw new MetadataException("Error while contacting database", e);
 			}

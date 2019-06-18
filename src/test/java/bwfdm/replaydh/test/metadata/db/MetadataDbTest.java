@@ -137,6 +137,7 @@ public class MetadataDbTest {
 		Target target = new Target("w1", "p1");
 		String schemaId = MetadataSchema.EMPTY_SCHEMA_ID;
 
+		assertFalse(repository.hasRecords(target));
 		assertNull(repository.getRecord(target, schemaId));
 
 		int entryCount = 6;
@@ -162,6 +163,7 @@ public class MetadataDbTest {
 		// Reset internal mapping
 		repository.clearCache();
 
+		assertTrue(repository.hasRecords(target));
 		MetadataRecord record = repository.getRecord(target, schemaId);
 		assertNotNull(record);
 
@@ -240,19 +242,28 @@ public class MetadataDbTest {
 		try {
 			for (int i = 0; i < recordCount; i++) {
 				String schemaId = "schema"+i;
-				MetadataBuilder builder = repository.createBuilder(target1, schemaId);
-				builder.start();
+
+				MetadataBuilder builder1 = repository.createBuilder(target1, schemaId);
+				builder1.start();
+				MetadataBuilder builder2 = repository.createBuilder(target2, schemaId);
+				builder2.start();
 
 				for (int j = 0; j < entryCount; j++) {
-					String key = schemaId+"_key"+j;
-					String value = schemaId+"_value"+j;
-					builder.addEntry(key, value);
-					data.put(key, value);
+					// For first set of records
+					String key1 = path1+"_"+schemaId+"_key"+j;
+					String value1 = path1+"_"+schemaId+"_value"+j;
+					builder1.addEntry(key1, value1);
+					data.put(key1, value1);
+
+					// For seconds et of records
+					String key2 = path2+"_"+schemaId+"_key"+j;
+					String value2 = path2+"_"+schemaId+"_value"+j;
+					builder2.addEntry(key2, value2);
+					data.put(key2, value2);
 				}
 
-				MetadataRecord record = builder.build();
-
-				repository.addRecord(record);
+				repository.addRecord(builder1.build());
+				repository.addRecord(builder2.build());
 			}
 		} finally {
 			repository.endUpdate();
@@ -261,14 +272,30 @@ public class MetadataDbTest {
 		// Reset internal mapping
 		repository.clearCache();
 
-		Collection<MetadataRecord> records = repository.getRecords(target1);
-		assertNotNull(records);
-		assertEquals(recordCount, records.size());
+		assertTrue(repository.hasRecords(target1));
+		Collection<MetadataRecord> records1 = repository.getRecords(target1);
+		assertNotNull(records1);
+		assertEquals(recordCount, records1.size());
 
-		for(MetadataRecord record : records) {
+		for(MetadataRecord record : records1) {
 			record.forEachEntry(entry -> {
 				String key = entry.getName();
 				String value = entry.getValue();
+				assertTrue(key.contains(path1));
+				assertEquals(value, data.get(key));
+			});
+		}
+
+		assertTrue(repository.hasRecords(target2));
+		Collection<MetadataRecord> records2 = repository.getRecords(target2);
+		assertNotNull(records2);
+		assertEquals(recordCount, records2.size());
+
+		for(MetadataRecord record : records2) {
+			record.forEachEntry(entry -> {
+				String key = entry.getName();
+				String value = entry.getValue();
+				assertTrue(key.contains(path2));
 				assertEquals(value, data.get(key));
 			});
 		}

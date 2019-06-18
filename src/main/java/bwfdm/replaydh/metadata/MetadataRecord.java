@@ -21,6 +21,7 @@ package bwfdm.replaydh.metadata;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -149,6 +150,11 @@ public interface MetadataRecord {
 	 */
 	public static final class Target {
 		private final String workspace, path;
+
+		public Target(Path workspace, Path path) {
+			this.workspace = requireNonNull(workspace).toString();
+			this.path = requireNonNull(path).toString();
+		}
 
 		public Target(String workspace, String path) {
 			this.workspace = requireNonNull(workspace);

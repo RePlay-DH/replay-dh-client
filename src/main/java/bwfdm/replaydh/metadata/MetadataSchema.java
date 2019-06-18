@@ -267,7 +267,7 @@ public interface MetadataSchema extends SchemaManager.Schema {
 		}
 	}
 
-	public static final String EMPTY_SCHEMA_ID = "none";
+	public static final String EMPTY_SCHEMA_ID = "default";
 
 	/**
 	 * A shared state-less schema implementation that does not pose

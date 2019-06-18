@@ -110,13 +110,6 @@ public class WorkflowSchemaXml {
 		return schema.value();
 	}
 
-	private static String suffix(String s) {
-		return LOCA_SEP+s;
-	}
-
-	private static final String NAME_SUFFIX = "name";
-	private static final String DESCRIPTION_SUFFIX = "description";
-
 	public static WorkflowSchema readSchema(IOResource resource) throws ExecutionException {
 		try(ReadableByteChannel channel = resource.getReadChannel()) {
 			try(Reader r = Channels.newReader(channel, StandardCharsets.UTF_8.newDecoder(), IOUtils.BUFFER_LENGTH)) {
@@ -204,6 +197,9 @@ public class WorkflowSchemaXml {
 	}
 
 	private static class ContentHandler extends XmlParserHandler {
+
+		private static final String NAME_SUFFIX = "name";
+		private static final String DESCRIPTION_SUFFIX = "description";
 
 		private WorkflowSchema schema;
 

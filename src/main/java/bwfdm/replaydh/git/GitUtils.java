@@ -208,6 +208,10 @@ public class GitUtils {
 		return FileKey.isGitRepository(dir.toFile(), FS.DETECTED);
 	}
 
+	public static boolean isGitIndex(Path dir) {
+		return dir.endsWith(GitUtils.DEFAULT_GIT_DIR_NAME);
+	}
+
 	public static boolean isRDHRepository(Path gitDir) {
 
 		Path infoFile = gitDir.resolve(RDH_CLIENT_INFO_FILENAME);

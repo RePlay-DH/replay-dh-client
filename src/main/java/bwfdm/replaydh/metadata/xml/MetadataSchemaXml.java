@@ -1,33 +1,47 @@
 /*
  * Unless expressly otherwise stated, code from this project is licensed under the MIT license [https://opensource.org/licenses/MIT].
- * 
+ *
  * Copyright (c) <2018> <Markus Gärtner, Volodymyr Kushnarenko, Florian Fritze, Sibylle Hermann and Uli Hahn>
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
- * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package bwfdm.replaydh.metadata.xml;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.validation.Schema;
 
 import org.xml.sax.Attributes;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 
+import bwfdm.replaydh.io.IOUtils;
+import bwfdm.replaydh.io.resources.IOResource;
+import bwfdm.replaydh.metadata.MetadataSchema;
 import bwfdm.replaydh.metadata.ValueRestriction;
 import bwfdm.replaydh.metadata.basic.DefaultMetadataSchema;
 import bwfdm.replaydh.resources.ResourceManager;
@@ -74,6 +88,8 @@ public class MetadataSchemaXml {
 	private static final String ATTR_MIN = "min";
 	private static final String ATTR_MAX = "max";
 
+	private static SAXParserFactory parserFactory;
+
 	private static final boolean DEFAULT_LOCALIZE = false;
 	private static final boolean DEFAULT_USE_DEFAULT_LOCALIZATION_SUFFIX = false;
 
@@ -84,6 +100,45 @@ public class MetadataSchemaXml {
 
 	public static Schema getSchema() {
 		return schema.value();
+	}
+
+	public static MetadataSchema readSchema(IOResource resource) throws ExecutionException {
+		try(ReadableByteChannel channel = resource.getReadChannel()) {
+			try(Reader r = Channels.newReader(channel, StandardCharsets.UTF_8.newDecoder(), IOUtils.BUFFER_LENGTH)) {
+				if(parserFactory==null) {
+					SAXParserFactory factory = SAXParserFactory.newInstance();
+
+					factory.setNamespaceAware(true);
+					factory.setValidating(false);
+
+					factory.setSchema(getSchema());
+
+					parserFactory = factory;
+				}
+
+
+				SAXParser parser = null;
+				try {
+					parser = parserFactory.newSAXParser();
+				} catch (ParserConfigurationException e) {
+					throw new ExecutionException("Parser creation failed", e);
+				}
+
+				XMLReader reader = parser.getXMLReader();
+
+				ContentHandler contentHandler = new ContentHandler();
+
+				reader.setContentHandler(contentHandler);
+
+				reader.parse(new InputSource(r));
+
+				return contentHandler.schema;
+			} catch (SAXException e) {
+				throw new ExecutionException(e);
+			}
+		} catch (IOException e) {
+			throw new ExecutionException(e);
+		}
 	}
 
 	public static class ContentHandler extends XmlParserHandler {

@@ -21,45 +21,54 @@ package bwfdm.replaydh.ui.metadata;
 import static java.util.Objects.requireNonNull;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
-import javax.swing.Box;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JList;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JToolBar;
+import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
-import javax.swing.SwingUtilities;
-import javax.swing.event.ListDataEvent;
-import javax.swing.event.ListDataListener;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.DefaultTreeSelectionModel;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jgoodies.forms.factories.Forms;
-
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHException;
-import bwfdm.replaydh.core.RDHTool;
-import bwfdm.replaydh.core.ToolLifecycleListener;
-import bwfdm.replaydh.core.ToolLifecycleState;
 import bwfdm.replaydh.metadata.MetadataBuilder;
 import bwfdm.replaydh.metadata.MetadataEditor;
 import bwfdm.replaydh.metadata.MetadataRecord;
 import bwfdm.replaydh.metadata.MetadataRecord.Target;
 import bwfdm.replaydh.metadata.MetadataRepository;
+import bwfdm.replaydh.metadata.MetadataSchema;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.actions.ActionManager;
@@ -67,10 +76,7 @@ import bwfdm.replaydh.ui.actions.ActionManager.ActionMapper;
 import bwfdm.replaydh.ui.helper.CloseableUI;
 import bwfdm.replaydh.ui.helper.Editor;
 import bwfdm.replaydh.ui.helper.TableColumnAdjuster;
-import bwfdm.replaydh.ui.helper.Wizard;
-import bwfdm.replaydh.ui.metadata.MetadataAddRecordWizard.AddRecordContext;
 import bwfdm.replaydh.utils.Options;
-import bwfdm.replaydh.workflow.Identifiable;
 
 /**
  * @author Markus Gärtner
@@ -102,23 +108,19 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		return actionManager;
 	}
 
-	private final JToolBar toolBar;
+	private final JToolBar workspaceToolBar;
 
 	private final RDHEnvironment environment;
 
 	private final ActionManager actionManager;
 	private final ActionMapper actionMapper;
+	private final WorkspaceTreeModel workspaceTreeModel;
 
-	private final DefaultComboBoxModel<MetadataRepository> repositorySelectorModel;
+	private final JTree workspaceTree;
+//	private final JTabbedPane recordTabs;
+	private final RecordPanel recordPanel;
 
-	private final MetadataRecordListModel recordListModel;
-	private final MetadataRecordTableModel recordTableModel;
-
-	private final JList<Target> recordList;
-	private final JTable entryTable;
-	private final TableColumnAdjuster columnAdjuster;
-
-	private MetadataRepository activeRepository;
+	private final MetadataRepository repository;
 
 	private final Handler handler;
 
@@ -128,84 +130,70 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		handler = new Handler();
 
 		this.environment = requireNonNull(environment);
-		environment.getClient().addToolLifecycleListener(handler);
 
 		actionManager = getSharedActionManager().derive();
 		actionMapper = actionManager.mapper(this);
 
+		repository = environment.getClient().getLocalMetadataRepository();
+		environment.addPropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, handler);
 
-		/*
+		/**
+		 * New layout
+		 * <pre>
 		 * +---------------------------------------------+
-		 * |                  TOOLBAR                    |
+		 * |         TOOLBAR (filter + control           |
 		 * +--------------+------------------------------+
-		 * |              |                              |
-		 * |              |                              |
-		 * |              |                              |
-		 * |              |         RECORD               |
-		 * |   RECORD     |         OUTLINE              |
-		 * |    LIST      |                              |
-		 * |              |                              |
-		 * |              |                              |
+		 * |              |     RECORD TABS              |
+		 * |  WORKSPACE   +------------------------------+
+		 * |   OUTLINE    |  TOOLBAR  [ADD/EDIT/REMOVE]  |
 		 * |              +------------------------------+
-		 * |              |    ADD    EDIT   REMOVE      |
+		 * |              |         RECORD               |
+		 * |              |     OUTLINE/EDITOR           |
+		 * +--------------+                              |
+		 * |              |                              |
+		 * |   ORPHANED   |                              |
+		 * |   RECORDS    |                              |
 		 * +--------------+------------------------------+
+		 * </pre>
 		 */
 
 		// HEADER
 
-		repositorySelectorModel = new DefaultComboBoxModel<>();
-		JComboBox<MetadataRepository> comboBox = new JComboBox<>(repositorySelectorModel);
-		comboBox.setEditable(false);
-		comboBox.setRenderer(new MetadataRepositoryListCellRenderer());
-		comboBox.addActionListener(handler);
-
-		Options toolBaroptions = new Options();
-		toolBaroptions.put("selector", comboBox);
-		toolBar = actionManager.createToolBar("replaydh.ui.core.metadataManagerPanel.toolBarList", toolBaroptions);
-		add(toolBar, BorderLayout.NORTH);
-
 		// LEFT AREA
 
-		recordListModel = new MetadataRecordListModel();
-		recordListModel.addListDataListener(handler);
-		recordList = new JList<>(recordListModel);
-		recordList.setCellRenderer(new MetadataRecordListCellRenderer());
-		recordList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		recordList.addListSelectionListener(handler);
+		workspaceTreeModel = new WorkspaceTreeModel();
+		workspaceTree = new JTree(workspaceTreeModel);
+		workspaceTree.setRootVisible(false);
+		workspaceTree.expandRow(0);
+		TreeSelectionModel treeSelectionModel = new DefaultTreeSelectionModel();
+		treeSelectionModel.setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+		workspaceTree.setSelectionModel(treeSelectionModel);
+		workspaceTree.addTreeSelectionListener(handler);
+		//TODO set listeners and renderer for tree!!!
 
-		JScrollPane leftScrollPane = new JScrollPane(recordList);
+		JScrollPane leftScrollPane = new JScrollPane(workspaceTree);
 		leftScrollPane.setBorder(GuiUtils.emptyBorder);
+
+		Options tbOptions = new Options();
+		tbOptions.put("selector", null); //TODO add filter outline
+		workspaceToolBar = actionManager.createToolBar(
+				"replaydh.ui.core.metadataManagerPanel.workspaceToolBarList", tbOptions);
+
+		JPanel leftPanel = new JPanel(new BorderLayout());
+
+		leftPanel.add(workspaceToolBar, BorderLayout.NORTH);
+		leftPanel.add(leftScrollPane, BorderLayout.CENTER);
+		//TODO add area for orphaned records
 
 		// RIGHT AREA
 
-		recordTableModel = new MetadataRecordTableModel();
-		entryTable = new JTable(recordTableModel, recordTableModel.getColumnModel());
-		entryTable.setColumnSelectionAllowed(false);
-		entryTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-		entryTable.setFillsViewportHeight(true);
-		entryTable.setIntercellSpacing(new Dimension(3, 3));
-		entryTable.setDefaultRenderer(String.class, new MetadataRecordTableCellRenderer());
-		entryTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+//		recordTabs = new JTabbedPane();
+//		recordTabs.addChangeListener(handler);
 
-		columnAdjuster = new TableColumnAdjuster(entryTable);
-		columnAdjuster.setColumnDataIncluded(true);
-		columnAdjuster.setColumnHeaderIncluded(true);
-		columnAdjuster.setOnlyAdjustLarger(true);
+		recordPanel = new RecordPanel();
 
-		JScrollPane rightScrollPane = new JScrollPane(entryTable);
-		rightScrollPane.setBorder(GuiUtils.bottomLineBorder);
-
-		JButton addRecordButton = (JButton) actionManager.createButton("replaydh.ui.core.metadataManagerPanel.addRecord");
-		JButton editRecordButton = (JButton) actionManager.createButton("replaydh.ui.core.metadataManagerPanel.editRecord");
-		JButton removeRecordButton = (JButton) actionManager.createButton("replaydh.ui.core.metadataManagerPanel.removeRecord");
-
-		JPanel rightPanel = new JPanel(new BorderLayout());
-		rightPanel.add(rightScrollPane, BorderLayout.CENTER);
-		rightPanel.add(Forms.buttonBar((JComponent)Box.createHorizontalGlue(),
-				addRecordButton, editRecordButton, removeRecordButton,
-				(JComponent)Box.createHorizontalGlue()), BorderLayout.SOUTH);
-
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, leftScrollPane, rightPanel);
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true,
+				leftPanel, recordPanel);
 		splitPane.setResizeWeight(0); // Assign all empty space to the right outline
 		splitPane.setDividerLocation(200);
 		add(splitPane, BorderLayout.CENTER);
@@ -214,74 +202,22 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 
 		registerActions();
 
-		refreshActions();
-
-		MetadataRepository localRepository = environment.getClient().getLocalMetadataRepository();
-		repositorySelectorModel.addElement(localRepository);
-		repositorySelectorModel.setSelectedItem(localRepository);
+		reset(environment.getWorkspacePath());
 	}
 
 	private void registerActions() {
-		actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.addRecord", handler::addRecord);
-		actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.editRecord", handler::editRecord);
-		actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.removeRecord", handler::removeRecord);
+		//TODO
 	}
 
 	private void refreshActions() {
-		boolean hasRepository = repositorySelectorModel.getSelectedItem()!=null;
-		boolean hasSelectedRecord = hasRepository && recordList.getSelectedIndex()!=-1;
-
-		actionManager.setEnabled(hasRepository,
-				"replaydh.ui.core.metadataManagerPanel.addRecord");
-		actionManager.setEnabled(hasSelectedRecord,
-				"replaydh.ui.core.metadataManagerPanel.editRecord",
-				"replaydh.ui.core.metadataManagerPanel.removeRecord");
+		//TODO
 	}
 
-	private void refreshActiveRepository() {
-		GuiUtils.checkEDT();
-
-		MetadataRepository selectedRepository = (MetadataRepository) repositorySelectorModel.getSelectedItem();
-
-		// Nothing to do if nothing has changed
-		if(selectedRepository==activeRepository) {
-			return;
-		}
-
-		activeRepository = selectedRepository;
-
-		recordListModel.setRepository(activeRepository);
-		recordList.clearSelection();
+	private void reset(Path path) {
+		workspaceTreeModel.setRootFolder(path);
+		recordPanel.reset(null);
 
 		refreshActions();
-	}
-
-	private void refreshSelectedRecord() {
-		MetadataRecord record = null;
-
-		/*
-		 *  Only try to fetch actual record when we have both an active
-		 *  repository and the repository confirms that it still has a
-		 *  record for the selected target.
-		 */
-		if(activeRepository!=null) {
-			Target target = recordList.getSelectedValue();
-			if(target!=null && activeRepository.hasRecords(target)) {
-				record = activeRepository.getRecord(target, null); //TODO
-			}
-		}
-
-		recordTableModel.update(record);
-//		columnAdjuster.adjustColumn(1);
-	}
-
-	/**
-	 * @see bwfdm.replaydh.ui.helper.CloseableUI#canClose()
-	 */
-	@Override
-	public boolean canClose() {
-		// TODO Auto-generated method stub
-		return CloseableUI.super.canClose();
 	}
 
 	/**
@@ -290,22 +226,16 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 	@Override
 	public void close() {
 		actionMapper.dispose();
-		recordListModel.setRepository(null);
-		recordListModel.removeListDataListener(handler);
-		environment.getClient().removeToolLifecycleListener(handler);
+		workspaceTreeModel.setRootFolder(null);
+		environment.removePropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, handler);
 	}
 
-	private MetadataRecord getSelectedRecord() {
-		if(activeRepository==null) {
+	private Target getTarget(TreePath treePath) {
+		Path path = treePath==null ? null : (Path) treePath.getLastPathComponent();
+		if(path==null || Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
 			return null;
 		}
-
-		Target target = recordList.getSelectedValue();
-		if(target==null) {
-			return null;
-		}
-
-		return activeRepository.getRecord(target, null); //TODO
+		return new Target(environment.getWorkspacePath(), path);
 	}
 
 	private Editor<MetadataBuilder> createEditorForBuild() {
@@ -316,35 +246,243 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		return new MetadataUIEditor();
 	}
 
-	private class Handler implements ActionListener, ToolLifecycleListener, ListSelectionListener, ListDataListener {
+//	private static class TargetContainer extends JPanel {
+//
+//		private static final long serialVersionUID = -6651019691586199973L;
+//
+//		private final Target target;
+//
+//		TargetContainer(Target target) {
+//			super(new BorderLayout());
+//
+//			this.target = requireNonNull(target);
+//		}
+//
+//		public Target getTarget() {
+//			return target;
+//		}
+//	}
 
-		private void addRecord(ActionEvent ae) {
-			AddRecordContext context = AddRecordContext.blank(activeRepository, environment);
-			boolean wizardDone = false;
+	private static final Object NO_RECORD_PRESENT = new Object() {
+		@Override
+		public String toString() {
+			return ResourceManager.getInstance().get("replaydh.ui.core.metadataManagerPanel.noRecords");
+		}
+	};
 
-			// Show the wizard for selecting type and location of target resource
-			try(Wizard<AddRecordContext> wizard = MetadataAddRecordWizard.getWizard(
-					SwingUtilities.getWindowAncestor(MetadataManagerPanel.this),
-					environment)) {
+	private class RecordPanel extends JPanel implements CloseableUI {
 
-				wizard.startWizard(context);
+		private static final long serialVersionUID = -8270015752516385805L;
 
-				wizardDone = wizard.isFinished() && !wizard.isCancelled();
-			}
+		private final MetadataRecordTableModel recordTableModel;
+		private final JComboBox<Object> schemaSelect;
+		private final JToolBar recordToolBar;
 
-			if(wizardDone) {
-				if(context.getRecord()!=null) {
-					editRecord(context.getRepository(), context.getRecord());
-				} else if(context.getIdentifiable()!=null) {
-					buildRecord(context.getRepository(), context.getIdentifiable());
-				}
-				//TODO handle inconsistent context in case neither resource nor record is available
-			}
+		private final JTable entryTable;
+		private final TableColumnAdjuster columnAdjuster;
 
-//			GuiUtils.showDefaultInfo(MetadataManagerPanel.this, null);
+		private final JLabel targetLabel;
+
+		private Target target;
+
+		private List<MetadataRecord> records = new ArrayList<>();
+		private MetadataRecord currentRecord;
+
+		public RecordPanel() {
+			super(new BorderLayout());
+
+			recordTableModel = new MetadataRecordTableModel();
+			entryTable = new JTable(recordTableModel, recordTableModel.getColumnModel());
+			entryTable.setColumnSelectionAllowed(false);
+			entryTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+			entryTable.setFillsViewportHeight(true);
+			entryTable.setIntercellSpacing(new Dimension(3, 3));
+			entryTable.setDefaultRenderer(String.class, new MetadataRecordTableCellRenderer());
+			entryTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+
+			columnAdjuster = new TableColumnAdjuster(entryTable);
+			columnAdjuster.setColumnDataIncluded(true);
+			columnAdjuster.setColumnHeaderIncluded(true);
+			columnAdjuster.setOnlyAdjustLarger(true);
+
+			JScrollPane scrollPane = new JScrollPane(entryTable);
+			scrollPane.setBorder(GuiUtils.bottomLineBorder);
+
+			schemaSelect = new JComboBox<>(new DefaultComboBoxModel<>()); // just to make sure we know what kind of model
+			schemaSelect.setEditable(false);
+			schemaSelect.addActionListener(this::onSchemaSelected);
+
+			targetLabel = new JLabel();
+			targetLabel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+
+			Options recordTbOptions = new Options();
+			recordTbOptions.put("target", targetLabel);
+			recordTbOptions.put("selector", schemaSelect);
+			recordToolBar = actionManager.createToolBar(
+					"replaydh.ui.core.metadataManagerPanel.recordToolBarList", recordTbOptions);
+
+			add(recordToolBar, BorderLayout.NORTH);
+			add(scrollPane, BorderLayout.CENTER);
+
+			registerActions();
+
+			reset(null);
 		}
 
-		private void editRecord(MetadataRepository repository, MetadataRecord record) {
+		private void registerActions() {
+			actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.addRecord", this::addRecord);
+			actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.editRecord", this::editRecord);
+			actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.removeRecord", this::removeRecord);
+		}
+
+		private void refreshActions() {
+			boolean hasTarget = target!=null;
+			boolean hasRecord = hasTarget && currentRecord!=null;
+
+			boolean canAddRecord = hasTarget && records.size()<repository.getAvailableSchemaCount();
+
+			actionManager.setEnabled(canAddRecord,
+					"replaydh.ui.core.metadataManagerPanel.addRecord");
+			actionManager.setEnabled(hasRecord,
+					"replaydh.ui.core.metadataManagerPanel.editRecord",
+					"replaydh.ui.core.metadataManagerPanel.removeRecord");
+		}
+
+		@Override
+		public void close() {
+			records.clear();
+		}
+
+		public void reset(Target target) {
+//			System.out.println(target);
+
+			records.clear();
+			currentRecord = null;
+			this.target = target;
+
+			if(target!=null) {
+				records.addAll(repository.getRecords(target));
+
+				targetLabel.setText(Paths.get(target.getPath()).getFileName().toString());
+				targetLabel.setToolTipText(target.getPath());
+			} else {
+				targetLabel.setText("-");
+				targetLabel.setToolTipText(null);
+			}
+
+			DefaultComboBoxModel<Object> schemaList = (DefaultComboBoxModel<Object>) schemaSelect.getModel();
+			schemaList.removeAllElements();
+			records.stream()
+				.map(MetadataRecord::getSchemaId)
+				.sorted()
+				.map(repository::lookupSchema)
+				.forEach(schemaList::addElement);
+
+			if(schemaList.getSize()==0) {
+				schemaList.addElement(NO_RECORD_PRESENT);
+			}
+
+			schemaSelect.setSelectedIndex(0);
+
+			refreshActions();
+		}
+
+//		private Target currentTarget() {
+//			TargetContainer container = (TargetContainer) SwingUtilities.getAncestorOfClass(
+//					TargetContainer.class, this);
+//			return container==null ? null : container.getTarget();
+//		}
+
+		private MetadataSchema currentSchema() {
+			Object schema = schemaSelect.getSelectedItem();
+			return schema instanceof MetadataSchema ? (MetadataSchema) schema : null;
+		}
+
+		private MetadataRecord currentRecord() {
+//			Target target = currentTarget();
+			if(target==null) {
+				return null;
+			}
+
+			MetadataSchema schema = currentSchema();
+			if(schema==null) {
+				return null;
+			}
+
+			return repository.getRecord(target, schema.getId());
+		}
+
+		private void onSchemaSelected(ActionEvent ae) {
+			refreshActions();
+		}
+
+		private void addRecord(ActionEvent ae) {
+			if(target==null) {
+				return;
+			}
+
+			Set<String> tmp = repository.getAvailableSchemaIds();
+			records.forEach(r -> tmp.remove(r.getSchemaId()));
+			List<String> schemaIds = new ArrayList<>(tmp);
+			Collections.sort(schemaIds);
+
+			JPopupMenu popup = new JPopupMenu();
+			for(String schemaId : schemaIds) {
+				popup.add(new JMenuItem(schemaId)).addActionListener(
+						e -> GuiUtils.invokeEDTLater(
+								() -> addRecord(schemaId)));
+			}
+			Component source = (Component) ae.getSource();
+			GuiUtils.invokeEDTLater(() -> popup.show(source, 0, source.getHeight()));
+		}
+
+		private void addRecord(String schemaId) {
+			if(target==null) {
+				return;
+			}
+			MetadataSchema schema = repository.lookupSchema(schemaId);
+
+			// Fetch raw editor
+			MetadataBuilder metadataBuilder = repository.createBuilder(target, schema.getId());
+			metadataBuilder.start();
+
+			// Wrap into GUI-based editor
+			Editor<MetadataBuilder> editor = createEditorForBuild();
+			editor.setEditingItem(metadataBuilder);
+
+			// Let user decide
+			boolean applied = GuiUtils.showEditorDialogWithControl(
+					GuiUtils.getFrame(getRootPane()),
+					editor,
+					"replaydh.ui.core.metadataManagerPanel.dialogs.addRecord.title", true);
+
+			// Depending on user choice either cancel or finish build
+			if(applied) {
+				// Switch execution to background thread for storing the final record (might involve I/O work)
+				environment.execute(() -> {
+					repository.beginUpdate();
+					try {
+						MetadataRecord record = metadataBuilder.build();
+						repository.addRecord(record);
+						log.info("Finished adding metadata record: "+target);
+					} catch(Exception e) {
+						// Go back to EDT for displaying a dialog
+						GuiUtils.invokeEDT(() -> GuiUtils.showErrorDialog(getRootPane(), e));
+					} finally {
+						repository.endUpdate();
+					}
+				});
+			} else {
+				metadataBuilder.cancel();
+			}
+		}
+
+		private void editRecord(ActionEvent ae) {
+			MetadataRecord record = currentRecord();
+			if(record==null) {
+				return;
+			}
+
 			// Fetch raw editor
 			MetadataEditor metadataEditor = repository.createEditor(record);
 			metadataEditor.start();
@@ -366,7 +504,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 					repository.beginUpdate();
 					try {
 						metadataEditor.commit();
-						log.info("Finished editing metadata record: "+repository.getDisplayName(record));
+						log.info("Finished editing metadata record: "+record.getTarget());
 					} catch(Exception e) {
 						// Go back to EDT for displaying a dialog
 						GuiUtils.invokeEDT(() -> GuiUtils.showErrorDialog(getRootPane(), e));
@@ -379,61 +517,11 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 			}
 		}
 
-		private void buildRecord(MetadataRepository repository, Identifiable resource) {
-			// Fetch raw editor
-			MetadataBuilder metadataBuilder = repository.createBuilder(null, null); //TODO
-			metadataBuilder.start();
-
-			// Wrap into GUI-based editor
-			Editor<MetadataBuilder> editor = createEditorForBuild();
-			editor.setEditingItem(metadataBuilder);
-
-			// Let user decide
-			boolean applied = GuiUtils.showEditorDialogWithControl(
-					GuiUtils.getFrame(getRootPane()),
-					editor,
-					"replaydh.ui.core.metadataManagerPanel.dialogs.addRecord.title", true);
-
-			// Depending on user choice either cancel or finish build
-			if(applied) {
-				// Switch execution to background thread for storing the final record (might involve I/O work)
-				environment.execute(() -> {
-					repository.beginUpdate();
-					try {
-						MetadataRecord record = metadataBuilder.build();
-						repository.addRecord(record);
-						log.info("Finished adding metadata record: "+repository.getDisplayName(record));
-					} catch(Exception e) {
-						// Go back to EDT for displaying a dialog
-						GuiUtils.invokeEDT(() -> GuiUtils.showErrorDialog(getRootPane(), e));
-					} finally {
-						repository.endUpdate();
-					}
-				});
-			} else {
-				metadataBuilder.cancel();
-			}
-		}
-
-		private void editRecord(ActionEvent ae) {
-			MetadataRecord record = getSelectedRecord();
-			if(record==null) {
-				return;
-			}
-
-			MetadataRepository repository = activeRepository;
-
-			editRecord(repository, record);
-		}
-
 		private void removeRecord(ActionEvent ae) {
-
-			MetadataRecord record = getSelectedRecord();
+			MetadataRecord record = currentRecord();
 			if(record==null) {
 				return;
 			}
-
-			MetadataRepository repository = activeRepository;
 
 			//TODO change to a custom dialog in GuiUtils? (to get rid of the default YES_NO option locale
 			if(JOptionPane.showConfirmDialog(
@@ -456,59 +544,36 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 				});
 			}
 		}
+	}
+
+	private class Handler implements TreeSelectionListener, PropertyChangeListener, ChangeListener {
 
 		/**
-		 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+		 * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
 		 */
 		@Override
-		public void actionPerformed(ActionEvent e) {
-			refreshActiveRepository();
-		}
-
-		/**
-		 * @see bwfdm.replaydh.core.ToolLifecycleListener#toolLifecycleStateChanged(bwfdm.replaydh.core.RDHTool, bwfdm.replaydh.core.ToolLifecycleState, bwfdm.replaydh.core.ToolLifecycleState)
-		 */
-		@Override
-		public void toolLifecycleStateChanged(RDHTool tool, ToolLifecycleState oldState, ToolLifecycleState newState) {
-			// TODO check if tool is a MetadataRepository instance and refresh repositorySelectorModel accordingly
+		public void propertyChange(PropertyChangeEvent evt) {
+			GuiUtils.invokeEDTLater(() -> reset(environment.getWorkspacePath()));
 		}
 
 		/**
-		 * @see javax.swing.event.ListSelectionListener#valueChanged(javax.swing.event.ListSelectionEvent)
+		 * @see javax.swing.event.TreeSelectionListener#valueChanged(javax.swing.event.TreeSelectionEvent)
 		 */
 		@Override
-		public void valueChanged(ListSelectionEvent e) {
-			refreshSelectedRecord();
-
-			refreshActions();
-		}
-
-		private void onListDataChanged() {
-			GuiUtils.invokeEDT(MetadataManagerPanel.this::refreshSelectedRecord);
+		public void valueChanged(TreeSelectionEvent e) {
+			Target target = getTarget(e.getPath());
+			if(target!=null) {
+				recordPanel.reset(target);
+			}
 		}
 
 		/**
-		 * @see javax.swing.event.ListDataListener#intervalAdded(javax.swing.event.ListDataEvent)
+		 * @see javax.swing.event.ChangeListener#stateChanged(javax.swing.event.ChangeEvent)
 		 */
 		@Override
-		public void intervalAdded(ListDataEvent e) {
-			onListDataChanged();
+		public void stateChanged(ChangeEvent e) {
+//			int tabIndex = recordTabs.
 		}
 
-		/**
-		 * @see javax.swing.event.ListDataListener#intervalRemoved(javax.swing.event.ListDataEvent)
-		 */
-		@Override
-		public void intervalRemoved(ListDataEvent e) {
-			onListDataChanged();
-		}
-
-		/**
-		 * @see javax.swing.event.ListDataListener#contentsChanged(javax.swing.event.ListDataEvent)
-		 */
-		@Override
-		public void contentsChanged(ListDataEvent e) {
-			onListDataChanged();
-		}
 	}
 }

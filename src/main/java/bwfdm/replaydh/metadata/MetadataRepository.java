@@ -77,7 +77,6 @@ public interface MetadataRepository extends RDHTool, SchemaManager<MetadataSchem
 	 */
 	String getDisplayName(MetadataRecord record);
 
-	//TODO add some sort of query mechanism to filter the set of returned records
 	RecordIterator getAvailableRecords();
 
 	/**

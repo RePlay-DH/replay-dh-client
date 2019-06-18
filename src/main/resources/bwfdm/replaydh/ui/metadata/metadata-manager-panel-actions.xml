@@ -8,22 +8,36 @@
 	
 	<!-- Add Record -->
 	<action id="replaydh.ui.core.metadataManagerPanel.addRecord"
-		name="${id}.name" desc="${id}.description" icon="data-add-icon.png" />
+		name="${id}.name" desc="${id}.description" icon="data-add-icon.png" help="true" />
 	
 	<!-- Edit Record -->
 	<action id="replaydh.ui.core.metadataManagerPanel.editRecord"
-		name="${id}.name" desc="${id}.description" icon="data-edit-icon.png" />
+		name="${id}.name" desc="${id}.description" icon="data-edit-icon.png" help="true" />
 	
 	<!-- Remove Record -->
 	<action id="replaydh.ui.core.metadataManagerPanel.removeRecord"
-		name="${id}.name" desc="${id}.description" icon="data-delete-icon.png" />
+		name="${id}.name" desc="${id}.description" icon="data-delete-icon.png" help="true" />
+	
+	<!-- Refresh Workspace Info -->
+	<action id="replaydh.ui.core.metadataManagerPanel.refreshWorkspaceInfo"
+		name="${id}.name" desc="${id}.description" icon="refresh.gif" help="true" />
 	
 		
 	<!-- ToolBar List for header area -->
-	<action-list id="replaydh.ui.core.metadataManagerPanel.toolBarList">
-		<item type="label" value="replaydh.ui.core.metadataManagerPanel.selectedRepository" />
-		<item type="custom" value="selector" />
+	<action-list id="replaydh.ui.core.metadataManagerPanel.workspaceToolBarList">
+		<item type="label" value="replaydh.ui.core.metadataManagerPanel.currentWorkspace" />
 		<item type="glue" />
+		<item type="action" value="replaydh.ui.core.metadataManagerPanel.refreshWorkspaceInfo" />
+	</action-list>
+		
+	<!-- ToolBar List for metadata record area -->
+	<action-list id="replaydh.ui.core.metadataManagerPanel.recordToolBarList">
+		<item type="custom" value="target" />
+		<item type="glue" />
+		<item type="custom" value="selector" />
+		<item type="action" value="replaydh.ui.core.metadataManagerPanel.addRecord" />
+		<item type="action" value="replaydh.ui.core.metadataManagerPanel.editRecord" />
+		<item type="action" value="replaydh.ui.core.metadataManagerPanel.removeRecord" />
 	</action-list>
 	
 </actions>

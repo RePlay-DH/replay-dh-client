@@ -75,6 +75,14 @@ public abstract class AbstractSchemaManager<S extends SchemaManager.Schema>
 		return Collections.unmodifiableSet(schemas.keySet());
 	}
 
+	/**
+	 * @see bwfdm.replaydh.utils.SchemaManager#getAvailableSchemaCount()
+	 */
+	@Override
+	public int getAvailableSchemaCount() {
+		return schemas.size();
+	}
+
 	@Override
 	public S lookupSchema(String schemaId) {
 		requireNonNull(schemaId);
