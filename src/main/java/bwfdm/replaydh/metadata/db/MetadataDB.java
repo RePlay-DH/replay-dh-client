@@ -269,6 +269,13 @@ public class MetadataDB extends AbstractMetadataRespository {
 		try(Statement stmt = connection.createStatement()) {
 
 			/*
+			 * Make sure we can use triggers on foreign keys.
+			 * We need this for not having to do multiple queries
+			 * when deleting records.
+			 */
+			stmt.execute("PRAGMA foreign_keys = ON");
+
+			/*
 			 *  CREATE TABLE rdh_record (
 				    id        INTEGER PRIMARY KEY AUTOINCREMENT,
 				    workspace TEXT    NOT NULL,
@@ -483,17 +490,18 @@ public class MetadataDB extends AbstractMetadataRespository {
 		 *  If record existed, we need to erase content.
 		 *  The 'entry' table is essentially a triple store,
 		 *  so managing the dynamic content for a single record
-		 *  dynamically would result in some coding overhead and
+		 *  constantly would result in some coding overhead and
 		 *  simply erasing old data and inserting new one shouldn't
-		 *  be too painfu on the performance side...
+		 *  be too painful on the performance side...
 		 */
 		try(Statement stmt = connection.createStatement()) {
 			id = getRecordId(stmt, record);
 			if(id != NO_ID) {
+				// Old record -> delete all the entries, but keep the "record" itself
 				stmt.execute(
 						"DELETE\n" +
 						"FROM "+TBL_ENTRY+" AS e\n" +
-						"WHERE e."+COL_ID+" = "+id);
+						"WHERE e."+COL_RECORD_ID+" = "+id);
 			} else {
 				// New record -> create entry in records table
 				Target target = record.getTarget();
@@ -646,7 +654,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 	 */
 	@Override
 	protected MetadataSchema getFallbackSchema() {
-		return MetadataSchema.EMPTY_SCHEMA;
+		return DublinCoreSchema11.SHARED_INSTANCE;
 	}
 
 	private String adjustPath(String s) {
