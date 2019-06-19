@@ -74,6 +74,8 @@ public class MetadataDbTest {
 				.build();
 
 		assertTrue(repository.start(environment));
+
+		repository.addSchema(MetadataSchema.EMPTY_SCHEMA);
 	}
 
 	@After

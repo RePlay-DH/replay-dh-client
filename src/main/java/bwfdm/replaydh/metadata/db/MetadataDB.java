@@ -89,6 +89,8 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 	private final Function<MetadataRecord, String> nameGenerator;
 
+	private final MetadataSchema fallbackSchema;
+
 	private final boolean memory;
 
 	public static final String DEFAULT_DB_FILE = "metadata.db";
@@ -111,27 +113,16 @@ public class MetadataDB extends AbstractMetadataRespository {
 		sharedVerifier = verifier;
 	}
 
-	/**
-	 * Alternative source of new {@link MetadataSchema} instances for edit purposes.
-	 */
-	private final Function<MetadataRecord, MetadataSchema> editVerifierSource;
-
-	/**
-	 * Alternative source of new {@link MetadataSchema} instances for build purposes.
-	 */
-	private final Function<Target, MetadataSchema> buildVerifierSource;
-
 	protected MetadataDB(Builder builder) {
 
 		// Redundant check just to be sure
 		builder.validate();
 
 		rootFolder = builder.getRootFolder();
-		editVerifierSource = builder.getEditVerifierSource();
-		buildVerifierSource = builder.getBuildVerifierSource();
 		cache = builder.getCache();
 		resourceProvider = builder.getResourceProvider();
 		memory = builder.isMemory();
+		fallbackSchema = builder.getFallbackSchema();
 
 		Function<MetadataRecord, String> nameGenerator = builder.getNameGenerator();
 		if(nameGenerator==null) {
@@ -621,22 +612,6 @@ public class MetadataDB extends AbstractMetadataRespository {
 	}
 
 	/**
-	 * @see bwfdm.replaydh.metadata.basic.AbstractMetadataRespository#createVerifierForBuild(bwfdm.replaydh.workflow.Identifiable)
-	 */
-	@Override
-	protected MetadataSchema createVerifierForBuild(Target target) {
-		return buildVerifierSource!=null ? buildVerifierSource.apply(target) : sharedVerifier;
-	}
-
-	/**
-	 * @see bwfdm.replaydh.metadata.basic.AbstractMetadataRespository#createVerifierForEdit(bwfdm.replaydh.metadata.MetadataRecord)
-	 */
-	@Override
-	protected MetadataSchema createVerifierForEdit(MetadataRecord record) {
-		return editVerifierSource!=null ? editVerifierSource.apply(record) : sharedVerifier;
-	}
-
-	/**
 	 * @see bwfdm.replaydh.metadata.basic.AbstractMetadataRespository#afterEndEdit(bwfdm.replaydh.metadata.MetadataRecord, boolean)
 	 */
 	@Override
@@ -654,7 +629,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 	 */
 	@Override
 	protected MetadataSchema getFallbackSchema() {
-		return DublinCoreSchema11.SHARED_INSTANCE;
+		return fallbackSchema;
 	}
 
 	private String adjustPath(String s) {
@@ -790,9 +765,6 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 		private Path rootFolder;
 
-		private Function<MetadataRecord, MetadataSchema> editVerifierSource;
-		private Function<Target, MetadataSchema> buildVerifierSource;
-
 		private Function<MetadataRecord, String> nameGenerator;
 
 		private MetadataRecordCache cache;
@@ -801,11 +773,22 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 		private Boolean memory;
 
+		private MetadataSchema fallbackSchema;
+
 		/**
 		 * Prevents public instantiation outside of {@link MetadataDB#newBuilder()}.
 		 */
 		Builder() {
 			// no-op
+		}
+
+		public Builder fallbackSchema(MetadataSchema fallbackSchema) {
+			requireNonNull(fallbackSchema);
+			checkState("Fallback schema already set", this.fallbackSchema==null);
+
+			this.fallbackSchema = fallbackSchema;
+
+			return this;
 		}
 
 		public Builder nameGenerator(Function<MetadataRecord, String> nameGenerator) {
@@ -844,24 +827,6 @@ public class MetadataDB extends AbstractMetadataRespository {
 			return this;
 		}
 
-		public Builder editVerifierSource(Function<MetadataRecord, MetadataSchema> editVerifierSource) {
-			requireNonNull(editVerifierSource);
-			checkState("Source for edit schema already set", this.editVerifierSource==null);
-
-			this.editVerifierSource = editVerifierSource;
-
-			return this;
-		}
-
-		public Builder buildVerifierSource(Function<Target, MetadataSchema> buildVerifierSource) {
-			requireNonNull(buildVerifierSource);
-			checkState("Source for build schema already set", this.buildVerifierSource==null);
-
-			this.buildVerifierSource = buildVerifierSource;
-
-			return this;
-		}
-
 		public Builder memory(boolean memory) {
 			checkState("Memory flag set", this.memory==null);
 
@@ -870,20 +835,16 @@ public class MetadataDB extends AbstractMetadataRespository {
 			return this;
 		}
 
+		public MetadataSchema getFallbackSchema() {
+			return fallbackSchema;
+		}
+
 		public Path getRootFolder() {
 			return rootFolder;
 		}
 
 		public Function<MetadataRecord, String> getNameGenerator() {
 			return nameGenerator;
-		}
-
-		public Function<MetadataRecord, MetadataSchema> getEditVerifierSource() {
-			return editVerifierSource;
-		}
-
-		public Function<Target, MetadataSchema> getBuildVerifierSource() {
-			return buildVerifierSource;
 		}
 
 		public MetadataRecordCache getCache() {
@@ -941,11 +902,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 		}
 
 		private void useDublinCore(boolean strict) {
-
-			final MetadataSchema verifier = new DublinCoreSchema11(strict);
-
-			editVerifierSource = record -> verifier;
-			buildVerifierSource = id -> verifier;
+			fallbackSchema(new DublinCoreSchema11(strict));
 
 			if(strict) {
 				useDublinCoreNameGenerator();
