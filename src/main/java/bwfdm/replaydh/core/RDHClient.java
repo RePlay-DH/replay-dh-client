@@ -854,8 +854,10 @@ public class RDHClient {
 			MetadataDB.Builder builder = MetadataDB.newBuilder();
 
 			builder.rootFolder(rootFolder);
-			builder.useDublinCore();
-			builder.useDublinCoreNameGenerator();
+			if(getEnvironment().getBoolean(RDHProperty.METADATA_ENFORCE_DC)) {
+				builder.useDublinCore();
+				builder.useDublinCoreNameGenerator();
+			}
 			builder.useDefaultCacheAndLocationProvider();
 
 			MetadataRepository repo = builder.build();

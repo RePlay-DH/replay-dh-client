@@ -222,6 +222,16 @@ public enum RDHProperty {
 	 */
 	WORKFLOW_SCHEMA_LOCATION("workflow.schema.location"),
 
+	// Properties defining elicitation of object metadata
+
+	/**
+	 * Flag to indicate whether dublin core should be used
+	 * as the default fallback metadata schema.
+	 * <p>
+	 * The default value for this property is {@code true}.
+	 */
+	METADATA_ENFORCE_DC("metadata.enforceDC", true),
+
 	// Properties defining settings and repositories for the DSpace adapter
 
 	DSPACE_REPOSITORY_URL("dspace.repository.url"),
