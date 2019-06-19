@@ -2639,6 +2639,8 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 			setPendingStep(target);
 
+			node(target, true).setFlag(FLAG_LOADED, true);
+
 			return super.addWorkflowStepImpl(source, target);
 		}
 

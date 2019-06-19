@@ -389,6 +389,8 @@ public class DefaultWorkflowStep implements WorkflowStep {
 	public void addOutput(Resource resource) {
 		requireNonNull(resource);
 
+//		System.out.println(hashCode()+" adding: "+resource);
+
 		if(!output(true).add(resource))
 			throw new IllegalArgumentException("Duplicate output resource: "+resource);
 
