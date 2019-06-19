@@ -21,6 +21,9 @@ package bwfdm.replaydh.metadata.basic;
 import static bwfdm.replaydh.utils.RDHUtils.checkArgument;
 import static java.util.Objects.requireNonNull;
 
+import java.beans.PropertyChangeListener;
+import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -72,6 +75,8 @@ public abstract class AbstractMetadataRespository extends AbstractSchemaManager<
 
 	private static final Logger log = LoggerFactory.getLogger(AbstractMetadataRespository.class);
 
+	private final PropertyChangeListener workspaceObserver = pce -> workspaceChanged();
+
 	/**
 	 * @see bwfdm.replaydh.core.AbstractRDHTool#start(bwfdm.replaydh.core.RDHEnvironment)
 	 */
@@ -81,7 +86,7 @@ public abstract class AbstractMetadataRespository extends AbstractSchemaManager<
 			return false;
 		}
 
-		// TODO register listener
+		environment.addPropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, workspaceObserver);
 
 		return true;
 	}
@@ -91,9 +96,36 @@ public abstract class AbstractMetadataRespository extends AbstractSchemaManager<
 	 */
 	@Override
 	public void stop(RDHEnvironment environment) throws RDHLifecycleException {
-		// TODO unregister listeners
+		environment.removePropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, workspaceObserver);
 
 		super.stop(environment);
+	}
+
+	protected void workspaceChanged() {
+		// Hook for subclasses to react to a new workspace directory
+	}
+
+	/**
+	 * @see bwfdm.replaydh.metadata.MetadataRepository#toSimpleText(bwfdm.replaydh.metadata.MetadataRecord)
+	 */
+	@Override
+	public String toSimpleText(MetadataRecord record) {
+		requireNonNull(record);
+		if(record.getEntryCount()==0) {
+			return null;
+		}
+
+		List<String> keys = new ArrayList<>(record.getEntryNames());
+		Collections.sort(keys);
+
+		StringWriter writer = new StringWriter(50 * record.getEntryCount());
+		for(String key : keys) {
+			record.forEachEntry(key, e -> writer.append(e.getName())
+					.append('=').append(e.getValue()).append(System.lineSeparator()));
+		}
+
+
+		return writer.toString().trim();
 	}
 
 	protected void fireMetadataRecordAdded(MetadataRecord record) {
@@ -239,21 +271,6 @@ public abstract class AbstractMetadataRespository extends AbstractSchemaManager<
 	}
 
 	/**
-	 * Creates a {@link MetadataSchema schema} that is suitable to assist in building
-	 * a new {@link MetadataRecord} for the given resource.
-	 * <p>
-	 * The default implementation returns the shared {@link MetadataSchema#EMPTY_SCHEMA}
-	 * instance. Subclasses are highly encouraged to override this method to express their
-	 * actual limitations or requirements based on their respective metadata scheme.
-	 *
-	 * @param resource
-	 * @return
-	 */
-	protected MetadataSchema createVerifierForBuild(Target target) {
-		return MetadataSchema.EMPTY_SCHEMA;
-	}
-
-	/**
 	 * Verifies that this is the first active build for the given {@code record}.
 	 * <p>
 	 * Subclasses that wish to add custom logic to this callback should make sure to
@@ -292,7 +309,7 @@ public abstract class AbstractMetadataRespository extends AbstractSchemaManager<
 		requireNonNull(record);
 		checkArgument("Provided metadata record is not mutable", record instanceof MutableMetadataRecord);
 
-		MetadataSchema schema = createVerifierForEdit(record);
+		MetadataSchema schema = lookupSchema(record.getSchemaId());
 
 		// Produce a new editor whose pre-final callbacks are linked to endEdit() calls
 		return new DefaultMetadataEditor(schema, (MutableMetadataRecord) record) {
@@ -319,21 +336,6 @@ public abstract class AbstractMetadataRespository extends AbstractSchemaManager<
 				AbstractMetadataRespository.this.afterEndEdit(getOriginalMetadataRecord(), discard);
 			}
 		};
-	}
-
-	/**
-	 * Creates a {@link MetadataSchema schema} that is suitable to assist in editing
-	 * the given {@link MetadataRecord}.
-	 * <p>
-	 * The default implementation returns the shared {@link MetadataSchema#EMPTY_SCHEMA}
-	 * instance. Subclasses are highly encouraged to override this method to express their
-	 * actual limitations or requirements based on their respective metadata scheme.
-	 *
-	 * @param resource
-	 * @return
-	 */
-	protected MetadataSchema createVerifierForEdit(MetadataRecord record) {
-		return MetadataSchema.EMPTY_SCHEMA;
 	}
 
 	/**

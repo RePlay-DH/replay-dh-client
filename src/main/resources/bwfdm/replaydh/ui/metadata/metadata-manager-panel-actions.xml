@@ -22,11 +22,25 @@
 	<action id="replaydh.ui.core.metadataManagerPanel.refreshWorkspaceInfo"
 		name="${id}.name" desc="${id}.description" icon="refresh.gif" help="true" />
 	
+	<!-- Expand All Folders -->
+	<action id="replaydh.ui.core.metadataManagerPanel.expandAllFolders"
+		name="${id}.name" desc="${id}.description" icon="expandall.gif" />
+	
+	<!-- CollapseAll Folders -->
+	<action id="replaydh.ui.core.metadataManagerPanel.collapseAllFolders"
+		name="${id}.name" desc="${id}.description" icon="collapseall.gif" />
+	
+	<!-- Copy Record Text -->
+	<action id="replaydh.ui.core.metadataManagerPanel.copyRecordText"
+		name="${id}.name" desc="${id}.description" icon="copy_edit.gif" help="true" />
+	
 		
 	<!-- ToolBar List for header area -->
 	<action-list id="replaydh.ui.core.metadataManagerPanel.workspaceToolBarList">
 		<item type="label" value="replaydh.ui.core.metadataManagerPanel.currentWorkspace" />
 		<item type="glue" />
+		<item type="action" value="replaydh.ui.core.metadataManagerPanel.expandAllFolders" />
+		<item type="action" value="replaydh.ui.core.metadataManagerPanel.collapseAllFolders" />
 		<item type="action" value="replaydh.ui.core.metadataManagerPanel.refreshWorkspaceInfo" />
 	</action-list>
 		
@@ -38,6 +52,8 @@
 		<item type="action" value="replaydh.ui.core.metadataManagerPanel.addRecord" />
 		<item type="action" value="replaydh.ui.core.metadataManagerPanel.editRecord" />
 		<item type="action" value="replaydh.ui.core.metadataManagerPanel.removeRecord" />
+		<item type="separator" />
+		<item type="action" value="replaydh.ui.core.metadataManagerPanel.copyRecordText" />
 	</action-list>
 	
 </actions>

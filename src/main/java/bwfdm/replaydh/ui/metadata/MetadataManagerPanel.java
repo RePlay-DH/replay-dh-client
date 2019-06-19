@@ -23,6 +23,9 @@ import static java.util.Objects.requireNonNull;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -232,6 +235,8 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 
 	private void refreshActions() {
 		actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.refreshWorkspaceInfo", handler::refreshWorkspaceInfo);
+		actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.expandAllFolders", handler::expandAllFolders);
+		actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.collapseAllFolders", handler::collapseAllFolders);
 	}
 
 	private void reset() {
@@ -360,6 +365,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 			actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.addRecord", this::addRecord);
 			actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.editRecord", this::editRecord);
 			actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.removeRecord", this::removeRecord);
+			actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.copyRecordText", this::copyRecordText);
 		}
 
 		private void refreshActions() {
@@ -568,6 +574,31 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 				});
 			}
 		}
+
+		private void copyRecordText(ActionEvent ae) {
+			if(currentRecord==null) {
+				return;
+			}
+
+			Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+			if(clipboard==null) {
+				GuiUtils.beep();
+				return;
+			}
+
+			String text = repository.toSimpleText(currentRecord);
+			if(text==null || text.isEmpty()) {
+				return;
+			}
+
+			StringSelection data = new StringSelection(text);
+
+			try {
+				clipboard.setContents(data, data);
+			} catch (IllegalStateException e) {
+				GuiUtils.beep();
+			}
+		}
 	}
 
 	private class Handler implements TreeSelectionListener, PropertyChangeListener, MetadataListener, TrackerListener {
@@ -593,6 +624,14 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 
 		private void refreshWorkspaceInfo(ActionEvent ae) {
 			reset();
+		}
+
+		private void expandAllFolders(ActionEvent ae) {
+			GuiUtils.expandAll(workspaceTree, true);
+		}
+
+		private void collapseAllFolders(ActionEvent ae) {
+			GuiUtils.expandAll(workspaceTree, false);
 		}
 
 		/**

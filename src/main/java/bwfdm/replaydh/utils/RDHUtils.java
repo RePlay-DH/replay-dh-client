@@ -31,9 +31,13 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
+import java.util.TreeSet;
 import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -392,6 +396,18 @@ public class RDHUtils {
 		}
 
 		return filter;
+	}
+
+	public static Properties newSortedPropertries() {
+		return new Properties(){
+
+			private static final long serialVersionUID = -6912268139511730686L;
+
+			@Override
+		    public synchronized Enumeration<Object> keys() {
+		        return Collections.enumeration(new TreeSet<Object>(super.keySet()));
+		    }
+		};
 	}
 }
 

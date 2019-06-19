@@ -78,6 +78,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTree;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -92,6 +93,7 @@ import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import javax.swing.text.Caret;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.JTextComponent;
+import javax.swing.tree.TreePath;
 
 import org.java.plugin.registry.Extension;
 
@@ -1297,6 +1299,42 @@ public class GuiUtils {
 		return timeFormatter;
 	}
 
+	public static void expandRoot(JTree tree) {
+	    Object root = tree.getModel().getRoot();
+	    tree.expandPath(new TreePath(root));
+	}
+
+	public static void expandAll(JTree tree, boolean expand) {
+		requireNonNull(tree);
+
+		tree.cancelEditing();
+	    Object root = tree.getModel().getRoot();
+	    expandAll0(tree, new TreePath(root), expand);
+
+	    if(!tree.isRootVisible()) {
+		    // Ensure expanded root
+		    tree.expandPath(new TreePath(root));
+	    }
+	}
+
+	private static void expandAll0(JTree tree, TreePath parent, boolean expand) {
+	    // Traverse children
+	    Object node = parent.getLastPathComponent();
+	    int childCount = tree.getModel().getChildCount(node);
+	    if (childCount>0) {
+	        for (int i=0; i<childCount; i++) {
+	            Object child = tree.getModel().getChild(node, i);
+	            TreePath path = parent.pathByAddingChild(child);
+	            expandAll0(tree, path, expand);
+	        }
+	    }
+	    // Expansion or collapse must be done bottom-up
+	    if (expand) {
+	        tree.expandPath(parent);
+	    } else {
+	        tree.collapsePath(parent);
+	    }
+	}
 
 	public static final Font defaultLargeInfoFont = UIManager.getFont("Label.font").deriveFont(14f);
 	public static final Font defaultSmallInfoFont = UIManager.getFont("Label.font").deriveFont(12f);

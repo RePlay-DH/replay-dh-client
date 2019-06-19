@@ -149,6 +149,8 @@ public interface MetadataRepository extends RDHTool, SchemaManager<MetadataSchem
 	 */
 	MetadataEditor createEditor(MetadataRecord record);
 
+	String toSimpleText(MetadataRecord record);
+
 	/**
 	 *
 	 * @author Markus Gärtner

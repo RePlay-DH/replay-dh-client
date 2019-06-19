@@ -93,8 +93,8 @@ import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.catalog.InMemoryMetadataCatalog;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
 import bwfdm.replaydh.workflow.resolver.IdentifiableResolver;
-import bwfdm.replaydh.workflow.schema.WorkflowSchemaManager;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
+import bwfdm.replaydh.workflow.schema.WorkflowSchemaManager;
 import bwfdm.replaydh.workflow.schema.impl.LocalSchemaManager;
 
 /**
@@ -851,7 +851,6 @@ public class RDHClient {
 			if(!Files.isDirectory(rootFolder, LinkOption.NOFOLLOW_LINKS))
 				throw new RDHException("Metadata root folder must point to a directory: "+rootFolder);
 
-			//TODO create repo!!!
 			MetadataDB.Builder builder = MetadataDB.newBuilder();
 
 			builder.rootFolder(rootFolder);
