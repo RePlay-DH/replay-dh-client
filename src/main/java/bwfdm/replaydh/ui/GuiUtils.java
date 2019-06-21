@@ -1139,6 +1139,9 @@ public class GuiUtils {
     		border = (Border) comp.getClientProperty(DEFAULT_BORDER_PROPERTY);
     	}
 
+    	if(comp.getBorder()==border) {
+    		return;
+    	}
     	comp.setBorder(border);
     }
 
