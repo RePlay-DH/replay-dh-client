@@ -230,7 +230,7 @@ public enum RDHProperty {
 	 * <p>
 	 * The default value for this property is {@code true}.
 	 */
-	METADATA_ENFORCE_DC("metadata.enforceDC", true),
+	METADATA_ENFORCE_DC("metadata.default.enforceDC", true),
 
 	// Properties defining settings and repositories for the DSpace adapter
 
