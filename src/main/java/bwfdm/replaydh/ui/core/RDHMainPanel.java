@@ -123,7 +123,6 @@ import bwfdm.replaydh.ui.workflow.WorkspaceTrackerPanel;
 import bwfdm.replaydh.ui.workflow.graph.WorkflowGraph;
 import bwfdm.replaydh.ui.workflow.graph.WorkflowStepShape;
 import bwfdm.replaydh.utils.RDHUtils;
-import bwfdm.replaydh.utils.annotation.Experimental;
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifiable.Role;
 import bwfdm.replaydh.workflow.Identifier;
@@ -651,61 +650,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 	}
 
 	/**
-	 * For testing purposes commits all currently pending files
-	 * and file changes as a new generic workflow step.
-	 * @throws TrackerException
-	 */
-	@Experimental
-	private void debugCommitAllFiles() throws TrackerException {
-		if(!fileTracker.hasStatusInfo()) {
-			return;
-		}
-
-		Workflow workflow = workflowSource.get();
-		WorkflowSchema schema = workflow.getSchema();
-
-		workflow.beginUpdate();
-		try {
-			WorkflowStep newStep = workflow.createWorkflowStep();
-
-			newStep.setTitle("Random step "+System.currentTimeMillis()%100);
-			newStep.setRecordingTime(LocalDateTime.now());
-
-			Set<Path> filesToAdd = null;
-			Set<Path> filesToRemove = null;
-
-			if(fileTracker.hasFilesForStatus(TrackingStatus.UNKNOWN)) {
-				filesToAdd = fileTracker.getFilesForStatus(TrackingStatus.UNKNOWN);
-				for(Path file : filesToAdd) {
-					//TODO if real commit, try to resolve identifiables here
-					Resource resource = DefaultResource.withResourceType("other");
-					resource.addIdentifier(new Identifier(schema.getDefaultPathIdentifierType(),
-							file.toString(), environment.getWorkspacePath().toString()));
-					newStep.addOutput(resource);
-				}
-			}
-
-			if(fileTracker.hasFilesForStatus(TrackingStatus.MISSING)) {
-				filesToRemove = fileTracker.getFilesForStatus(TrackingStatus.MISSING);
-			}
-
-			if(filesToAdd!=null && !filesToAdd.isEmpty()) {
-				fileTracker.applyTrackingAction(filesToAdd, TrackingAction.ADD);
-
-			}
-
-			if(filesToRemove!=null && !filesToRemove.isEmpty()) {
-				fileTracker.applyTrackingAction(filesToRemove, TrackingAction.REMOVE);
-			}
-
-			workflow.addWorkflowStep(newStep);
-
-		} finally {
-			workflow.endUpdate();
-		}
-	}
-
-	/**
 	 * Present the user with an editor for managing the content of
 	 * a new workflow step.
 	 */
@@ -1047,7 +991,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					.padding(defaultBorder)
 					.build();
 
-			dragController = new ResourceDragController(Mode.FILES_AND_URLS) {
+			dragController = new ResourceDragController(Mode.FILES_ONLY) {
 				@Override
 				protected void refreshUI() {
 					Point dropLocation = dragController.getDropLocation();
@@ -1070,7 +1014,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 				@Override
 				protected void handleURLDrag(URI url) {
-					showCacheDialog(getRole(), url);
+//					showCacheDialog(getRole(), url);
+					throw new UnsupportedOperationException(); // not supported for now
 				}
 			};
 			dragController.install(this);
@@ -1797,9 +1742,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 
 		private void applyCachedResources(WorkflowStep step, Predicate<? super Identifiable> filter) {
-			ResourceCache cache = environment.getClient().getResourceCache();
-
-			Collection<CacheEntry> cachedResources = cache.getCacheEntries();
+			Collection<CacheEntry> cachedResources = resourceCache.getCacheEntries();
 			for(CacheEntry entry : cachedResources) {
 				switch (entry.getRole()) {
 				case INPUT:
@@ -2115,8 +2058,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 					String newStepName = newStep.getTitle();
 
-					// Log a "deep" dump of the new step for completeness
-					log.info("Added new workflow step {}: {}", newStepName, newStep.toString());
+					// Log a "deep" dump of the new step for completeness -> nope, only the name!!!
+					log.info("Added new workflow step {}", newStepName);
 
 					// Show an info popup with name of new workflow step
 					ResourceManager rm = ResourceManager.getInstance();
@@ -2124,7 +2067,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					String title = rm.get("replaydh.ui.core.mainPanel.addStep.title");
 					JOptionPane.showMessageDialog(null, message, title, JOptionPane.INFORMATION_MESSAGE);
 
-					// Discard tracking status
+					// Discard cached data and tracking status
+					environment.execute(resourceCache::clear);
 					environment.execute(fileTracker::clearStatusInfo);
 				}
 
