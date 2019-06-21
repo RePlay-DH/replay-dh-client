@@ -89,8 +89,6 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 	private final Function<MetadataRecord, String> nameGenerator;
 
-	private final MetadataSchema fallbackSchema;
-
 	private final boolean memory;
 
 	public static final String DEFAULT_DB_FILE = "metadata.db";
@@ -122,7 +120,11 @@ public class MetadataDB extends AbstractMetadataRespository {
 		cache = builder.getCache();
 		resourceProvider = builder.getResourceProvider();
 		memory = builder.isMemory();
-		fallbackSchema = builder.getFallbackSchema();
+
+		MetadataSchema defaultSchema = builder.getDefaultSchema();
+		if(defaultSchema!=null) {
+			setDefaultSchema(defaultSchema);
+		}
 
 		Function<MetadataRecord, String> nameGenerator = builder.getNameGenerator();
 		if(nameGenerator==null) {
@@ -130,8 +132,6 @@ public class MetadataDB extends AbstractMetadataRespository {
 		}
 
 		this.nameGenerator = nameGenerator;
-
-		addSchema(getFallbackSchema());
 	}
 
 	/**
@@ -153,7 +153,9 @@ public class MetadataDB extends AbstractMetadataRespository {
 		}
 
 		synchronized (lock) {
-			scanFolder(rootFolder);
+			if(resourceProvider!=null && rootFolder!=null) {
+				scanFolder(rootFolder);
+			}
 		}
 
 		// Driver loaded, now connect database
@@ -580,8 +582,9 @@ public class MetadataDB extends AbstractMetadataRespository {
 	}
 
 	private int getRecordId(Statement stmt, MetadataRecord record) throws SQLException {
-		if(record instanceof DbMetadataRecord) {
-			return ((DbMetadataRecord)record).getId();
+		int id =  record instanceof DbMetadataRecord ? ((DbMetadataRecord)record).getId() : NO_ID;
+		if(id!=NO_ID) {
+			return NO_ID;
 		}
 
 		Target target = record.getTarget();
@@ -591,8 +594,14 @@ public class MetadataDB extends AbstractMetadataRespository {
 				"WHERE r."+COL_WORKSPACE+" = \""+target.getWorkspace()+"\"\n" +
 				"    AND r."+COL_PATH+" = \""+target.getPath()+"\"\n" +
 				"    AND r."+COL_SCHEMA+" = \""+record.getSchemaId()+"\"")) {
-			return asInt(rs);
+			id = asInt(rs);
 		}
+
+		if(record instanceof DbMetadataRecord) {
+			((DbMetadataRecord)record).setId(id);
+		}
+
+		return id;
 	}
 
 	private int asInt(ResultSet rs) throws SQLException {
@@ -629,23 +638,12 @@ public class MetadataDB extends AbstractMetadataRespository {
 	 */
 	@Override
 	protected MetadataSchema getFallbackSchema() {
-		return fallbackSchema;
+		return MetadataSchema.EMPTY_SCHEMA;
 	}
 
 	private String adjustPath(String s) {
 		return s==null ? null : s.replace('\\', '/');
 	}
-
-//	private <V> V doSql(SQLJob<V> job) {
-//		try(Statement stmt = connection.createStatement()) {
-//
-//		}
-//	}
-//
-//	@FunctionalInterface
-//	private interface SQLJob<V> {
-//		V perform(Statement stmt) throws SQLException;
-//	}
 
 	/**
 	 * Special class to keep track of the id used on the database side.
@@ -659,7 +657,6 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 		public DbMetadataRecord(Target target, String schemaId) {
 			super(target, schemaId);
-			// TODO Auto-generated constructor stub
 		}
 
 		public int getId() {
@@ -773,7 +770,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 		private Boolean memory;
 
-		private MetadataSchema fallbackSchema;
+		private MetadataSchema defaultSchema;
 
 		/**
 		 * Prevents public instantiation outside of {@link MetadataDB#newBuilder()}.
@@ -782,11 +779,11 @@ public class MetadataDB extends AbstractMetadataRespository {
 			// no-op
 		}
 
-		public Builder fallbackSchema(MetadataSchema fallbackSchema) {
-			requireNonNull(fallbackSchema);
-			checkState("Fallback schema already set", this.fallbackSchema==null);
+		public Builder defaultSchema(MetadataSchema defaultSchema) {
+			requireNonNull(defaultSchema);
+			checkState("Default schema already set", this.defaultSchema==null);
 
-			this.fallbackSchema = fallbackSchema;
+			this.defaultSchema = defaultSchema;
 
 			return this;
 		}
@@ -835,8 +832,8 @@ public class MetadataDB extends AbstractMetadataRespository {
 			return this;
 		}
 
-		public MetadataSchema getFallbackSchema() {
-			return fallbackSchema;
+		public MetadataSchema getDefaultSchema() {
+			return defaultSchema;
 		}
 
 		public Path getRootFolder() {
@@ -902,7 +899,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 		}
 
 		private void useDublinCore(boolean strict) {
-			fallbackSchema(new DublinCoreSchema11(strict));
+			defaultSchema(new DublinCoreSchema11(strict));
 
 			if(strict) {
 				useDublinCoreNameGenerator();

@@ -25,8 +25,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +35,6 @@ import org.junit.Test;
 
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHLifecycleException;
-import bwfdm.replaydh.io.resources.VirtualResourceProvider;
 import bwfdm.replaydh.metadata.MetadataBuilder;
 import bwfdm.replaydh.metadata.MetadataRecord;
 import bwfdm.replaydh.metadata.MetadataRecord.Target;
@@ -52,24 +49,16 @@ import bwfdm.replaydh.test.RDHTestUtils;
  */
 public class MetadataDbTest {
 
-	private Path root;
 	private RDHEnvironment environment;
 	private MetadataDB repository;
-	private VirtualResourceProvider resourceProvider;
 
 	@Before
 	public void prepare() throws RDHLifecycleException {
-		root = Paths.get("root");
-
 		environment = RDHTestUtils.createTestEnvironment();
 
-		resourceProvider = new VirtualResourceProvider();
-		resourceProvider.addDirectory(root);
-
 		repository = MetadataDB.newBuilder()
-				.rootFolder(root)
-				.resourceProvider(resourceProvider)
 				.useDefaultCacheAndLocationProvider()
+				.defaultSchema(MetadataSchema.EMPTY_SCHEMA)
 				.memory(true)
 				.build();
 
@@ -80,10 +69,6 @@ public class MetadataDbTest {
 
 	@After
 	public void cleanup() throws RDHLifecycleException {
-		if(resourceProvider!=null) {
-			resourceProvider.clear();
-		}
-
 		if(repository!=null) {
 			repository.stop(environment);
 		}

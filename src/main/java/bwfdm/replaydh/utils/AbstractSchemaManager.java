@@ -91,6 +91,11 @@ public abstract class AbstractSchemaManager<S extends SchemaManager.Schema>
 			return defaultSchema;
 		}
 
+		S fallbackSchema = getFallbackSchema();
+		if(fallbackSchema!=null && fallbackSchema.getId().equals(schemaId)) {
+			return fallbackSchema;
+		}
+
 		synchronized (lock) {
 			return schemas.get(schemaId);
 		}
