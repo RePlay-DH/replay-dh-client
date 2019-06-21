@@ -232,6 +232,24 @@ public enum RDHProperty {
 	 */
 	METADATA_ENFORCE_DC("metadata.default.enforceDC", true),
 
+	/**
+	 * Flag to indicate that the client should try to automatically
+	 * fill out local resource elements in a new workflow step based
+	 * on the data available in the metadata repository.
+	 * <p>
+	 * The default value for this property is {@code true}.
+	 */
+	METADATA_AUTOFILL_RESOURCES("metadata.autofill.fillResources", true),
+
+	/**
+	 * Flag to indicate that the client should try to automatically
+	 * create new metadata records based on the resources described
+	 * in a new workflow step.
+	 * <p>
+	 * The default value for this property is {@code true}.
+	 */
+	METADATA_AUTOFILL_RECORDS("metadata.autofill.fillRecords", true),
+
 	// Properties defining settings and repositories for the DSpace adapter
 
 	DSPACE_REPOSITORY_URL("dspace.repository.url"),
