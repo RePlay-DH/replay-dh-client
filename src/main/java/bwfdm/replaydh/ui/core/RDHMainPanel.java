@@ -1790,7 +1790,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		private WorkflowStep constructStep(Workflow workflow) {
 			WorkflowStep newStep = workflow.createWorkflowStep();
 
-			newStep.setTitle("<Unnamed step>");
+//			newStep.setTitle("<Unnamed step>");
 			newStep.setRecordingTime(LocalDateTime.now());
 
 			return newStep;
