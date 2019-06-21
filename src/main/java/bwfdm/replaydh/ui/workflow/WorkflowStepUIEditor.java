@@ -125,10 +125,10 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     Dimension buttonBigPreferredSize = new Dimension(32,32);
 
     private MetadataCatalog search;
-    
+
     private JPopupMenu popupTitle;
     private JPopupMenu popupDescription;
-    
+
     // Icons
     private Icon iconRemove = IconRegistry.getGlobalRegistry().getIcon("list-remove-5.png");
     private Icon iconAdd = IconRegistry.getGlobalRegistry().getIcon("list-add.png");
@@ -155,7 +155,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     private JButton btnAddInputResource = null;
     private JButton btnAddOutputResource = null;
     private JButton btnAddTool = null;
-    
+
     // Add buttons
     private JButton btnAddAutoPerson = null;
     private JButton btnAddAutoInputResource = null;
@@ -193,31 +193,25 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
     private Border emptyBorder = BorderFactory.createEmptyBorder(2, 2, 2, 2);
     private Border lineBorder = BorderFactory.createLineBorder(Color.BLACK, 1, false);
-    private Border redBorder = BorderFactory.createLineBorder(Color.RED, 2, false);
-    private Border defaultBorder;
 
     private ActionListener actionListenerIdentifiableEditorElement;		//for group buttons: remove, edit, more/less
     private ActionListener actionListenerAddIdentifiable;	//for "add new identifiable" button
 
     private final String defaultInputString = ResourceManager.getInstance().get("replaydh.ui.editor.workflowStep.labels.hintInput");
 
-    private final List<String> wrongInputList = new ArrayList<String>(Arrays.asList(
-										    		defaultInputString,
-										    		"",
-										    		"<Unnamed step>")
-										    		);
     private boolean contentChanged;
     private JScrollPane descriptionScrollPane;
 
     private EditorControl editorControl;
     private boolean inputCorrect;
-    
+
     private AutoCompletionWizardWorkflowStep autoWizard;
-    
-    
+
+
     private Timer waitingTimer;
-    
+
 	private ActionListener taskPerformer = new ActionListener() {
+		@Override
 		public void actionPerformed(ActionEvent evt) {
 			QuerySettings settings = new QuerySettings();
 			settings.setSchema(schema);
@@ -228,7 +222,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 			}
 		}
 	};
-    
+
 
     private FocusListener focusListener = new FocusListener() {
 
@@ -239,6 +233,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
 				((JTextComponent)e.getComponent()).setText(defaultInputString); //set predefined string instead of empty string
 			}
+			waitingTimer.stop();
 		}
 
 		@Override
@@ -248,18 +243,9 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
 				((JTextComponent)e.getComponent()).setText(""); //set empty string instead of predefined string
 			}
+			waitingTimer.stop();
 		}
 	};
-
-
-    // Custom DocumentListener, used for the input verification
-    private DocumentAdapter documentAdapter = new DocumentAdapter() {
-
-    	@Override
-    	public void anyUpdate(DocumentEvent e) {
-    		verifyInput(e);
-    	};
-    };
 
     private final RDHEnvironment environment;
 
@@ -271,7 +257,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	this.environment = requireNonNull(environment);
 
     	ResourceManager rm = ResourceManager.getInstance();
-    	
+
     	search = this.environment.getClient().getMetadataCatalog();
 
     	// Set correct schema in the "setEdititngItem" method
@@ -284,32 +270,42 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
       	personEditorElementsList = new ArrayList<IdentifiableEditorElement<Person>>();
     	inputResourceEditorElementsList = new ArrayList<IdentifiableEditorElement<Resource>>();
     	outputResourceEditorElementsList = new ArrayList<IdentifiableEditorElement<Resource>>();
-    	toolEditorElementsList = new ArrayList<IdentifiableEditorElement<Tool>>();
+    	toolEditorElementsList = new ArrayList<IdentifiableEditorElement<Tool>>(1);
 
     	sortedPersons = new ArrayList<Person>();
     	sortedTools = new ArrayList<Tool>();
     	sortedInputs = new ArrayList<Resource>();
     	sortedOutputs = new ArrayList<Resource>();
 
-    	titleTextField = new JTextField();
-    	titleTextField.getDocument().addDocumentListener(documentAdapter);
+    	titleTextField = new JTextField(defaultInputString);
+    	titleTextField.getDocument().addDocumentListener(new DocumentAdapter() {
+			@Override
+			public void anyUpdate(DocumentEvent e) {
+				onDocumentChange(titleTextField);
+			}
+		});
     	titleTextField.addFocusListener(focusListener);
-    	
+    	GuiUtils.prepareChangeableBorder(titleTextField);
+
     	popupTitle = new JPopupMenu();
     	titleTextField.add(popupTitle);
     	titleTextField.setComponentPopupMenu(popupTitle);
 
-    	descriptionTextArea = new JTextArea();
-    	descriptionTextArea.getDocument().addDocumentListener(documentAdapter);
+    	descriptionTextArea = new JTextArea(defaultInputString);
+    	descriptionTextArea.getDocument().addDocumentListener(new DocumentAdapter() {
+			@Override
+			public void anyUpdate(DocumentEvent e) {
+				onDocumentChange(descriptionTextArea);
+			}
+		});
     	descriptionTextArea.addFocusListener(focusListener);
     	descriptionTextArea.setRows(4);
     	descriptionTextArea.setColumns(10);
+    	GuiUtils.prepareChangeableBorder(descriptionTextArea);
     	descriptionScrollPane = new JScrollPane(descriptionTextArea);
     	popupDescription = new JPopupMenu();
     	titleTextField.add(popupDescription);
     	titleTextField.setComponentPopupMenu(popupDescription);
-
-    	defaultBorder = titleTextField.getBorder(); //used to have the same border for some similar components such as JTextField, JTextArea etc.777
 
     	// General action listener for each propertyGroupElement
         actionListenerIdentifiableEditorElement = this;
@@ -322,7 +318,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	btnAddTool = createButton(toolTipAddTool,iconAdd,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	btnAddInputResource = createButton(toolTipAddInputResource,iconAdd,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	btnAddOutputResource = createButton(toolTipAddOutputResource,iconAdd,buttonBigPreferredSize,actionListenerAddIdentifiable);
-    	
+
     	// Buttons to add new identifiable
         btnAddAutoPerson = createButton(toolTipAddPerson,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	btnAddAutoTool = createButton(toolTipAddTool,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
@@ -397,97 +393,94 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	editorComponent.setPreferredSize(new Dimension(600, 600));
     	editorComponent.revalidate();
     	editorComponent.setMinimumSize(new Dimension(600, 600));
-    	
+
     	waitingTimer = new Timer(1000, taskPerformer);
     	waitingTimer.setRepeats(false);
-    	
+
     }
 
+    private void scheduleInputVerification() {
+    	GuiUtils.invokeEDTLater(() -> verifyEntireInput(false));
+    }
+
+    private boolean isValidText(String s) {
+    	return s!=null
+    			&& !s.trim().isEmpty()
+    			&& !s.equals(defaultInputString);
+    }
+
+    private void onDocumentChange(JTextComponent comp) {
+    	boolean valid = verifyInput(comp);
+    	GuiUtils.toggleChangeableBorder(comp, !valid);
+    	if(valid) {
+    		updateTimer(comp.isFocusOwner());
+    	}
+    	scheduleInputVerification();
+    }
+
+    private void updateTimer(boolean compHasFocus) {
+		if (compHasFocus) {
+			if (waitingTimer.isRunning()) {
+				waitingTimer.restart();
+			} else {
+				waitingTimer.start();
+			}
+		} else {
+			waitingTimer.stop();
+		}
+    }
+
+    private <I extends Identifiable> boolean verifyIdentifiables(List<IdentifiableEditorElement<I>> elements) {
+    	boolean valid = true;
+    	for(IdentifiableEditorElement<I> element : elements) {
+    		valid &= element.isContentValid();
+    		if(!valid) {
+    			break;
+    		}
+    	}
+    	return valid;
+    }
+
+    /**
+     * Verifies content of given text component
+     */
+    private boolean verifyInput(JTextComponent comp) {
+    	return isValidText(comp.getText());
+    }
 
     /**
      * Verification of the input in all fields. Set red border to each input field and deactivate "OK" button in case of error.
      */
-    private void verifyInput(DocumentEvent e) {
-    	Object source = e.getDocument();
+    private void verifyEntireInput(boolean force) {
     	inputCorrect = true;
-    	QuerySettings settings = new QuerySettings();
-		settings.setSchema(schema);
+
     	// Title
-		if (source == titleTextField.getDocument()) {
-			if (wrongInputList.contains(titleTextField.getText())) {
-				titleTextField.setBorder(redBorder);
-				inputCorrect = false;
-			} else {
-				titleTextField.setBorder(defaultBorder);
-				if (titleTextField.hasFocus()) {
-					if (waitingTimer.isRunning()) {
-						waitingTimer.restart();
-					} else {
-						waitingTimer.start();
-					}
-				} else {
-					waitingTimer.stop();
-				}
-			}
-		}
+    	if(inputCorrect || force) {
+    		inputCorrect &= verifyInput(titleTextField);
+    	}
 
     	// Description
-		if (source == descriptionTextArea.getDocument()) {
-			if (wrongInputList.contains(descriptionTextArea.getText())) {
-				descriptionScrollPane.setBorder(redBorder);
-				inputCorrect = false;
-			} else {
-
-				descriptionScrollPane.setBorder(defaultBorder);
-				if (descriptionTextArea.hasFocus()) {
-					if (waitingTimer.isRunning()) {
-						waitingTimer.restart();
-					} else {
-						waitingTimer.start();
-					}
-				} else {
-					waitingTimer.stop();
-				}
-			}
-		}
-
-
-    	//TODO: add verification of the identifiables (Persons/Tool/Resources)
-
-
-    	// Disable or enable an "Apply" button based on the "inputCorrect" state
-    	if(editorControl!=null) {
-    		editorControl.setApplyEnabled(inputCorrect);
+    	if(inputCorrect || force) {
+    		inputCorrect &= verifyInput(descriptionTextArea);
     	}
+
+    	if(inputCorrect || force) {
+    		inputCorrect &= verifyIdentifiables(personEditorElementsList);
+    	}
+    	if(inputCorrect || force) {
+    		inputCorrect &= verifyIdentifiables(inputResourceEditorElementsList);
+    	}
+    	if(inputCorrect || force) {
+    		inputCorrect &= verifyIdentifiables(outputResourceEditorElementsList);
+    	}
+    	if(inputCorrect || force) {
+    		inputCorrect &= verifyIdentifiables(toolEditorElementsList);
+    	}
+
+    	updateControl();
     }
-    
-    /**
-     * Verification of the input in all fields. Set red border to each input field and deactivate "OK" button in case of error.
-     */
-    private void verifyInput() {
-    	inputCorrect = true;
-    	QuerySettings settings = new QuerySettings();
-		settings.setSchema(schema);
-    	// Title
-    	if(wrongInputList.contains(titleTextField.getText())) {
-    		titleTextField.setBorder(redBorder);
-    		inputCorrect = false;
-    	} else {
-    		titleTextField.setBorder(defaultBorder);
-    	}
 
-    	// Description
-    	if(wrongInputList.contains(descriptionTextArea.getText())) {
-    		descriptionScrollPane.setBorder(redBorder);
-    		inputCorrect = false;
-    	} else {
-    		descriptionScrollPane.setBorder(defaultBorder);
-    	}
-
-
-    	//TODO: add verification of the identifiables (Persons/Tool/Resources)
-
-
+    private void updateControl() {
     	// Disable or enable an "Apply" button based on the "inputCorrect" state
     	if(editorControl!=null) {
     		editorControl.setApplyEnabled(inputCorrect);
@@ -504,7 +497,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	editorControl = control;
 
     	// Verify input immediately to allow "editorControl.setApplyEnable(false)" in case of incorrect input
-    	verifyInput();
+    	verifyEntireInput(true);
     }
 
     /**
@@ -547,9 +540,9 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 			}
 			return;
 		}
-        
-        
-        
+
+
+
         if(source == btnAddAutoPerson){
         	autoWizard = new AutoCompletionWizardWorkflowStep(this.schema, environment, this);
         	autoWizard.createWizard(this.schema, Role.PERSON, Type.PERSON);
@@ -604,8 +597,8 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
         		break;
         	}
         }
-        
-        
+
+
     }//actionPerformed
 
     public void addIdentifiable(Identifiable identifiable, Role role) {
@@ -813,9 +806,18 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 	 */
     private void updateEditorModel(WorkflowStep workflowStep) {
 
-    	titleTextField.setText(workflowStep.getTitle());
-    	descriptionTextArea.setText(workflowStep.getDescription());
+    	updateText(titleTextField, workflowStep.getTitle());
+    	updateText(descriptionTextArea, workflowStep.getDescription());
     	updateIdentifiableEditorElements(workflowStep); //TODO: remove workflowStep as input
+    }
+
+    private void updateText(JTextComponent comp, String text) {
+    	if(text==null || text.trim().isEmpty()) {
+    		text = defaultInputString;
+    	}
+    	comp.setText(text);
+    	boolean valid = verifyInput(comp);
+    	GuiUtils.toggleChangeableBorder(comp, !valid);
     }
 
     private <O extends Identifiable> void updatePanel(CategoryPanel panel, List<IdentifiableEditorElement<O>> elements, String header) {
@@ -842,152 +844,13 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
      */
     public void updateEditorView(){
 
-//    	// Variables for view
-//    	int index;
-//    	GridBagLayout gbl = new GridBagLayout();
-//    	GridBagConstraints gbc = new GridBagConstraints();
-//    	gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-//    	gbc.insets = new Insets(5, 5, 5, 5);
-//
-//    	Border compoundBorder = BorderFactory.createCompoundBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), BorderFactory.createEtchedBorder(EtchedBorder.LOWERED));
-//
-//    	// Save a viewport position of the ScrollPane
-//    	Point viewportPosScrollablePanel = getViewportPosition(scrollablePanel);
-//
-//    	// Remove all components from all panes and panels
-//    	editorComponent.removeAll();     //main panel of the editor
-//    	scrollablePanel.removeAll(); //panel for persons/tool/resources that has a scroll
-//    	personsPanel.removeAll();
-//    	toolPanel.removeAll();
-//    	inputResourcesPanel.removeAll();
-//    	outputResourcesPanel.removeAll();
-//
-//    	// Set layout for person/tool/resources panels
-//    	FlowLayout flowLayoutLeft = new FlowLayout(FlowLayout.LEFT);
-//    	personsPanel.setLayout(flowLayoutLeft);
-//    	toolPanel.setLayout(flowLayoutLeft);
-//    	inputResourcesPanel.setLayout(flowLayoutLeft);
-//    	outputResourcesPanel.setLayout(flowLayoutLeft);
-//
-//    	// Set BoxLayout (to put all editor components vertically)
-//    	editorComponent.setLayout(new BoxLayout(editorComponent, BoxLayout.Y_AXIS));
-//
-//    	//--- TITLE + DESCRIPTION
-//
-//    	FormBuilder tittleGroupBuilder = FormBuilder.create()
-//					    							.columns("left:pref, 3dlu, pref:grow")
-//					    							.rows("pref");
-//
-//    	tittleGroupBuilder.add(new JLabel(titleKey)).xy(1,1);
-//    	tittleGroupBuilder.add(titleTextField).xy(3,1);
-//    	tittleGroupBuilder.appendRows("$lg, pref").appendRows("$lg, pref");
-//
-//    	tittleGroupBuilder.add(new JLabel(descriptionKey)).xy(1, 3);
-//    	tittleGroupBuilder.add(descriptionScrollPane).xy(3, 3);
-//
-//    	JPanel titlePanel = tittleGroupBuilder.build();
-//    	titlePanel.setBorder(emptyBorder);
-//    	editorComponent.add(titlePanel);
-
-    	//--- PERSONS
-
-//    	JPanel gblPersonsPanel = new JPanel(gbl);
-//    	index = 0;
-//    	personsPanel.removeAll();
-//    	for (int i = 0;i < personEditorElementsList.size(); i++){
-//    		IdentifiableEditorElement element = per
-////        	index++;
-//        	element.setHeaderString(personElementHeader + " " + i);
-////        	gblPersonsPanel.add(element.getViewPanel(),gbc);
-//    		personsPanel.add(element.getViewPanel());
-//        }
-//    	gblPersonsPanel.add(btnAddPerson,gbc); 	//Add "+" button
-//    	personsPanel.add(gblPersonsPanel); 		//Add gridBagPanel to the person panel
     	updatePanel(personsPanel, personEditorElementsList, personElementHeader);
 
-    	//--- TOOL
-
-//    	JPanel gblToolPanel = new JPanel(gbl);
-//    	if(toolEditorElementsList.size()==0) {
-//    		gblToolPanel.add(btnAddTool,gbc);
-//    	} else {
-//    	toolPanel.removeAll();
-//    	for (IdentifiableEditorElement<Tool> element: toolEditorElementsList){
-//        	element.setHeaderString(toolElementHeader); //without "index"
-//        	gblToolPanel.add(element.getViewPanel(),gbc);
-//        }
-//    	}
-//    	toolPanel.add(gblToolPanel); //Add gridBagPanel to the tool panel
     	updatePanel(toolPanel, toolEditorElementsList, toolElementHeader);
 
-    	//--- INPUT RESOURCES
-
-//    	JPanel gblInputResourcesPanel = new JPanel(gbl);
-//    	index = 0;
-//    	for (IdentifiableEditorElement<Resource> element: inputResourceEditorElementsList){
-//        	index++;
-//        	element.setHeaderString(inputResourceElementHeader + " " + index);
-//        	gblInputResourcesPanel.add(element.getViewPanel(),gbc);
-//        }
-//    	gblInputResourcesPanel.add(btnAddInputResource,gbc); 	//Add "+" button
-//    	inputResourcesPanel.add(gblInputResourcesPanel); 		//Add gridBagPanel to the input resources panel
     	updatePanel(inputResourcesPanel, inputResourceEditorElementsList, inputResourceElementHeader);
 
-    	//--- OUTPUT RESOURCES
-
-//    	JPanel gblOutputResourcesPanel = new JPanel(gbl);
-//    	index = 0;
-//    	for (IdentifiableEditorElement<Resource> element: outputResourceEditorElementsList){
-//        	index++;
-//        	element.setHeaderString(outputResourceElementHeader + " " + index);
-//        	gblOutputResourcesPanel.add(element.getViewPanel(),gbc);
-//        }
-//    	gblOutputResourcesPanel.add(btnAddOutputResource,gbc); 	//Add "+" button
-//    	outputResourcesPanel.add(gblOutputResourcesPanel); 		//Add gridBagPanel to the output resources panel
     	updatePanel(outputResourcesPanel, outputResourceEditorElementsList, outputResourceElementHeader);
-
-    	//--- All together
-
-    	// Set borders to each group
-//    	personsPanel.setBorder(BorderFactory.createTitledBorder(compoundBorder, personsBorderTitle));
-//    	toolPanel.setBorder(BorderFactory.createTitledBorder(compoundBorder, toolBorderTitle));
-//    	inputResourcesPanel.setBorder(BorderFactory.createTitledBorder(compoundBorder, inputResourcesBorderTitle));
-//    	outputResourcesPanel.setBorder(BorderFactory.createTitledBorder(compoundBorder, outputResourcesBorderTitle));
-
-    	// Pack all persons/tool/resources at first in box layout panel
-    	// Is done so complicated to get optimal view without component stretching.
-//    	JPanel boxPanel = new JPanel();
-//    	boxPanel.setLayout(new BoxLayout(boxPanel, BoxLayout.Y_AXIS));
-//    	boxPanel.add(Box.createRigidArea(new Dimension(0,5)));
-//    	boxPanel.add(personsPanel);
-//    	boxPanel.add(Box.createRigidArea(new Dimension(0,5)));
-//    	boxPanel.add(toolPanel);
-//    	boxPanel.add(Box.createRigidArea(new Dimension(0,5)));
-//    	boxPanel.add(inputResourcesPanel);
-//    	boxPanel.add(Box.createRigidArea(new Dimension(0,5)));
-//    	boxPanel.add(outputResourcesPanel);
-
-    	// Pack box layout panel to the GridBagLayout panel with scroll
-//    	GridBagConstraints c = new GridBagConstraints();
-//    	c.fill = GridBagConstraints.HORIZONTAL; // FIXME: Use "BOTH" to activate stretching and have SAME height of all panels (Persons/Tool/Resources)
-//    	c.anchor = GridBagConstraints.NORTHWEST;
-//    	c.weightx = 0.5;
-//    	c.weighty = 0.5;
-//    	scrollablePanel.setLayout(new GridBagLayout());
-//    	scrollablePanel.setBorder(emptyBorder);//setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
-//    	scrollablePanel.add(boxPanel, c);
-
-    	// Restore viewport position of scrollable panel
-//    	setViewportPosition(scrollablePanel, viewportPosScrollablePanel);
-
-    	//FIXME: think about dimension (pref size)
-//    	JScrollPane scrollPane = getScrollPane(scrollablePanel);
-//    	scrollPane.setPreferredSize(new Dimension(600, 600));
-//    	scrollPane.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, Color.GRAY)); //border on top and bottom
-//
-//    	//Add panel and revalidate all components
-//    	editorComponent.add(scrollPane);
-//    	editorComponent.revalidate();
 
     	btnAddTool.setEnabled(toolEditorElementsList.size()<1);
     	Window window = SwingUtilities.getWindowAncestor(scrollablePanel);
@@ -1153,23 +1016,6 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
 
     /**
-     * Pack a Panel to a ScrollPane without min size
-     *
-     * @param panelOrig
-     * @return JPanel with integrated JScrollPane
-     */
-    private JScrollPane getScrollPane(JPanel panelOrig){
-
-		JScrollPane scrollPane = new JScrollPane(panelOrig);
-		scrollPane.setBorder(BorderFactory.createEmptyBorder());
-		scrollPane.getVerticalScrollBar().setUnitIncrement(20);
-		scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
-
-    	return scrollPane;
-    }
-
-
-    /**
      * Create a button with name, icon, preferred size and action listener
      *
      * @param name
@@ -1227,14 +1073,14 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     public void setEditingItem(WorkflowStep item) {
 
     	// Set a workflow schema
-    	this.schema = item.getWorkflow().getSchema();
+    	schema = item.getWorkflow().getSchema();
 
     	// Save original workflow step
-    	this.workflowStepOrig = item;
+    	workflowStepOrig = item;
 
     	// Create a new workflow step, which will be edited in this editor
     	//FIXME wtf is this?
-    	workflowStepEditable = new DefaultWorkflowStep(new DefaultWorkflow(this.schema));
+    	workflowStepEditable = new DefaultWorkflowStep(new DefaultWorkflow(schema));
 
     	// Replace the main parameters of editable workflow step with parameters of the original workflow step.
     	copyWorkflowStepParameters(workflowStepOrig, workflowStepEditable);
@@ -1273,108 +1119,6 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     private void copyWorkflowStepParameters(final WorkflowStep workflowStepSource, WorkflowStep workflowStepDestination) {
 
     	workflowStepDestination.copyFrom(workflowStepSource);
-
-//    	// Title
-//   		workflowStepDestination.setTitle(workflowStepSource.getTitle());
-//   		if(workflowStepDestination.getTitle() == null) {
-//   			workflowStepDestination.setTitle(""); //replace null value to "", to avoid possible null pointer exception
-//   		}
-//
-//    	// Description
-//   		workflowStepDestination.setDescription(workflowStepSource.getDescription());
-//   		if(workflowStepDestination.getDescription() == null) {
-//   			workflowStepDestination.setDescription(""); //replace null value to "", to avoid possible null pointer exception
-//   		}
-//
-//    	// Persons
-//    	for(Person person: workflowStepDestination.getPersons()) {
-//    		workflowStepDestination.removePerson(person); //remove all persons in the destination workflow step
-//    	}
-//    	for(Person personOrig: workflowStepSource.getPersons()) {
-//    		DefaultPerson person = DefaultPerson.uniquePerson();
-//
-//    		if(personOrig.getDescription() != null) {
-//    			person.setDescription(personOrig.getDescription());
-//    		}
-//    		if(personOrig.getRole() != null) {
-//    			person.setRole(personOrig.getRole());
-//    		}
-//    		//FIXME: is it OK when we change systemID?
-////    		if(personOrig.getSystemId() != null) {
-////    			person.setSystemId(personOrig.getSystemId());
-////    		}
-//    		for(Identifier identifier: personOrig.getIdentifiers()) {
-//    			person.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
-//    		}
-//    		workflowStepDestination.addPerson(person);
-//    	}
-//
-//    	// Tool
-//    	DefaultTool tool = null;
-//    	if(workflowStepSource.getTool()!=null) {
-//	    	tool = DefaultTool.uniqueTool();
-//	    	if(workflowStepSource.getTool().getDescription() != null) {
-//	    		tool.setDescription(workflowStepSource.getTool().getDescription());
-//	    	}
-//	    	if(workflowStepSource.getTool().getEnvironment() != null) {
-//	    		tool.setEnvironment(workflowStepSource.getTool().getEnvironment());
-//	    	}
-//	    	if(workflowStepSource.getTool().getParameters() != null) {
-//	    		tool.setParameters(workflowStepSource.getTool().getParameters());
-//	    	}
-//	    	if(workflowStepSource.getTool().getResourceType() != null) {
-//	    		tool.setResourceType(workflowStepSource.getTool().getResourceType());
-//	    	}
-////	    	if(workflowStepSource.getTool().getSystemId() != null) {
-////	    		tool.setSystemId(workflowStepSource.getTool().getSystemId());
-////	    	}
-//	    	for(Identifier identifier: workflowStepSource.getTool().getIdentifiers()) {
-//	    		tool.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
-//	    	}
-//    	}
-//	    workflowStepDestination.setTool(tool);
-//
-//    	// INPUT resources
-//    	for(Resource input: workflowStepDestination.getInput()) {
-//    		workflowStepDestination.removeInput(input); // remove all input resources from the destination workflow step
-//    	}
-//    	for(Resource inputOrig: workflowStepSource.getInput()) {
-//    		DefaultResource input = DefaultResource.uniqueResource();
-//    		if(inputOrig.getDescription() != null) {
-//    			input.setDescription(inputOrig.getDescription());
-//    		}
-//    		if(inputOrig.getResourceType() != null) {
-//    			input.setResourceType(inputOrig.getResourceType());
-//    		}
-////    		if(inputOrig.getSystemId() != null) {
-////    			input.setSystemId(inputOrig.getSystemId());
-////    		}
-//    		for(Identifier identifier: inputOrig.getIdentifiers()) {
-//    			input.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
-//    		}
-//    		workflowStepDestination.addInput(input);
-//    	}
-//
-//    	// OUTPUT resources
-//    	for(Resource output: workflowStepDestination.getOutput()) {
-//    		workflowStepDestination.removeOutput(output); // remove all output resources from the destination workflow step
-//    	}
-//    	for(Resource outputOrig: workflowStepSource.getOutput()) {
-//    		DefaultResource output = DefaultResource.uniqueResource();
-//    		if(outputOrig.getDescription() != null) {
-//    			output.setDescription(outputOrig.getDescription());
-//    		}
-//    		if(outputOrig.getResourceType() != null) {
-//    			output.setResourceType(outputOrig.getResourceType());
-//    		}
-////    		if(outputOrig.getSystemId() != null) {
-////    			output.setSystemId(outputOrig.getSystemId());
-////    		}
-//    		for(Identifier identifier: outputOrig.getIdentifiers()) {
-//    			output.addIdentifier(new Identifier(identifier.getType(),identifier.getId()));
-//    		}
-//    		workflowStepDestination.addOutput(output);
-//    	}
     }
 
 
@@ -1527,8 +1271,8 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     public void close() {
 
 		// Remove important variables
-		this.workflowStepEditable = null;
-		this.workflowStepOrig = null;
+		workflowStepEditable = null;
+		workflowStepOrig = null;
 		personEditorElementsList.clear();
 		toolEditorElementsList.clear();
 		inputResourceEditorElementsList.clear();
@@ -1538,8 +1282,9 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 		sortedTools.clear();
 		sortedInputs.clear();
 		sortedOutputs.clear();
-		
-		this.popupTitle.hide();
+
+		popupTitle.setVisible(false);
+		popupDescription.setVisible(false);
 
 		return;
 
@@ -1709,13 +1454,6 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 		public JPanel getContentPanel() {
 			return contentPanel;
 		}
-
-		/**
-		 * @return the role
-		 */
-		public Role getRole() {
-			return role;
-		}
     }
 
     /**
@@ -1725,7 +1463,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
      * @author vk
      *
      */
-    private class IdentifiableEditorElement<T extends Identifiable> {
+    private class IdentifiableEditorElement<T extends Identifiable> implements EditorControl {
 
     	private String headerString;
     	private T identifiable;					//instance of the Identifiable-object (e.g. concrete resource, tool, person)
@@ -1756,11 +1494,6 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 				this.buttons.add(btn);
 			}
 
-    		// Set identifiable editor
-    		editor = createIdentifiableEditor(workflowSchema, this.identifiable.getType());
-    		editor.setEnvironment(environment);
-        	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(this.identifiable)));
-
         	/*
         	 * To work well with FlowLayout, we need a way to signal the upper
         	 * border of the components to be used as baseline.
@@ -1776,9 +1509,42 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     			}
     		};
     		panel.setBorder(BorderFactory.createCompoundBorder(lineBorder, emptyBorder));
+    		GuiUtils.prepareChangeableBorder(panel);
+
+    		// Set identifiable editor
+    		editor = createIdentifiableEditor(workflowSchema, this.identifiable.getType());
+    		editor.setControl(this);
+    		editor.setEnvironment(environment);
+        	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(this.identifiable)));
     	}
 
-    	//Check type of the identifiable: person, tool, resource
+    	public boolean isContentValid() {
+    		return editor.isContentValid();
+    	}
+
+    	@Override
+		public boolean isApplyEnabled() {
+			return true;
+		}
+
+		@Override
+		public boolean isResetEnabled() {
+			return true;
+		}
+
+		@Override
+		public void setApplyEnabled(boolean enabled) {
+			GuiUtils.toggleChangeableBorder(panel, !enabled);
+
+	    	scheduleInputVerification();
+		}
+
+		@Override
+		public void setResetEnabled(boolean enabled) {
+			// no-op
+		}
+
+		//Check type of the identifiable: person, tool, resource
     	public boolean isPersonEditor() {
     		return identifiable.getType()==Type.PERSON;
     	}
@@ -1971,7 +1737,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
 	}
 
-	
+
 	private void suggestSearch(QuerySettings settings, Identifiable context, String key, String valuePrefix) {
 
 		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>() {
@@ -1997,7 +1763,8 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 						for(String value: results) {
 							JMenuItem item = new JMenuItem(value);
 							item.addActionListener(new ActionListener() {
-							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    @Override
+								public void actionPerformed(java.awt.event.ActionEvent evt) {
 							    	titleTextField.setText(item.getText());
 							    }
 							});
@@ -2010,7 +1777,8 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 						for(String value: results) {
 							JMenuItem item = new JMenuItem(value);
 							item.addActionListener(new ActionListener() {
-							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    @Override
+								public void actionPerformed(java.awt.event.ActionEvent evt) {
 							    	descriptionTextArea.setText(item.getText());
 							    }
 							});

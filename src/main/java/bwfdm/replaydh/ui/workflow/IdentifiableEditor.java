@@ -25,7 +25,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
@@ -45,10 +44,8 @@ import javax.swing.ComboBoxModel;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -86,15 +83,12 @@ import bwfdm.replaydh.ui.workflow.IdentifiableEditor.EditProxy;
 import bwfdm.replaydh.utils.Mutable.MutableObject;
 import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifiable.Type;
-import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
-import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
-import bwfdm.replaydh.workflow.export.dataverse.DataverseRepository_v4;
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Person;
 import bwfdm.replaydh.workflow.Resource;
 import bwfdm.replaydh.workflow.Tool;
-import bwfdm.replaydh.workflow.impl.DefaultPerson;
-import bwfdm.replaydh.workflow.impl.DefaultTool;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
 import bwfdm.replaydh.workflow.schema.CompoundLabel;
 import bwfdm.replaydh.workflow.schema.IdentifierSchema;
 import bwfdm.replaydh.workflow.schema.IdentifierType;
@@ -118,7 +112,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	}
 
 	private static final Logger log = LoggerFactory.getLogger(IdentifiableEditor.class);
-	
+
 	/**
 	 * <pre>
 	 * +--------+-------------------------+
@@ -150,17 +144,17 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	private final JButton bDone, bIgnore, bAddIdentifier;
 	private final JTextField tfTitle; //supposed to not be editable
 	private final JTextArea taDescription;
-	
+
     private JPopupMenu popupDescription;
-    
+
 	private final JTextField tfParameters;
-	
+
 	private JPopupMenu popupParameters;
-    
+
 	private final JTextArea taEnvironment;
-	
+
 	private JPopupMenu popupEnvironment;
-    
+
 	private final JComboBox<CompoundLabel> cbRoleType;
 	private final JSplitPane splitPane;
 	private final JPanel itemPanel;
@@ -187,12 +181,12 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 	//FIXME make use of the editor control to provide feedback
 	private EditorControl editorControl;
-	
+
 	private RDHEnvironment environment;
 	private MetadataCatalog search = null;
-	
+
 	private Timer waitingTimer;
-	
+
 	public void setReadOnly(boolean readOnly) {
 		boolean enabled = !readOnly;
 		taDescription.setEnabled(enabled);
@@ -201,7 +195,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		tfTitle.setEnabled(enabled);
 		bAddIdentifier.setEnabled(enabled);
 		cbRoleType.setEnabled(enabled);
-		bDone.setEnabled(enabled); 
+		bDone.setEnabled(enabled);
 		bIgnore.setEnabled(enabled);
 		for(int i=0; i < identifierPanel.getComponentCount(); i++) {
 			Component tmpPanel = identifierPanel.getComponent(i);
@@ -216,43 +210,43 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		this.environment = environment;
 	}
 
-	public static void main(String[] args) throws Exception {
-		WorkflowSchema schema = WorkflowSchema.getDefaultSchema();
-
-
-		Person person = DefaultPerson.uniquePerson();
-		person.addIdentifier(new Identifier(schema.getPersonIdentifierSchema().getDefaultIdentifierType(), "John"));
-
-		Tool tool = DefaultTool.uniqueTool();
-		tool.addIdentifier(new Identifier(schema.getResourceIdentifierSchema().getDefaultIdentifierType(), "XYZ"));
-		tool.setEnvironment("Win 7, 64 bit, ...");
-		tool.setParameters("-v -file D://x/y/z/masterFolder/out.xml");
-
-		Identifiable identifiable = tool;
-		Identifiable.Type type = identifiable.getType();
-
-		IdentifiableEditor editor = newBuilder()
-				.schema(schema)
-				.type(type)
-				.useDefaultTitleSelector()
-				.build();
-		JFrame frame = new JFrame("Test");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setVisible(true);
-
-		editor.setEditingItem(wrap(Collections.singleton(identifiable)));
-
-		GuiUtils.showEditorDialogWithControl(frame, editor, true);
-
-		frame.setVisible(false);
-		
-	}
+//	public static void main(String[] args) throws Exception {
+//		WorkflowSchema schema = WorkflowSchema.getDefaultSchema();
+//
+//
+//		Person person = DefaultPerson.uniquePerson();
+//		person.addIdentifier(new Identifier(schema.getPersonIdentifierSchema().getDefaultIdentifierType(), "John"));
+//
+//		Tool tool = DefaultTool.uniqueTool();
+//		tool.addIdentifier(new Identifier(schema.getResourceIdentifierSchema().getDefaultIdentifierType(), "XYZ"));
+//		tool.setEnvironment("Win 7, 64 bit, ...");
+//		tool.setParameters("-v -file D://x/y/z/masterFolder/out.xml");
+//
+//		Identifiable identifiable = tool;
+//		Identifiable.Type type = identifiable.getType();
+//
+//		IdentifiableEditor editor = newBuilder()
+//				.schema(schema)
+//				.type(type)
+//				.useDefaultTitleSelector()
+//				.build();
+//		JFrame frame = new JFrame("Test");
+//		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//		frame.setVisible(true);
+//
+//		editor.setEditingItem(wrap(Collections.singleton(identifiable)));
+//
+//		GuiUtils.showEditorDialogWithControl(frame, editor, true);
+//
+//		frame.setVisible(false);
+//
+//	}
 
 	protected IdentifiableEditor(Builder builder) {
 		schema = builder.getSchema();
 		type = builder.getType();
 		titleSelector = builder.getTitleSelector();
-		
+
 		ResourceManager rm = ResourceManager.getInstance();
 		IconRegistry ir = IconRegistry.getGlobalRegistry();
 
@@ -288,7 +282,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			GuiUtils.autoSelectFullContent(tfTitle);
 			GuiUtils.prepareChangeableBorder(tfTitle);
 		}
-		
+
 		tfParameters = GuiUtils.autoSelectFullContent(new JTextField());
 
 		taEnvironment = GuiUtils.autoSelectFullContent(new JTextArea());
@@ -296,23 +290,23 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 		taDescription = GuiUtils.autoSelectFullContent(new JTextArea());
 		taDescription.setRows(3);
-		
+
 		popupParameters = new JPopupMenu();
 		tfParameters.add(popupParameters);
 		tfParameters.setComponentPopupMenu(popupParameters);
-		
+
 		tfParameters.getDocument().addDocumentListener(this);
-		
+
 		popupEnvironment = new JPopupMenu();
 		taEnvironment.add(popupEnvironment);
 		taEnvironment.setComponentPopupMenu(popupEnvironment);
-		
+
 		taEnvironment.getDocument().addDocumentListener(this);
-		
+
 		popupDescription = new JPopupMenu();
 		taDescription.add(popupDescription);
 		taDescription.setComponentPopupMenu(popupDescription);
-		
+
 		taDescription.getDocument().addDocumentListener(this);
 
 		bDone = new JButton(rm.get("replaydh.ui.editor.resourceCache.confirm.label"));
@@ -330,8 +324,9 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 		cbRoleType = WorkflowUIUtils.createLabelComboBox(getLabelSchema());
 		defaultTypeOrRole = WorkflowUIUtils.createDefaultLabel(getLabelSchema());
-		cbRoleType.setSelectedItem(defaultTypeOrRole);
+		cbRoleType.setSelectedItem(null);
 		cbRoleType.addActionListener(this::onRoleTypeComboBoxClicked);
+		GuiUtils.prepareChangeableBorder(cbRoleType);
 
 		identifierPanel = new JPanel();
 		identifierPanel.setLayout(new BoxLayout(identifierPanel, BoxLayout.Y_AXIS));
@@ -370,13 +365,14 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		splitPane.setOneTouchExpandable(false);
 		splitPane.setBorder(null);
 		panel.add(splitPane, BorderLayout.CENTER);
-		
+
 		waitingTimer = new Timer(1000, taskPerformer);
     	waitingTimer.setRepeats(false);
 	}
-	
+
 	private ActionListener taskPerformer = new ActionListener() {
-        public void actionPerformed(ActionEvent evt) {
+        @Override
+		public void actionPerformed(ActionEvent evt) {
         	QuerySettings settings = new QuerySettings();
 			settings.setSchema(schema);
 			if (taEnvironment.hasFocus()) {
@@ -630,8 +626,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			ComboBoxModel<CompoundLabel> cbModel = cbRoleType.getModel();
 
 			String label = getTypeOrRoleLabel(identifiable);
-			CompoundLabel selectedLabel = getSelectedLabel(cbModel, getLabelSchema(), label);
-			cbRoleType.setSelectedItem(selectedLabel);
+			cbRoleType.setSelectedItem(toCompoundLabel(cbModel, getLabelSchema(), label));
 
 			// Special treatment of tools
 			if(isToolEditor()) {
@@ -687,7 +682,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		return isPersonEditor() ? ((Person)identifiable).getRole() : ((Resource)identifiable).getResourceType();
 	}
 
-	private CompoundLabel getSelectedLabel(ComboBoxModel<CompoundLabel> model, LabelSchema schema, String label) {
+	private CompoundLabel toCompoundLabel(ComboBoxModel<CompoundLabel> model, LabelSchema schema, String label) {
 		CompoundLabel selectedLabel = null;
 
 		if(label!=null) {
@@ -702,9 +697,9 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 				selectedLabel = new CompoundLabel(schema, label);
 			}
 		}
-		if(selectedLabel==null) {
-			selectedLabel = defaultTypeOrRole;
-		}
+//		if(selectedLabel==null) {
+//			selectedLabel = defaultTypeOrRole;
+//		}
 
 		return selectedLabel;
 	}
@@ -778,6 +773,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		if(resourceType!=null) {
 			setResourceTypeOrRoleToCurrentResource(resourceType);
 		}
+
+		GuiUtils.toggleChangeableBorder(cbRoleType, resourceType==null || resourceType.trim().isEmpty());
 	}
 
 	private void onAddIdentifierButtonClicked(ActionEvent ae) {
@@ -1067,7 +1064,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		private static final long serialVersionUID = -3977881752966957467L;
 
 		private final Identifier identifier;
-		
+
 		private final JButton deleteButton;
 
 		IdentifierPanel(Identifier identifier) {
@@ -1098,7 +1095,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		public Identifier getIdentifier() {
 			return identifier;
 		}
-		
+
 		private void setReadOnly(boolean readOnly) {
 			deleteButton.setEnabled(!readOnly);
 		}
@@ -1348,9 +1345,9 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	@Override
 	public void changedUpdate(DocumentEvent e) {
 		// TODO Auto-generated method stub
-		
+
 	}
-	
+
 	private void suggestSearch(QuerySettings settings, Identifiable context, String key, String valuePrefix) {
 
 		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>() {
@@ -1379,7 +1376,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 						for(String value: results) {
 							JMenuItem item = new JMenuItem(value);
 							item.addActionListener(new ActionListener() {
-							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    @Override
+								public void actionPerformed(java.awt.event.ActionEvent evt) {
 							    	tfParameters.setText(item.getText());
 							    }
 							});
@@ -1392,7 +1390,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 						for(String value: results) {
 							JMenuItem item = new JMenuItem(value);
 							item.addActionListener(new ActionListener() {
-							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    @Override
+								public void actionPerformed(java.awt.event.ActionEvent evt) {
 							    	taDescription.setText(item.getText());
 							    }
 							});
@@ -1405,7 +1404,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 						for(String value: results) {
 							JMenuItem item = new JMenuItem(value);
 							item.addActionListener(new ActionListener() {
-							    public void actionPerformed(java.awt.event.ActionEvent evt) {
+							    @Override
+								public void actionPerformed(java.awt.event.ActionEvent evt) {
 							    	taEnvironment.setText(item.getText());
 							    }
 							});

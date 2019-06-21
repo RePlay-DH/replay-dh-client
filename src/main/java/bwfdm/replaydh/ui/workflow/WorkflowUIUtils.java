@@ -19,9 +19,9 @@
 package bwfdm.replaydh.ui.workflow;
 
 import java.awt.Component;
+import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.Frame;
-import java.awt.Dialog.ModalityType;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -61,6 +61,7 @@ import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.ui.icons.IconRegistry;
 import bwfdm.replaydh.ui.icons.Resolution;
+import bwfdm.replaydh.ui.workflow.IdentifiableEditor.EditProxy;
 import bwfdm.replaydh.utils.Label;
 import bwfdm.replaydh.utils.Mutable.MutableObject;
 import bwfdm.replaydh.workflow.Identifiable;
@@ -82,7 +83,7 @@ import bwfdm.replaydh.workflow.schema.impl.IdentifierTypeImpl;
  *
  */
 public final class WorkflowUIUtils {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(WorkflowUIUtils.class);
 
 	public static class LabelCellRenderer extends DefaultListCellRenderer {
@@ -495,12 +496,14 @@ public final class WorkflowUIUtils {
 
 		String title = ResourceManager.getInstance().get("replaydh.panels.fileCache.fileDialog.title");
 
-		editor.setEditingItem(IdentifiableEditor.wrap(resourceMap.keySet()));
+		Set<EditProxy> proxies = IdentifiableEditor.wrap(resourceMap.keySet());
+
+		editor.setEditingItem(proxies);
 
 		if(!GuiUtils.showEditorDialogWithControl(null, editor, title, true)) {
 			resourceMap.clear();
 		} else {
-			Set<Resource> resources = IdentifiableEditor.unwrap(editor.getEditingItem());
+			Set<Resource> resources = IdentifiableEditor.unwrap(proxies);
 
 			resourceMap.keySet().retainAll(resources);
 		}
