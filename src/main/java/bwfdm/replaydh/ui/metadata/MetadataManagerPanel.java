@@ -21,8 +21,10 @@ package bwfdm.replaydh.ui.metadata;
 import static java.util.Objects.requireNonNull;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Graphics;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
@@ -129,7 +131,6 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 	private final WorkspaceTreeModel workspaceTreeModel;
 
 	private final JTree workspaceTree;
-//	private final JTabbedPane recordTabs;
 	private final RecordPanel recordPanel;
 
 	private final MetadataRepository repository;
@@ -157,7 +158,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		 * +---------------------------------------------+
 		 * |         TOOLBAR (filter + control           |
 		 * +--------------+------------------------------+
-		 * |              |     RECORD TABS              |
+		 * |              |     RECORD TABS (delayed)    |
 		 * |  WORKSPACE   +------------------------------+
 		 * |   OUTLINE    |  TOOLBAR  [ADD/EDIT/REMOVE]  |
 		 * |              +------------------------------+
@@ -210,9 +211,6 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		//TODO add area for orphaned records
 
 		// RIGHT AREA
-
-//		recordTabs = new JTabbedPane();
-//		recordTabs.addChangeListener(handler);
 
 		recordPanel = new RecordPanel();
 
@@ -424,11 +422,11 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 			refreshActions();
 		}
 
-//		private Target currentTarget() {
-//			TargetContainer container = (TargetContainer) SwingUtilities.getAncestorOfClass(
-//					TargetContainer.class, this);
-//			return container==null ? null : container.getTarget();
-//		}
+		public void update(MetadataRecord record) {
+			if(currentRecord==null || record==currentRecord) {
+				update();
+			}
+		}
 
 		private MetadataSchema currentSchema() {
 			Object schema = schemaSelect.getSelectedItem();
@@ -676,12 +674,10 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 
 		}
 
-		private void onRecordChange() {
-			GuiUtils.invokeEDTLater(() -> {
-				recordPanel.update();
-				workspaceTree.revalidate();
-				workspaceTree.repaint();
-			});
+		private void onRecordChange(MetadataRecord record) {
+			GuiUtils.invokeEDTLater(() ->
+				workspaceTreeModel.pathChanged(record.getTarget().toPath()));
+			recordPanel.update(record);
 		}
 
 		/**
@@ -689,7 +685,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		 */
 		@Override
 		public void metadataRecordAdded(MetadataRepository repository, MetadataRecord record) {
-			onRecordChange();
+			onRecordChange(record);
 		}
 
 		/**
@@ -697,7 +693,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		 */
 		@Override
 		public void metadataRecordRemoved(MetadataRepository repository, MetadataRecord record) {
-			onRecordChange();
+			onRecordChange(record);
 		}
 
 		/**
@@ -705,7 +701,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		 */
 		@Override
 		public void metadataRecordChanged(MetadataRepository repository, MetadataRecord record) {
-			onRecordChange();
+			onRecordChange(record);
 		}
 	}
 
@@ -763,5 +759,44 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 
 			setMinimumSize(getPreferredSize());
 		}
+	}
+
+	private static int redGreenGradient(double value){
+	    return Color.HSBtoRGB((float)value/3f, 1f, 1f);
+	}
+
+	private class ProgressIcon implements Icon {
+
+		/** Fixed size */
+		private final int size;
+		/** Progress for record */
+		private double progress = 0.0;
+
+		private String schemaId;
+
+		public ProgressIcon(int size) {
+			this.size = size;
+		}
+
+		void refresh(Target target) {
+
+		}
+
+		@Override
+		public void paintIcon(Component c, Graphics g, int x, int y) {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public int getIconWidth() {
+			return size;
+		}
+
+		@Override
+		public int getIconHeight() {
+			return size;
+		}
+
 	}
 }

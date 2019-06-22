@@ -185,6 +185,14 @@ public interface MetadataRecord {
 			this.path = requireNonNull(path);
 		}
 
+		public Path toPath() {
+			if(workspace==null || workspace.isEmpty()) {
+				return Paths.get(path);
+			} else {
+				return Paths.get(workspace, path);
+			}
+		}
+
 		/**
 		 * Returns the workspace path the resource associated with this record is located in.
 		 * <p>

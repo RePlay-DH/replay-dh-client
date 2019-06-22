@@ -288,10 +288,10 @@ public interface MetadataSchema extends SchemaManager.Schema {
 			return false;
 		}
 
-//		@Override
-//		public boolean isValuesLimited() {
-//			return false;
-//		}
+		@Override
+		public String toString() {
+			return getId();
+		}
 
 		@Override
 		public boolean isNamesLimited() {

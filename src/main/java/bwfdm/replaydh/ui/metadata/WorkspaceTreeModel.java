@@ -25,6 +25,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import javax.swing.Icon;
+import javax.swing.tree.TreePath;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -191,6 +193,22 @@ public class WorkspaceTreeModel extends AbstractTreeModel {
 
 	public void setOrder(Order order) {
 		this.order = requireNonNull(order);
+	}
+
+	public TreePath toTreePath(Path path) {
+		List<Path> elements = new ArrayList<>();
+		do {
+			elements.add(path);
+		} while ((path = path.getParent()) !=null && !rootFolder.equals(path));
+
+		Collections.reverse(elements);
+
+		return new TreePath(elements.toArray());
+	}
+
+	public void pathChanged(Path path) {
+		path = rootFolder.relativize(path);
+		firePathChanged(toTreePath(path));
 	}
 
 	/**

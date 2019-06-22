@@ -43,8 +43,6 @@ import bwfdm.replaydh.workflow.Identifiable.Role;
  */
 public class ResourceCache extends AbstractRDHTool implements PropertyChangeListener {
 
-	//TODO needs check and restriction for Roles (should not allow PERSON)
-
 	/**
 	 * Actual cache content, also used for synchronization
 	 */
@@ -157,16 +155,6 @@ public class ResourceCache extends AbstractRDHTool implements PropertyChangeList
 
 		for(CacheListener listener : listeners) {
 			listener.entryAdded(entry);
-		}
-	}
-
-	private void fireEntryRemoved(CacheEntry entry) {
-		if(listeners.isEmpty()) {
-			return;
-		}
-
-		for(CacheListener listener : listeners) {
-			listener.entryRemoved(entry);
 		}
 	}
 

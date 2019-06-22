@@ -49,6 +49,7 @@
 		<item type="custom" value="target" />
 		<item type="glue" />
 		<item type="custom" value="selector" />
+		<item type="separator" />
 		<item type="action" value="replaydh.ui.core.metadataManagerPanel.addRecord" />
 		<item type="action" value="replaydh.ui.core.metadataManagerPanel.editRecord" />
 		<item type="action" value="replaydh.ui.core.metadataManagerPanel.removeRecord" />
