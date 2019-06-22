@@ -572,18 +572,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 	}
 
-	private boolean fileTrackerHasFiles() {
-		try {
-			return fileTracker.hasStatusInfo()
-					&& (fileTracker.hasFilesForStatus(TrackingStatus.MISSING)
-					|| fileTracker.hasFilesForStatus(TrackingStatus.MODIFIED)
-					|| fileTracker.hasFilesForStatus(TrackingStatus.UNKNOWN));
-		} catch(TrackerException e) {
-			log.error("Failed to ask file tracker for file statuses", e);
-			return false;
-		}
-	}
-
 	private void refreshActions() {
 		GuiUtils.checkEDT();
 
@@ -1104,6 +1092,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 
 		private void showCacheDialog(Role role, List<LocalFileObject> files) {
+			if(role==Role.PERSON) {
+				return;
+			}
 			Map<Resource,Path> resourceMap = WorkflowUIUtils.extractResources(files, role.asIdentifiableType());
 
 			WorkflowUIUtils.showFileResourceDialog(
@@ -1116,11 +1107,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			for(Map.Entry<Resource, Path> entry : resourceMap.entrySet()) {
 				resourceCache.add(entry.getValue(), role, entry.getKey());
 			}
-		}
-
-		private void showCacheDialog(Role role, URI uri) {
-			//TODO implement actual dialog
-			GuiUtils.showDefaultInfo(null, "Dialog for describing URL resource (coming soon)");
 		}
 
 		@Override

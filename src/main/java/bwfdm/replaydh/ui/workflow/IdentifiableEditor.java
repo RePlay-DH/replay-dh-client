@@ -58,9 +58,9 @@ import javax.swing.SwingWorker;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.text.JTextComponent;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +105,7 @@ import bwfdm.replaydh.workflow.schema.WorkflowSchema;
  * @author Markus Gärtner
  *
  */
-public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelectionListener, DocumentListener {
+public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelectionListener, DocumentAdapter {
 
 	public static Builder newBuilder() {
 		return new Builder();
@@ -167,8 +167,6 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 	private final WorkflowSchema schema;
 
-	private final CompoundLabel defaultTypeOrRole;
-
 	private final Set<EditProxy> identifiers = new HashSet<>();
 
 	private Set<EditProxy> editingItem;
@@ -209,38 +207,6 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	public void setEnvironment(RDHEnvironment environment) {
 		this.environment = environment;
 	}
-
-//	public static void main(String[] args) throws Exception {
-//		WorkflowSchema schema = WorkflowSchema.getDefaultSchema();
-//
-//
-//		Person person = DefaultPerson.uniquePerson();
-//		person.addIdentifier(new Identifier(schema.getPersonIdentifierSchema().getDefaultIdentifierType(), "John"));
-//
-//		Tool tool = DefaultTool.uniqueTool();
-//		tool.addIdentifier(new Identifier(schema.getResourceIdentifierSchema().getDefaultIdentifierType(), "XYZ"));
-//		tool.setEnvironment("Win 7, 64 bit, ...");
-//		tool.setParameters("-v -file D://x/y/z/masterFolder/out.xml");
-//
-//		Identifiable identifiable = tool;
-//		Identifiable.Type type = identifiable.getType();
-//
-//		IdentifiableEditor editor = newBuilder()
-//				.schema(schema)
-//				.type(type)
-//				.useDefaultTitleSelector()
-//				.build();
-//		JFrame frame = new JFrame("Test");
-//		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//		frame.setVisible(true);
-//
-//		editor.setEditingItem(wrap(Collections.singleton(identifiable)));
-//
-//		GuiUtils.showEditorDialogWithControl(frame, editor, true);
-//
-//		frame.setVisible(false);
-//
-//	}
 
 	protected IdentifiableEditor(Builder builder) {
 		schema = builder.getSchema();
@@ -323,7 +289,6 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		bAddIdentifier.addActionListener(this::onAddIdentifierButtonClicked);
 
 		cbRoleType = WorkflowUIUtils.createLabelComboBox(getLabelSchema());
-		defaultTypeOrRole = WorkflowUIUtils.createDefaultLabel(getLabelSchema());
 		cbRoleType.setSelectedItem(null);
 		cbRoleType.addActionListener(this::onRoleTypeComboBoxClicked);
 		GuiUtils.prepareChangeableBorder(cbRoleType);
@@ -1264,88 +1229,26 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		}
 	}
 
+	/**
+	 * @see bwfdm.replaydh.ui.helper.DocumentAdapter#anyUpdate(javax.swing.event.DocumentEvent)
+	 */
 	@Override
-	public void insertUpdate(DocumentEvent e) {
-		// TODO Auto-generated method stub
-		Object source = e.getDocument();
-		if (source == taDescription.getDocument()) {
-			if(taDescription.hasFocus()) {
-				if(waitingTimer.isRunning()) {
-					waitingTimer.restart();
+	public void anyUpdate(DocumentEvent e) {
+		for(JTextComponent comp : new JTextComponent[] {
+				taDescription, tfTitle, tfParameters
+		}) {
+			if(comp.getDocument()==e.getDocument()) {
+				if(comp.hasFocus()) {
+					if(waitingTimer.isRunning()) {
+						waitingTimer.restart();
+					} else {
+						waitingTimer.start();
+					}
 				} else {
-					waitingTimer.start();
+					waitingTimer.stop();
 				}
-			} else {
-				waitingTimer.stop();
 			}
 		}
-		if (source == taEnvironment.getDocument()) {
-			if(taEnvironment.hasFocus()) {
-				if(waitingTimer.isRunning()) {
-					waitingTimer.restart();
-				} else {
-					waitingTimer.start();
-				}
-			} else {
-				waitingTimer.stop();
-			}
-		}
-		if (source == tfParameters.getDocument()) {
-			if(tfParameters.hasFocus()) {
-				if(waitingTimer.isRunning()) {
-					waitingTimer.restart();
-				} else {
-					waitingTimer.start();
-				}
-			} else {
-				waitingTimer.stop();
-			}
-		}
-	}
-
-	@Override
-	public void removeUpdate(DocumentEvent e) {
-		// TODO Auto-generated method stub
-		Object source = e.getDocument();
-		if (source == taDescription.getDocument()) {
-			if(taDescription.hasFocus()) {
-				if(waitingTimer.isRunning()) {
-					waitingTimer.restart();
-				} else {
-					waitingTimer.start();
-				}
-			} else {
-				waitingTimer.stop();
-			}
-		}
-		if (source == taEnvironment.getDocument()) {
-			if(taEnvironment.hasFocus()) {
-				if(waitingTimer.isRunning()) {
-					waitingTimer.restart();
-				} else {
-					waitingTimer.start();
-				}
-			} else {
-				waitingTimer.stop();
-			}
-		}
-		if (source == tfParameters.getDocument()) {
-			if(tfParameters.hasFocus()) {
-				if(waitingTimer.isRunning()) {
-					waitingTimer.restart();
-				} else {
-					waitingTimer.start();
-				}
-			} else {
-				waitingTimer.stop();
-			}
-		}
-	}
-
-	@Override
-	public void changedUpdate(DocumentEvent e) {
-		// TODO Auto-generated method stub
-
 	}
 
 	private void suggestSearch(QuerySettings settings, Identifiable context, String key, String valuePrefix) {
