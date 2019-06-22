@@ -50,38 +50,36 @@ import com.jgoodies.forms.layout.FormLayout;
 import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.resources.ResourceManager;
-import bwfdm.replaydh.ui.workflow.IdentifiableEditor;
-import bwfdm.replaydh.ui.workflow.WorkflowStepUIEditor;
-import bwfdm.replaydh.ui.workflow.WorkflowUIUtils;
-import bwfdm.replaydh.ui.workflow.auto.GUIElement;
-import bwfdm.replaydh.ui.workflow.auto.GUIElementMetadata;
-import bwfdm.replaydh.workflow.Identifiable;
-import bwfdm.replaydh.workflow.Identifier;
-import bwfdm.replaydh.workflow.Person;
-import bwfdm.replaydh.workflow.Resource;
-import bwfdm.replaydh.workflow.Tool;
-import bwfdm.replaydh.workflow.Identifiable.Role;
-import bwfdm.replaydh.workflow.Identifiable.Type;
-import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
-import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Constraint;
-import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
-import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result;
-import bwfdm.replaydh.workflow.schema.IdentifierSchema;
-import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 import bwfdm.replaydh.ui.GuiUtils;
 import bwfdm.replaydh.ui.core.FileResolutionWorker;
 import bwfdm.replaydh.ui.core.ResourceDragController;
 import bwfdm.replaydh.ui.core.ResourceDragController.Mode;
 import bwfdm.replaydh.ui.helper.WrapLayout;
 import bwfdm.replaydh.ui.icons.IconRegistry;
+import bwfdm.replaydh.ui.workflow.IdentifiableEditor;
+import bwfdm.replaydh.ui.workflow.WorkflowStepUIEditor;
+import bwfdm.replaydh.ui.workflow.WorkflowUIUtils;
+import bwfdm.replaydh.workflow.Identifiable;
+import bwfdm.replaydh.workflow.Identifiable.Role;
+import bwfdm.replaydh.workflow.Identifiable.Type;
+import bwfdm.replaydh.workflow.Identifier;
+import bwfdm.replaydh.workflow.Person;
+import bwfdm.replaydh.workflow.Resource;
+import bwfdm.replaydh.workflow.Tool;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Constraint;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.QuerySettings;
+import bwfdm.replaydh.workflow.catalog.MetadataCatalog.Result;
+import bwfdm.replaydh.workflow.schema.IdentifierSchema;
+import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
 /**
- * 
+ *
  * @author Florian Fritze
  *
  */
 public class AutoCompletionWizardWorkflowStep implements ActionListener, DocumentListener {
-	
+
 	public AutoCompletionWizardWorkflowStep(WorkflowSchema schema, RDHEnvironment environment, WorkflowStepUIEditor wfseditor) {
 		this.schema=schema;
 		this.environment=environment;
@@ -103,7 +101,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 
         // Add new identifiable (Person/Resource/Tool)
         actionListenerAddIdentifiable = this;
-        
+
         personsPanel = new CategoryPanel(Role.PERSON, btnAddPerson, btnAddAutoPerson);
     	toolPanel = new CategoryPanel(Role.TOOL, btnAddTool, btnAddAutoTool);
     	inputResourcesPanel = new CategoryPanel(Role.INPUT, btnAddInputResource, btnAddAutoInputResource);
@@ -114,82 +112,82 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     	btnAddTool = createButton(toolTipAddTool,iconAdd,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	btnAddInputResource = createButton(toolTipAddInputResource,iconAdd,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	btnAddOutputResource = createButton(toolTipAddOutputResource,iconAdd,buttonBigPreferredSize,actionListenerAddIdentifiable);
-    	
+
     	// Buttons to add new identifiable
         btnAddAutoPerson = createButton(toolTipAddPerson,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	btnAddAutoTool = createButton(toolTipAddTool,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	btnAddAutoInputResource = createButton(toolTipAddInputResource,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
     	btnAddAutoOutputResource = createButton(toolTipAddOutputResource,iconAddAuto,buttonBigPreferredSize,actionListenerAddIdentifiable);
-    	
+
     	//scrollablePanel = new ScrollablePanel();
     	//scrollablePanel.setScrollableWidth(ScrollableSizeHint.FIT);
     	objectsPanel = new JPanel();
-    	
+
     	search = this.environment.getClient().getMetadataCatalog();
-    	
+
     	collectionEntries = new HashMap<>();
     	//search.createObjects();
 	}
-	
+
 	private static final Logger log = LoggerFactory.getLogger(AutoCompletionWizardWorkflowStep.class);
 
 	private MetadataCatalog search;
-	
+
 	private JDialog wizardWindow;
-	
+
 	private JScrollPane scrollPaneObjects;
-	
+
 	private ResourceManager rm = ResourceManager.getInstance();
-	
+
 	private Map<String, List<GUIElementMetadata>> elementsofproperty;
 	private Map<String, JPanel> propertypanels;
 	private List<String> listofkeys;
-	
+
 	private JPanel mainPanelWizard;
 	private List<GUIElementMetadata> dd = new ArrayList<>();
-	
+
 	private Map<String, String> collectionEntries;
-	
+
 	private GUIElement simpleSearch;
-	
+
 	private JComboBox<String> ddKeys = new JComboBox<>();
-	
+
 	private RDHEnvironment environment;
 	private WorkflowSchema schema;
-	
+
 	private Identifiable.Type type = null;
 	private Identifiable.Role role = null;
-	
+
 	private JButton resetButton = null;
 	private JButton searchButton = null;
-	
+
 	private FormBuilder builderWizard;
 	private FormBuilder panelWizard;
-	
+
 	// Scrollable panel with all persons/tool/resources
     private JPanel objectsPanel;
-    
+
     private WorkflowStepUIEditor wfseditor = null;
-	
+
 	// Panels with all persons, tool, input/output resources
     private CategoryPanel personsPanel;
     private CategoryPanel toolPanel;
     private CategoryPanel inputResourcesPanel;
     private CategoryPanel outputResourcesPanel;
-	
+
 	private List<IdentifiableEditorElement<Person>> personEditorElementsList;
     private List<IdentifiableEditorElement<Tool>> toolEditorElementsList;
     private List<IdentifiableEditorElement<Resource>> inputResourceEditorElementsList;
     private List<IdentifiableEditorElement<Resource>> outputResourceEditorElementsList;
-    
+
     List<Person> sortedPersons;
     List<Resource> sortedInputs;
     List<Resource> sortedOutputs;
     List<Tool> sortedTools;
-    
+
     Dimension buttonPreferredSize = new Dimension(16,16);
     Dimension buttonBigPreferredSize = new Dimension(32,32);
-    
+
     // Icons
     private Icon iconRemove = IconRegistry.getGlobalRegistry().getIcon("list-remove-5.png");
     private Icon iconAdd = IconRegistry.getGlobalRegistry().getIcon("list-add.png");
@@ -211,7 +209,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     private final String toolTipAddOutputResource = ResourceManager.getInstance().get("replaydh.ui.editor.workflowStep.toolTips.addOutput");
     private final String toolTipAddTool = ResourceManager.getInstance().get("replaydh.ui.editor.workflowStep.toolTips.addTool");
 
-    
+
     private final String personElementHeader = ResourceManager.getInstance().get("replaydh.ui.editor.workflowStep.labels.personElementHeader");
     private final String toolElementHeader = ResourceManager.getInstance().get("replaydh.ui.editor.workflowStep.labels.toolElementHeader");
     private final String inputResourceElementHeader = ResourceManager.getInstance().get("replaydh.ui.editor.workflowStep.labels.inputElementHeader");
@@ -219,24 +217,24 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 
     private ActionListener actionListenerIdentifiableEditorElement;		//for group buttons: remove, edit, more/less
     private ActionListener actionListenerAddIdentifiable;	//for "add new identifiable" button
-    
+
     private Border emptyBorder = BorderFactory.createEmptyBorder(2, 2, 2, 2);
     private Border lineBorder = BorderFactory.createLineBorder(Color.BLACK, 1, false);
     private Border redBorder = BorderFactory.createLineBorder(Color.RED, 2, false);
     private Border defaultBorder;
-    
+
  // Add buttons
     private JButton btnAddPerson = null;
     private JButton btnAddInputResource = null;
     private JButton btnAddOutputResource = null;
     private JButton btnAddTool = null;
-    
+
     // Add buttons
     private JButton btnAddAutoPerson = null;
     private JButton btnAddAutoInputResource = null;
     private JButton btnAddAutoOutputResource = null;
     private JButton btnAddAutoTool = null;
-    
+
 	public void createWizard(WorkflowSchema schema, Identifiable.Role role, Identifiable.Type type) {
 		this.type=type;
 		this.role=role;
@@ -250,23 +248,23 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		wizardWindow.setTitle(rm.get("replaydh.wizard.metadataAutoWizard.windowTitle"));
 		wizardWindow.setLocationRelativeTo(currentWindow);
 		wizardWindow.setVisible(true);
-		
+
 	}
-	
+
 	public JPanel createWizardPanel() {
-		
+
 		builderWizard = FormBuilder.create();
-		
+
 		listofkeys = new ArrayList<>();
 		propertypanels = new HashMap<>();
 		elementsofproperty = new HashMap<>();
-		
+
 		simpleSearch = createGUIElement();
 		simpleSearch.getLabel().setText(rm.get("replaydh.wizard.metadataAutoWizard.simpleSearch"));
 		simpleSearch.getButton().setVisible(false);
 		simpleSearch.getMinusbutton().setVisible(false);
 		simpleSearch.getTextfield().getDocument().addDocumentListener(this);
-		
+
 		GUIElementMetadata chooseProperties = createGUIElement("keys");
 		chooseProperties.getTextfield().getDocument().addDocumentListener(this);
 		ddKeys = new JComboBox();
@@ -280,12 +278,12 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		chooseProperties.getKeysDropdown().setModel(ddKeys.getModel());
 		dd.add(chooseProperties);
 		propertypanels.put("defaultdd", chooseProperties.getPanel());
-		
+
 		searchButton = new JButton(rm.get("replaydh.wizard.metadataAutoWizard.search"));
 		searchButton.addActionListener(this);
 		resetButton = new JButton(rm.get("replaydh.wizard.metadataAutoWizard.reset"));
 		resetButton.addActionListener(this);
-		
+
 		panelWizard = FormBuilder.create();
     	panelWizard.columns("pref:grow");
     	panelWizard.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref");
@@ -295,7 +293,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     	panelWizard.add(inputResourcesPanel).xy(1, 5);
     	panelWizard.add(outputResourcesPanel).xy(1, 7);
     	objectsPanel=panelWizard.build();
-		
+
 		builderWizard.columns("pref:grow");
 		builderWizard.rows("pref, $nlg, pref, $nlg, pref, $nlg, pref");
 		builderWizard.padding(Paddings.DLU4);
@@ -305,14 +303,14 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		listofkeys.add("defaultdd");
 		builderWizard.add(Forms.buttonBar(searchButton,resetButton)).xy(1, 5, "center, bottom");
 		elementsofproperty.put("defaultdd", dd);
-		scrollPaneObjects = new JScrollPane(objectsPanel,ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,  
+		scrollPaneObjects = new JScrollPane(objectsPanel,ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
 				   ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPaneObjects.setPreferredSize(new Dimension(700,400));
 		builderWizard.add(scrollPaneObjects).xy(1, 7);
 		return builderWizard.build();
-		
+
 	}
-	
+
 	/**
 	 * Creates one GUI element and
 	 * @return it
@@ -400,7 +398,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 				this.globalSearch(settings, simpleSearch.getTextfield().getText(), this);
 			}
 		}
-		
+
 		List<IdentifiableEditorElement> collectedEditorElements = new ArrayList<>();
         collectedEditorElements.addAll(personEditorElementsList);
         collectedEditorElements.addAll(inputResourceEditorElementsList);
@@ -439,7 +437,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
         	}
         }
 	}
-	
+
 	private void clearResultGUI() {
 		sortedPersons.clear();
 		sortedTools.clear();
@@ -449,7 +447,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		updateEditorView();
 		scrollPaneObjects.setVisible(false);
 	}
-	
+
 	/**
 	 * Refreshes one JPanel according to the specified metadata property and its position (index) in the main
 	 * panelbuilder (builder)
@@ -462,7 +460,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		for(GUIElementMetadata oneguielement : elementsofproperty.get(metadatapropertyname)) {
 			oneguielement.getTextfield().getDocument().removeDocumentListener(this);
 		}
-		
+
 		FormLayout layout = new FormLayout(columns,rows);
 
 
@@ -506,11 +504,11 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 				if(oneguielement.getKeysDropdown().getActionListeners().length == 0) {
 					oneguielement.getKeysDropdown().addActionListener(this);
 				}
-			} 
+			}
 				//oneguielement.getKeysDropdown().addActionListener(this);
-				
+
 			oneguielement.getTextfield().getDocument().addDocumentListener(this);
-			
+
 			if(oneguielement.getKeysDropdown().getModel().getSize() == 0) {
 				for (MetadataKeys value : MetadataKeys.values()) {
 					String item = value.getDisplayLabel(value.getLocaString());
@@ -538,7 +536,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 			parentComponent.pack();
 		}
 	}
-	
+
 	public boolean refreshBorder(List<GUIElementMetadata> propertylist) {
 		boolean allEmpty=true;
 		for (GUIElementMetadata checkElement : propertylist) {
@@ -558,7 +556,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		}
 		return !allEmpty;
 	}
-	
+
 	public GUIElementMetadata createGUIElement(String metadataproperty) {
 		GUIElementMetadata elementToAdd = new GUIElementMetadata();
 		JTextField textfield = new JTextField();
@@ -572,7 +570,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		elementToAdd.create();
 		return elementToAdd;
 	}
-	
+
 	private void removeElementFromPanel(String metadatapropertyname, int buttonNumber) {
 		elementsofproperty.get(metadatapropertyname).remove(buttonNumber);
 		simpleSearch.getTextfield().setEnabled(true);
@@ -585,13 +583,13 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		}
 		refreshPanel(metadatapropertyname);
 	}
-	
-	
+
+
 	public boolean isPersonEditor() {
 		return type==Type.PERSON;
 	}
-	
-	
+
+
 	public enum MetadataKeys {
 		TITLE_KEY("title","replaydh.wizard.metadataAutoWizard.title"),
 		DESCRIPTION_KEY("description","replaydh.wizard.metadataAutoWizard.description"),
@@ -599,10 +597,10 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		TYPE_KEY("type","replaydh.wizard.metadataAutoWizard.type"),
 		ENVIRONMENT_KEY("environment","replaydh.wizard.metadataAutoWizard.environment"),
 		PARAMETERS_KEY("parameters","replaydh.wizard.metadataAutoWizard.parameters");
-		
+
 		String key;
 		String locaString;
-		
+
 		private MetadataKeys(String key, String locaString) {
 	        this.key = key;
 	        this.locaString=locaString;
@@ -611,19 +609,19 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 	    public String getLocaString() {
 	        return locaString;
 	    }
-	    
+
 	    public String getKey() {
 	    	return key;
 	    }
-		
+
 		public String getDisplayLabel(String key) {
 			return ResourceManager.getInstance().get(key);
 		}
 	}
-	
-	
+
+
 	private void searchWithConstraints(QuerySettings settings, List<Constraint> constraints, AutoCompletionWizardWorkflowStep wizard) {
-		
+
 		SwingWorker<Result, Void> worker = new SwingWorker<Result, Void>(){
 
 			boolean success=true;
@@ -682,7 +680,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 							if(result.getType().equals(Type.RESOURCE)) {
 								wizard.addIdentifiable(result, Role.OUTPUT);
 							}
-							break; 
+							break;
 						}
 					}
 				}
@@ -690,7 +688,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		};
 		worker.execute();
 	}
-	
+
 	private void globalSearch(QuerySettings settings, String fragment, AutoCompletionWizardWorkflowStep wizard) {
 
 		SwingWorker<Result, Void> worker = new SwingWorker<Result, Void>() {
@@ -753,7 +751,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 							if(result.getType().equals(Type.RESOURCE)) {
 								wizard.addIdentifiable(result, Role.OUTPUT);
 							}
-							break; 
+							break;
 						}
 					}
 				}
@@ -761,8 +759,8 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		};
 		worker.execute();
 	}
-		
-	
+
+
 	private void addIdentifiable(Identifiable identifiable, Role role) {
 		boolean found=false;
 		switch (role) {
@@ -829,7 +827,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		updateIdentifiableEditorElements();
 		updateEditorView();
     }
-	
+
 	/**
 	 * Create/Update the whole model of the editor.
 	 * @param workflowstep
@@ -922,7 +920,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
         restoreExpandedViewMode(inputResourceEditorElementsList, oldInputResourceEditorElementsList);
         restoreExpandedViewMode(outputResourceEditorElementsList, oldOutputResourceEditorElementsList);
 	}
-	
+
 	/**
      * Restore an expanded view mode of each person/tool/resource editor according to the old state
      *
@@ -949,7 +947,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
         	}
     	}
     }
-	
+
     /**
      * Class to group all properties of each identifiable element,
      * e.g. 1 person, 1 resource, 1 tool...
@@ -990,7 +988,6 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 
     		// Set identifiable editor
     		editor = createIdentifiableEditor(workflowSchema, this.identifiable.getType());
-    		editor.setEnvironment(environment);
         	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(this.identifiable)));
         	editor.setReadOnly(true);
 
@@ -1203,7 +1200,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		}
 
 	}
-    
+
     /**
      * Create a button with name, icon, preferred size and action listener
      *
@@ -1230,7 +1227,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
         button.addActionListener(actionListener);
         return button;
     }
-    
+
     /**
      * Create new JLabel and trim it according to the maxWidth if needed
      * @param maxWidth
@@ -1245,16 +1242,17 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     	}
     	return label;
     }
-    
+
     private IdentifiableEditor createIdentifiableEditor(WorkflowSchema schema, Identifiable.Type type) {
     	return IdentifiableEditor.newBuilder()
+    			.environment(environment)
     			.schema(schema)
     			.type(type)
     			.useDefaultTitleSelector(true)
     			.titleEditable(true)
     			.build();
     }
-    
+
     /**
      * Create/update a panel of the editor. The main GUI method of the editor.
      *
@@ -1286,10 +1284,10 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
     		window.repaint();
     	}
     	scrollablePanel.requestFocusInWindow(); //put focus somewhere in Window, just to remove the focus from other JTextComponents*/
-    	
-    	
+
+
     }
-    
+
     /*
      * -------- Other classes and methods ------------------------
      */
@@ -1426,7 +1424,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 			return role;
 		}
     }
-    
+
     private <O extends Identifiable> void updatePanel(CategoryPanel panel, List<IdentifiableEditorElement<O>> elements, String header) {
 
     	JPanel contentPanel = panel.getContentPanel();
@@ -1445,10 +1443,9 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 			parentComponent.pack();
 		}
     }
-    
+
     private void showResourceDialog(Role role, List<LocalFileObject> files) {
 		IdentifiableEditor editor = createIdentifiableEditor(schema, role.asIdentifiableType());
-		editor.setEnvironment(environment);
 		Map<Resource,Path> resources = WorkflowUIUtils.extractResources(files, role.asIdentifiableType());
 		WorkflowUIUtils.showFileResourceDialog(editor, role, resources);
 
@@ -1463,7 +1460,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		//TODO implement actual dialog
 		GuiUtils.showDefaultInfo(null, "Dialog for describing URL resource");
 	}
-	
+
 	/**
      * Process "remove button"
      */
@@ -1502,7 +1499,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 			updateEditorView();
     	}
     }
-    
+
     /**
      * Process "add button"
      */
@@ -1534,7 +1531,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 		this.wfseditor.updateIdentifiableEditorElements(this.wfseditor.getEditingItem());
 		this.wfseditor.updateEditorView();
     }
-    
+
     /**
      * Process "expanded view button"
      */
@@ -1628,6 +1625,6 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 	@Override
 	public void changedUpdate(DocumentEvent e) {
 		// TODO Auto-generated method stub
-		
+
 	}
 }

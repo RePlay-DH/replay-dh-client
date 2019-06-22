@@ -177,10 +177,9 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 	private final String UNNAMED_ID;
 
-	//FIXME make use of the editor control to provide feedback
 	private EditorControl editorControl;
 
-	private RDHEnvironment environment;
+	private final RDHEnvironment environment;
 	private MetadataCatalog search = null;
 
 	private Timer waitingTimer;
@@ -204,11 +203,8 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		}
 	}
 
-	public void setEnvironment(RDHEnvironment environment) {
-		this.environment = environment;
-	}
-
 	protected IdentifiableEditor(Builder builder) {
+		environment = builder.getEnvironment();
 		schema = builder.getSchema();
 		type = builder.getType();
 		titleSelector = builder.getTitleSelector();
@@ -241,6 +237,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			tfTitle.getDocument().addDocumentListener(new DocumentAdapter() {
 				@Override
 				public void anyUpdate(DocumentEvent e) {
+					IdentifiableEditor.this.anyUpdate(e);
 					refreshTitle();
 					refreshControl();
 				}
@@ -1145,6 +1142,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	 */
 	public static class Builder {
 
+		private RDHEnvironment environment;
 		private WorkflowSchema schema;
 		private Identifiable.Type type;
 		private Function<Identifiable, IdentifierType> titleSelector;
@@ -1200,12 +1198,25 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 			return titleSelector(new DefaultTitleSelector(schema, namesOnly));
 		}
 
+		public Builder environment(RDHEnvironment environment) {
+			requireNonNull(environment);
+			checkState("Environment already set", this.environment==null);
+
+			this.environment = environment;
+
+			return this;
+		}
+
 		public WorkflowSchema getSchema() {
 			return schema;
 		}
 
 		public Identifiable.Type getType() {
 			return type;
+		}
+
+		public RDHEnvironment getEnvironment() {
+			return environment;
 		}
 
 		public Function<Identifiable, IdentifierType> getTitleSelector() {
@@ -1217,6 +1228,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 		}
 
 		protected void validate() {
+			checkState("Environment missing", environment!=null);
 			checkState("Schema missing", schema!=null);
 			checkState("Type missing", type!=null);
 			checkState("Title selector missing", titleSelector!=null);
@@ -1235,7 +1247,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 	@Override
 	public void anyUpdate(DocumentEvent e) {
 		for(JTextComponent comp : new JTextComponent[] {
-				taDescription, tfTitle, tfParameters
+				taDescription, tfTitle, taEnvironment, tfParameters
 		}) {
 			if(comp.getDocument()==e.getDocument()) {
 				if(comp.hasFocus()) {
@@ -1247,6 +1259,7 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 				} else {
 					waitingTimer.stop();
 				}
+				break;
 			}
 		}
 	}
@@ -1255,7 +1268,6 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 
 		SwingWorker<Boolean, Object> worker = new SwingWorker<Boolean, Object>() {
 
-			boolean success = true;
 			List<String> results = null;
 
 			@Override
@@ -1264,15 +1276,12 @@ public class IdentifiableEditor implements Editor<Set<EditProxy>>, ListSelection
 					search=environment.getClient().getMetadataCatalog();
 				}
 				results = search.suggest(settings, null, key, valuePrefix);
-				if (results.isEmpty()) {
-					success = false;
-				}
-				return success;
+				return Boolean.TRUE;
 			}
 
 			@Override
 			protected void done() {
-				if (success) {
+				if (results!=null && !results.isEmpty()) {
 					switch(key) {
 					case MetadataCatalog.PARAMETERS_KEY:
 						popupParameters.removeAll();

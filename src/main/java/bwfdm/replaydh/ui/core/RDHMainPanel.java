@@ -1097,8 +1097,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 			Map<Resource,Path> resourceMap = WorkflowUIUtils.extractResources(files, role.asIdentifiableType());
 
-			WorkflowUIUtils.showFileResourceDialog(
-					workflowSource.get().getSchema(), false, role, resourceMap);
+			WorkflowUIUtils.showFileResourceDialog(environment,	workflowSource.get().getSchema(),
+					false, role, resourceMap);
 
 			if(resourceMap.isEmpty()) {
 				return;

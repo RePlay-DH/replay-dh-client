@@ -864,6 +864,7 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
     private IdentifiableEditor createIdentifiableEditor(WorkflowSchema schema, Identifiable.Type type) {
     	return IdentifiableEditor.newBuilder()
+    			.environment(environment)
     			.schema(schema)
     			.type(type)
     			.useDefaultTitleSelector(true)
@@ -886,7 +887,6 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     	String title = type.getLabel();
 
     	IdentifiableEditor editor = createIdentifiableEditor(schema, type);
-    	editor.setEnvironment(environment);
     	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(identifiableObject)));
     	Frame window = null;//GuiUtils.getFrame(this.editorPanel);
     	try {
@@ -1309,7 +1309,6 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
 
 	private void showResourceDialog(Role role, List<LocalFileObject> files) {
 		IdentifiableEditor editor = createIdentifiableEditor(schema, role.asIdentifiableType());
-		editor.setEnvironment(environment);
 		Map<Resource,Path> resources = WorkflowUIUtils.extractResources(files, role.asIdentifiableType());
 		WorkflowUIUtils.showFileResourceDialog(editor, role, resources);
 
@@ -1514,7 +1513,6 @@ public class WorkflowStepUIEditor implements Editor<WorkflowStep>, ActionListene
     		// Set identifiable editor
     		editor = createIdentifiableEditor(workflowSchema, this.identifiable.getType());
     		editor.setControl(this);
-    		editor.setEnvironment(environment);
         	editor.setEditingItem(IdentifiableEditor.wrap(Collections.singleton(this.identifiable)));
     	}
 

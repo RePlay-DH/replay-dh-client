@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
 
+import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.io.LocalFileObject;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.ui.GuiUtils;
@@ -473,12 +474,14 @@ public final class WorkflowUIUtils {
 	}
 
 	public static <R extends Resource> void showFileResourceDialog(
+			RDHEnvironment environment,
 			WorkflowSchema schema,
 			boolean titleEditable,
 			Role role,
 			Map<R, Path> resourceMap) {
 
 		IdentifiableEditor editor = IdentifiableEditor.newBuilder()
+				.environment(environment)
 				.schema(schema)
 				.type(role.asIdentifiableType())
 				.useDefaultTitleSelector()
