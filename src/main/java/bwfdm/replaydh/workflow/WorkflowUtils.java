@@ -20,9 +20,16 @@ package bwfdm.replaydh.workflow;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.List;
 import java.util.function.Predicate;
 
+import org.java.plugin.registry.Extension;
+
+import bwfdm.replaydh.core.PluginEngine;
+import bwfdm.replaydh.core.RDHEnvironment;
+import bwfdm.replaydh.core.RDHException;
 import bwfdm.replaydh.workflow.Identifiable.Type;
+import bwfdm.replaydh.workflow.fill.ResourceMetadataFiller;
 import bwfdm.replaydh.workflow.impl.DefaultPerson;
 import bwfdm.replaydh.workflow.impl.DefaultResource;
 import bwfdm.replaydh.workflow.impl.DefaultTool;
@@ -34,6 +41,27 @@ import bwfdm.replaydh.workflow.schema.WorkflowSchema;
  *
  */
 public class WorkflowUtils {
+
+	// CONVERSION HELPERS
+
+	public static ResourceMetadataFiller getFiller(RDHEnvironment environment, String schemaId) {
+		PluginEngine pluginEngine = environment.getClient().getPluginEngine();
+		List<Extension> extensions = pluginEngine.find(
+				PluginEngine.CORE_PLUGIN_ID, "ResourceMetadataFiller",
+				e -> schemaId.equals(e.getParameter("schema").valueAsString()));
+
+		if(extensions.isEmpty())
+			throw new RDHException("No extension registered for ResourceMetadataFiller endpoint");
+
+		if(extensions.size()>1)
+			throw new RDHException("Duplicate ResourceMetadataFiller extensions registered for schema: "+schemaId);
+
+		try {
+			return pluginEngine.instantiate(extensions.get(0));
+		} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+			throw new RDHException("Failed to instantiate filler for schema: "+schemaId, e);
+		}
+	}
 
 	// WORKFLOW HELPERS
 

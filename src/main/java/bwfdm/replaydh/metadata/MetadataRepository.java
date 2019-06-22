@@ -26,6 +26,7 @@ import bwfdm.replaydh.core.RDHEnvironment;
 import bwfdm.replaydh.core.RDHLifecycleException;
 import bwfdm.replaydh.core.RDHTool;
 import bwfdm.replaydh.metadata.MetadataRecord.Target;
+import bwfdm.replaydh.metadata.basic.MutableMetadataRecord;
 import bwfdm.replaydh.utils.SchemaManager;
 
 /**
@@ -101,6 +102,8 @@ public interface MetadataRepository extends RDHTool, SchemaManager<MetadataSchem
 	void addRecord(MetadataRecord record);
 
 	void removeRecord(MetadataRecord record);
+
+	MutableMetadataRecord newRecord(Target target, String schemaId);
 
 	// Listener API
 

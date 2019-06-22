@@ -231,7 +231,8 @@ public abstract class AbstractMetadataRespository extends AbstractSchemaManager<
 		listeners.add(listener);
 	}
 
-	protected MutableMetadataRecord newRecord(Target target, String schemaId) {
+	@Override
+	public MutableMetadataRecord newRecord(Target target, String schemaId) {
 		return new DefaultMetadataRecord(target, schemaId);
 	}
 

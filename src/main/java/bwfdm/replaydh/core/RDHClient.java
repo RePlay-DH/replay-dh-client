@@ -87,12 +87,10 @@ import bwfdm.replaydh.ui.core.RDHGui;
 import bwfdm.replaydh.utils.Lazy;
 import bwfdm.replaydh.utils.Options;
 import bwfdm.replaydh.utils.StringResource;
-import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.ResourceCache;
 import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.catalog.InMemoryMetadataCatalog;
 import bwfdm.replaydh.workflow.catalog.MetadataCatalog;
-import bwfdm.replaydh.workflow.resolver.IdentifiableResolver;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 import bwfdm.replaydh.workflow.schema.WorkflowSchemaManager;
 import bwfdm.replaydh.workflow.schema.impl.LocalSchemaManager;
@@ -192,8 +190,6 @@ public class RDHClient {
 	private ResourceManager resourceManager;
 
 	private final Lazy<ScheduledExecutorService> executorService = Lazy.create(this::createExecutorService, true);
-
-	private final Lazy<IdentifiableResolver> resourceResolver = Lazy.create(this::createResourceResolver, true);
 
 	private final Lazy<RDHGui> gui = Lazy.create(this::createGui, true);
 
@@ -448,15 +444,6 @@ public class RDHClient {
 		return userFolder.resolve(name);
 	}
 
-	private Path ensureUserFile(String name) throws IOException {
-		Path file = getUserFile(name);
-		if(!Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
-			Files.createFile(file);
-		}
-
-		return file;
-	}
-
 	private Path ensureUserFolder(UserFolder folder) throws IOException {
 		Path file = getUserFile(folder.folderName);
 		if(isVerbose()) {
@@ -515,16 +502,6 @@ public class RDHClient {
 	 */
 	public MetadataRepository getLocalMetadataRepository() {
 		return localMetadataRepository.value();
-	}
-
-	/**
-	 * Returns the lookup facility that caches and maps from sets of
-	 * {@link Identifier identifiers} to known resources, tools or persons.
-	 *
-	 * @return
-	 */
-	public IdentifiableResolver getResourceResolver() {
-		return resourceResolver.value();
 	}
 
 	/**
@@ -789,45 +766,6 @@ public class RDHClient {
 //		if(savedWorkspace!=null) {
 //			environment.setWorkspacePath(Paths.get(savedWorkspace));
 //		}
-	}
-
-	/**
-	 * For now uses the {@link IdentifiableResolver#NOOP_RESOLVER} as a workaround
-	 * for the previous mess.
-	 * @return
-	 */
-	private IdentifiableResolver createResourceResolver() {
-
-		synchronized (lock) {
-//			Path rootFolder = null;
-//
-//			String savedRootFolder = getEnvironment().getProperty(RDHProperty.CLIENT_IDENTIFIER_CACHE_ROOT_FOLDER);
-//			if(savedRootFolder!=null) {
-//				rootFolder = Paths.get(savedRootFolder);
-//			}
-//
-//			if(rootFolder==null) {
-//				try {
-//					rootFolder = ensureUserFolder(UserFolder.IDENTIFIERS);
-//				} catch (IOException e) {
-//					throw new RDHException("Unable to create default directory for identifier cache", e);
-//				}
-//			}
-//
-//			if(!Files.isDirectory(rootFolder, LinkOption.NOFOLLOW_LINKS))
-//				throw new RDHException("Identifier cache root folder must point to a directory: "+rootFolder);
-//
-//			IdentifiableResolver resolver = LocalIdentifiableResolver.newBuilder()
-//					.autoPerformCacheSerialization(true)
-//					.resourceProvider(FileResourceProvider.getSharedInstance())
-//					.folder(rootFolder)
-//					.useDefaultSerialization()
-//					.build();
-//
-//			return addAndStartTool(resolver);
-
-			return IdentifiableResolver.NOOP_RESOLVER;
-		}
 	}
 
 	private MetadataRepository createLocalMetadataRepository() {

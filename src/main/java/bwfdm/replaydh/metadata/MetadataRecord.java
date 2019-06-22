@@ -22,12 +22,14 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
 import bwfdm.replaydh.utils.LazyCollection;
+import bwfdm.replaydh.workflow.Identifier;
 
 /**
  * Models a single entry in a metadata repository
@@ -156,6 +158,21 @@ public interface MetadataRecord {
 			requireNonNull(path);
 			this.workspace = workspace.toString();
 			this.path = workspace.relativize(path).toString();
+		}
+
+		public Target(Path workspace, Identifier identifier) {
+			requireNonNull(workspace);
+			requireNonNull(identifier);
+
+			if(identifier.getContext()!=null) {
+				this.workspace = identifier.getContext();
+				this.path = identifier.getId();
+			} else {
+				Path path = Paths.get(identifier.getId());
+
+				this.workspace = workspace.toString();
+				this.path = workspace.relativize(path).toString();
+			}
 		}
 
 		public Target(String workspace, String path) {

@@ -230,13 +230,13 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 	}
 
 	private void registerActions() {
-		//TODO
-	}
-
-	private void refreshActions() {
 		actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.refreshWorkspaceInfo", handler::refreshWorkspaceInfo);
 		actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.expandAllFolders", handler::expandAllFolders);
 		actionMapper.mapAction("replaydh.ui.core.metadataManagerPanel.collapseAllFolders", handler::collapseAllFolders);
+	}
+
+	private void refreshActions() {
+		//TODO
 	}
 
 	private void reset() {
@@ -391,7 +391,6 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		}
 
 		public void reset(Target target) {
-
 			records.clear();
 			currentRecord = null;
 
@@ -648,8 +647,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		 */
 		@Override
 		public void refreshFailed(FileTracker tracker, Exception e) {
-			// TODO Auto-generated method stub
-
+			reset();
 		}
 
 		/**
@@ -657,8 +655,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		 */
 		@Override
 		public void refreshDone(FileTracker tracker, boolean canceled) {
-			// TODO Auto-generated method stub
-
+			reset();
 		}
 
 		/**
@@ -680,9 +677,11 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		}
 
 		private void onRecordChange() {
-			recordPanel.update();
-			workspaceTree.revalidate();
-			workspaceTree.repaint();
+			GuiUtils.invokeEDTLater(() -> {
+				recordPanel.update();
+				workspaceTree.revalidate();
+				workspaceTree.repaint();
+			});
 		}
 
 		/**

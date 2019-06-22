@@ -96,6 +96,11 @@ import bwfdm.replaydh.io.TrackerListener;
 import bwfdm.replaydh.io.TrackingAction;
 import bwfdm.replaydh.io.TrackingStatus;
 import bwfdm.replaydh.io.resources.FileResource;
+import bwfdm.replaydh.metadata.MetadataRecord;
+import bwfdm.replaydh.metadata.MetadataRecord.Target;
+import bwfdm.replaydh.metadata.MetadataRepository;
+import bwfdm.replaydh.metadata.basic.DublinCoreSchema11;
+import bwfdm.replaydh.metadata.basic.MutableMetadataRecord;
 import bwfdm.replaydh.resources.ResourceManager;
 import bwfdm.replaydh.stats.Interval;
 import bwfdm.replaydh.stats.StatEntry;
@@ -133,8 +138,9 @@ import bwfdm.replaydh.workflow.ResourceCache.CacheListener;
 import bwfdm.replaydh.workflow.Tool;
 import bwfdm.replaydh.workflow.Workflow;
 import bwfdm.replaydh.workflow.WorkflowStep;
+import bwfdm.replaydh.workflow.WorkflowUtils;
+import bwfdm.replaydh.workflow.fill.ResourceMetadataFiller;
 import bwfdm.replaydh.workflow.impl.DefaultResource;
-import bwfdm.replaydh.workflow.resolver.IdentifiableResolver;
 import bwfdm.replaydh.workflow.schema.IdentifierType;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
@@ -1699,6 +1705,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		 */
 		private WorkflowStep newStep;
 
+		private ResourceMetadataFiller metadataFiller;
+
 		InteractiveCommitTask() {
 			//TODO init the UI dialog?
 		}
@@ -1741,18 +1749,18 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			return newStep;
 		}
 
-		private void applyCachedResources(WorkflowStep step, Predicate<? super Identifiable> filter) {
+		private Set<Resource> applyCachedResources(WorkflowStep step) {
 			Collection<CacheEntry> cachedResources = resourceCache.getCacheEntries();
+			Set<Resource> newResources = new HashSet<>();
 			for(CacheEntry entry : cachedResources) {
+				newResources.add(entry.getResource());
 				switch (entry.getRole()) {
 				case INPUT:
 					step.addInput(entry.getResource());
 					break;
 
 				case OUTPUT:
-					if (!filter.test(entry.getResource())) {
-						step.addOutput(entry.getResource());
-					}
+					step.addOutput(entry.getResource());
 					break;
 
 				case TOOL:
@@ -1763,6 +1771,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					break;
 				}
 			}
+			return newResources;
 		}
 
 		/**
@@ -1770,10 +1779,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		 * to the new workflow step and returns {@link Identifiable}
 		 * objects for all the previously unknown files.
 		 */
-		private Set<Identifiable> addFilesAsOutput(WorkflowStep newStep) {
+		private Set<Resource> addFilesAsOutput(WorkflowStep newStep, Predicate<? super Identifiable> filter) {
 
 			// Buffer for previously unknown resources -> will be added to resolver after user confirmed
-			Set<Identifiable> newResources = new HashSet<>();
+			Set<Resource> newResources = new HashSet<>();
 
 			// Consider all modified or new files as "output" of the step
 			Set<LocalFileObject> outputFiles = new HashSet<>();
@@ -1796,7 +1805,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 						resource = DefaultResource.uniqueResource();
 						fileObject.getIdentifiers().forEach(resource::addIdentifier);
 					}
-					//TODO verify if we need to check whether or not above identifiers are already/not present
 
 					newResources.add(resource);
 
@@ -1812,7 +1820,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		 * gets updated after the workflow step has been added.
 		 * @throws TrackerException
 		 */
-		private void persistAssociatedChanges(Set<Identifiable> newResources) throws TrackerException {
+		private void persistAssociatedChanges() throws TrackerException {
 			// Adjust file collections based on revised ignore decisions
 			filesToAdd.removeAll(newFilesToIgnore);
 
@@ -1830,17 +1838,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 			if(!modifiedFilesToIgnore.isEmpty()) {
 				fileTracker.applyTrackingAction(LocalFileObject.extractFiles(modifiedFilesToIgnore), TrackingAction.IGNORE);
-			}
-
-			// Add new resources to the resolver
-			if(!newResources.isEmpty()) {
-				IdentifiableResolver resolver = environment.getClient().getResourceResolver();
-				resolver.lock();
-				try {
-					resolver.register(newResources);
-				} finally {
-					resolver.unlock();
-				}
 			}
 		}
 
@@ -1897,6 +1894,80 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		}
 
+		private ResourceMetadataFiller loadFiller() {
+			if(environment.getBoolean(RDHProperty.METADATA_ENFORCE_DC)
+					&& (environment.getBoolean(RDHProperty.METADATA_AUTOFILL_RECORDS)
+					|| environment.getBoolean(RDHProperty.METADATA_AUTOFILL_RESOURCES))) {
+				return WorkflowUtils.getFiller(environment, DublinCoreSchema11.ID);
+			}
+
+			return null;
+		}
+
+		private void fillResources(Set<Resource> newResources) {
+			if(metadataFiller==null) {
+				return;
+			}
+
+			String schemaId = DublinCoreSchema11.ID;
+			WorkflowSchema workflowSchema = environment.getWorkspace().getSchema();
+			MetadataRepository repository = environment.getClient().getLocalMetadataRepository();
+
+			for(Resource resource : newResources) {
+				Identifier path = resource.getIdentifier(IdentifierType.PATH);
+				if(path==null) {
+					continue;
+				}
+				Target target = new Target(environment.getWorkspacePath(), path);
+
+				MetadataRecord record = repository.getRecord(target, schemaId);
+				if(record!=null) {
+					metadataFiller.fillResource(environment, workflowSchema, record, resource);
+				}
+			}
+		}
+
+		private void fillRecords(WorkflowStep step) {
+			if(metadataFiller==null) {
+				return;
+			}
+
+			Set<Resource> resources =  new HashSet<>();
+			step.forEachIdentifiable(i -> {
+				if(i.getType()!=Identifiable.Type.PERSON) {
+					resources.add((Resource) i);
+				}
+			});
+
+			String schemaId = DublinCoreSchema11.ID;
+			WorkflowSchema workflowSchema = environment.getWorkspace().getSchema();
+			MetadataRepository repository = environment.getClient().getLocalMetadataRepository();
+			repository.beginUpdate();
+			try {
+				for(Resource resource : resources) {
+					Identifier path = resource.getIdentifier(IdentifierType.PATH);
+					if(path==null) {
+						continue;
+					}
+					Target target = new Target(environment.getWorkspacePath(), path);
+
+					MetadataRecord record = repository.getRecord(target, schemaId);
+					if(record==null) {
+						record = repository.newRecord(target, schemaId);
+					}
+
+					if(!(record instanceof MutableMetadataRecord)) {
+						continue;
+					}
+
+					metadataFiller.fillRecord(environment, workflowSchema, resource, (MutableMetadataRecord) record);
+					repository.addRecord(record);
+				}
+			} finally {
+				repository.endUpdate();
+			}
+		}
+
 		/**
 		 * @see javax.swing.SwingWorker#doInBackground()
 		 */
@@ -1948,8 +2019,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					// Start a fresh new workflow step
 					newStep = constructStep(workflow);
 
-					// Add all files and collect new Identifiable instances
-					Set<Identifiable> newResources = addFilesAsOutput(newStep);
+					// Add all the previously cached resources
+					Set<Resource> newResources = applyCachedResources(newStep);
 
 					Set<Identifier> usedPaths = newResources.stream()
 							.map(i -> i.getIdentifier(IdentifierType.PATH))
@@ -1960,10 +2031,13 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 						return path!=null && usedPaths.contains(path);
 					};
 
-					//TODO use cached resources to filter automatically detected outputs (as cache can have more metadata already entered)
+					// Add all files and collect new Identifiable instances
+					newResources.addAll(addFilesAsOutput(newStep, filter));
 
-					// Add all the previously cached resources
-					applyCachedResources(newStep, filter);
+					metadataFiller = loadFiller();
+
+					// Try to fill the new resource objects
+					fillResources(newResources);
 
 					/*
 					 *  Start the part where the user gets involved.
@@ -1974,17 +2048,21 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					opSuccess = GuiUtils.invokeEDTAndWait(RDHMainPanel.this::interactiveCommit, newStep);
 					// END EDT
 
+					// Now try to map the final information back into the object metadata
+					fillRecords(newStep);
+
 					// Only if the user confirmed the dialog do we actually add the step and commit git changes!
 					if(opSuccess) {
 
 						// First perform actions that are easily undoable
 						//TODO implement a rollback of these changes in case the next steps fails
-						persistAssociatedChanges(newResources);
+						persistAssociatedChanges();
 
 						// If this operation goes through, the commit is persistent
 						workflow.addWorkflowStep(newStep);
 
-						//TODO remove all resources from cache that have been used here
+						// Remove all cached entries
+						resourceCache.clear();
 					}
 				} finally {
 					workflow.endUpdate();
@@ -2006,27 +2084,20 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				return;
 			}
 
-			final IdentifiableResolver resolver = environment.getClient().getResourceResolver();
+			for(Path file : files) {
+				if(Thread.interrupted())
+					throw new InterruptedException();
 
-			resolver.lock();
-			try {
-				for(Path file : files) {
-					if(Thread.interrupted())
-						throw new InterruptedException();
+				file = RDHUtils.normalize(file);
 
-					file = RDHUtils.normalize(file);
+				// Wrap file
+				LocalFileObject fileObject = new LocalFileObject(file, trackingStatus);
 
-					// Wrap file
-					LocalFileObject fileObject = new LocalFileObject(file, trackingStatus);
-
-					// Attempt to create identifiers and resolve file to resource and metadata record
-					if(LocalFileObject.ensureOrRefreshResource(fileObject, environment)) {
-						publish(fileObject);
-					}
-					buffer.add(fileObject);
+				// Attempt to create identifiers and resolve file to resource and metadata record
+				if(LocalFileObject.ensureOrRefreshResource(fileObject, environment)) {
+					publish(fileObject);
 				}
-			} finally {
-				resolver.unlock();
+				buffer.add(fileObject);
 			}
 		}
 
@@ -2067,8 +2138,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					String title = rm.get("replaydh.ui.core.mainPanel.addStep.title");
 					JOptionPane.showMessageDialog(null, message, title, JOptionPane.INFORMATION_MESSAGE);
 
-					// Discard cached data and tracking status
-					environment.execute(resourceCache::clear);
+					// Discard tracking status
 					environment.execute(fileTracker::clearStatusInfo);
 				}
 

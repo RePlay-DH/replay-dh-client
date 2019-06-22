@@ -178,10 +178,6 @@
 				Allows for registration of components for the preferences dialog
 				of the client. Registered extensions will be listed as tabs and
 				loaded lazily when the user decides to open their content.
-				
-				Special note on the localization key for the "path" property:
-				Strings will be split using the dot symbol '.' as delimiter
-				and extracted elements are used to form the tree structure.
 			</doc-text>
 		</doc>
 		<parameter-def id="group" type="extension-id" custom-data="bwfdm.replaydh.core@PreferencesGroup"  multiplicity="none-or-one">
@@ -196,6 +192,28 @@
 			<doc>
 				<doc-text>
 					Tab class itself, needs to implement bwfdm.replaydh.ui.config.PreferencesTab interface!
+				</doc-text>
+			</doc>
+		</parameter-def>
+	</extension-point>	
+			
+	<extension-point id="ResourceMetadataFiller">
+		<doc>
+			<doc-text>
+				Allows customization of the mapping process between object metadata and process metadata.
+			</doc-text>
+		</doc>
+		<parameter-def id="schema" type="string" multiplicity="one">
+			<doc>
+				<doc-text>
+					Defines the schema for which automatic mapping is supported.
+				</doc-text>
+			</doc>
+		</parameter-def>
+		<parameter-def id="class">
+			<doc>
+				<doc-text>
+					Tab class itself, needs to implement bwfdm.replaydh.workflow.fill.ResourceMetadataFiller interface!
 				</doc-text>
 			</doc>
 		</parameter-def>
@@ -226,15 +244,51 @@
 		<parameter id="description" value="replaydh.plugins.trackingPreferencesTab.description" />
 		<parameter id="class" value="bwfdm.replaydh.ui.config.tabs.TrackingPreferencesTab" />
 	</extension>
+	
+	<extension id="MetadataPreferencesGroup" plugin-id="bwfdm.replaydh.core" point-id="PreferencesGroup">
+		<doc>
+			<doc-text>
+				Groups together metadata-related preferences.
+			</doc-text>
+		</doc>
+		<parameter id="name" value="replaydh.plugins.metadataPreferencesGroup.name" />
+		<parameter id="description" value="replaydh.plugins.metadataPreferencesGroup.description" />
+	</extension>
+	
 	<extension id="MetadataPreferencesTab" plugin-id="bwfdm.replaydh.core" point-id="PreferencesTab">
 		<doc>
 			<doc-text>
 				Gives the user more options for the metadata export.
 			</doc-text>
 		</doc>
+		<parameter id="group" value="bwfdm.replaydh.core@MetadataPreferencesGroup" />
 		<parameter id="name" value="replaydh.plugins.metadataPreferencesTab.name" />
 		<parameter id="description" value="replaydh.plugins.metadataPreferencesTab.description" />
 		<parameter id="class" value="bwfdm.replaydh.ui.config.tabs.MetadataPreferencesTab" />
+	</extension>
+	
+	<extension id="DublinCorePreferencesTab" plugin-id="bwfdm.replaydh.core" point-id="PreferencesTab">
+		<doc>
+			<doc-text>
+				Contains settings to map DC entries to fields in the workflow model.
+			</doc-text>
+		</doc>
+		<parameter id="group" value="bwfdm.replaydh.core@MetadataPreferencesGroup" />
+		<parameter id="name" value="replaydh.plugins.dublinCorePreferencesTab.name" />
+		<parameter id="description" value="replaydh.plugins.dublinCorePreferencesTab.description" />
+		<parameter id="class" value="bwfdm.replaydh.ui.config.tabs.DublinCorePreferencesTab" />
+	</extension>
+	
+	<!-- AUTO FILELRS -->
+	
+	<extension id="DublinCoreResourceMetadataFiller" plugin-id="bwfdm.replaydh.core" point-id="ResourceMetadataFiller">
+		<doc>
+			<doc-text>
+				A simple converter between certain Dublin Core and our process metadata schema.
+			</doc-text>
+		</doc>
+		<parameter id="schema" value="dublin-core-v1.1" />
+		<parameter id="class" value="bwfdm.replaydh.metadata.basic.DublinCoreFiller" />
 	</extension>
 	
 	<!-- EXPORTERS -->

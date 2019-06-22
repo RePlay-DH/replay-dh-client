@@ -1929,39 +1929,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		return refs.values().iterator().next();
 	}
 
-	private void ensureReachable(RevCommit commit) throws GitException, IOException {
-		synchronized (gitLock) {
-
-			// Grab step and progress till a leaf is found
-			final WorkflowStep step = lookupStep(commit);
-			if(step==null)
-				throw new GitException("Inconsistent workflow graph - missing step for commit "+commit);
-			final WorkflowStep leaf = WorkflowUtils.nextUntil(step, WorkflowUtils::isLeaf);
-
-			/*
-			 *  If step is null here we must have reached a branching point,
-			 *  which means that at an earlier point we already ensured
-			 *  reachability of those branches!
-			 */
-			if(leaf==null) {
-				return;
-			}
-
-			// Load commit for that leaf step
-			commit = loadId(leaf);
-
-			// Try to resolve a tag
-			Ref ref = getTag(commit, GitUtils.TAG_KEEP_ALIVE_NAMESPACE);
-
-			// If branch is already secured, simply exit
-			if(ref!=null) {
-				return;
-			}
-
-
-		}
-	}
-
 	private void checkout(WorkflowStep step) throws IOException, GitException {
 		synchronized (gitLock) {
 			// Fetch the commit the target step is pointing to
@@ -2041,11 +2008,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 	private void resetStepLookup() {
 		commitToStepLookup.clear();
-	}
-
-	private boolean hasSavedId(WorkflowStep step) {
-		Node<WorkflowStep> node = workflow.node(step);
-		return node.getProperty(NODE_PROPERTY_COMMIT_ID)!=null;
 	}
 
 	private static final String DEFAULT_MESSAGE = "Generic unnamed step";
@@ -2375,8 +2337,6 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 						} else
 							throw new GitException("Failed to read process metadata from commit message for "+commit, e);
 					}
-
-					getEnvironment().getClient().getResourceResolver().update(step);
 				}
 
 			} finally {

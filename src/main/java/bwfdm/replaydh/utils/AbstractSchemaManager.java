@@ -80,7 +80,17 @@ public abstract class AbstractSchemaManager<S extends SchemaManager.Schema>
 	 */
 	@Override
 	public int getAvailableSchemaCount() {
-		return schemas.size();
+		int size = schemas.size();
+		if(defaultSchema!=null && !schemas.containsKey(defaultSchema.getId())) {
+			size++;
+		}
+
+		S fallbackSchema = getFallbackSchema();
+		if(fallbackSchema!=null && !schemas.containsKey(fallbackSchema.getId())) {
+			size++;
+		}
+
+		return size;
 	}
 
 	@Override
@@ -161,6 +171,9 @@ public abstract class AbstractSchemaManager<S extends SchemaManager.Schema>
 	@Override
 	public Set<String> getAvailableSchemaIds() {
 		Set<String> ids = new HashSet<>(getExternalSchemaIds());
+		if(defaultSchema!=null) {
+			ids.add(defaultSchema.getId());
+		}
 		S fallback = getFallbackSchema();
 		if(fallback!=null) {
 			ids.add(fallback.getId());

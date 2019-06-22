@@ -169,6 +169,7 @@ public class WorkspaceTreeModel extends AbstractTreeModel {
 
 	public void setRootFolder(Path rootFolder) {
 		this.rootFolder = rootFolder;
+		tree.clear();
 		fireStructureChanged();
 	}
 

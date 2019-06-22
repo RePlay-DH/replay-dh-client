@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import bwfdm.replaydh.core.RDHClient;
@@ -36,7 +35,6 @@ import bwfdm.replaydh.io.resources.FileResource;
 import bwfdm.replaydh.io.resources.IOResource;
 import bwfdm.replaydh.metadata.MetadataRecord;
 import bwfdm.replaydh.utils.LazyCollection;
-import bwfdm.replaydh.utils.LookupResult;
 import bwfdm.replaydh.workflow.Checksum;
 import bwfdm.replaydh.workflow.Checksums;
 import bwfdm.replaydh.workflow.Checksums.ChecksumType;
@@ -45,7 +43,6 @@ import bwfdm.replaydh.workflow.Identifiable;
 import bwfdm.replaydh.workflow.Identifier;
 import bwfdm.replaydh.workflow.Resource;
 import bwfdm.replaydh.workflow.impl.DefaultResource;
-import bwfdm.replaydh.workflow.resolver.IdentifiableResolver;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
 /**
@@ -208,34 +205,7 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 						|| fileObject.resource==null;
 
 				if(needsNewResource) {
-					Resource resource = fileObject.resource;
-					fileObject.resource = null;
-
-					IdentifiableResolver resolver = environment.getClient().getResourceResolver();
-
-					resolver.lock();
-					try {
-						List<LookupResult<Identifiable, Set<Identifier>>> resolvedIdentifiers =
-							resolver.resolve(1, fileObject.identifiers);
-
-						if(!resolvedIdentifiers.isEmpty()) {
-							Identifiable identifiable = resolvedIdentifiers.get(0).getTarget();
-
-							if(identifiable!=null && identifiable instanceof Resource) {
-								resource = (Resource) identifiable;
-							}
-						}
-
-						if(resource!=null) {
-							resolver.update(Collections.singleton(resource));
-						} else {
-							resource = DefaultResource.withIdentifiers(fileObject.identifiers);
-						}
-
-					} finally {
-						resolver.unlock();
-						fileObject.resource = resource;
-					}
+					fileObject.resource = DefaultResource.withIdentifiers(fileObject.identifiers);
 				}
 			} finally {
 				fileObject.endUpdate();

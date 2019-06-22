@@ -16,53 +16,44 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
  * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package bwfdm.replaydh.ui.workflow;
-
-import static java.util.Objects.requireNonNull;
-
-import java.util.Set;
-
-import javax.swing.SwingWorker;
+package bwfdm.replaydh.workflow.fill;
 
 import bwfdm.replaydh.core.RDHEnvironment;
-import bwfdm.replaydh.io.LocalFileObject;
-import bwfdm.replaydh.workflow.resolver.IdentifiableResolver;
+import bwfdm.replaydh.metadata.MetadataRecord;
+import bwfdm.replaydh.metadata.basic.MutableMetadataRecord;
+import bwfdm.replaydh.workflow.Resource;
+import bwfdm.replaydh.workflow.schema.WorkflowSchema;
 
-public class FileResolutionWorker extends SwingWorker<Integer, LocalFileObject> {
-
-	protected final RDHEnvironment environment;
-	protected final Set<LocalFileObject> fileObjects;
-
-	public FileResolutionWorker(RDHEnvironment environment, Set<LocalFileObject> fileObjects) {
-		this.environment = requireNonNull(environment);
-		this.fileObjects = requireNonNull(fileObjects);
-	}
+/**
+ * Defines a mechanism for automatically filling {@link MetadataRecord}
+ * and {@link Resource} objects.
+ *
+ * @author Markus Gärtner
+ *
+ */
+public interface ResourceMetadataFiller {
 
 	/**
-	 * @see javax.swing.SwingWorker#doInBackground()
+	 * Attempts to fill the {@code target} record with data from
+	 * the given {@code source}. Returns {@code true} iff at least
+	 * one entry in the target has been changed or added.
+	 * @param environment TODO
+	 * @param schema TODO
+	 * @param source
+	 * @param record
+	 * @return
 	 */
-	@Override
-	protected Integer doInBackground() throws Exception {
+	boolean fillRecord(RDHEnvironment environment, WorkflowSchema schema, Resource source, MutableMetadataRecord target);
 
-		final IdentifiableResolver resolver = environment.getClient().getResourceResolver();
-
-		int refreshedFileCount = 0;
-
-		resolver.lock();
-		try {
-			if(Thread.interrupted())
-				throw new InterruptedException();
-
-			for(LocalFileObject fileObject : fileObjects) {
-				if(LocalFileObject.ensureOrRefreshResource(fileObject, environment)) {
-					refreshedFileCount++;
-					publish(fileObject);
-				}
-			}
-		} finally {
-			resolver.unlock();
-		}
-
-		return refreshedFileCount;
-	}
+	/**
+	 * Attempts to fill the {@code target} resource with data from
+	 * the given {@code source} record. Returns {@code true} iff at least
+	 * one field in the target has changed.
+	 * @param environment TODO
+	 * @param schema TODO
+	 * @param source
+	 * @param target
+	 * @return
+	 */
+	boolean fillResource(RDHEnvironment environment, WorkflowSchema schema, MetadataRecord source, Resource target);
 }

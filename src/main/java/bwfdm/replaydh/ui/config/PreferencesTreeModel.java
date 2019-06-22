@@ -44,7 +44,6 @@ import bwfdm.replaydh.ui.tree.AbstractTreeModel;
 public class PreferencesTreeModel extends AbstractTreeModel {
 
 	private static final String TAB_ID = "PreferencesTab";
-	private static final String GROUP_ID = "PreferencesGroup";
 
 	private final PluginEngine pluginEngine;
 

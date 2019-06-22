@@ -33,6 +33,8 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.java.plugin.JpfException;
 import org.java.plugin.ObjectFactory;
@@ -309,6 +311,16 @@ public class PluginEngine extends AbstractRDHTool {
 				&& !getPluginManager().isPluginActivating(descriptor)) {
 			getPluginManager().activatePlugin(descriptor.getId());
 		}
+	}
+
+	public List<Extension> find(String pluginId, String extensionPointId, Predicate<Extension> filter) {
+		requireNonNull(pluginId);
+		requireNonNull(extensionPointId);
+		requireNonNull(filter);
+
+		return getExtensions(pluginId, extensionPointId).stream()
+			.filter(filter)
+			.collect(Collectors.toList());
 	}
 
 	@SuppressWarnings("unchecked")

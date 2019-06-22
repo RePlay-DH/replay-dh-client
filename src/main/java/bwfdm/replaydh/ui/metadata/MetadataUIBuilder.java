@@ -125,7 +125,7 @@ public class MetadataUIBuilder extends MetadataUI<MetadataBuilder> implements Ed
 		keys.put("optional", optionalkeys);
 
 		for(String metadatapropertyname: listofkeys) {
-			GUIElement guielement = new GUIElement(new JLabel(metadatapropertyname), new JTextField(30), new JButton(), new JButton());
+			GUIElement guielement = new GUIElement(new JLabel(metadatapropertyname), new JTextField(30), makeButton(), makeButton());
 
 			List<GUIElement> elementslist = new ArrayList<>();
 			elementslist.add(guielement);

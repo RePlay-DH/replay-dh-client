@@ -121,10 +121,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 		resourceProvider = builder.getResourceProvider();
 		memory = builder.isMemory();
 
-		MetadataSchema defaultSchema = builder.getDefaultSchema();
-		if(defaultSchema!=null) {
-			setDefaultSchema(defaultSchema);
-		}
+		setDefaultSchema(builder.getDefaultSchema());
 
 		Function<MetadataRecord, String> nameGenerator = builder.getNameGenerator();
 		if(nameGenerator==null) {
@@ -616,7 +613,10 @@ public class MetadataDB extends AbstractMetadataRespository {
 	 * @see bwfdm.replaydh.metadata.basic.AbstractMetadataRespository#newRecord(bwfdm.replaydh.metadata.MetadataRecord.Target, java.lang.String)
 	 */
 	@Override
-	protected MutableMetadataRecord newRecord(Target target, String schemaId) {
+	public MutableMetadataRecord newRecord(Target target, String schemaId) {
+		if(cache.getRecord(target, schemaId)!=null)
+			throw new IllegalStateException("Record already cached for target: "+target);
+
 		return new DbMetadataRecord(target, schemaId);
 	}
 
