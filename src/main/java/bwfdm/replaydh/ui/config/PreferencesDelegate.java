@@ -32,8 +32,8 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.JTextComponent;
 
+import bwfdm.replaydh.core.Property;
 import bwfdm.replaydh.core.RDHEnvironment;
-import bwfdm.replaydh.core.RDHProperty;
 import bwfdm.replaydh.ui.config.PreferencesTab.TabResult;
 import bwfdm.replaydh.ui.helper.DocumentAdapter;
 import bwfdm.replaydh.utils.StringConverter;
@@ -47,14 +47,14 @@ import bwfdm.replaydh.utils.StringConverter;
 public abstract class PreferencesDelegate<O extends Object, C extends JComponent> {
 
 	protected final RDHEnvironment environment;
-	protected final RDHProperty property;
+	protected final Property property;
 	protected final C component;
 	protected final O defaultValue;
 
 	private Consumer<PreferencesDelegate<?, ?>> changeBouncer;
 	private Policy policy;
 
-	protected PreferencesDelegate(RDHEnvironment environment, RDHProperty property, C component, O defaultValue) {
+	protected PreferencesDelegate(RDHEnvironment environment, Property property, C component, O defaultValue) {
 		this.environment = requireNonNull(environment);
 		this.property = requireNonNull(property);
 		this.component = requireNonNull(component);
@@ -154,7 +154,7 @@ public abstract class PreferencesDelegate<O extends Object, C extends JComponent
 			}
 		};
 
-		public TextComponentDelegate(RDHEnvironment environment, RDHProperty property, JTextComponent component, String defaultValue) {
+		public TextComponentDelegate(RDHEnvironment environment, Property property, JTextComponent component, String defaultValue) {
 			super(environment, property, component, defaultValue);
 		}
 
@@ -203,7 +203,7 @@ public abstract class PreferencesDelegate<O extends Object, C extends JComponent
 
 		private final ItemListener itemListener = e -> fireChange();
 
-		public CheckboxDelegate(RDHEnvironment environment, RDHProperty property, AbstractButton component, Boolean defaultValue) {
+		public CheckboxDelegate(RDHEnvironment environment, Property property, AbstractButton component, Boolean defaultValue) {
 			super(environment, property, component, defaultValue);
 		}
 
@@ -255,7 +255,7 @@ public abstract class PreferencesDelegate<O extends Object, C extends JComponent
 
 		private final ActionListener actionListener = e -> fireChange();
 
-		public ComboBoxDelegate(RDHEnvironment environment, RDHProperty property, JComboBox<E> component, E defaultValue,
+		public ComboBoxDelegate(RDHEnvironment environment, Property property, JComboBox<E> component, E defaultValue,
 				StringConverter<E> converter) {
 			super(environment, property, component, defaultValue);
 

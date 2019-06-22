@@ -49,7 +49,7 @@ public class PreferencesTreeModel extends AbstractTreeModel {
 	private final PluginEngine pluginEngine;
 
 	public PreferencesTreeModel(PluginEngine pluginEngine) {
-		super(new Node());
+		super(Node.root());
 
 		this.pluginEngine = requireNonNull(pluginEngine);
 
@@ -66,9 +66,12 @@ public class PreferencesTreeModel extends AbstractTreeModel {
 				parent = ensureGroup(groupDef.valueAsExtension(), nodes);
 			}
 
-			Node node = new Node(parent, extension, pluginEngine);
+			Node node = Node.tab(parent, extension, pluginEngine);
 			parent.addElement(node);
 		}
+
+		getRoot().sortElements();
+		nodes.values().forEach(Node::sortElements);
 	}
 
 	private Node ensureGroup(Extension group, Map<Extension, Node> nodes) {
@@ -82,7 +85,7 @@ public class PreferencesTreeModel extends AbstractTreeModel {
 				parent = ensureGroup(parentExt, nodes);
 			}
 
-			node = new Node(parent, group, pluginEngine);
+			node = Node.group(parent, group, pluginEngine);
 			parent.addElement(node);
 			nodes.put(group, node);
 		}
@@ -178,7 +181,7 @@ public class PreferencesTreeModel extends AbstractTreeModel {
 		 */
 		final Extension extension;
 
-		Identity label;
+		final Identity label;
 
 		/**
 		 * Uplink to parent node or {@code null} if this node is the root
@@ -190,23 +193,23 @@ public class PreferencesTreeModel extends AbstractTreeModel {
 		 */
 		List<Node> elements;
 
-		Node() {
-			extension = null;
-			parent = null;
-			type = NodeType.ROOT;
+		static Node root() {
+			return new Node(null, NodeType.ROOT, null, null);
 		}
 
-		Node(Node parent, String path) {
-			extension = null;
-			this.parent = requireNonNull(parent);
-			type = NodeType.PROXY;
+		static Node group(Node parent, Extension extension, PluginEngine pluginEngine) {
+			return new Node(parent, NodeType.PROXY, extension, pluginEngine);
 		}
 
-		Node(Node parent, Extension extension, PluginEngine pluginEngine) {
-			this.parent = requireNonNull(parent);
-			this.extension = requireNonNull(extension);
-			type = NodeType.TAB;
-			label = new ExtensionIdentity(extension, pluginEngine);
+		static Node tab(Node parent, Extension extension, PluginEngine pluginEngine) {
+			return new Node(parent, NodeType.TAB, extension, pluginEngine);
+		}
+
+		private Node(Node parent, NodeType type, Extension extension, PluginEngine pluginEngine) {
+			this.parent = parent;
+			this.extension = extension;
+			this.type = type;
+			label = extension==null ? null : new ExtensionIdentity(extension, pluginEngine);
 		}
 
 		void addElement(Node node) {
@@ -230,6 +233,12 @@ public class PreferencesTreeModel extends AbstractTreeModel {
 
 		public NodeType getType() {
 			return type;
+		}
+
+		private void sortElements() {
+			if(elements!=null) {
+				elements.sort((n1, n2) -> Identity.COMPARATOR.compare(n1.label, n2.label));
+			}
 		}
 	}
 }

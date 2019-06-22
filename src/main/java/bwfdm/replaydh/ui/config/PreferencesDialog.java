@@ -124,6 +124,7 @@ public class PreferencesDialog extends JDialog {
 		treeModel = new PreferencesTreeModel(pluginEngine);
 
 		tabTree = new JTree(treeModel);
+		GuiUtils.expandAll(tabTree, true);
 		tabTree.addTreeSelectionListener(this::onTabSelect);
 		tabTree.setCellRenderer(new PreferencesTreeCellRenderer());
 		tabTree.setEditable(false);
@@ -165,6 +166,7 @@ public class PreferencesDialog extends JDialog {
 
 		JScrollPane spLeft = new JScrollPane(tabTree);
 		GuiUtils.defaultSetUnitIncrement(spLeft);
+		spLeft.setMinimumSize(new Dimension(150, 300));
 
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, spLeft, pRight);
 		splitPane.setResizeWeight(0);

@@ -156,14 +156,10 @@ public class RDHEnvironment implements PropertyChangeSource {
 		return client;
 	}
 
-	private void firePropertyChange(RDHProperty property, Object oldValue, Object newValue) {
-		changeSupport.firePropertyChange(property.getKey(), oldValue, newValue);
-	}
-
 	/**
 	 * Locale loading mechanism:
 	 * <ol>
-	 * <li>Read property {@link RDHProperty#PROPERTY_CLIENT_LOCALE}</li>
+	 * <li>Read property {@link Property#PROPERTY_CLIENT_LOCALE}</li>
 	 * <li>If above property is set, try interpreting it as as language tag using
 	 * {@link Locale#forLanguageTag(String)}</li>
 	 * <li>As fall-back use the system {@link Locale#getDefault(Category) default}
@@ -216,19 +212,19 @@ public class RDHEnvironment implements PropertyChangeSource {
 		return properties.getProperty(key, defaultValue);
 	}
 
-	public synchronized String getProperty(RDHProperty property) {
+	public synchronized String getProperty(Property property) {
 		return getProperty(property.getKey(), property.getDefaultValue());
 	}
 
-	public synchronized String getProperty(RDHProperty property, String defaultValue) {
+	public synchronized String getProperty(Property property, String defaultValue) {
 		return properties.getProperty(property.getKey(), defaultValue);
 	}
 
-	public synchronized boolean getBoolean(RDHProperty property, boolean defaultValue) {
+	public synchronized boolean getBoolean(Property property, boolean defaultValue) {
 		return getBoolean(property.getKey(), defaultValue);
 	}
 
-	public synchronized boolean getBoolean(RDHProperty property) {
+	public synchronized boolean getBoolean(Property property) {
 		Object defaultValue = property.getDefaultValue();
 		return getBoolean(property.getKey(), defaultValue==null ? false : (boolean)defaultValue);
 	}
@@ -238,11 +234,11 @@ public class RDHEnvironment implements PropertyChangeSource {
 		return value!=null ? Boolean.parseBoolean(value) : defaultValue;
 	}
 
-	public synchronized int getInteger(RDHProperty property, int defaultValue) {
+	public synchronized int getInteger(Property property, int defaultValue) {
 		return getInteger(property.getKey(), defaultValue);
 	}
 
-	public synchronized int getInteger(RDHProperty property) {
+	public synchronized int getInteger(Property property) {
 		Object defaultValue = property.getDefaultValue();
 		return getInteger(property.getKey(), defaultValue==null ? 0 : (int)defaultValue);
 	}
@@ -252,11 +248,11 @@ public class RDHEnvironment implements PropertyChangeSource {
 		return value!=null ? Integer.parseInt(value) : defaultValue;
 	}
 
-	public synchronized double getDouble(RDHProperty property, double defaultValue) {
+	public synchronized double getDouble(Property property, double defaultValue) {
 		return getDouble(property.getKey(), defaultValue);
 	}
 
-	public synchronized double getDouble(RDHProperty property) {
+	public synchronized double getDouble(Property property) {
 		Object defaultValue = property.getDefaultValue();
 		return getDouble(property.getKey(), defaultValue==null ? 0D : (double)defaultValue);
 	}
@@ -415,11 +411,11 @@ public class RDHEnvironment implements PropertyChangeSource {
 		}
 	}
 
-	public synchronized String setProperty(RDHProperty property, String value) {
+	public synchronized String setProperty(Property property, String value) {
 		return setProperty(property.getKey(), value);
 	}
 
-	public synchronized void removeProperty(RDHProperty property) {
+	public synchronized void removeProperty(Property property) {
 		removeProperty(property.getKey());
 	}
 
@@ -498,11 +494,11 @@ public class RDHEnvironment implements PropertyChangeSource {
 		changeSupport.removePropertyChangeListener(propertyName, listener);
 	}
 
-	public void addPropertyChangeListener(RDHProperty property, PropertyChangeListener listener) {
+	public void addPropertyChangeListener(Property property, PropertyChangeListener listener) {
 		changeSupport.addPropertyChangeListener(prefixedPropertyKey(property.getKey()), listener);
 	}
 
-	public void removePropertyChangeListener(RDHProperty property, PropertyChangeListener listener) {
+	public void removePropertyChangeListener(Property property, PropertyChangeListener listener) {
 		changeSupport.removePropertyChangeListener(prefixedPropertyKey(property.getKey()), listener);
 	}
 

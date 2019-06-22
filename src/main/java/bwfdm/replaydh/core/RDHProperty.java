@@ -26,12 +26,12 @@ import java.nio.file.Path;
 import bwfdm.replaydh.workflow.Tool;
 
 /**
- * Collection of property keys usable for stored setting.
+ * Collection of default property keys usable for stored setting.
  *
  * @author Markus Gärtner
  *
  */
-public enum RDHProperty {
+public enum RDHProperty implements Property {
 
 	// Client properties to store actual user settings
 
@@ -250,6 +250,15 @@ public enum RDHProperty {
 	 */
 	METADATA_AUTOFILL_RECORDS("metadata.autofill.fillRecords", true),
 
+	/**
+	 * Flag to indicate that the client should try to automatically
+	 * create new metadata records based on the resources described
+	 * in a new workflow step.
+	 * <p>
+	 * The default value for this property is {@code true}.
+	 */
+	METADATA_AUTOFILL_DC_SPECIAL_TREATMENT("metadata.autofill.dc.specialTreatment", true),
+
 	// Properties defining settings and repositories for the DSpace adapter
 
 	DSPACE_REPOSITORY_URL("dspace.repository.url"),
@@ -277,11 +286,13 @@ public enum RDHProperty {
 		this.defaultValue = defaultValue;
 	}
 
+	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends Object> T getDefaultValue() {
 		return (T) defaultValue;
 	}
 
+	@Override
 	public String getKey() {
 		return key;
 	}
