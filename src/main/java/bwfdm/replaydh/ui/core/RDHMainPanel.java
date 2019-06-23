@@ -2139,10 +2139,11 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		/**
 		 * @see javax.swing.SwingWorker#process(java.util.List)
 		 */
+		@SuppressWarnings("unused")
 		@Override
 		protected void process(List<LocalFileObject> chunks) {
 			for(LocalFileObject fileObject : chunks) {
-				//FIXME copy files into workflow step
+				//TODO currently we just ignore those files, as there's no dedicated UI for tracking progress
 			}
 		}
 
@@ -2184,7 +2185,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 				GuiUtils.showErrorDialog(RDHMainPanel.this, e.getCause());
 
-				//TODO ensure a proper roll-back of already committed changes?
+				//TODO ensure a proper roll-back of already committed changes in case of major errors??
 			} finally {
 
 				// Make sure to cleanup our task reference asap
