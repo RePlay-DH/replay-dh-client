@@ -107,6 +107,7 @@ public class ActionManager {
 	public static final String LARGE_SELECTED_ICON_KEY = "RDH_LargeSelectedIcon"; //$NON-NLS-1$
 
 	public static final String HELP_ANCHOR_KEY = "RDH_HelpAnchor"; //$NON-NLS-1$
+	public static final String ID_KEY = "RDH_Id"; //$NON-NLS-1$
 
 	private volatile ResourceManager resourceManager;
 	private volatile IconRegistry iconRegistry;
@@ -375,7 +376,8 @@ public class ActionManager {
 		return action;
 	}
 
-	private void configureAction(Action action, ActionAttributes attr, ActionAttributes orig, String id) {
+	private void configureAction(Action action, ActionAttributes attr,
+			ActionAttributes orig, String id) {
 		if(orig==null) {
 			orig = attr;
 		}
@@ -449,6 +451,8 @@ public class ActionManager {
 				action.putValue(Action.SHORT_DESCRIPTION, description);
 			}
 		}
+
+		action.putValue(ID_KEY, id);
 	}
 
 	protected String processActionDescription(String description) {
@@ -1323,7 +1327,12 @@ public class ActionManager {
 		}
 	}
 
+	protected void configureActionComponent(JComponent comp, Action action, Map<String, Object> properties) {
+		comp.setName((String) action.getValue(ID_KEY));
+	}
+
 	protected void configureMenu(JMenu menu, Action action, Map<String, Object> properties) {
+		configureActionComponent(menu, action, properties);
 		registerHelp(menu, action);
 	}
 
@@ -1356,6 +1365,7 @@ public class ActionManager {
 	}
 
 	protected void configureButton(AbstractButton button, Action action) {
+		configureActionComponent(button, action, null);
 		button.setHideActionText(true);
 		button.setFocusable(false);
 
@@ -1371,11 +1381,12 @@ public class ActionManager {
 	}
 
 	protected void configureToggleMenuItem(JMenuItem menuItem, Action action) {
+		configureActionComponent(menuItem, action, null);
 		configureMenuItem(menuItem, action);
 	}
 
 	protected void configureMenuItem(JMenuItem menuItem, Action action) {
-		// no-op
+		configureActionComponent(menuItem, action, null);
 	}
 
 	/**

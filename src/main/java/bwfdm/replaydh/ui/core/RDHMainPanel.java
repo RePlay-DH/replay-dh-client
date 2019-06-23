@@ -31,6 +31,7 @@ import java.awt.Frame;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Window;
+import java.awt.event.ActionEvent;
 import java.awt.event.HierarchyEvent;
 import java.awt.event.HierarchyListener;
 import java.beans.PropertyChangeEvent;
@@ -39,6 +40,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -57,10 +59,13 @@ import java.util.stream.Collectors;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
 import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
@@ -207,6 +212,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 	private final FileTrackerPanel fileTrackerPanel;
 	private final FileCachePanel fileCachePanel;
 
+	private final JMenuBar menuBar;
+	private final JMenu previousWorkspaceMenu;
+
 	private final AbstractButton toggleDetailsButton;
 	private final Icon expandIcon, collapseIcon;
 
@@ -261,6 +269,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		actionManager = getSharedActionManager().derive();
 		actionMapper = actionManager.mapper(this);
 
+		menuBar = actionManager.createMenuBar("replaydh.ui.core.mainPanel.menuBarList", null);
+		previousWorkspaceMenu = GuiUtils.findMenuElement(menuBar, "replaydh.ui.core.mainPanel.previousWorkspaces");
 
 		/**
 		 * <pre>
@@ -382,6 +392,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		addHierarchyListener(handler);
 
 		showInitialOutline();
+		refreshPreviousWorkspaceMenu();
 	}
 
 	private void logStat(StatEntry entry) {
@@ -390,6 +401,29 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 	private boolean isVerbose() {
 		return environment.getClient().isVerbose();
+	}
+
+	private void refreshPreviousWorkspaceMenu() {
+		previousWorkspaceMenu.removeAll();
+
+		String history = environment.getProperty(RDHProperty.CLIENT_WORKSPACE_HISTORY);
+		Path[] workspaces = history==null ? new Path[0] :
+			RDHChangeWorkspaceWizard.readPreviousWorkspaces(history);
+
+		boolean added = false;
+		for(Path path : workspaces) {
+			if(Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
+				String text = RDHUtils.toPathString(path, 40);
+				JMenuItem menuItem = previousWorkspaceMenu.add(text);
+				menuItem.setToolTipText(path.toString());
+				menuItem.putClientProperty(RDHEnvironment.NAME_WORKSPACE, path);
+				menuItem.addActionListener(handler::quickChangeWorkspace);
+
+				added = true;
+			}
+		}
+
+		previousWorkspaceMenu.setEnabled(added);
 	}
 
 	private void toggleSize(boolean expand) {
@@ -533,7 +567,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 	@Override
 	public JMenuBar createJMenuBar() {
-		return actionManager.createMenuBar("replaydh.ui.core.mainPanel.menuBarList", null);
+		return menuBar;
 	}
 
 	private void registerActions() {
@@ -1203,6 +1237,11 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		}
 
 		private void onEnvironmentPropertyChange(PropertyChangeEvent evt) {
+			if(RDHEnvironment.NAME_WORKSPACE.equals(evt.getPropertyName())) {
+				GuiUtils.invokeEDTLater(RDHMainPanel.this::refreshPreviousWorkspaceMenu);
+				return;
+			}
+
 			String propertyName = RDHEnvironment.unpackPropertyName(evt.getPropertyName());
 
 			if(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP.getKey().equals(propertyName)) {
@@ -1488,6 +1527,16 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			} else if(exitOnCancel) {
 				SwingUtilities.invokeLater(() -> environment.getClient().getGui().invokeShutdown(false));
 			}
+		}
+
+		private void quickChangeWorkspace(ActionEvent ae) {
+			JComponent comp = (JComponent) ae.getSource();
+			Path path = (Path) comp.getClientProperty(RDHEnvironment.NAME_WORKSPACE);
+
+			ChangeWorkspaceContext context = ChangeWorkspaceContext.blank();
+			context.workspacePath = path;
+
+			loadWorkspace(context);
 		}
 
 		private void importWorkspace() {

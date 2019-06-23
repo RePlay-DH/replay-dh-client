@@ -86,6 +86,7 @@
 	<action-list id="replaydh.ui.core.mainPanel.menuBarList">
 		<action-list id="replaydh.ui.core.mainPanel.menuBarList.file" name="${id}.name">
 			<item type="action" value="replaydh.ui.core.mainPanel.changeWorkspace" />
+			<action-list id="replaydh.ui.core.mainPanel.previousWorkspaces" name="${id}.name" />
 			<item type="action" value="replaydh.ui.core.mainPanel.importWorkspace" />
 			<item type="action" value="replaydh.ui.core.mainPanel.importWorkflowSchema" />
 			<separator />

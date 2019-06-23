@@ -45,6 +45,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -79,6 +80,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTree;
+import javax.swing.MenuElement;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -1037,6 +1039,60 @@ public class GuiUtils {
 		} catch(Exception e) {
 			// ignore
 		}
+    }
+
+    public static <E extends Component> E find(Container root, String name) {
+    	return find(root, c -> name.equals(c.getName()));
+    }
+
+    @SuppressWarnings("unchecked")
+	public static <C extends Component> C find(Container root, Predicate<? super Component> scanner) {
+    	Stack<Container> pendingContainers = new Stack<>();
+    	pendingContainers.push(root);
+
+    	while(!pendingContainers.isEmpty()) {
+    		Container container = pendingContainers.pop();
+
+    		synchronized (container.getTreeLock()) {
+        		for(int i = container.getComponentCount()-1; i>=0; i--) {
+        			Component comp = container.getComponent(i);
+        			if(scanner.test(comp)) {
+        				return (C) comp;
+        			}
+
+        			if(comp instanceof Container) {
+        				pendingContainers.add((Container) comp);
+        			}
+        		}
+			}
+    	}
+
+    	return null;
+    }
+
+    public static <C extends MenuElement> C findMenuElement(MenuElement root, String name) {
+    	return findMenuElement(root, e -> name.equals(e.getComponent().getName()));
+    }
+
+    @SuppressWarnings("unchecked")
+	public static <C extends MenuElement> C findMenuElement(MenuElement root, Predicate<? super MenuElement> scanner) {
+    	Stack<MenuElement> pendingElements = new Stack<>();
+    	pendingElements.push(root);
+
+    	while(!pendingElements.isEmpty()) {
+    		MenuElement element = pendingElements.pop();
+
+    		if(scanner.test(element)) {
+    			return (C) element;
+    		}
+
+    		MenuElement[] subEelements = element.getSubElements();
+    		if(subEelements!=null && subEelements.length>0) {
+    			Collections.addAll(pendingElements, subEelements);
+    		}
+    	}
+
+    	return null;
     }
 
     public static <C extends JTextComponent> C autoSelectFullContent(C comp) {

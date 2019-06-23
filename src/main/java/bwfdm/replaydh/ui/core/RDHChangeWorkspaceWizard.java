@@ -70,8 +70,8 @@ import bwfdm.replaydh.ui.icons.IconRegistry;
 import bwfdm.replaydh.ui.icons.Resolution;
 import bwfdm.replaydh.ui.workflow.WorkflowSchemaListCellRenderer;
 import bwfdm.replaydh.utils.RDHUtils;
-import bwfdm.replaydh.workflow.schema.WorkflowSchemaManager;
 import bwfdm.replaydh.workflow.schema.WorkflowSchema;
+import bwfdm.replaydh.workflow.schema.WorkflowSchemaManager;
 
 /**
  * @author Markus Gärtner
@@ -88,6 +88,28 @@ public abstract class RDHChangeWorkspaceWizard {
 		return wizard;
 	}
 
+	public static Path[] readPreviousWorkspaces(String workspacesProperty) {
+		requireNonNull(workspacesProperty);
+
+		// Fetch raw definitions
+		String[] paths = workspacesProperty.split(File.pathSeparator);
+
+		// Translate into proper paths
+		Path[] workspaces = new Path[paths.length];
+
+		for(int i=0; i<paths.length; i++) {
+			workspaces[i] = Paths.get(paths[i]);
+		}
+
+		if(workspaces.length==0) {
+			workspaces = null;
+		} else {
+			Arrays.sort(workspaces);
+		}
+
+		return workspaces;
+	}
+
 	public static final class ChangeWorkspaceContext {
 
 		public static ChangeWorkspaceContext blank() {
@@ -95,25 +117,7 @@ public abstract class RDHChangeWorkspaceWizard {
 		}
 
 		public static ChangeWorkspaceContext withWorkspaces(String workspacesProperty) {
-			requireNonNull(workspacesProperty);
-
-			// Fetch raw definitions
-			String[] paths = workspacesProperty.split(File.pathSeparator);
-
-			// Translate into proper paths
-			Path[] workspaces = new Path[paths.length];
-
-			for(int i=0; i<paths.length; i++) {
-				workspaces[i] = Paths.get(paths[i]);
-			}
-
-			if(workspaces.length==0) {
-				workspaces = null;
-			} else {
-				Arrays.sort(workspaces);
-			}
-
-			return new ChangeWorkspaceContext(workspaces);
+			return new ChangeWorkspaceContext(readPreviousWorkspaces(workspacesProperty));
 		}
 
 		ChangeWorkspaceContext(Path[] workspaces) {
