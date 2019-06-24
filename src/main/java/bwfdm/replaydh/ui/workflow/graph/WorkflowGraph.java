@@ -696,9 +696,9 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 	}
 
 	public void rebuildGraph() {
-		GuiUtils.checkEDT();
+		GuiUtils.checkNotEDT();
 
-		refreshWorkflowTitle();
+		GuiUtils.invokeEDTLater(this::refreshWorkflowTitle);
 
 		if(isBuilding.compareAndSet(false, true)) {
 			try {
@@ -706,14 +706,15 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 			} finally {
 				isBuilding.set(false);
 			}
-			graphComponent.repaint();
+			GuiUtils.invokeEDTLater(graphComponent::repaint);
 
 			if(workflow!=null && !workflow.isClosed()) {
-				GuiUtils.invokeEDTLater(() -> focusStep(workflow.getActiveStep()));
+				WorkflowStep step = workflow.getActiveStep();
+				GuiUtils.invokeEDTLater(() -> focusStep(step));
 			}
 		}
 
-		refreshActions();
+		GuiUtils.invokeEDTLater(this::refreshActions);
 	}
 
 	public void setWorkflow(Workflow workflow) {
@@ -791,7 +792,7 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 	}
 
 	private void initRebuild() {
-		GuiUtils.invokeEDT(this::rebuildGraph);
+		environment.execute(this::rebuildGraph);
 	}
 
 	private static WorkflowStep createDummyStep(Workflow workflow, int index) {

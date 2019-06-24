@@ -495,19 +495,26 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 	}
 
 	private void showInitialOutline() {
-		workflowGraph.setWorkflow(workflowSource.get());
+		environment.execute(() -> {
+			Workflow workflow = workflowSource.get();
+			workflow.getActiveStep(); // trigger loading of the workflow
 
-		showPanel(workflowGraph.getPanel());
+			GuiUtils.invokeEDTLater(() -> {
+				workflowGraph.setWorkflow(workflow);
 
-		// If the client doesn't have workspace set up yet -> invoke the wizard
-		Workspace workspace = environment.getWorkspace();
-		if(workspace==null) {
-			if(environment.getClient().isVerbose()) {
-				log.info("No workspace selected - initiating workspace change wizard");
-			}
-			// Show workspace change wizard, but exit client if user cancels the dialog
-			GuiUtils.invokeEDT(() -> handler.doChangeWorkspace(true));
-		}
+				showPanel(workflowGraph.getPanel());
+
+				// If the client doesn't have workspace set up yet -> invoke the wizard
+				Workspace workspace = environment.getWorkspace();
+				if(workspace==null) {
+					if(environment.getClient().isVerbose()) {
+						log.info("No workspace selected - initiating workspace change wizard");
+					}
+					// Show workspace change wizard, but exit client if user cancels the dialog
+					GuiUtils.invokeEDT(() -> handler.doChangeWorkspace(true));
+				}
+			});
+		});
 	}
 
 	/**
@@ -679,10 +686,16 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 	private void refreshWorkflowFromSource() {
 		if(workflowGraph!=null) {
-			workflowGraph.setWorkflow(workflowSource.get());
-		}
+			environment.execute(() -> {
+				Workflow workflow = workflowSource.get();
+				workflow.getActiveStep(); // trigger loading of workflow
+					GuiUtils.invokeEDTLater(() -> {
+						workflowGraph.setWorkflow(workflow);
 
-		refreshActions();
+						refreshActions();
+					});
+			});
+		}
 	}
 
 	private boolean setAlwaysOnTop(boolean alwaysOnTop) {
