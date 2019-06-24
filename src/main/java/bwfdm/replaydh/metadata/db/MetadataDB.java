@@ -278,7 +278,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 				    ON CONFLICT ABORT
 				);
 			 */
-			stmt.execute(
+			stmt.execute(maybeLogQuery(
 					"CREATE TABLE IF NOT EXISTS "+TBL_RECORD+" (\n" +
 					"    "+COL_ID+"        INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
 					"    "+COL_WORKSPACE+" TEXT    NOT NULL,\n" +
@@ -290,7 +290,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 					"        "+COL_SCHEMA+" COLLATE NOCASE\n" +
 					"    )\n" +
 					"    ON CONFLICT ABORT\n" +
-					");");
+					");"));
 
 			/*
 			 *  CREATE INDEX "" ON rdh_record (
@@ -298,11 +298,11 @@ public class MetadataDB extends AbstractMetadataRespository {
 				    path
 				);
 			 */
-			stmt.execute(
+			stmt.execute(maybeLogQuery(
 					"CREATE INDEX IF NOT EXISTS \"path_idx\" ON "+TBL_RECORD+" (\n" +
 					"    "+COL_WORKSPACE+",\n" +
 					"    "+COL_PATH+"\n" +
-					");");
+					");"));
 
 			/*
 			 *  CREATE TABLE rdh_entry (
@@ -311,12 +311,12 @@ public class MetadataDB extends AbstractMetadataRespository {
 				    value     TEXT    NOT NULL
 				);
 			 */
-			stmt.execute(
+			stmt.execute(maybeLogQuery(
 					"CREATE TABLE IF NOT EXISTS "+TBL_ENTRY+" (\n" +
 					"    "+COL_RECORD_ID+" INTEGER REFERENCES "+TBL_RECORD+" ("+COL_ID+") ON DELETE CASCADE,\n" +
 					"    "+COL_PROPERTY+"  TEXT    NOT NULL,\n" +
 					"    "+COL_VALUE+"     TEXT    NOT NULL\n" +
-					");");
+					");"));
 		}
 	}
 
@@ -334,11 +334,12 @@ public class MetadataDB extends AbstractMetadataRespository {
 				ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
 			String workspace = target.getWorkspace();
 			String path = target.getPath();
-			ResultSet rs = stmt.executeQuery(
+			String query = maybeLogQuery(
 					"SELECT count() FROM  (" +
 					"    SELECT * FROM "+TBL_RECORD+" " +
 					"    WHERE "+COL_WORKSPACE+"=\""+workspace+"\"\n" +
 					"        AND "+COL_PATH+"=\""+path+"\" LIMIT 1)");
+			ResultSet rs = stmt.executeQuery(query);
 
 			return asInt(rs) > 0;
 		} catch (SQLException e) {
@@ -425,6 +426,15 @@ public class MetadataDB extends AbstractMetadataRespository {
 		return record;
 	}
 
+	private String maybeLogQuery(String query) {
+
+		if(isVerbose()) {
+			log.info("Executing query:\n===== BEGIN =====\n{}\n=====", query);
+		}
+
+		return query;
+	}
+
 	/**
 	 * @see bwfdm.replaydh.metadata.MetadataRepository#getRecords(bwfdm.replaydh.metadata.MetadataRecord.Target)
 	 */
@@ -441,13 +451,14 @@ public class MetadataDB extends AbstractMetadataRespository {
 					ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
 				String workspace = target.getWorkspace();
 				String path = target.getPath();
-				ResultSet rs = stmt.executeQuery(
+				String query = maybeLogQuery(
 						"SELECT r."+COL_ID+", r."+COL_SCHEMA+", e."+COL_PROPERTY+", e."+COL_VALUE+"\n" +
 						"FROM "+TBL_ENTRY+" AS e\n" +
 						"INNER JOIN "+TBL_RECORD+" AS r ON r."+COL_ID+" = e."+COL_RECORD_ID+"\n" +
 						"WHERE r."+COL_WORKSPACE+" = \""+workspace+"\"\n" +
 						"    AND r."+COL_PATH+" = \""+path+"\"\n" +
 						"ORDER BY r."+COL_ID);
+				ResultSet rs = stmt.executeQuery(query);
 
 				int id = -1;
 				DefaultMetadataRecord record = null;
@@ -488,15 +499,17 @@ public class MetadataDB extends AbstractMetadataRespository {
 			id = getRecordId(stmt, record);
 			if(id != NO_ID) {
 				// Old record -> delete all the entries, but keep the "record" itself
-				stmt.execute(
+				String query = maybeLogQuery(
 						"DELETE\n" +
 						"FROM "+TBL_ENTRY+" AS e\n" +
 						"WHERE e."+COL_RECORD_ID+" = "+id);
+				stmt.execute(query);
 			} else {
 				// New record -> create entry in records table
 				Target target = record.getTarget();
-				stmt.execute("INSERT INTO "+TBL_RECORD+" ("+COL_WORKSPACE+", "+COL_PATH+", "+COL_SCHEMA+")\n" +
+				String query = maybeLogQuery("INSERT INTO "+TBL_RECORD+" ("+COL_WORKSPACE+", "+COL_PATH+", "+COL_SCHEMA+")\n" +
 						"VALUES (\""+target.getWorkspace()+"\", \""+target.getPath()+"\", \""+record.getSchemaId()+"\")");
+				stmt.execute(query);
 
 				// Fetch record id
 				try(ResultSet rs = stmt.executeQuery("SELECT last_insert_rowid()")) {
@@ -524,7 +537,8 @@ public class MetadataDB extends AbstractMetadataRespository {
 					.append("\")");
 			});
 
-			stmt.execute(sb.toString());
+			String query = maybeLogQuery(sb.toString());
+			stmt.execute(query);
 		} catch (SQLException e) {
 			log.error("Failed to query database", e);
 			throw new MetadataException("Error while contacting database", e);
@@ -535,13 +549,14 @@ public class MetadataDB extends AbstractMetadataRespository {
 		try(Statement stmt = connection.createStatement()) {
 			String workspace = target.getWorkspace();
 			String path = target.getPath();
-			ResultSet rs = stmt.executeQuery(
+			String query = maybeLogQuery(
 					"SELECT e."+COL_PROPERTY+", e."+COL_VALUE+" \n" +
 					"FROM "+TBL_ENTRY+" AS e, "+TBL_RECORD+" AS r\n" +
 					"WHERE r."+COL_WORKSPACE+" = \""+workspace+"\" \n" +
 					"    AND r."+COL_PATH+" = \""+path+"\"\n" +
 					"    AND r."+COL_SCHEMA+" = \""+schemaId+"\"\n" +
 					"    AND e."+COL_RECORD_ID+" = r."+COL_ID+"");
+			ResultSet rs = stmt.executeQuery(query);
 
 			DefaultMetadataRecord record = null;
 
@@ -566,12 +581,13 @@ public class MetadataDB extends AbstractMetadataRespository {
 			String workspace = target.getWorkspace();
 			String path = target.getPath();
 			String schemaId = record.getSchemaId();
-			stmt.execute(
+			String query = maybeLogQuery(
 					"DELETE\n" +
 					"FROM "+TBL_RECORD+" AS r\n" +
 					"WHERE r."+COL_WORKSPACE+" = \""+workspace+"\" \n" +
 					"    AND r."+COL_PATH+" = \""+path+"\"\n" +
 					"    AND r."+COL_SCHEMA+" = \""+schemaId+"\"");
+			stmt.execute(query);
 		} catch (SQLException e) {
 			log.error("Failed to query database", e);
 			throw new MetadataException("Error while contacting database", e);
@@ -585,12 +601,13 @@ public class MetadataDB extends AbstractMetadataRespository {
 		}
 
 		Target target = record.getTarget();
-		try(ResultSet rs = stmt.executeQuery(
+		String query = maybeLogQuery(
 				"SELECT r."+COL_ID+"\n" +
 				"FROM "+TBL_RECORD+" AS r\n" +
 				"WHERE r."+COL_WORKSPACE+" = \""+target.getWorkspace()+"\"\n" +
 				"    AND r."+COL_PATH+" = \""+target.getPath()+"\"\n" +
-				"    AND r."+COL_SCHEMA+" = \""+record.getSchemaId()+"\"")) {
+				"    AND r."+COL_SCHEMA+" = \""+record.getSchemaId()+"\"");
+		try(ResultSet rs = stmt.executeQuery(query)) {
 			id = asInt(rs);
 		}
 
@@ -698,9 +715,10 @@ public class MetadataDB extends AbstractMetadataRespository {
 			if(stmt == null && !loaded) {
 				try {
 					stmt = connection.createStatement();
-					rs = stmt.executeQuery(
+					String query = maybeLogQuery(
 							"SELECT r."+COL_WORKSPACE+", r."+COL_PATH+" \n" +
 							"FROM "+TBL_RECORD+" AS r");
+					rs = stmt.executeQuery(query);
 				} catch (SQLException e) {
 					throw new MetadataException("Error while contacting database", e);
 				}
