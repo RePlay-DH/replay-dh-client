@@ -2629,7 +2629,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 			ensureFullWorkflowData();
 
 			// Ensure that the commit message is parsed into actual step data
-			synchronized (step) {
+			synchronized (gitLock) {
 				Node<WorkflowStep> node = node(step);
 				if(!node.flagSet(FLAG_LOADED)) {
 					try {
