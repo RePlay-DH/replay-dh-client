@@ -260,6 +260,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		fileTracker = client.getFileTracker();
 		fileTracker.addPropertyChangeListener(FileTracker.NAME_WORKFLOW, fileTrackerChangeListener);
 
+		environment.addPropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, environmentChangeListener);
 		environment.addPropertyChangeListener(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, environmentChangeListener);
 
 		resourceCache = client.getResourceCache();
@@ -409,9 +410,14 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		String history = environment.getProperty(RDHProperty.CLIENT_WORKSPACE_HISTORY);
 		Path[] workspaces = history==null ? new Path[0] :
 			RDHChangeWorkspaceWizard.readPreviousWorkspaces(history);
+		Path currentWorkspace = environment.getWorkspacePath();
 
 		boolean added = false;
 		for(Path path : workspaces) {
+			if(path.equals(currentWorkspace)) {
+				continue;
+			}
+
 			if(Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
 				String text = RDHUtils.toPathString(path, 40);
 				JMenuItem menuItem = previousWorkspaceMenu.add(text);
@@ -535,8 +541,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					 *  specified location.
 					 */
 					if(context.getSchema()==null) {
+						// Expect existing workspace
 						workspace = client.loadWorkspace(context.getWorkspacePath());
 					} else {
+						// Build new workspace from scratch
 						workspace = client.createWorkspace(
 								context.getWorkspacePath(),
 								context.getSchema(),
@@ -554,6 +562,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 			@Override
 			protected void done() {
+				dialog.setVisible(false);
 				dialog.dispose();
 
 				try {
@@ -562,10 +571,12 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					// We had to do a rollback
 					if(oldWorkspace!=null && oldWorkspace.equals(workspace)) {
 						GuiUtils.beep();
-						JOptionPane.showConfirmDialog(RDHMainPanel.this,
-								rm.get("replaydh.ui.core.mainPanel.changeInProgress.rollback",
+						new JOptionPane(rm.get("replaydh.ui.core.mainPanel.changeInProgress.rollback",
 										RDHUtils.toPathString(oldWorkspace.getFolder(), 50)),
-								title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE);
+								JOptionPane.INFORMATION_MESSAGE,
+								JOptionPane.OK_OPTION)
+							.createDialog(title)
+							.setVisible(true);
 					}
 				} catch (InterruptedException e) {
 					// Cancelled
@@ -580,7 +591,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		};
 
 		worker.execute();
-		dialog.setVisible(true);
+		dialog.setVisible(!worker.isDone());
 
 		Object value = pane.getValue();
 		if(value instanceof Integer && ((Integer)value).intValue()==JOptionPane.CANCEL_OPTION) {
@@ -694,6 +705,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		removeHierarchyListener(handler);
 		fileTracker.removePropertyChangeListener(FileTracker.NAME_WORKFLOW, fileTrackerChangeListener);
+		environment.removePropertyChangeListener(RDHEnvironment.NAME_WORKSPACE, environmentChangeListener);
 		environment.removePropertyChangeListener(RDHProperty.CLIENT_UI_ALWAYS_ON_TOP, environmentChangeListener);
 
 		// Finally make sure our background task gets canceled
