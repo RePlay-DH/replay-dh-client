@@ -596,8 +596,8 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 	private int getRecordId(Statement stmt, MetadataRecord record) throws SQLException {
 		int id =  record instanceof DbMetadataRecord ? ((DbMetadataRecord)record).getId() : NO_ID;
-		if(id!=NO_ID) {
-			return NO_ID;
+		if(id != NO_ID) {
+			return id;
 		}
 
 		Target target = record.getTarget();
