@@ -261,7 +261,14 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 	}
 
 	private Target getTarget(TreePath treePath) {
-		Path path = treePath==null ? null : (Path) treePath.getLastPathComponent();
+		if(treePath==null) {
+			return null;
+		}
+		Object node = treePath.getLastPathComponent();
+		if(!(node instanceof Path)) {
+			return null;
+		}
+		Path path = (Path) node;
 		if(path==null || Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
 			return null;
 		}
@@ -423,7 +430,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		}
 
 		public void update(MetadataRecord record) {
-			if(currentRecord==null || record==currentRecord) {
+			if(currentRecord==null || record==currentRecord || record.getTarget().equals(target)) {
 				update();
 			}
 		}
