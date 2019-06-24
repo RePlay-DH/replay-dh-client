@@ -563,7 +563,8 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					if(oldWorkspace!=null && oldWorkspace.equals(workspace)) {
 						GuiUtils.beep();
 						JOptionPane.showConfirmDialog(RDHMainPanel.this,
-								rm.get("replaydh.ui.core.mainPanel.changeInProgress.rollback"),
+								rm.get("replaydh.ui.core.mainPanel.changeInProgress.rollback",
+										RDHUtils.toPathString(oldWorkspace.getFolder(), 50)),
 								title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE);
 					}
 				} catch (InterruptedException e) {
