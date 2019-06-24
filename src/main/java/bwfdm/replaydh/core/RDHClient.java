@@ -591,6 +591,10 @@ public class RDHClient {
 		if(workspace==null)
 			throw new RDHException("No workspace at location: "+workspacePath);
 
+		if(isVerbose()) {
+			log.info("Workspace loaded: {}", workspacePath);
+		}
+
 		// Finally publish the new workspace
 		getEnvironment().setWorkspace(workspace);
 
@@ -1464,13 +1468,13 @@ public class RDHClient {
 		int threadLimit = environment.getInteger(RDHProperty.INTERN_EXECUTOR_MAX_THREADS, -1);
 
 		// If no limit is set we can always restrict it based on processor count
-		if(threadLimit==-1 && environment.getBoolean(RDHProperty.INTERN_EXECUTOR_LIMIT_TO_CORES, false)) {
+		if(threadLimit==-1 && environment.getBoolean(RDHProperty.INTERN_EXECUTOR_LIMIT_TO_CORES)) {
 			threadLimit = Runtime.getRuntime().availableProcessors();
 		}
 
-		// Use "unlimited" threads if limit set to negative or 0 (preventing dumb settings)
+		// Use sensible thread count if limit set to negative or 0 (preventing dumb settings)
 		if(threadLimit<=0) {
-			threadLimit = 200;
+			threadLimit = 10;
 		}
 
 		return Executors.newScheduledThreadPool(threadLimit, threadFactory);

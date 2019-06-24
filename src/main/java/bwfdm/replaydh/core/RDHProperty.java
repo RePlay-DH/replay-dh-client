@@ -110,7 +110,7 @@ public enum RDHProperty implements Property {
 	INTERN_RESOURCES_RETURN_ABSENT_KEYS("intern.resources.returnAbsentKeys", true),
 
 	INTERN_EXECUTOR_MAX_THREADS("intern.executor.maxThreads"),
-	INTERN_EXECUTOR_LIMIT_TO_CORES("intern.executor.limitToCores", false),
+	INTERN_EXECUTOR_LIMIT_TO_CORES("intern.executor.limitToCores", true),
 
 	INTERN_VERBOSE("intern.verbose", false),
 
