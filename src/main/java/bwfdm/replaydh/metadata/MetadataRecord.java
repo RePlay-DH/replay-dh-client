@@ -146,6 +146,8 @@ public interface MetadataRecord {
 
 	/**
 	 * Pointer to a physical object as target for a metadata record in a given repository.
+	 * Note that the default string representation of paths in this wrapper class uses
+	 * the UNIX-style file separator '/' !
 	 *
 	 * @author Markus Gärtner
 	 *
@@ -153,11 +155,15 @@ public interface MetadataRecord {
 	public static final class Target implements Cloneable {
 		private final String workspace, path;
 
+		private static String normalize(String s) {
+			return s==null ? null : s.replace('\\', '/');
+		}
+
 		public Target(Path workspace, Path path) {
 			requireNonNull(workspace);
 			requireNonNull(path);
-			this.workspace = workspace.toString();
-			this.path = workspace.relativize(path).toString();
+			this.workspace = normalize(workspace.toString());
+			this.path = normalize(workspace.relativize(path).toString());
 		}
 
 		public Target(Path workspace, Identifier identifier) {
@@ -165,24 +171,24 @@ public interface MetadataRecord {
 			requireNonNull(identifier);
 
 			if(identifier.getContext()!=null) {
-				this.workspace = identifier.getContext();
-				this.path = identifier.getId();
+				this.workspace = normalize(identifier.getContext());
+				this.path = normalize(identifier.getId());
 			} else {
 				Path path = Paths.get(identifier.getId());
 
-				this.workspace = workspace.toString();
-				this.path = workspace.relativize(path).toString();
+				this.workspace = normalize(workspace.toString());
+				this.path = normalize(workspace.relativize(path).toString());
 			}
 		}
 
 		public Target(String workspace, String path) {
 			requireNonNull(workspace);
 			requireNonNull(path);
-			this.workspace = workspace;
+			this.workspace = normalize(workspace);
 			if(path.startsWith(workspace)) {
 				path = path.substring(workspace.length());
 			}
-			this.path = requireNonNull(path);
+			this.path = normalize(requireNonNull(path));
 		}
 
 		public Path toPath() {

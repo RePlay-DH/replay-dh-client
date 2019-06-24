@@ -675,10 +675,6 @@ public class MetadataDB extends AbstractMetadataRespository {
 		return MetadataSchema.EMPTY_SCHEMA;
 	}
 
-	private String adjustPath(String s) {
-		return s==null ? null : s.replace('\\', '/');
-	}
-
 	/**
 	 * Special class to keep track of the id used on the database side.
 	 *
@@ -751,8 +747,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 					return false;
 				}
 
-				nextTarget = new Target(adjustPath(rs.getString(1)),
-						adjustPath(rs.getString(2)));
+				nextTarget = new Target(rs.getString(1), rs.getString(2));
 			} catch (SQLException e) {
 				throw new MetadataException("Error while contacting database", e);
 			}
