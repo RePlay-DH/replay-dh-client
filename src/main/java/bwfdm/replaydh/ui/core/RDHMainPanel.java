@@ -510,11 +510,15 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 	private void loadWorkspace(final ChangeWorkspaceContext context) {
 		requireNonNull(context);
 
-		String message = ResourceManager.getInstance().get("replaydh.ui.core.mainPanel.changeInProgress.message");
-		String title = ResourceManager.getInstance().get("replaydh.ui.core.mainPanel.changeInProgress.title");
+		ResourceManager rm = ResourceManager.getInstance();
+
+		String message = rm.get("replaydh.ui.core.mainPanel.changeInProgress.message");
+		String title = rm.get("replaydh.ui.core.mainPanel.changeInProgress.title");
 
 		JOptionPane pane = new JOptionPane(message, JOptionPane.INFORMATION_MESSAGE, JOptionPane.CANCEL_OPTION);
-		JDialog dialog = pane.createDialog(title);
+		JDialog dialog = pane.createDialog(RDHMainPanel.this, title);
+
+		final Workspace oldWorkspace = environment.getWorkspace();
 
 		final SwingWorker<Workspace, Object> worker = new SwingWorker<Workspace, Object>() {
 
@@ -523,20 +527,26 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				RDHClient client = environment.getClient();
 				Workspace workspace = null;
 
-				/*
-				 *  Depending on the amount of information either create
-				 *  a new workspace or expect a fully functional and properly
-				 *  set up git repository with our config file at the
-				 *  specified location.
-				 */
-				if(context.getSchema()==null) {
-					workspace = client.loadWorkspace(context.getWorkspacePath());
-				} else {
-					workspace = client.createWorkspace(
-							context.getWorkspacePath(),
-							context.getSchema(),
-							context.getTitle(),
-							context.getDescription());
+				try {
+					/*
+					 *  Depending on the amount of information either create
+					 *  a new workspace or expect a fully functional and properly
+					 *  set up git repository with our config file at the
+					 *  specified location.
+					 */
+					if(context.getSchema()==null) {
+						workspace = client.loadWorkspace(context.getWorkspacePath());
+					} else {
+						workspace = client.createWorkspace(
+								context.getWorkspacePath(),
+								context.getSchema(),
+								context.getTitle(),
+								context.getDescription());
+					}
+				} catch(RDHException e) {
+					log.error("Failed to load workspace: {}"+context.getWorkspacePath(), e);
+
+					workspace = client.loadWorkspace(oldWorkspace.getFolder());
 				}
 
 				return workspace;
@@ -545,6 +555,26 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			@Override
 			protected void done() {
 				dialog.dispose();
+
+				try {
+					Workspace workspace = get();
+
+					// We had to do a rollback
+					if(oldWorkspace!=null && oldWorkspace.equals(workspace)) {
+						GuiUtils.beep();
+						JOptionPane.showConfirmDialog(RDHMainPanel.this,
+								rm.get("replaydh.ui.core.mainPanel.changeInProgress.rollback"),
+								title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE);
+					}
+				} catch (InterruptedException e) {
+					// Cancelled
+					log.info("Workspace change aborted");
+				} catch (ExecutionException e) {
+					// Something went terribly wrong (in worst case we can't recover)
+					GuiUtils.beep();
+					GuiUtils.showErrorDialog(RDHMainPanel.this, title,
+							rm.get("replaydh.ui.core.mainPanel.changeInProgress.error"), e.getCause());
+				}
 			}
 		};
 
@@ -1929,6 +1959,13 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 			}
 		}
 
+		/**
+		 * Loads and returns a {@link ResourceMetadataFiller filler} based on the
+		 * current settings. If DC is enforced and at autofill is activated for at
+		 * least one direction, a filler based on {@link DublinCoreSchema11} will
+		 * be returned. Otherwise the result is {@code null}.
+		 * @return
+		 */
 		private ResourceMetadataFiller loadFiller() {
 			if(environment.getBoolean(RDHProperty.METADATA_ENFORCE_DC)
 					&& (environment.getBoolean(RDHProperty.METADATA_AUTOFILL_RECORDS)
@@ -2154,7 +2191,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 		protected void done() {
 			GuiUtils.checkEDT();
 
-			//TODO hide our progress dialog
+			//TODO hide our progress dialog (once we actually show one...)
 			boolean opSuccess = false;
 
 			try {
