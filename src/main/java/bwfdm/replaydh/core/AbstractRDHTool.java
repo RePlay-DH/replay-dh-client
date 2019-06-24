@@ -123,7 +123,7 @@ public abstract class AbstractRDHTool implements RDHTool {
 		return getEnvironment0()!=null;
 	}
 
-	protected final boolean isVerbose() {
+	protected boolean isVerbose() {
 		RDHEnvironment environment = getEnvironment0();
 
 		return environment==null ? false : environment.getClient().isVerbose();

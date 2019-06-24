@@ -789,14 +789,15 @@ public class RDHClient {
 			if(!Files.isDirectory(rootFolder, LinkOption.NOFOLLOW_LINKS))
 				throw new RDHException("Metadata root folder must point to a directory: "+rootFolder);
 
-			MetadataDB.Builder builder = MetadataDB.newBuilder();
+			MetadataDB.Builder builder = MetadataDB.newBuilder()
+					.verbose(verbose)
+					.rootFolder(rootFolder)
+					.useDefaultCacheAndLocationProvider();
 
-			builder.rootFolder(rootFolder);
 			if(getEnvironment().getBoolean(RDHProperty.METADATA_ENFORCE_DC)) {
 				builder.useDublinCore();
 				builder.useDublinCoreNameGenerator();
 			}
-			builder.useDefaultCacheAndLocationProvider();
 
 			MetadataRepository repo = builder.build();
 

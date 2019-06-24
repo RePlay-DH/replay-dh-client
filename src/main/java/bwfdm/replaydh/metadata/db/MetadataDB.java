@@ -93,6 +93,8 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 	public static final String DEFAULT_DB_FILE = "metadata.db";
 
+	private final boolean verbose;
+
 	private Connection connection;
 
 	/**
@@ -120,6 +122,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 		cache = builder.getCache();
 		resourceProvider = builder.getResourceProvider();
 		memory = builder.isMemory();
+		verbose = builder.isVerbose();
 
 		setDefaultSchema(builder.getDefaultSchema());
 
@@ -129,6 +132,14 @@ public class MetadataDB extends AbstractMetadataRespository {
 		}
 
 		this.nameGenerator = nameGenerator;
+	}
+
+	/**
+	 * @see bwfdm.replaydh.core.AbstractRDHTool#isVerbose()
+	 */
+	@Override
+	protected boolean isVerbose() {
+		return verbose;
 	}
 
 	/**
@@ -780,6 +791,8 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 		public static final boolean DEFAULT_MEMORY = false;
 
+		public static final boolean DEFAULT_VERBOSE = false;
+
 		private Path rootFolder;
 
 		private Function<MetadataRecord, String> nameGenerator;
@@ -789,6 +802,8 @@ public class MetadataDB extends AbstractMetadataRespository {
 		private ResourceProvider resourceProvider;
 
 		private Boolean memory;
+
+		private Boolean verbose;
 
 		private MetadataSchema defaultSchema;
 
@@ -852,6 +867,14 @@ public class MetadataDB extends AbstractMetadataRespository {
 			return this;
 		}
 
+		public Builder verbose(boolean verbose) {
+			checkState("Verbose flag set", this.verbose==null);
+
+			this.verbose = Boolean.valueOf(verbose);
+
+			return this;
+		}
+
 		public MetadataSchema getDefaultSchema() {
 			return defaultSchema;
 		}
@@ -874,6 +897,10 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 		public boolean isMemory() {
 			return memory==null ? DEFAULT_MEMORY : memory.booleanValue();
+		}
+
+		public boolean isVerbose() {
+			return verbose==null ? DEFAULT_VERBOSE : verbose.booleanValue();
 		}
 
 		// Utility parts
