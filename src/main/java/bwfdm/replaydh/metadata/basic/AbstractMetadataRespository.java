@@ -251,7 +251,7 @@ public abstract class AbstractMetadataRespository extends AbstractSchemaManager<
 			schema = getFallbackSchema();
 		}
 
-		MutableMetadataRecord record = newRecord(target, schemaId);
+		MutableMetadataRecord record = newRecord(target, schemaId); // bound to fail if record already exists
 
 		return new DefaultMetadataBuilder(schema, record) {
 			/**

@@ -105,6 +105,14 @@ public interface MetadataRepository extends RDHTool, SchemaManager<MetadataSchem
 
 	MutableMetadataRecord newRecord(Target target, String schemaId);
 
+	default MetadataRecord ensureRecord(Target target, String schemaId) {
+		MetadataRecord record = getRecord(target, schemaId);
+		if(record==null) {
+			record = newRecord(target, schemaId);
+		}
+		return record;
+	}
+
 	// Listener API
 
 	void addMetadataListener(MetadataListener listener);

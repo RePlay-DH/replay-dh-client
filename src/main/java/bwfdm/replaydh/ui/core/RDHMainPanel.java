@@ -2023,10 +2023,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					}
 					Target target = new Target(environment.getWorkspacePath(), path);
 
-					MetadataRecord record = repository.getRecord(target, schemaId);
-					if(record==null) {
-						record = repository.newRecord(target, schemaId);
-					}
+					MetadataRecord record = repository.ensureRecord(target, schemaId);
 
 					if(!(record instanceof MutableMetadataRecord)) {
 						continue;
