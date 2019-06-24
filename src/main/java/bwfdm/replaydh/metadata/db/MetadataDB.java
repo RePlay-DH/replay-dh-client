@@ -528,6 +528,10 @@ public class MetadataDB extends AbstractMetadataRespository {
 				}
 			}
 
+			// If record is empty, don't bother any further
+			if(record.getEntryCount()==0) {
+				return;
+			}
 
 			/*
 			 * New record or previous data erased.

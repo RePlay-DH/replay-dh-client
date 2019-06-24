@@ -2117,9 +2117,6 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					opSuccess = GuiUtils.invokeEDTAndWait(RDHMainPanel.this::interactiveCommit, newStep);
 					// END EDT
 
-					// Now try to map the final information back into the object metadata
-					fillRecords(newStep);
-
 					// Only if the user confirmed the dialog do we actually add the step and commit git changes!
 					if(opSuccess) {
 
@@ -2129,6 +2126,9 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 						// If this operation goes through, the commit is persistent
 						workflow.addWorkflowStep(newStep);
+
+						// Now try to map the final information back into the object metadata
+						fillRecords(newStep);
 
 						// Remove all cached entries
 						resourceCache.clear();
