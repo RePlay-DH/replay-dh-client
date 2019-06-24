@@ -30,7 +30,7 @@ import bwfdm.replaydh.utils.Label;
 import bwfdm.replaydh.utils.Multiplicity;
 
 /**
- * Verifier implementing the specification of the Dublin Core Metadata DublinCoreField Set, Version 1.1
+ * Verifier implementing the specification of the Dublin Core Metadata Set, Version 1.1
  * as listed at <a href="http://dublincore.org/documents/dces/">http://dublincore.org/documents/dces/</a>.
  *
  *
