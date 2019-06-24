@@ -643,8 +643,10 @@ public class MetadataDB extends AbstractMetadataRespository {
 	@Override
 	protected void afterEndEdit(MetadataRecord record, boolean discard) {
 
-		// After publishing the change event, persist record to db
-		saveRecordToDb(record);
+		if(!discard) {
+			// After publishing the change event, persist record to db
+			saveRecordToDb(record);
+		}
 
 		// Allow notification of listeners
 		super.afterEndEdit(record, discard);
