@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import bwfdm.replaydh.git.GitUtils;
+import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.ui.id.Identity;
 import bwfdm.replaydh.ui.tree.AbstractTreeModel;
 
@@ -207,8 +208,11 @@ public class WorkspaceTreeModel extends AbstractTreeModel {
 	}
 
 	public void pathChanged(Path path) {
-		path = rootFolder.relativize(path);
-		firePathChanged(toTreePath(path));
+		Path relative = IOUtils.relativize(rootFolder, path);
+		if(relative==null) {
+			return;
+		}
+		firePathChanged(toTreePath(relative));
 	}
 
 	/**

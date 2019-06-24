@@ -31,7 +31,6 @@ import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import bwfdm.replaydh.io.IOUtils;
-import bwfdm.replaydh.workflow.impl.AbstractIdentifiable;
 import bwfdm.replaydh.workflow.impl.DefaultPerson;
 import bwfdm.replaydh.workflow.impl.DefaultResource;
 import bwfdm.replaydh.workflow.impl.DefaultTool;
@@ -177,8 +176,6 @@ public class WorkflowAnonymiser {
 	}
 
 	private void processIdentifiable(Identifiable source, Identifiable target) {
-		((AbstractIdentifiable)target).setSystemId(source.getSystemId());
-
 		for(Identifier identifier : source.getIdentifiers()) {
 			target.addIdentifier(anonymise(identifier));
 		}

@@ -81,7 +81,7 @@ public class MetadataDbTest {
 	@Test
 	public void testRemoveSingle() throws IOException {
 
-		Target target = new Target("w1", "p1");
+		Target target = Target.forString("w1", "p1");
 		String schemaId = MetadataSchema.EMPTY_SCHEMA_ID;
 
 		assertNull(repository.getRecord(target, schemaId));
@@ -121,7 +121,7 @@ public class MetadataDbTest {
 	@Test
 	public void testAddSingle() throws IOException {
 
-		Target target = new Target("w1", "p1");
+		Target target = Target.forString("w1", "p1");
 		String schemaId = MetadataSchema.EMPTY_SCHEMA_ID;
 
 		assertFalse(repository.hasRecords(target));
@@ -168,7 +168,7 @@ public class MetadataDbTest {
 
 		String workspace = "w1";
 		String path = "path1";
-		Target target = new Target(workspace, path);
+		Target target = Target.forString(workspace, path);
 
 		int recordCount = 4;
 		int entryCount = 6;
@@ -218,8 +218,8 @@ public class MetadataDbTest {
 		String workspace = "w1";
 		String path1 = "path1";
 		String path2 = "path2";
-		Target target1 = new Target(workspace, path1);
-		Target target2 = new Target(workspace, path2);
+		Target target1 = Target.forString(workspace, path1);
+		Target target2 = Target.forString(workspace, path2);
 
 		int recordCount = 4;
 		int entryCount = 6;
@@ -300,7 +300,7 @@ public class MetadataDbTest {
 			for (int i = 0; i < resourceCount; i++) {
 				String path = "path"+i;
 
-				Target target = new Target(workspace, path);
+				Target target = Target.forString(workspace, path);
 				MetadataBuilder builder = repository.createBuilder(target, schemaId);
 				builder.start();
 

@@ -20,7 +20,6 @@ package bwfdm.replaydh.workflow;
 
 import java.util.Collection;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -37,23 +36,6 @@ import bwfdm.replaydh.workflow.schema.WorkflowSchema;
  *
  */
 public interface Identifiable {
-
-	/**
-	 * Returns the unique ID assigned to this identifiable by the
-	 * framework. Since this ID is meant to persist across (de)serialization
-	 * it can be used for mapping to external resources such as
-	 * metadata in a repository.
-	 * <p>
-	 * Note that this ID is not related to the content of a resource,
-	 * but rather a means to consistently identify the same object across
-	 * time even when other (more direct) mechanisms are not available.
-	 * <p>
-	 * Implementations should <b>not</b> make use of this ID when checking for
-	 * {@link #equals(Object) equality} of two identifiable objects.
-	 *
-	 * @return
-	 */
-	UUID getSystemId();
 
 	String getDescription();
 

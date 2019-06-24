@@ -298,4 +298,17 @@ public class IOUtils {
 			return false;
 		}
 	}
+
+	public static Path relativize(Path path, Path target) {
+		if(path.equals(target)) {
+			return null;
+		}
+
+		if(path.getRoot()==null || target.getRoot()==null
+				|| !path.getRoot().equals(target.getRoot())) {
+			return path;
+		} else {
+			return path.relativize(target);
+		}
+	}
 }

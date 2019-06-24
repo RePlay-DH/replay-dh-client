@@ -155,7 +155,7 @@ public class LocalFileObject implements Comparable<LocalFileObject> {
 					// Make sure we can handle files outside current workspace
 					Path workspace = environment.getWorkspace().getFolder();
 					if(file.startsWith(workspace)) {
-						file = workspace.relativize(file);
+						file = IOUtils.relativize(workspace, file);
 						disambiguationContext = workspace.toString();
 					}
 

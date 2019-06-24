@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import bwfdm.replaydh.io.IOUtils;
 import bwfdm.replaydh.utils.LazyCollection;
 import bwfdm.replaydh.workflow.Identifier;
 
@@ -156,46 +157,58 @@ public interface MetadataRecord {
 		private final String workspace, path;
 
 		private static String normalize(String s) {
-			return s==null ? null : s.replace('\\', '/');
+			return s.replace('\\', '/');
 		}
 
-		public Target(Path workspace, Path path) {
+		private static String unnormalize(String s) {
+			return s.replace('/', File.separatorChar);
+		}
+
+		public static Target forFile(Path workspace, Path path) {
 			requireNonNull(workspace);
 			requireNonNull(path);
-			this.workspace = normalize(workspace.toString());
-			this.path = normalize(workspace.relativize(path).toString());
+
+			Path relative = IOUtils.relativize(workspace, path);
+
+			if(relative==null || relative.equals(workspace)) {
+				return new Target("", path.toString());
+			} else {
+				return new Target(workspace.toString(), relative.toString());
+			}
 		}
 
-		public Target(Path workspace, Identifier identifier) {
+		public static Target forIdentifier(Path workspace, Identifier identifier) {
 			requireNonNull(workspace);
 			requireNonNull(identifier);
 
 			if(identifier.getContext()!=null) {
-				this.workspace = normalize(identifier.getContext());
-				this.path = normalize(identifier.getId());
+				return new Target(identifier.getContext(), identifier.getId());
 			} else {
 				Path path = Paths.get(identifier.getId());
-
-				this.workspace = normalize(workspace.toString());
-				this.path = normalize(workspace.relativize(path).toString());
+				return forFile(workspace, path);
 			}
 		}
 
-		public Target(String workspace, String path) {
+		public static Target forString(String workspace, String path) {
 			requireNonNull(workspace);
 			requireNonNull(path);
-			this.workspace = normalize(workspace);
 			if(path.startsWith(workspace)) {
 				path = path.substring(workspace.length());
 			}
-			this.path = normalize(requireNonNull(path));
+			return new Target(workspace, path);
+		}
+
+		private Target(String workspace, String path) {
+			System.out.printf("ws=%s p=%s%n", workspace, path);
+			this.workspace = normalize(workspace);
+			this.path = normalize(path);
 		}
 
 		public Path toPath() {
 			if(workspace==null || workspace.isEmpty()) {
-				return Paths.get(path);
+				return Paths.get(unnormalize(path));
 			} else {
-				return Paths.get(workspace, path);
+				return Paths.get(unnormalize(workspace), unnormalize(path));
 			}
 		}
 

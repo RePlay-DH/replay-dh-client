@@ -272,7 +272,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		if(path==null || Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
 			return null;
 		}
-		return new Target(environment.getWorkspacePath(), path);
+		return Target.forFile(environment.getWorkspacePath(), path);
 	}
 
 	private Editor<MetadataBuilder> createEditorForBuild() {
@@ -756,7 +756,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 				 tooltip = file.toString();
 				 icon = fc.getUI().getFileView(fc).getIcon(file.toFile());
 
-				 Target target = new Target(environment.getWorkspacePath(), file);
+				 Target target = Target.forFile(environment.getWorkspacePath(), file);
 				 metadataLabel.setVisible(repository.hasRecords(target));
 			}
 

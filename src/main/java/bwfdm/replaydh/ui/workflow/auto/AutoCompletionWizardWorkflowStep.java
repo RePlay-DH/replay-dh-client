@@ -931,7 +931,7 @@ public class AutoCompletionWizardWorkflowStep implements ActionListener, Documen
 
     	for(IdentifiableEditorElement<T> newElement : newEditorElements){
         	for(IdentifiableEditorElement<T> oldElement : oldEditorElements){
-				if(oldElement.getIdentifiableObject().getSystemId() == newElement.getIdentifiableObject().getSystemId()){
+				if(oldElement.getIdentifiableObject() == newElement.getIdentifiableObject()){
 					if (oldElement.isExpanded() == true){
 						newElement.setExpanded(true);
 						// Change button "show expanded view" to "show collapsed view"

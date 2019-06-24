@@ -18,7 +18,6 @@
  */
 package bwfdm.replaydh.workflow.impl;
 
-import static bwfdm.replaydh.utils.RDHUtils.checkState;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Collections;
@@ -26,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -37,39 +35,14 @@ public abstract class AbstractIdentifiable implements Identifiable {
 
 	private final transient Map<String, Identifier> identifiers = new HashMap<>();
 
-	private UUID systemId;
-
 	private String description;
 
 	protected AbstractIdentifiable(boolean autoCreateSystemId) {
-		if(autoCreateSystemId) {
-			setSystemId(UUID.randomUUID());
-		}
+		// no-op
 	}
 
 	protected Map<String, Identifier> identifiers() {
 		return identifiers;
-	}
-
-	public void setSystemId(UUID systemId) {
-		checkState("System ID already set", this.systemId==null);
-		this.systemId = requireNonNull(systemId);
-	}
-
-	public boolean hasSystemId() {
-		return systemId!=null;
-	}
-
-	public void ensureSystemId() {
-		if(!hasSystemId()) {
-			setSystemId(UUID.randomUUID());
-		}
-	}
-
-	@Override
-	public UUID getSystemId() {
-		checkState("No system ID set", systemId!=null);
-		return systemId;
 	}
 
 	@Override
@@ -210,7 +183,6 @@ public abstract class AbstractIdentifiable implements Identifiable {
      */
     @Override
 	public void copyFrom(Identifiable source) {
-    	systemId = source.getSystemId();
     	description = source.getDescription();
     	source.forEachIdentifier(this::addIdentifier); // Identifier is a value object class, so we can reuse instances
     }

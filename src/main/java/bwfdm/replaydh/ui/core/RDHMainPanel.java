@@ -2007,6 +2007,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				return;
 			}
 
+			if(!environment.getBoolean(RDHProperty.METADATA_AUTOFILL_RESOURCES)) {
+				return;
+			}
+
 			String schemaId = DublinCoreSchema11.ID;
 			WorkflowSchema workflowSchema = environment.getWorkspace().getSchema();
 			MetadataRepository repository = environment.getClient().getLocalMetadataRepository();
@@ -2016,7 +2020,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 				if(path==null) {
 					continue;
 				}
-				Target target = new Target(environment.getWorkspacePath(), path);
+				Target target = Target.forIdentifier(environment.getWorkspacePath(), path);
 
 				MetadataRecord record = repository.getRecord(target, schemaId);
 				if(record!=null) {
@@ -2027,6 +2031,10 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 
 		private void fillRecords(WorkflowStep step) {
 			if(metadataFiller==null) {
+				return;
+			}
+
+			if(!environment.getBoolean(RDHProperty.METADATA_AUTOFILL_RECORDS)) {
 				return;
 			}
 
@@ -2047,7 +2055,7 @@ public class RDHMainPanel extends JPanel implements CloseableUI, JMenuBarSource 
 					if(path==null) {
 						continue;
 					}
-					Target target = new Target(environment.getWorkspacePath(), path);
+					Target target = Target.forIdentifier(environment.getWorkspacePath(), path);
 
 					MetadataRecord record = repository.ensureRecord(target, schemaId);
 

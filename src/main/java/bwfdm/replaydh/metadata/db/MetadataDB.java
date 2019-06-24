@@ -747,7 +747,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 					return false;
 				}
 
-				nextTarget = new Target(rs.getString(1), rs.getString(2));
+				nextTarget = Target.forString(rs.getString(1), rs.getString(2));
 			} catch (SQLException e) {
 				throw new MetadataException("Error while contacting database", e);
 			}
