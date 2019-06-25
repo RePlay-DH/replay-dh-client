@@ -197,10 +197,12 @@ public class WorkspaceTreeModel extends AbstractTreeModel {
 	}
 
 	public TreePath toTreePath(Path path) {
+		path = rootFolder.resolve(path);
+
 		List<Path> elements = new ArrayList<>();
 		do {
 			elements.add(path);
-		} while ((path = path.getParent()) !=null && !rootFolder.equals(path));
+		} while (!rootFolder.equals(path) && (path = path.getParent()) !=null);
 
 		Collections.reverse(elements);
 
@@ -209,7 +211,7 @@ public class WorkspaceTreeModel extends AbstractTreeModel {
 
 	public void pathChanged(Path path) {
 		Path relative = IOUtils.relativize(rootFolder, path);
-		if(relative==null) {
+		if(relative==null || rootFolder.equals(relative)) {
 			return;
 		}
 		firePathChanged(toTreePath(relative));
