@@ -95,6 +95,8 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 	private final boolean verbose;
 
+	private final boolean emptySchemaAsFallback;
+
 	private Connection connection;
 
 	/**
@@ -123,6 +125,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 		resourceProvider = builder.getResourceProvider();
 		memory = builder.isMemory();
 		verbose = builder.isVerbose();
+		emptySchemaAsFallback = builder.isEmptySchemaAsFallback();
 
 		setDefaultSchema(builder.getDefaultSchema());
 
@@ -672,7 +675,7 @@ public class MetadataDB extends AbstractMetadataRespository {
 	 */
 	@Override
 	protected MetadataSchema getFallbackSchema() {
-		return MetadataSchema.EMPTY_SCHEMA;
+		return emptySchemaAsFallback ? MetadataSchema.EMPTY_SCHEMA : null;
 	}
 
 	/**
@@ -792,6 +795,8 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 		public static final boolean DEFAULT_VERBOSE = false;
 
+		public static final boolean DEFAULT_EMPTY_SCHEMA_AS_FALLBACK = false;
+
 		private Path rootFolder;
 
 		private Function<MetadataRecord, String> nameGenerator;
@@ -803,6 +808,8 @@ public class MetadataDB extends AbstractMetadataRespository {
 		private Boolean memory;
 
 		private Boolean verbose;
+
+		private Boolean emptySchemaAsFallback;
 
 		private MetadataSchema defaultSchema;
 
@@ -874,6 +881,14 @@ public class MetadataDB extends AbstractMetadataRespository {
 			return this;
 		}
 
+		public Builder emptySchemaAsFallback(boolean emptySchemaAsFallback) {
+			checkState("'Empty schema as fallback' flag set", this.emptySchemaAsFallback==null);
+
+			this.emptySchemaAsFallback = Boolean.valueOf(emptySchemaAsFallback);
+
+			return this;
+		}
+
 		public MetadataSchema getDefaultSchema() {
 			return defaultSchema;
 		}
@@ -900,6 +915,10 @@ public class MetadataDB extends AbstractMetadataRespository {
 
 		public boolean isVerbose() {
 			return verbose==null ? DEFAULT_VERBOSE : verbose.booleanValue();
+		}
+
+		public boolean isEmptySchemaAsFallback() {
+			return emptySchemaAsFallback==null ? DEFAULT_EMPTY_SCHEMA_AS_FALLBACK : emptySchemaAsFallback.booleanValue();
 		}
 
 		// Utility parts

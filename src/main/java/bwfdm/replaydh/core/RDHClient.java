@@ -796,6 +796,7 @@ public class RDHClient {
 			MetadataDB.Builder builder = MetadataDB.newBuilder()
 					.verbose(verbose)
 					.rootFolder(rootFolder)
+					.emptySchemaAsFallback(getEnvironment().getBoolean(RDHProperty.METADATA_EMPTY_SCHEMA_AS_FALLBACK))
 					.useDefaultCacheAndLocationProvider();
 
 			if(getEnvironment().getBoolean(RDHProperty.METADATA_ENFORCE_DC)) {

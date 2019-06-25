@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import java.awt.SystemTray;
 import java.nio.file.Path;
 
+import bwfdm.replaydh.metadata.MetadataSchema;
 import bwfdm.replaydh.workflow.Tool;
 
 /**
@@ -231,6 +232,14 @@ public enum RDHProperty implements Property {
 	 * The default value for this property is {@code true}.
 	 */
 	METADATA_ENFORCE_DC("metadata.default.enforceDC", true),
+
+	/**
+	 * Flag to indicate whether the client should allow usage of
+	 * the empty {@link MetadataSchema} as last fallback.
+	 * <p>
+	 * The default value for this property is {@code false}.
+	 */
+	METADATA_EMPTY_SCHEMA_AS_FALLBACK("metadata.default.emptySchemaAsFallback", false),
 
 	/**
 	 * Flag to indicate that the client should try to automatically
