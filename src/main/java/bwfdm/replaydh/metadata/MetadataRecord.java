@@ -199,7 +199,7 @@ public interface MetadataRecord {
 		}
 
 		private Target(String workspace, String path) {
-			System.out.printf("ws=%s p=%s%n", workspace, path);
+//			System.out.printf("ws=%s p=%s%n", workspace, path);
 			this.workspace = normalize(workspace);
 			this.path = normalize(path);
 		}
