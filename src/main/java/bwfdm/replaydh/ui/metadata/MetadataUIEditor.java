@@ -68,6 +68,8 @@ public class MetadataUIEditor extends MetadataUI<MetadataEditor> implements Edit
 	private EditorControl editorcontrol = null;
 
 	private boolean disableneeded=false;
+	
+	private boolean requiredSeparatorNeeded = false;
 
 	public MetadataUIEditor() {
 
@@ -99,8 +101,11 @@ public class MetadataUIEditor extends MetadataUI<MetadataEditor> implements Edit
 		/*
 		 * Retrieving the required values
 		 */
-		for(Label item: metadataFrontEnd.getRequiredNames()) {
-			requiredkeys.add(item.getLabel());
+		if(!metadataFrontEnd.getRequiredNames().isEmpty()) {
+			requiredSeparatorNeeded=true;
+			for(Label item: metadataFrontEnd.getRequiredNames()) {
+				requiredkeys.add(item.getLabel());
+			}
 		}
 
 		/*
@@ -128,7 +133,9 @@ public class MetadataUIEditor extends MetadataUI<MetadataEditor> implements Edit
 		}
 
 		requiredkeys.sort(String::compareToIgnoreCase);
-		requiredkeys.add(0,"requiredseparator");
+		if(requiredSeparatorNeeded) {
+			requiredkeys.add(0,"requiredseparator");
+		}
 		listofkeys.addAll(requiredkeys);
 		optionalkeys.sort(String::compareToIgnoreCase);
 		optionalkeys.add(0,"optionalseparator");
