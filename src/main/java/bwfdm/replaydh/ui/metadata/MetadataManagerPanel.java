@@ -186,9 +186,9 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 				return true;
 			}
 		};
-		workspaceTree.setLargeModel(true);
+//		workspaceTree.setLargeModel(true);
 		workspaceTree.setRootVisible(false);
-		workspaceTree.setRowHeight(0);
+		workspaceTree.setRowHeight(-1);
 		workspaceTree.expandRow(0);
 		TreeSelectionModel treeSelectionModel = new DefaultTreeSelectionModel();
 		treeSelectionModel.setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
@@ -668,8 +668,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		 */
 		@Override
 		public void trackingStatusChanged(FileTracker tracker, Set<Path> files, TrackingAction action) {
-			// TODO Auto-generated method stub
-
+			// no-op
 		}
 
 		/**
@@ -677,14 +676,17 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		 */
 		@Override
 		public void statusInfoChanged(FileTracker tracker) {
-			// TODO Auto-generated method stub
-
+			// no-op
 		}
 
-		private void onRecordChange(MetadataRecord record) {
-			GuiUtils.invokeEDTLater(() ->
-				workspaceTreeModel.pathChanged(record.getTarget().toPath()));
-			recordPanel.update(record);
+		private void onRecordChange(MetadataRecord record, boolean forceResize) {
+			GuiUtils.invokeEDTLater(() -> {
+				if(forceResize) {
+					workspaceTree.setRowHeight(-1);
+				}
+				workspaceTreeModel.pathChanged(record.getTarget().toPath());
+				recordPanel.update(record);
+			});
 		}
 
 		/**
@@ -692,7 +694,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		 */
 		@Override
 		public void metadataRecordAdded(MetadataRepository repository, MetadataRecord record) {
-			onRecordChange(record);
+			onRecordChange(record, true);
 		}
 
 		/**
@@ -700,7 +702,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		 */
 		@Override
 		public void metadataRecordRemoved(MetadataRepository repository, MetadataRecord record) {
-			onRecordChange(record);
+			onRecordChange(record, false);
 		}
 
 		/**
@@ -708,7 +710,7 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 		 */
 		@Override
 		public void metadataRecordChanged(MetadataRepository repository, MetadataRecord record) {
-			onRecordChange(record);
+			onRecordChange(record, false);
 		}
 	}
 
@@ -738,6 +740,18 @@ public class MetadataManagerPanel extends JPanel implements CloseableUI {
 
 			setOpaque(true);
 		}
+
+//		/**
+//		 * @see java.awt.Component#setBounds(int, int, int, int)
+//		 */
+//		@Override
+//		public void setBounds(int x, int y, int width, int height) {
+//			int treeWidth = workspaceTree.getWidth();
+//
+//			width = Math.max(width, treeWidth-x);
+//
+//			super.setBounds(x, y, width, height);
+//		}
 
 		/**
 		 * @see bwfdm.replaydh.ui.tree.AbstractTreeCellRendererPanel#prepareRenderer(javax.swing.JTree, java.lang.Object, boolean, boolean, boolean, int, boolean)
