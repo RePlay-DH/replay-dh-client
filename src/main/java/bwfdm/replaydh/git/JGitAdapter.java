@@ -295,13 +295,10 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 
 		final Git existingGit = openOrCreate(gitDir.toFile(), false);
 
+		final Properties config = readSourceCommitInfo(existingGit);
+
 		final Path infoFile = getInfoFile(gitDir);
-
-		if(!Files.exists(infoFile, LinkOption.NOFOLLOW_LINKS))
-			throw new GitException("Missing replaydh.info file: "+infoFile);
-
-		// Try to read our configuration
-		final Properties config = loadConfig(infoFile);
+		saveConfig(infoFile, config);
 
 		// Convert config into proper workspace base (also verifies integrity)
 		final Workspace workspace = createWorkspace(workspacePath, config, environment.getClient());
@@ -374,97 +371,107 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 		return repo.getDirectory();
 	}
 
+	private static Properties readSourceCommitInfo(Git git) throws IOException, GitException {
+
+		final Repository repo = git.getRepository();
+
+		// Try to fetch our marker tag
+		final Ref sourceRef = git.getRepository().findRef(GitUtils.TAG_SOURCE);
+
+		// If commit already exists, do sanity checks
+		if(sourceRef!=null) {
+			// Fetch actual commit target
+			ObjectId id = getTarget(sourceRef, repo);
+			RevCommit commit = repo.parseCommit(id);
+
+			// Sanity check against somebody tampering with our tag
+			if(commit.getParentCount()>0)
+				throw new GitException(String.format(
+						"Git repo corrupted - %s does not point to initial commit, but %s in repo %s",
+						GitUtils.TAG_SOURCE, commit, reportLocation(repo)));
+
+			// Get  info from commit
+			final Properties storedInfo = new Properties();
+			try(StringReader reader = new StringReader(commit.getFullMessage())) {
+				storedInfo.load(reader);
+			}
+
+			return storedInfo;
+		}
+
+		return null;
+	}
+
 	private static void verifyGit(final Git git, final Workspace workspace, boolean createSource)
 			throws IOException, GitException {
 
 		final Repository repo = git.getRepository();
 
-		try(RevWalk revWalk = new RevWalk(repo)) {
+		// Snapshot of current info situation
+		final Properties currentInfo = createSourceCommitInfo(workspace);
 
-			// Snapshot of current info situation
-			final Properties currentInfo = createSourceCommitInfo(workspace);
+		Properties storedInfo = readSourceCommitInfo(git);
 
-			// Try to fetch our marker tag
-			final Ref sourceRef = git.getRepository().findRef(GitUtils.TAG_SOURCE);
-
-			// If commit already exists, do sanity checks
-			if(sourceRef!=null) {
-				// Fetch actual commit target
-				ObjectId id = getTarget(sourceRef, repo);
-				RevCommit commit = repo.parseCommit(id);
-
-				// Sanity check against somebody tampering with our tag
-				if(commit.getParentCount()>0)
-					throw new GitException(String.format(
-							"Git repo corrupted - %s does not point to initial commit, but %s in repo %s",
-							GitUtils.TAG_SOURCE, commit, reportLocation(repo)));
-
-				// Get  info from commit
-				final Properties storedInfo = new Properties();
-				try(StringReader reader = new StringReader(commit.getFullMessage())) {
-					storedInfo.load(reader);
-				}
-
-				// Sanity check against outdated repo
-				if(!storedInfo.equals(currentInfo))
-					throw new GitException(String.format(
-							"Git repo corrutped - stored info expected to be %s, but was %s in commit %s in repo %s",
-							currentInfo, storedInfo, commit, reportLocation(repo)));
-			} else if(createSource) {
-				// Check if repo is truly empty
-				Map<String, Ref> refs = git.getRepository().getRefDatabase().getRefs(RefDatabase.ALL);
-				if(!refs.isEmpty())
-					throw new GitException(String.format(
-							"Repository %s is not empty", reportLocation(repo)));
-
-				// Artificial proxy user denoting the JGit adapter itself
-				final PersonIdent proxyUser = GitUtils.createJGitUser();
-
-				// The serialized info to be used as git commit message
-				final String message = serializeInfo(currentInfo);
-
-				// If required, include an empty .gitignore file in the initial commit
-				ensureGitignoreFile(git);
-
-				RevCommit commit;
-
-				// Make our initial commit and store the info
-				try {
-					commit = git.commit()
-							.setMessage(message)
-							.setReflogComment("initial RePlay-DH marker commit")
-							.setAllowEmpty(true)
-							.setNoVerify(true)
-							.setCommitter(proxyUser)
-							.call();
-
-					log.info("Created initial commit {} in repo {}", commit, reportLocation(repo));
-				} catch (GitAPIException e) {
-					throw new GitException(String.format(
-							"Failed to create initial commit for repo %s",
-							reportLocation(repo)), e);
-				}
-
-				// Finally tag the commit with our marker
-				try {
-					Ref tag = git.tag()
-							.setName(GitUtils.TAG_SOURCE)
-							.setTagger(proxyUser)
-							.setObjectId(commit)
-							.call();
-
-					log.info("Created marker tag {} for repo {}", tag, reportLocation(repo));
-				} catch (GitAPIException e) {
-					throw new GitException(String.format(
-							"Failed to create marker tag {} for commit {} in repo {}",
-							GitUtils.TAG_SOURCE, commit, reportLocation(repo)), e);
-				}
-			} else
-				// No marked commit and not allowed to create one -> complain
+		if(storedInfo!=null) {
+			// Sanity check against outdated repo
+			if(!storedInfo.equals(currentInfo))
 				throw new GitException(String.format(
-						"Marker tag %s not found in repo",
-						GitUtils.TAG_SOURCE, reportLocation(repo)));
-		}
+						"Git repo corrutped - stored info expected to be %s, but was %s in source commit in repo %s",
+						currentInfo, storedInfo, reportLocation(repo)));
+		} else if(createSource) {
+			// Check if repo is truly empty
+			Map<String, Ref> refs = git.getRepository().getRefDatabase().getRefs(RefDatabase.ALL);
+			if(!refs.isEmpty())
+				throw new GitException(String.format(
+						"Repository %s is not empty", reportLocation(repo)));
+
+			// Artificial proxy user denoting the JGit adapter itself
+			final PersonIdent proxyUser = GitUtils.createJGitUser();
+
+			// The serialized info to be used as git commit message
+			final String message = serializeInfo(currentInfo);
+
+			// If required, include an empty .gitignore file in the initial commit
+			ensureGitignoreFile(git);
+
+			RevCommit commit;
+
+			// Make our initial commit and store the info
+			try {
+				commit = git.commit()
+						.setMessage(message)
+						.setReflogComment("initial RePlay-DH marker commit")
+						.setAllowEmpty(true)
+						.setNoVerify(true)
+						.setCommitter(proxyUser)
+						.call();
+
+				log.info("Created initial commit {} in repo {}", commit, reportLocation(repo));
+			} catch (GitAPIException e) {
+				throw new GitException(String.format(
+						"Failed to create initial commit for repo %s",
+						reportLocation(repo)), e);
+			}
+
+			// Finally tag the commit with our marker
+			try {
+				Ref tag = git.tag()
+						.setName(GitUtils.TAG_SOURCE)
+						.setTagger(proxyUser)
+						.setObjectId(commit)
+						.call();
+
+				log.info("Created marker tag {} for repo {}", tag, reportLocation(repo));
+			} catch (GitAPIException e) {
+				throw new GitException(String.format(
+						"Failed to create marker tag {} for commit {} in repo {}",
+						GitUtils.TAG_SOURCE, commit, reportLocation(repo)), e);
+			}
+		} else
+			// No marked commit and not allowed to create one -> complain
+			throw new GitException(String.format(
+					"Marker tag %s not found in repo",
+					GitUtils.TAG_SOURCE, reportLocation(repo)));
 	}
 
 	/**
@@ -693,7 +700,7 @@ public class JGitAdapter extends AbstractRDHTool implements RDHTool, FileTracker
 	/**
 	 * Store given config to provided file location.
 	 */
-	private void saveConfig(Path configPath, Properties config) throws IOException {
+	private static void saveConfig(Path configPath, Properties config) throws IOException {
 		try(Writer writer = Files.newBufferedWriter(configPath, StandardCharsets.UTF_8)) {
 			config.store(writer, INFO_FILE_COMMENT);
 		}

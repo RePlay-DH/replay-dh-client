@@ -241,7 +241,7 @@ public abstract class GitRemoteWizard {
 			}
 
 			// Remote names are part of a ref string
-			if(!Repository.isValidRefName(name)) {
+			if(!Repository.isValidRefName("ref/"+name)) {
 				return false;
 			}
 

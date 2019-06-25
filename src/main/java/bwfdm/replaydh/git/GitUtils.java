@@ -240,6 +240,9 @@ public class GitUtils {
 	}
 
 	public static void cleanupTempRemote(Git git) throws GitAPIException {
+		if(git==null) {
+			return;
+		}
 		RemoteRemoveCommand cmd = git.remoteRemove();
 		cmd.setName(TEMP_RDH_REMOTE);
 		cmd.call();

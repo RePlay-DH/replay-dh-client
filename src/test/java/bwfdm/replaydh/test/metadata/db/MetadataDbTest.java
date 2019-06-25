@@ -40,6 +40,7 @@ import bwfdm.replaydh.metadata.MetadataRecord;
 import bwfdm.replaydh.metadata.MetadataRecord.Target;
 import bwfdm.replaydh.metadata.MetadataRepository.RecordIterator;
 import bwfdm.replaydh.metadata.MetadataSchema;
+import bwfdm.replaydh.metadata.basic.DefaultMetadataSchema;
 import bwfdm.replaydh.metadata.db.MetadataDB;
 import bwfdm.replaydh.test.RDHTestUtils;
 
@@ -178,6 +179,10 @@ public class MetadataDbTest {
 		try {
 			for (int i = 0; i < recordCount; i++) {
 				String schemaId = "schema"+i;
+				DefaultMetadataSchema schema = new DefaultMetadataSchema();
+				schema.setId(schemaId);
+				repository.addSchema(schema);
+
 				MetadataBuilder builder = repository.createBuilder(target, schemaId);
 				builder.start();
 
@@ -229,6 +234,9 @@ public class MetadataDbTest {
 		try {
 			for (int i = 0; i < recordCount; i++) {
 				String schemaId = "schema"+i;
+				DefaultMetadataSchema schema = new DefaultMetadataSchema();
+				schema.setId(schemaId);
+				repository.addSchema(schema);
 
 				MetadataBuilder builder1 = repository.createBuilder(target1, schemaId);
 				builder1.start();

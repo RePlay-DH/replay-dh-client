@@ -1047,7 +1047,7 @@ public class WorkflowGraph extends AbstractPropertyChangeSource implements Close
 		private void toggleCompressPipes(boolean value) {
 			if(layout instanceof WorkflowGraphDelegatingLayout) {
 				((WorkflowGraphDelegatingLayout)layout).setHidePipes(value);
-				rebuildGraph();
+				environment.execute(WorkflowGraph.this::rebuildGraph);
 			}
 		}
 
