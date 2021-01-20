@@ -46,7 +46,7 @@
 		<jpf.version>1.5</jpf.version>
 		<jena-core.version>3.6.0</jena-core.version>
 		<com.github.swordapp.version>master-SNAPSHOT</com.github.swordapp.version>
-		<jackson-databind.version>2.9.9</jackson-databind.version>
+		<jackson-databind.version>2.9.10.7</jackson-databind.version>
 		<jide-oss.version>3.6.18</jide-oss.version>
 		<sqlite.version>3.27.2.1</sqlite.version>
 		
