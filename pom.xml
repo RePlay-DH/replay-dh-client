@@ -44,7 +44,7 @@
 		<jgraphx.version>v3.7.2</jgraphx.version>
 		<javax.ws.rs-api.version>2.1</javax.ws.rs-api.version>
 		<jpf.version>1.5</jpf.version>
-		<jena-core.version>3.6.0</jena-core.version>
+		<jena-core.version>4.2.0</jena-core.version>
 		<com.github.swordapp.version>master-SNAPSHOT</com.github.swordapp.version>
 		<jackson-databind.version>2.9.9</jackson-databind.version>
 		<jide-oss.version>3.6.18</jide-oss.version>
